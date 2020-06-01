@@ -36,8 +36,8 @@ class AcheronListener(tweepy.StreamListener):
 		if 'retweeted_status' in status._json:
 			return
 		# ignore replies
-		if status._json['in_reply_to_user_id']:
-			return
+		#if status._json['in_reply_to_user_id']:
+		#	return
 		# if tweet is truncated, get all text
 		if 'extended_tweet' in status._json:
 			tweet = status.extended_tweet['full_text']
