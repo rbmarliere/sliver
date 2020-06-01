@@ -14,8 +14,8 @@ with open('config.json') as f:
 def clean_text(tweet):
 	# remove links
 	tweet = re.sub("http\S+", "", tweet)
-	# remove non-letters
-	tweet = re.sub("[^a-zA-Z]", " ", tweet)
+	# leave only letters and numbers
+	tweet = re.sub("[^a-zA-Z0-9]", " ", tweet)
 	# convert to lower case, split into individual words
 	words = tweet.lower().split()
 	# remove stopwords
