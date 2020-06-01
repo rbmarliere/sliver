@@ -16,6 +16,8 @@ def clean_text(tweet):
 	tweet = re.sub("http\S+", "", tweet)
 	# remove html entities
 	tweet = re.sub("&\w+;", "", tweet)
+	# remove usernames
+	tweet = re.sub("@\w+ ", "", tweet)
 	# leave only letters and numbers
 	tweet = re.sub("[^a-zA-Z0-9]", " ", tweet)
 	# convert to lower case, split into individual words
