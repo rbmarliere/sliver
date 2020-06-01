@@ -1,8 +1,9 @@
+from queue import Queue
+from threading import Thread
 import json
 import nltk
 import re
 import tweepy
-import pprint
 
 # download stopwords from nltk
 nltk.download('stopwords')
@@ -33,29 +34,44 @@ def clean_text(tweet):
 	# todo: spellcheck?
 
 class AcheronListener(tweepy.StreamListener):
+	def __init__(self, q = Queue()):
+		super().__init__()
+		num_worker_threads = 4
+		self.q = q
+		for i in range(num_worker_threads):
+			t = Thread(target=self.proc_tweet)
+			t.daemon = True
+			t.start()
+
 	def on_status(self, status):
-		# ignore retweets
-		if 'retweeted_status' in status._json:
-			return
-		# ignore replies
-		#if status._json['in_reply_to_user_id']:
-		#	return
-		# if tweet is truncated, get all text
-		if 'extended_tweet' in status._json:
-			tweet = status.extended_tweet['full_text']
-		else:
-			tweet = status.text
-		# transform tweet into a single line
-		tweet = tweet.replace('\n', ' ').replace('\r', '') + '\n'
-		print(tweet)
-		# clean the tweet text
-		tweet = clean_text(tweet)
-		print(tweet)
-		print()
-		print()
-		with open('data', 'a') as output:
-			#todo: check if file exists, rename, etc
-			print(tweet, file=output)
+		self.q.put(status)
+	
+	def proc_tweet(self):
+		while True:
+			status = self.q.get()
+			# ignore retweets
+			if 'retweeted_status' in status._json:
+				return
+			# ignore replies
+			#if status._json['in_reply_to_user_id']:
+			#	return
+			# if tweet is truncated, get all text
+			if 'extended_tweet' in status._json:
+				tweet = status.extended_tweet['full_text']
+			else:
+				tweet = status.text
+			# transform tweet into a single line
+			tweet = tweet.replace('\n', ' ').replace('\r', '') + '\n'
+			print(tweet)
+			# clean the tweet text
+			tweet = clean_text(tweet)
+			print(tweet)
+			print()
+			print()
+			with open('data', 'a') as output:
+				#todo: check if file exists, rename, etc
+				print(tweet, file=output)
+			self.q.task_done()
 
 # initialize tweepy api object
 auth = tweepy.OAuthHandler(config['CONSUMER_KEY'], config['CONSUMER_SECRET'])
