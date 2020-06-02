@@ -23,7 +23,9 @@ def clean_text(tweet):
 	# convert to lower case, split into individual words
 	words = tweet.lower().split()
 	# remove stopwords
-	stops = set(nltk.corpus.stopwords.words("english"))
+	keep = [ "until", "while", "between", "above", "below", "up", "down", "over", "under", "here", "there", "when", "both", "more", "will", "should", "should've", "now",  "couldn't", "shouldn", "shouldn,t", "won'", "won't", "wouldn'", "wouldn't" ]
+	nltkstops = set(nltk.corpus.stopwords.words("english"))
+	stops = [w for w in nltkstops if not w in keep]
 	meaningful_words = [w for w in words if not w in stops]
 	# stem words
 	stemmer = nltk.stem.porter.PorterStemmer()
