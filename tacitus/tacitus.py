@@ -12,34 +12,34 @@ import numpy
 batch_size = 10
 
 raw_train_ds = tensorflow.keras.preprocessing.text_dataset_from_directory(
-    "train",
-    batch_size=batch_size,
-    validation_split=0.2,
-    subset="training",
-    seed=1337,
+	"train",
+	batch_size=batch_size,
+	validation_split=0.2,
+	subset="training",
+	seed=1337,
 )
 print(
-    "Number of batches in raw_train_ds: %d"
-    % tensorflow.data.experimental.cardinality(raw_train_ds)
+	"Number of batches in raw_train_ds: %d"
+	% tensorflow.data.experimental.cardinality(raw_train_ds)
 )
 
 raw_val_ds = tensorflow.keras.preprocessing.text_dataset_from_directory(
-    "train",
-    batch_size=batch_size,
-    validation_split=0.2,
-    subset="validation",
-    seed=1337,
+	"train",
+	batch_size=batch_size,
+	validation_split=0.2,
+	subset="validation",
+	seed=1337,
 )
 print(
-    "Number of batches in raw_val_ds: %d" % tensorflow.data.experimental.cardinality(raw_val_ds)
+	"Number of batches in raw_val_ds: %d" % tensorflow.data.experimental.cardinality(raw_val_ds)
 )
 
 #raw_test_ds = tensorflow.keras.preprocessing.text_dataset_from_directory(
-#    "test", batch_size=batch_size
+#	"test", batch_size=batch_size
 #)
 #print(
-#    "Number of batches in raw_test_ds: %d"
-#    % tensorflow.data.experimental.cardinality(raw_test_ds)
+#	"Number of batches in raw_test_ds: %d"
+#	% tensorflow.data.experimental.cardinality(raw_test_ds)
 #)
 
 # model constants
@@ -49,9 +49,9 @@ sequence_length = 112
 
 # vocab layer
 vectorize_layer = TextVectorization(
-    max_tokens=max_features,
-    output_mode="int",
-    output_sequence_length=sequence_length,
+	max_tokens=max_features,
+	output_mode="int",
+	output_sequence_length=sequence_length,
 )
 
 # create vocab
@@ -60,8 +60,8 @@ vectorize_layer.adapt(text_ds)
 
 # vectorize data
 def vectorize_text(text, label):
-    text = tensorflow.expand_dims(text, -1)
-    return vectorize_layer(text), label
+	text = tensorflow.expand_dims(text, -1)
+	return vectorize_layer(text), label
 train_ds = raw_train_ds.map(vectorize_text)
 val_ds = raw_val_ds.map(vectorize_text)
 #test_ds = raw_test_ds.map(vectorize_text)
@@ -108,7 +108,7 @@ outputs = model(indices)
 # Our end to end model
 end_to_end_model = tensorflow.keras.Model(inputs, outputs)
 end_to_end_model.compile(
-    loss="binary_crossentropy", optimizer="adam", metrics=["accuracy"]
+	loss="binary_crossentropy", optimizer="adam", metrics=["accuracy"]
 )
 # Test it with `raw_test_ds`, which yields raw strings
 #end_to_end_model.evaluate(raw_train_ds)
@@ -117,8 +117,8 @@ end_to_end_model.compile(
 filename = sys.argv[1]
 raw_data = open(filename)
 for tweet in raw_data:
-    pred = end_to_end_model.predict([tweet])
-    if pred > 0.2:
-        #print("FOUND POSITIVE TWEET:")
-        print(pred)
-        print(tweet)
+	pred = end_to_end_model.predict([tweet])
+	if pred > 0.2:
+		#print("FOUND POSITIVE TWEET:")
+		print(pred)
+		print(tweet)
