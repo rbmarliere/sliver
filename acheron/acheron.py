@@ -12,7 +12,7 @@ nltk.download("stopwords")
 # parsing acheron arguments
 argp = argparse.ArgumentParser(description="Gather relevant tweets.")
 argp.add_argument("--model", help="Path to Tacitus' saved model.", type=os.path.abspath, default=os.path.dirname(os.path.realpath(__file__)) + "/../tacitus/model")
-argp.add_argument("--config", help="Path to a configuration file.", type=os.path.abspath, default=os.path.dirname(os.path.realpath(__file__)) + "/config.json2")
+argp.add_argument("--config", help="Path to a configuration file.", type=os.path.abspath, default=os.path.dirname(os.path.realpath(__file__)) + "/config.json")
 
 args = argp.parse_args()
 if not os.path.exists(args.config):
