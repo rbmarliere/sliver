@@ -12,7 +12,6 @@ with open("config.json") as f:
 
 def clean(tweet):
 	# remove links
-	tweet = re.sub("\n", " ", tweet)
 	tweet = re.sub("http\S+", "", tweet)
 	# remove html entities
 	tweet = re.sub("&\w+;", "", tweet)
@@ -46,14 +45,14 @@ class AcheronListener(tweepy.StreamListener):
 			tweet = status.extended_tweet["full_text"]
 		else:
 			tweet = status.text
+		tweet = re.sub("\n", " ", tweet)
 		# clean the tweet text
-		tweet = clean(tweet)
 		print(tweet)
-		print()
-		print()
+		tweet = clean(tweet)
+		print(len(tweet.split()))
 		with open("data", "a") as output:
-			#todo: check if file exists, rename, etc
-			print(tweet, file=output)
+			if len(tweet.split()) > 3:
+				print(tweet, file=output)
 
 # initialize tweepy api object
 auth = tweepy.OAuthHandler(config["CONSUMER_KEY"], config["CONSUMER_SECRET"])
