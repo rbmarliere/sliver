@@ -1,14 +1,29 @@
 from tensorflow.keras.models import load_model
+import argparse
 import json
 import nltk
+import os
 import re
 import tweepy
 
 # download stopwords from nltk
 nltk.download("stopwords")
 
+# parsing acheron arguments
+argp = argparse.ArgumentParser(description="Gather relevant tweets.")
+argp.add_argument("--model", help="Path to Tacitus' saved model.", type=os.path.abspath, default=os.path.dirname(os.path.realpath(__file__)) + "/../tacitus/model")
+argp.add_argument("--config", help="Path to a configuration file.", type=os.path.abspath, default=os.path.dirname(os.path.realpath(__file__)) + "/config.json2")
+
+args = argp.parse_args()
+if not os.path.exists(args.config):
+	print("Configuration not found!")
+	exit(1)
+if not os.path.exists(args.model):
+	print("Model not found!")
+	exit(1)
+
 # load config parameters to memory
-with open("config.json") as f:
+with open(args.config) as f:
 	config = json.load(f)
 
 def clean(tweet):
@@ -36,7 +51,7 @@ def clean(tweet):
 class AcheronListener(tweepy.StreamListener):
 	def __init__(self):
 		super().__init__()
-		self.tacitus = load_model("../tacitus/model")
+		self.tacitus = load_model(args.model)
 
 	def on_status(self, status):
 		# ignore retweets
