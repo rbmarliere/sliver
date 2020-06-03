@@ -91,34 +91,19 @@ model = tensorflow.keras.Model(inputs, predictions)
 # Compile the model with binary crossentropy loss and an adam optimizer.
 model.compile(loss="binary_crossentropy", optimizer="adam", metrics=["accuracy"])
 
-## train model
-epochs = 12
+# train model
+epochs = 13
 model.fit(train_ds, validation_data=val_ds, epochs=epochs)
-#model.evaluate(test_ds)
-## save model weights
-#now = int(datetime.datetime.now().timestamp())
-#model.save_weights("weights_" + str(now) + ".h5")
 
-# A string input
+# create e2e model that receives raw strings as input
 inputs = tensorflow.keras.Input(shape=(1,), dtype="string")
-# Turn strings into vocab indices
 indices = vectorize_layer(inputs)
-# Turn vocab indices into predictions
 outputs = model(indices)
-# Our end to end model
 end_to_end_model = tensorflow.keras.Model(inputs, outputs)
 end_to_end_model.compile(
 	loss="binary_crossentropy", optimizer="adam", metrics=["accuracy"]
 )
-# Test it with `raw_test_ds`, which yields raw strings
-#end_to_end_model.evaluate(raw_train_ds)
 
-# load data
-filename = sys.argv[1]
-raw_data = open(filename)
-for tweet in raw_data:
-	pred = end_to_end_model.predict([tweet])
-	if pred > 0.2:
-		#print("FOUND POSITIVE TWEET:")
-		print(pred)
-		print(tweet)
+# save e2e model
+end_to_end_model.save("model")
+
