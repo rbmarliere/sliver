@@ -12,9 +12,9 @@ logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=lo
 
 # declare hyperparameters
 validation_split = 0.2
-embedding_dim = 33
-epochs = 3
-batch_size = 10
+embedding_dim = 666
+epochs = 11
+batch_size = 1
 
 # load relevant tweets
 relevant_file = open("train/relevant")
@@ -33,8 +33,8 @@ raw_data = pandas.concat([relevant, irrelevant])
 raw_data = raw_data.sample(frac=1).reset_index(drop=True)
 
 # build vocab
-tweets = raw_data['tweet'].values.tolist()
-wvmodel = gensim.models.word2vec.Word2Vec(tweets, size=embedding_dim, window=10, min_count=5, workers=16, sg=1) # sg=1 is skipgram, default is 0 = cbow
+corpus = [tweet.split() for tweet in raw_data['tweet'].values.tolist()]
+wvmodel = gensim.models.word2vec.Word2Vec(corpus, size=embedding_dim, window=10, min_count=5, workers=16, sg=1) # sg=1 is skipgram, default is 0 = cbow
 wvmodel.wv.save_word2vec_format("corpus", binary=False)
 
 # load vocab
@@ -48,10 +48,10 @@ for line in f:
 
 # vectorize data
 tok = tensorflow.keras.preprocessing.text.Tokenizer()
-tok.fit_on_texts(tweets)
-seq = tok.texts_to_sequences(tweets)
+tok.fit_on_texts(corpus)
+seq = tok.texts_to_sequences(corpus)
 
-maxlen = max([len(s.split()) for s in tweets])
+maxlen = max([len(s) for s in corpus])
 
 tweets_pad = tensorflow.python.keras.preprocessing.sequence.pad_sequences(seq, maxlen=maxlen)
 is_relevant = raw_data['is_relevant'].values
@@ -68,7 +68,6 @@ for word, i in tok.word_index.items():
 
 # build model
 inputs = tensorflow.keras.Input(shape=(None,), dtype="int64")
-# "embedding_dim".
 x = tensorflow.keras.layers.Embedding(
 		num_words,
 		embedding_dim,
@@ -77,17 +76,13 @@ x = tensorflow.keras.layers.Embedding(
 		trainable=False
 	)(inputs)
 x = tensorflow.keras.layers.Dropout(0.5)(x)
-# Conv1D + global max pooling
 x = tensorflow.keras.layers.Conv1D(128, 7, padding="valid", activation="relu", strides=3)(x)
 x = tensorflow.keras.layers.Conv1D(128, 7, padding="valid", activation="relu", strides=3)(x)
 x = tensorflow.keras.layers.GlobalMaxPooling1D()(x)
-# We add a vanilla hidden layer:
 x = tensorflow.keras.layers.Dense(128, activation="relu")(x)
 x = tensorflow.keras.layers.Dropout(0.5)(x)
-# We project onto a single unit output layer, and squash it with a sigmoid:
 predictions = tensorflow.keras.layers.Dense(1, activation="sigmoid", name="predictions")(x)
 model = tensorflow.keras.Model(inputs, predictions)
-# Compile the model with binary crossentropy loss and an adam optimizer.
 model.compile(loss="binary_crossentropy", optimizer="adam", metrics=["accuracy"])
 
 print(model.summary())
@@ -98,7 +93,6 @@ x_train = tweets_pad[:-nsamples]
 y_train = is_relevant[:-nsamples]
 x_test  = tweets_pad[-nsamples:]
 y_test  = is_relevant[-nsamples:]
-
 model.fit(
 	x_train,
 	y_train,
@@ -107,15 +101,19 @@ model.fit(
 	epochs=epochs
 )
 
-# create e2e model that receives raw strings as input
-#inputs = tensorflow.keras.Input(shape=(1,), dtype="string")
-#indices = vectorize_layer(inputs)
-#outputs = model(indices)
-#end_to_end_model = tensorflow.keras.Model(inputs, outputs)
-#end_to_end_model.compile(
-#	loss="binary_crossentropy", optimizer="adam", metrics=["accuracy"]
-#)
+# create model to be used by acheron that receives raw strings as input
+inputs = tensorflow.keras.Input(shape=(1,), dtype="string")
+indices = tensorflow.keras.layers.experimental.preprocessing.TextVectorization(
+			max_tokens=num_words,
+			output_mode='int',
+			output_sequence_length=maxlen
+		)(inputs)
+outputs = model(indices)
+end_to_end_model = tensorflow.keras.Model(inputs, outputs)
+end_to_end_model.compile(
+	loss="binary_crossentropy", optimizer="adam", metrics=["accuracy"]
+)
 
 # save e2e model
-#end_to_end_model.save("model")
+end_to_end_model.save("model")
 
