@@ -1,3 +1,4 @@
+from tensorflow.keras.models import load_model
 import json
 import nltk
 import re
@@ -33,6 +34,10 @@ def clean(tweet):
 	return(" ".join([w for w in singles if len(w) > 1]))
 
 class AcheronListener(tweepy.StreamListener):
+	def __init__(self):
+		super().__init__()
+		self.tacitus = load_model("../tacitus/model")
+
 	def on_status(self, status):
 		# ignore retweets
 		if "retweeted_status" in status._json:
@@ -46,13 +51,15 @@ class AcheronListener(tweepy.StreamListener):
 		else:
 			tweet = status.text
 		tweet = re.sub("\n", " ", tweet)
-		# clean the tweet text
 		print(tweet)
+		# clean the tweet text
 		tweet = clean(tweet)
-		print(len(tweet.split()))
 		with open("data", "a") as output:
 			if len(tweet.split()) > 3:
 				print(tweet, file=output)
+				pred = self.tacitus.predict([tweet])
+				print(pred[0][0])
+				print()
 
 # initialize tweepy api object
 auth = tweepy.OAuthHandler(config["CONSUMER_KEY"], config["CONSUMER_SECRET"])
