@@ -9,7 +9,7 @@ import sys
 import numpy
 
 # load data
-batch_size = 1
+batch_size = 10
 
 raw_train_ds = tensorflow.keras.preprocessing.text_dataset_from_directory(
     "train",
@@ -43,9 +43,9 @@ print(
 #)
 
 # model constants
-max_features = 30
-embedding_dim = 20
-sequence_length = 100
+max_features = 6666
+embedding_dim = 33
+sequence_length = 112
 
 # vocab layer
 vectorize_layer = TextVectorization(
@@ -92,7 +92,7 @@ model = tensorflow.keras.Model(inputs, predictions)
 model.compile(loss="binary_crossentropy", optimizer="adam", metrics=["accuracy"])
 
 ## train model
-epochs = 3
+epochs = 12
 model.fit(train_ds, validation_data=val_ds, epochs=epochs)
 #model.evaluate(test_ds)
 ## save model weights
@@ -113,15 +113,12 @@ end_to_end_model.compile(
 # Test it with `raw_test_ds`, which yields raw strings
 #end_to_end_model.evaluate(raw_train_ds)
 
-#print(model.summary())
-#print(end_to_end_model.summary())
-
 # load data
 filename = sys.argv[1]
 raw_data = open(filename)
 for tweet in raw_data:
     pred = end_to_end_model.predict([tweet])
-    #if pred > 0.5:
+    if pred > 0.2:
         #print("FOUND POSITIVE TWEET:")
-    print(pred)
-    print(tweet)
+        print(pred)
+        print(tweet)
