@@ -97,5 +97,5 @@ except FileNotFoundError:
 acheron = AcheronListener()
 stream = tweepy.Stream(auth = api.auth, listener=acheron)
 #stream.filter(languages=["en"], follow=users, is_async=True)
-stream.filter(languages=["en"], track=["bitcoin"], is_async=True)
+stream.filter(languages=["en"], track=["bitcoin","xbt","btc",], is_async=True)
 
