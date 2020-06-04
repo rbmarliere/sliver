@@ -38,7 +38,7 @@ def clean(tweet):
 	# convert to lower case, split into individual words
 	words = tweet.lower().split()
 	# remove stopwords, but keep some
-	keep = [ "until", "while", "between", "above", "below", "up", "down", "over", "under", "here", "there", "when", "both", "more", "will", "should", "should've", "now",  "couldn't", "shouldn", "shouldn't", "won'", "won't", "wouldn'", "wouldn't" ]
+	keep = [ "this", "that'll", "these", "having", "does", "doing", "until", "while", "about", "against", "between", "into", "through", "during", "before", "after", "above", "below", "from", "up", "down", "in", "out", "on", "off", "over", "under", "again", "further", "then", "once", "here", "there", "when", "few", "both", "more", "most", "other", "some", "than", "too", "very", "can", "will", "should", "should’ve", "now", "ain", "aren", "aren’t", "could", "couldn", "couldn't", "didn", "didn’t", "doesn", "doesn’t", "hadn", "hadn’t", "hasn", "hasn’t", "haven", "haven’t", "isn", "isn’t", "mighn", "mightn't", "mustn", "mustn’t", "needn", "needn’t", "shan", "shan’t", "shouldn", "shouldn’t", "wasn", "wasn’t", "weren","weren’t", "won’", "won’t", "wouldn", "wouldn't" ]
 	nltkstops = set(nltk.corpus.stopwords.words("english"))
 	stops = [w for w in nltkstops if not w in keep]
 	meaningful_words = [w for w in words if not w in stops]
