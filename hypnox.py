@@ -8,46 +8,59 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 	ticker_interval = "4h"
 	minimal_roi = { "0": 100 } # disabled
 	stoploss = -100 # disabled
+	resistance = 0
+	support = 0
+	trend = 0 # 0 bear 1 bull
 
 	def populate_indicators(self, dataframe: pandas.DataFrame, metadata: dict) -> pandas.DataFrame:
-		dataframe["ema9"] = talib.abstract.EMA(dataframe, timeperiod=9)
-		dataframe["ema55"] = talib.abstract.EMA(dataframe, timeperiod=55)
+		ema9 = talib.abstract.EMA(dataframe, timeperiod=9)
+		ema55 = talib.abstract.EMA(dataframe, timeperiod=55)
 
-		dataframe["cross_bear"] = freqtrade.vendor.qtpylib.indicators.crossed_below(dataframe["ema9"], dataframe["ema55"])
-		dataframe["cross_bull"] = freqtrade.vendor.qtpylib.indicators.crossed_above(dataframe["ema9"], dataframe["ema55"])
+		bear_crosses = freqtrade.vendor.qtpylib.indicators.crossed_below(ema9, ema55)
+		bull_crosses = freqtrade.vendor.qtpylib.indicators.crossed_above(ema9, ema55)
 
-		cycles = dataframe[ ( dataframe["cross_bull"] == True ) | ( dataframe["cross_bear"] == True ) ]
-		print(cycles.tail(6))
+		crosses = dataframe[ ( bear_crosses == True ) | ( bull_crosses == True ) ]
+		last_cross = crosses.iloc[-1]["date"]
+		last_bullcross = dataframe[ ( bull_crosses == True ) ].iloc[-1]["date"]
+		self.trend = last_cross == last_bullcross
+
 		bear_sum = bull_sum = 0
+		current_cycle = dataframe[ dataframe["date"] >= last_cross ]
+		if self.trend:
+			bull_sum = current_cycle["low"].max()
+		else:
+			bear_sum = current_cycle["high"].max()
+
 		i = 2
+		t = self.trend
 		while i < 7:
-			idx_cycle = cycles.tail(i).head(2)
-			i += 1
+			idx_cycle = crosses.tail(i).head(2)
 			begin = idx_cycle.iloc[0]["date"]
 			end = idx_cycle.iloc[1]["date"]
 			cycle = dataframe.loc[ ( dataframe["date"] >= begin ) & ( dataframe["date"] <= end ) ]
-			print(cycle.iloc[0]["date"])
-			if cycle.iloc[0]["cross_bull"]:
-				bull_sum += cycle["low"].max()
-				print("BULL low:" + str(cycle["high"].max()))
-			else:
+			if t:
 				bear_sum += cycle["high"].min()
-				print("BEAR high: " + str(cycle["low"].min()))
+			else:
+				bull_sum += cycle["low"].max()
+			t = not t
+			i += 1
 
-		current_cycle = dataframe[ ( dataframe["date"] >= cycles.iloc[-1]["date"] ) ]
-		if current_cycle.iloc[0]["cross_bull"]:
-			bull_sum += current_cycle["high"].max()
-			print("BULL HIGH:" + str(current_cycle["high"].max()))
-		else:
-			bear_sum += current_cycle["low"].min()
-			print("BEAR LOW: " + str(current_cycle["high"].max()))
-
-		resistance = bull_sum / 3
-		support = bear_sum / 3
+		self.resistance = int(bull_sum / 3)
+		print("RESISTANCE: " + str(self.resistance))
+		self.support = int(bear_sum / 3)
+		print("SUPPORT: " + str(self.support))
 
 		return dataframe
 
 	def populate_buy_trend(self, dataframe: pandas.DataFrame, metadata: dict) -> pandas.DataFrame:
+		#print(self.trend)
+		#print(dataframe.loc[ (
+		#	  ( dataframe["trend"] )
+		#	& ( dataframe["close"] < 0.2 * dataframe["resistance"] )
+		#	) ])
+		#dataframe.loc[
+		#	self.trend # bullish MA trend
+		#	& dataframe['close'] 
 		return dataframe
 
 	def populate_sell_trend(self, dataframe: pandas.DataFrame, metadata: dict) -> pandas.DataFrame:
