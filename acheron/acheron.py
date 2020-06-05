@@ -55,7 +55,7 @@ class AcheronListener(tweepy.StreamListener):
 
 		pred = self.tacitus.predict([preprocessor.clean(tweet)])
 
-		print("\n\n" + str(pred[0][0]))
+		print("\n\n" + format(pred[0][0], 'f'))
 		print(tweet)
 
 # initialize tweepy api object
