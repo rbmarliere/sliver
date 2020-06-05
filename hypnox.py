@@ -2,6 +2,7 @@ import freqtrade
 import numpy
 import pandas
 import talib
+import pylunar
 
 class hypnox(freqtrade.strategy.interface.IStrategy):
 	INTERFACE_VERSION = 2
@@ -46,23 +47,26 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 			i += 1
 
 		self.resistance = int(bull_sum / 3)
-		print("RESISTANCE: " + str(self.resistance))
 		self.support = int(bear_sum / 3)
-		print("SUPPORT: " + str(self.support))
+
+		moon = pylunar.MoonInfo((57,15,55),(4,28,28))
+		def time_to_full_moon(moon, date):
+			moon.update(date)
+			return moon.time_to_full_moon()
+		dataframe.loc[:, "time_to_full_moon"] = 0
+		dataframe["time_to_full_moon"] = dataframe["date"].apply(lambda x: time_to_full_moon(moon, x))
 
 		return dataframe
 
 	def populate_buy_trend(self, dataframe: pandas.DataFrame, metadata: dict) -> pandas.DataFrame:
-		#print(self.trend)
-		#print(dataframe.loc[ (
-		#	  ( dataframe["trend"] )
-		#	& ( dataframe["close"] < 0.2 * dataframe["resistance"] )
-		#	) ])
-		#dataframe.loc[
-		#	self.trend # bullish MA trend
-		#	& dataframe['close'] 
+		dataframe.loc[ :,
+			"buy" ] = 1
+		#print(dataframe.tail())
 		return dataframe
 
 	def populate_sell_trend(self, dataframe: pandas.DataFrame, metadata: dict) -> pandas.DataFrame:
+		dataframe.loc[ :,
+			"sell" ] = 1
+		#print(dataframe.tail())
 		return dataframe
 
