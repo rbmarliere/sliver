@@ -1,17 +1,22 @@
-from tensorflow.keras.models import load_model
 import argparse
 import json
 import nltk
 import os
 import re
+import sys
+import tensorflow
 import tweepy
+
+tacitus_path = os.path.dirname(os.path.realpath(__file__)) + "/../tacitus"
+sys.path.append(tacitus_path)
+import preprocessor
 
 # download stopwords from nltk
 nltk.download("stopwords")
 
 # parsing acheron arguments
 argp = argparse.ArgumentParser(description="Gather relevant tweets.")
-argp.add_argument("--model", help="Path to Tacitus' saved model.", type=os.path.abspath, default=os.path.dirname(os.path.realpath(__file__)) + "/../tacitus/model")
+argp.add_argument("--model", help="Path to Tacitus' saved model.", type=os.path.abspath, default=tacitus_path + "/model")
 argp.add_argument("--config", help="Path to a configuration file.", type=os.path.abspath, default=os.path.dirname(os.path.realpath(__file__)) + "/config.json")
 
 args = argp.parse_args()
@@ -29,7 +34,7 @@ with open(args.config) as f:
 class AcheronListener(tweepy.StreamListener):
 	def __init__(self):
 		super().__init__()
-		self.tacitus = load_model(args.model)
+		self.tacitus = tensorflow.keras.models.load_model(args.model)
 
 	def on_status(self, status):
 		# ignore retweets
@@ -44,13 +49,14 @@ class AcheronListener(tweepy.StreamListener):
 		else:
 			tweet = status.text
 		tweet = re.sub("\n", " ", tweet)
-		print(tweet)
-		# clean the tweet text
-		#tweet = preprocessor.clean(tweet)
+
 		with open("data", "a") as output:
 			print(tweet, file=output)
-			#if len(tweet.split()) > 3:
-			#	pred = self.tacitus.predict([tweet])
+
+		pred = self.tacitus.predict([preprocessor.clean(tweet)])
+
+		print("\n\n" + str(pred[0][0]))
+		print(tweet)
 
 # initialize tweepy api object
 auth = tweepy.OAuthHandler(config["CONSUMER_KEY"], config["CONSUMER_SECRET"])
