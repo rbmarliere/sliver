@@ -1,15 +1,26 @@
+import argparse
 import datetime
 import gensim
 import logging
 import numpy
 import numpy
+import os
 import pandas
+import preprocessor
 import re
 import sys
 import tensorflow
-import preprocessor
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
+
+argp = argparse.ArgumentParser(description="Gather relevant tweets.")
+argp.add_argument("--model", help="Name to use when saving the model.", default="model")
+
+args = argp.parse_args()
+if os.path.exists(args.model):
+	print("Model already exists in " + args.model + "! Overwrite? [y|N]")
+	if input() is not 'y':
+		exit(1)
 
 # declare hyperparameters
 validation_split = 0.2
@@ -118,5 +129,5 @@ end_to_end_model.compile(
 )
 
 # save e2e model
-end_to_end_model.save("model")
+end_to_end_model.save(args.model)
 
