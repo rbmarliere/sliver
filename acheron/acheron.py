@@ -5,7 +5,6 @@ import nltk
 import os
 import re
 import tweepy
-import preprocessor
 
 # download stopwords from nltk
 nltk.download("stopwords")
@@ -47,13 +46,11 @@ class AcheronListener(tweepy.StreamListener):
 		tweet = re.sub("\n", " ", tweet)
 		print(tweet)
 		# clean the tweet text
-		tweet = preprocessor.clean(tweet)
+		#tweet = preprocessor.clean(tweet)
 		with open("data", "a") as output:
-			if len(tweet.split()) > 3:
-				print(tweet, file=output)
-				pred = self.tacitus.predict([tweet])
-				print(pred[0][0])
-				print()
+			print(tweet, file=output)
+			#if len(tweet.split()) > 3:
+			#	pred = self.tacitus.predict([tweet])
 
 # initialize tweepy api object
 auth = tweepy.OAuthHandler(config["CONSUMER_KEY"], config["CONSUMER_SECRET"])

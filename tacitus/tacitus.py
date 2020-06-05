@@ -7,6 +7,7 @@ import pandas
 import re
 import sys
 import tensorflow
+import preprocessor
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
@@ -20,11 +21,13 @@ batch_size = 1
 relevant_file = open("train/relevant")
 relevant_lines = relevant_file.read().splitlines()
 relevant = pandas.DataFrame({ 'tweet': relevant_lines, 'is_relevant': [1] * len(relevant_lines) })
+relevant["tweet"] = relevant["tweet"].apply(lambda x: preprocessor.clean(x))
 
 # load irrelevant tweets
 irrelevant_file = open("train/irrelevant")
 irrelevant_lines = irrelevant_file.read().splitlines()
 irrelevant = pandas.DataFrame({ 'tweet': irrelevant_lines, 'is_relevant': [0] * len(irrelevant_lines) })
+irrelevant["tweet"] = irrelevant["tweet"].apply(lambda x: preprocessor.clean(x))
 
 # combine all data
 raw_data = pandas.concat([relevant, irrelevant])
