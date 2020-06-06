@@ -6,67 +6,62 @@ import pylunar
 
 class hypnox(freqtrade.strategy.interface.IStrategy):
 	INTERFACE_VERSION = 2
-	ticker_interval = "4h"
 	minimal_roi = { "0": 100 } # disabled
 	stoploss = -100 # disabled
-	resistance = 0
-	support = 0
-	trend = 0 # 0 bear 1 bull
 
 	def populate_indicators(self, dataframe: pandas.DataFrame, metadata: dict) -> pandas.DataFrame:
 		ema9 = talib.abstract.EMA(dataframe, timeperiod=9)
 		ema55 = talib.abstract.EMA(dataframe, timeperiod=55)
 
-		bear_crosses = freqtrade.vendor.qtpylib.indicators.crossed_below(ema9, ema55)
-		bull_crosses = freqtrade.vendor.qtpylib.indicators.crossed_above(ema9, ema55)
+		dataframe["trend"] = False
+		dataframe.loc[ ( ema9 > ema55 ), "trend"] = True
 
-		crosses = dataframe[ ( bear_crosses == True ) | ( bull_crosses == True ) ]
-		last_cross = crosses.iloc[-1]["date"]
-		last_bullcross = dataframe[ ( bull_crosses == True ) ].iloc[-1]["date"]
-		self.trend = last_cross == last_bullcross
+		dataframe.insert(0, "cycle", 0)
+		count = 0
+		begin = dataframe["date"].iloc[0]
+		last_candle = dataframe.iloc[0]
+		for i, (idx, candle) in enumerate(dataframe.iterrows()):
+			if candle["trend"] != last_candle["trend"]:
+				dataframe.loc[ ( dataframe["date"] >= begin ) & ( dataframe["date"] < candle["date"] ), "cycle" ] = count
+				begin = candle["date"]
+				count += 1
+			if i == len(dataframe) - 1:
+				dataframe.loc[ ( dataframe["date"] >= begin ), "cycle"] = count
+			last_candle = candle
 
-		bear_sum = bull_sum = 0
-		current_cycle = dataframe[ dataframe["date"] >= last_cross ]
-		if self.trend:
-			bull_sum = current_cycle["low"].max()
-		else:
-			bear_sum = current_cycle["high"].max()
+		dataframe.insert(0, "support", 0)
+		dataframe.insert(0, "resistance", 0)
+		for idx, candle in dataframe.iterrows():
+			if candle["cycle"] < 4:
+				continue
 
-		i = 2
-		t = self.trend
-		while i < 7:
-			idx_cycle = crosses.tail(i).head(2)
-			begin = idx_cycle.iloc[0]["date"]
-			end = idx_cycle.iloc[1]["date"]
-			cycle = dataframe.loc[ ( dataframe["date"] >= begin ) & ( dataframe["date"] <= end ) ]
-			if t:
-				bear_sum += cycle["high"].min()
-			else:
-				bull_sum += cycle["low"].max()
-			t = not t
-			i += 1
+			support = 0
+			last_cycles = [ 0, -1, -3 ] if candle["trend"] else [ 0, -2, -4 ]
+			for i in last_cycles:
+				support += dataframe[ dataframe["cycle"] == candle["cycle"] + i ]["high"].min()
+			dataframe.loc[ idx, "support" ] = int(support/3)
 
-		self.resistance = int(bull_sum / 3)
-		self.support = int(bear_sum / 3)
+			resistance = 0
+			last_cycles = [ 0, -1, -3 ] if not candle["trend"] else [ 0, -2, -4 ]
+			for i in last_cycles:
+				resistance += dataframe[ dataframe["cycle"] == candle["cycle"] + i ]["low"].max()
+			dataframe.loc[ idx, "resistance" ] = int(resistance/3)
 
 		moon = pylunar.MoonInfo((57,15,55),(4,28,28))
 		def time_to_full_moon(moon, date):
 			moon.update(date)
 			return moon.time_to_full_moon()
-		dataframe.loc[:, "time_to_full_moon"] = 0
-		dataframe["time_to_full_moon"] = dataframe["date"].apply(lambda x: time_to_full_moon(moon, x))
+		dataframe["time_to_full_moon"] = dataframe["date"].apply( lambda x: time_to_full_moon(moon, x) )
 
 		return dataframe
 
 	def populate_buy_trend(self, dataframe: pandas.DataFrame, metadata: dict) -> pandas.DataFrame:
 		dataframe.loc[ :,
 			"buy" ] = 1
-		#print(dataframe.tail())
 		return dataframe
 
 	def populate_sell_trend(self, dataframe: pandas.DataFrame, metadata: dict) -> pandas.DataFrame:
 		dataframe.loc[ :,
 			"sell" ] = 1
-		#print(dataframe.tail())
 		return dataframe
 
