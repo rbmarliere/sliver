@@ -20,6 +20,9 @@ def clean(tweet):
 	# stem words
 	stemmer = nltk.stem.porter.PorterStemmer()
 	singles = [stemmer.stem(word) for word in meaningful_words]
-	# join the words with more than one char back into one string
-	return(" ".join([w for w in singles if len(w) > 1]))
+	# ignore single word sentences
+	if len(singles) > 1:
+		# join the words with more than one char back into one string
+		out = " ".join([w for w in singles if len(w) > 1])
+		return out
 

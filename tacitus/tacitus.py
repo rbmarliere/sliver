@@ -46,6 +46,9 @@ raw_data = pandas.concat([relevant, irrelevant])
 # shuffle rows
 raw_data = raw_data.sample(frac=1).reset_index(drop=True)
 
+# remove None rows
+raw_data = raw_data.dropna()
+
 # build vocab
 corpus = [tweet.split() for tweet in raw_data['tweet'].values.tolist()]
 wvmodel = gensim.models.word2vec.Word2Vec(corpus, size=embedding_dim, window=10, min_count=5, workers=16, sg=1) # sg=1 is skipgram, default is 0 = cbow
