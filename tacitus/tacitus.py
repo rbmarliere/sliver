@@ -102,7 +102,7 @@ model.compile(loss="binary_crossentropy", optimizer="adam", metrics=["accuracy"]
 print(model.summary())
 
 # train model
-nsamples = int(validation_split * raw_data.size)
+nsamples = int(validation_split * raw_data['tweet'].count())
 x_train = tweets_pad[:-nsamples]
 y_train = is_relevant[:-nsamples]
 x_test  = tweets_pad[-nsamples:]
