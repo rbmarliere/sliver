@@ -9,6 +9,23 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 	minimal_roi = { "0": 100 } # disabled
 	stoploss = -100 # disabled
 
+	plot_config = {
+		"main_plot": {
+			"support": {},
+			"resistance": {}
+		},
+		"subplots": {
+			"moon": {
+				"time_to_full_moon": {},
+				"time_to_new_moon": {},
+			},
+			"srsi_k": {
+				"srsi_k": {},
+				"srsi_d": {},
+			}
+		}
+	}
+
 	def populate_indicators(self, dataframe: pandas.DataFrame, metadata: dict) -> pandas.DataFrame:
 		ema9 = talib.abstract.EMA(dataframe, timeperiod=9)
 		ema55 = talib.abstract.EMA(dataframe, timeperiod=55)
@@ -52,16 +69,28 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 			moon.update(date)
 			return moon.time_to_full_moon()
 		dataframe["time_to_full_moon"] = dataframe["date"].apply( lambda x: time_to_full_moon(moon, x) )
+		def time_to_new_moon(moon, date):
+			moon.update(date)
+			return moon.time_to_new_moon()/24
+		dataframe["time_to_new_moon"] = dataframe["date"].apply( lambda x: time_to_new_moon(moon, x) )
+
+		#RSI
+		dataframe['rsi'] = talib.abstract.RSI(dataframe, timeperiod=14)
+		#StochRSI
+		period = 14
+		smoothD = 3
+		SmoothK = 3
+		stochrsi  = (dataframe['rsi'] - dataframe['rsi'].rolling(period).min()) / (dataframe['rsi'].rolling(period).max() - dataframe['rsi'].rolling(period).min())
+		dataframe['srsi_k'] = stochrsi.rolling(SmoothK).mean() * 100
+		dataframe['srsi_d'] = dataframe['srsi_k'].rolling(smoothD).mean()
 
 		return dataframe
 
 	def populate_buy_trend(self, dataframe: pandas.DataFrame, metadata: dict) -> pandas.DataFrame:
-		dataframe.loc[ :,
-			"buy" ] = 1
+		#dataframe.loc[ :, "buy" ] = 1
 		return dataframe
 
 	def populate_sell_trend(self, dataframe: pandas.DataFrame, metadata: dict) -> pandas.DataFrame:
-		dataframe.loc[ :,
-			"sell" ] = 1
+		#dataframe.loc[ :, "sell" ] = 1
 		return dataframe
 
