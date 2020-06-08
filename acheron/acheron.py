@@ -37,8 +37,8 @@ class AcheronListener(tweepy.StreamListener):
 		if "retweeted_status" in status._json:
 			return
 		# ignore replies
-		#if status._json["in_reply_to_user_id"]:
-		#	return
+		if status._json["in_reply_to_user_id"]:
+			return
 		# if tweet is truncated, get all text
 		if "extended_tweet" in status._json:
 			tweet = status.extended_tweet["full_text"]
@@ -60,20 +60,26 @@ auth.set_access_token(config["ACCESS_KEY"], config["ACCESS_SECRET"])
 api = tweepy.API(auth)
 
 # load the ids of the users to track into memory
-try:
-	with open("uids") as uids:
-		users = uids.read().splitlines()
-except FileNotFoundError:
+def load_users():
+	uids = open("uids", "a")
 	users = []
-	with open("uids", "a") as uids:
-		for user in config["TRACK_USERS"]:
-			# retrieve user id by name from twitter api
-			uid = str(api.get_user(user.strip()).id)
-			print(uid, file=uids)
-			users.append(uid)
+	for user in config["TRACK_USERS"]:
+		# retrieve user id by name from twitter api
+		uid = str(api.get_user(user.strip()).id)
+		print(uid, file=uids)
+		users.append(uid)
+	return users
+try:
+	uids = open("uids")
+	users = uids.read().splitlines()
+	if len(users) != len(config["TRACK_USERS"]):
+		os.remove("uids")
+		users = load_users()
+except FileNotFoundError:
+	users = load_users()
 
 acheron = AcheronListener()
 stream = tweepy.Stream(auth = api.auth, listener=acheron)
-#stream.filter(languages=["en"], follow=users, is_async=True)
-stream.filter(languages=["en"], track=["bitcoin", "btc", "xbt"], is_async=True)
+stream.filter(languages=["en"], follow=users, is_async=True)
+#stream.filter(languages=["en"], track=["bitcoin", "btc", "xbt"], is_async=True)
 
