@@ -1,136 +1,98 @@
+# HYPERPARAMS
+RANDOM_SEED = 666
+EPOCHS=7
+BATCH_SIZE=11
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import OneHotEncoder
+from tqdm import tqdm
 import argparse
 import datetime
-import gensim
-import logging
-import numpy
 import numpy
 import os
 import pandas
-import preprocessor
 import re
 import sys
 import tensorflow
+import tensorflow_hub
 
-logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
+use = tensorflow_hub.load("https://tfhub.dev/google/universal-sentence-encoder/4")
 
 argp = argparse.ArgumentParser(description="Gather relevant tweets.")
 argp.add_argument("--model", help="Name to use when saving the model.", default="model")
 
 args = argp.parse_args()
 if os.path.exists(args.model):
-	print("Model already exists in " + args.model + "! Overwrite? [y|N]")
-	if input() is not 'y':
+	print("Model already exists ('" + args.model + "')! Overwrite? [y|N]")
+	if input() is not "y":
 		exit(1)
 
-# declare hyperparameters
-validation_split = 0.2
-embedding_dim = 666
-epochs = 11
-batch_size = 1
+if not os.path.exists("train/pos"):
+	print("train/pos file not found")
+	exit(1)
+if not os.path.exists("train/neg"):
+	print("train/neg file not found")
+	exit(1)
 
-# load relevant tweets
-relevant_file = open("train/relevant")
-relevant_lines = relevant_file.read().splitlines()
-relevant = pandas.DataFrame({ 'tweet': relevant_lines, 'is_relevant': [1] * len(relevant_lines) })
-relevant["tweet"] = relevant["tweet"].apply(lambda x: preprocessor.clean(x))
+# load positive tweets
+pos_file = open("train/pos")
+pos_lines = pos_file.read().splitlines()
+pos = pandas.DataFrame({ "tweet": pos_lines, "polarity": [1] * len(pos_lines) })
 
-# load irrelevant tweets
-irrelevant_file = open("train/irrelevant")
-irrelevant_lines = irrelevant_file.read().splitlines()
-irrelevant = pandas.DataFrame({ 'tweet': irrelevant_lines, 'is_relevant': [0] * len(irrelevant_lines) })
-irrelevant["tweet"] = irrelevant["tweet"].apply(lambda x: preprocessor.clean(x))
+# load negative tweets
+neg_file = open("train/neg")
+neg_lines = neg_file.read().splitlines()
+neg = pandas.DataFrame({ "tweet": neg_lines, "polarity": [0] * len(neg_lines) })
 
 # combine all data
-raw_data = pandas.concat([relevant, irrelevant])
+tweets = pandas.concat([pos, neg])
 
 # shuffle rows
-raw_data = raw_data.sample(frac=1).reset_index(drop=True)
+tweets = tweets.sample(frac=1).reset_index(drop=True)
 
 # remove None rows
-raw_data = raw_data.dropna()
+tweets = tweets.dropna()
 
-# build vocab
-corpus = [tweet.split() for tweet in raw_data['tweet'].values.tolist()]
-wvmodel = gensim.models.word2vec.Word2Vec(corpus, size=embedding_dim, window=10, min_count=5, workers=16, sg=1) # sg=1 is skipgram, default is 0 = cbow
-wvmodel.wv.save_word2vec_format("corpus", binary=False)
+polarity = OneHotEncoder(sparse=False).fit_transform( tweets.polarity.to_numpy().reshape(-1, 1) )
 
-# load vocab
-embeddings_index = {}
-f = open("corpus")
-for line in f:
-	values = line.split()
-	word = values[0]
-	coefs = numpy.asarray(values[1:])
-	embeddings_index[word] = coefs
+train_tweets, test_tweets, y_train, y_test = train_test_split( tweets.tweet, polarity, test_size = .1, random_state = RANDOM_SEED )
 
-# vectorize data
-tok = tensorflow.keras.preprocessing.text.Tokenizer()
-tok.fit_on_texts(corpus)
-seq = tok.texts_to_sequences(corpus)
+X_train = []
+for r in tqdm(train_tweets):
+	emb = use([r])
+	tweet_emb = tensorflow.reshape(emb, [-1]).numpy()
+	X_train.append(tweet_emb)
+X_train = numpy.array(X_train)
 
-maxlen = max([len(s) for s in corpus])
-
-tweets_pad = tensorflow.python.keras.preprocessing.sequence.pad_sequences(seq, maxlen=maxlen)
-is_relevant = raw_data['is_relevant'].values
-
-num_words = len(tok.word_index) + 1
-embedding_matrix = numpy.zeros((num_words, embedding_dim))
-for word, i in tok.word_index.items():
-	if i > num_words:
-		continue
-	embedding_vector = embeddings_index.get(word)
-	if embedding_vector is not None:
-		# words not found will be all-zeros
-		embedding_matrix[i] = embedding_vector
+X_test = []
+for r in tqdm(test_tweets):
+	emb = use([r])
+	tweet_emb = tensorflow.reshape(emb, [-1]).numpy()
+	X_test.append(tweet_emb)
+X_test = numpy.array(X_test)
 
 # build model
-inputs = tensorflow.keras.Input(shape=(None,), dtype="int64")
-x = tensorflow.keras.layers.Embedding(
-		num_words,
-		embedding_dim,
-		embeddings_initializer=tensorflow.keras.initializers.Constant( embedding_matrix ),
-		input_length=maxlen,
-		trainable=False
-	)(inputs)
-x = tensorflow.keras.layers.Dropout(0.5)(x)
-x = tensorflow.keras.layers.Conv1D(128, 7, padding="valid", activation="relu", strides=3)(x)
-x = tensorflow.keras.layers.Conv1D(128, 7, padding="valid", activation="relu", strides=3)(x)
-x = tensorflow.keras.layers.GlobalMaxPooling1D()(x)
-x = tensorflow.keras.layers.Dense(128, activation="relu")(x)
-x = tensorflow.keras.layers.Dropout(0.5)(x)
-predictions = tensorflow.keras.layers.Dense(1, activation="sigmoid", name="predictions")(x)
-model = tensorflow.keras.Model(inputs, predictions)
-model.compile(loss="binary_crossentropy", optimizer="adam", metrics=["accuracy"])
+model = tensorflow.keras.Sequential()
+model.add( tensorflow.keras.layers.Dense(units=256, input_shape=(X_train.shape[1], ), activation='relu') )
+model.add( tensorflow.keras.layers.Dropout(rate=0.5) )
+model.add( tensorflow.keras.layers.Dense(units=128, activation='relu') )
+model.add( tensorflow.keras.layers.Dropout(rate=0.5) )
+model.add( tensorflow.keras.layers.Dense(2, activation='softmax') )
+model.compile( loss='categorical_crossentropy', optimizer=tensorflow.keras.optimizers.Adam(0.001), metrics=['accuracy'] )
 
 print(model.summary())
 
 # train model
-nsamples = int(validation_split * raw_data['tweet'].count())
-x_train = tweets_pad[:-nsamples]
-y_train = is_relevant[:-nsamples]
-x_test  = tweets_pad[-nsamples:]
-y_test  = is_relevant[-nsamples:]
 model.fit(
-	x_train,
-	y_train,
-	validation_data=(x_test, y_test),
-	batch_size=batch_size,
-	epochs=epochs
+	X_train, y_train,
+	epochs=EPOCHS,
+	batch_size=BATCH_SIZE,
+	validation_split=0.1,
+	verbose=1,
+	shuffle=True
 )
 
-# create model to be used by acheron that receives raw strings as input
-inputs = tensorflow.keras.Input(shape=(1,), dtype="string")
-indices = tensorflow.keras.layers.experimental.preprocessing.TextVectorization(
-			max_tokens=num_words,
-			output_mode='int',
-			output_sequence_length=maxlen
-		)(inputs)
-outputs = model(indices)
-end_to_end_model = tensorflow.keras.Model(inputs, outputs)
-end_to_end_model.compile(
-	loss="binary_crossentropy", optimizer="adam", metrics=["accuracy"]
-)
+model.evaluate(X_test, y_test)
 
-# save e2e model
-end_to_end_model.save(args.model)
+model.save(args.model)
 
