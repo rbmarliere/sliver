@@ -2,7 +2,6 @@ import argparse
 import json
 import os
 import re
-import sys
 import tensorflow
 import tweepy
 import tensorflow_hub
@@ -23,9 +22,12 @@ if not os.path.exists(args.model):
 	print("Model not found!")
 	exit(1)
 
-# load config parameters to memory
+# load config parameters
 with open(args.config) as f:
 	config = json.load(f)
+
+# load temporal markers
+temporal = open("temporal").read().splitlines()
 
 class AcheronListener(tweepy.StreamListener):
 	def __init__(self):
@@ -46,13 +48,13 @@ class AcheronListener(tweepy.StreamListener):
 			tweet = status.text
 		tweet = re.sub("\n", " ", tweet)
 
-		with open("data", "a") as output:
-			print(tweet, file=output)
-
-		pred = self.tacitus.predict(use([tweet]))
-
-		print("\n\n" + format(pred[0][1], 'f'))
-		print(tweet)
+		print("\n" + tweet)
+		for w in temporal:
+			if w in tweet:
+				output = open("data", "a")
+				print(tweet, file=output)
+				pred = self.tacitus.predict(use([tweet]))
+				print(">>> SCORE: " + format(pred[0][1], 'f') + "\n")
 
 # initialize tweepy api object
 auth = tweepy.OAuthHandler(config["CONSUMER_KEY"], config["CONSUMER_SECRET"])
@@ -80,6 +82,10 @@ except FileNotFoundError:
 
 acheron = AcheronListener()
 stream = tweepy.Stream(auth = api.auth, listener=acheron)
-stream.filter(languages=["en"], follow=users, is_async=True)
-#stream.filter(languages=["en"], track=["bitcoin", "btc", "xbt"], is_async=True)
+stream.filter(
+	languages=["en"],
+	follow=users,
+	track=[ "bitcoin", "btc", "xbt" ],
+	is_async=True
+)
 
