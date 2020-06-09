@@ -67,7 +67,10 @@ def load_users():
 	users = []
 	for user in config["TRACK_USERS"]:
 		# retrieve user id by name from twitter api
-		uid = str(api.get_user(user.strip()).id)
+		try:
+			uid = str(api.get_user(user.strip()).id)
+		except tweepy.error.TweepError:
+			print("ERROR: User '" + user + "' not found.")
 		print(uid, file=uids)
 		users.append(uid)
 	return users
