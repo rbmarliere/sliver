@@ -88,7 +88,7 @@ stream = tweepy.Stream(auth = api.auth, listener=acheron)
 stream.filter(
 	languages=["en"],
 	follow=users,
-	track=[ "bitcoin", "btc", "xbt" ],
+	#track=[ "bitcoin", "btc", "xbt" ],
 	is_async=True
 )
 
