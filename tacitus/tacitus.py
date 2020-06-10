@@ -1,20 +1,18 @@
 # HYPERPARAMS
-RANDOM_SEED = 666
+RANDOM_SEED = 3149
 EPOCHS=7
 BATCH_SIZE=11
 
+import argparse
+import os
+
+import numpy
+import pandas
+import tensorflow
+import tensorflow_hub
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder
 from tqdm import tqdm
-import argparse
-import datetime
-import numpy
-import os
-import pandas
-import re
-import sys
-import tensorflow
-import tensorflow_hub
 
 use = tensorflow_hub.load("https://tfhub.dev/google/universal-sentence-encoder/4")
 
