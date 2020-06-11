@@ -84,7 +84,7 @@ except FileNotFoundError:
 	users = load_users()
 
 acheron = AcheronListener()
-stream = tweepy.Stream(auth = api.auth, listener=acheron)
+stream = tweepy.Stream(auth = api.auth, listener=acheron, timeout=600)
 stream.filter(
 	languages=["en"],
 	follow=users,
