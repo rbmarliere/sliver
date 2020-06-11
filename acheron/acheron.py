@@ -52,20 +52,21 @@ class AcheronListener(tweepy.StreamListener):
 		print("\n" + tweet)
 		for w in temporal:
 			if w in tweet:
-				pred = self.tacitus.predict(use([tweet]))
-				print(">>> SCORE: " + format(pred[0][1], 'f') + "\n")
+				pred = self.tacitus.predict(use([tweet]))[0][1]
+				score = format(pred, 'f')
+				print(">>> SCORE: " + score + "\n")
 
 				created_at = status._json["created_at"]
 				user = status._json["user"]["screen_name"]
 				url = "https://twitter.com/" + user + "/status/" + str(status._json["id"])
 
-				output = datetime.datetime.now().strftime("%Y%m%d")
-				with open("data/" + output + ".txt", "a") as out:
+				today = datetime.datetime.now().strftime("%Y%m%d")
+				with open("data/" + today + ".txt", "a") as out:
 					print(created_at, file=out)
 					print(user, file=out)
 					print(url, file=out)
 					print(tweet, file=out)
-					print(">>> SCORE: " + format(pred[0][1], 'f') + "\n", file=out)
+					print(">>> SCORE: " + score + "\n", file=out)
 
 # initialize tweepy api object
 auth = tweepy.OAuthHandler(config["CONSUMER_KEY"], config["CONSUMER_SECRET"])
