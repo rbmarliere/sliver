@@ -7,7 +7,7 @@ import pylunar
 class hypnox(freqtrade.strategy.interface.IStrategy):
 	INTERFACE_VERSION = 2
 	minimal_roi = { "0": 100 } # disabled
-	stoploss = -100 # disabled
+	stoploss = -100.0 # disabled
 
 	plot_config = {
 		"main_plot": {
@@ -15,23 +15,23 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 			"resistance": {}
 		},
 		"subplots": {
-			"moon": {
-				"time_to_full_moon": {},
-				"time_to_new_moon": {},
-			},
-			"srsi_k": {
-				"srsi_k": {},
-				"srsi_d": {},
-			}
+			#"moon": {
+			#	"time_to_full_moon": {},
+			#	"time_to_new_moon": {},
+			#},
+			#"srsi_k": {
+			#	"srsi_k": {},
+			#	"srsi_d": {},
+			#}
 		}
 	}
 
 	def populate_indicators(self, dataframe: pandas.DataFrame, metadata: dict) -> pandas.DataFrame:
-		ema9 = talib.abstract.EMA(dataframe, timeperiod=9)
-		ema55 = talib.abstract.EMA(dataframe, timeperiod=55)
+		short_avg = talib.abstract.EMA(dataframe, timeperiod=2)
+		long_avg = talib.abstract.EMA(dataframe, timeperiod=17)
 
 		dataframe["trend"] = False
-		dataframe.loc[ ( ema9 > ema55 ), "trend"] = True
+		dataframe.loc[ ( short_avg > long_avg ), "trend"] = True
 
 		dataframe.insert(0, "cycle", 0)
 		count = 0
@@ -78,19 +78,35 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 		dataframe['rsi'] = talib.abstract.RSI(dataframe, timeperiod=14)
 		#StochRSI
 		period = 14
-		smoothD = 3
-		SmoothK = 3
+		smoothd = 3
+		smoothk = 3
 		stochrsi  = (dataframe['rsi'] - dataframe['rsi'].rolling(period).min()) / (dataframe['rsi'].rolling(period).max() - dataframe['rsi'].rolling(period).min())
-		dataframe['srsi_k'] = stochrsi.rolling(SmoothK).mean() * 100
-		dataframe['srsi_d'] = dataframe['srsi_k'].rolling(smoothD).mean()
+		dataframe['srsi_k'] = stochrsi.rolling(smoothk).mean() * 100
+		dataframe['srsi_d'] = dataframe['srsi_k'].rolling(smoothd).mean()
 
 		return dataframe
 
 	def populate_buy_trend(self, dataframe: pandas.DataFrame, metadata: dict) -> pandas.DataFrame:
-		#dataframe.loc[ :, "buy" ] = 1
+		res_to_sup = dataframe["resistance"] - dataframe["support"] / dataframe["close"] * 100
+		buy = (
+			(freqtrade.vendor.qtpylib.indicators.crossed_above(dataframe["srsi_k"], dataframe["srsi_d"])) &
+			(dataframe["srsi_k"] < 30) &
+			(res_to_sup > 1) &
+			(dataframe["close"] <= dataframe["support"]) &
+			(dataframe["time_to_new_moon"] <= 15)
+		)
+		dataframe.loc[ buy, "buy" ] = 1
 		return dataframe
 
 	def populate_sell_trend(self, dataframe: pandas.DataFrame, metadata: dict) -> pandas.DataFrame:
-		#dataframe.loc[ :, "sell" ] = 1
+		res_to_sup = dataframe["resistance"] - dataframe["support"] / dataframe["close"] * 100
+		sell = (
+			(freqtrade.vendor.qtpylib.indicators.crossed_below(dataframe["srsi_k"], dataframe["srsi_d"])) &
+			(dataframe["srsi_k"] > 70) &
+			(res_to_sup > 3) &
+			(dataframe["close"] >= dataframe["resistance"]) &
+			(dataframe["time_to_full_moon"] <= 10)
+		)
+		dataframe.loc[ sell, "sell" ] = 1
 		return dataframe
 
