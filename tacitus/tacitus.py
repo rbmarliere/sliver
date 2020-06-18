@@ -76,7 +76,7 @@ model.add( tensorflow.keras.layers.Dropout(rate=0.5) )
 model.add( tensorflow.keras.layers.Dense(units=512, activation='relu') )
 model.add( tensorflow.keras.layers.Dropout(rate=0.5) )
 model.add( tensorflow.keras.layers.Dense(2, activation='softmax') )
-model.compile( loss='categorical_crossentropy', optimizer=tensorflow.keras.optimizers.Adam(0.001), metrics=['accuracy'] )
+model.compile( loss='categorical_crossentropy', optimizer=tensorflow.keras.optimizers.Adam(0.01), metrics=['accuracy'] )
 
 print(model.summary())
 
