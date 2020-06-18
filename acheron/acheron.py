@@ -108,7 +108,7 @@ class AcheronListener(tweepy.StreamListener):
 				pred = self.tacitus.predict(use([tweet]))[0][1]
 				# record result
 				score = format(pred, 'f')
-				print("SCORE: " + score + "\n")
+				print(">>> SCORE: " + score + "\n")
 
 				# parse tweet info
 				created_at = status._json["created_at"]
