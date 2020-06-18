@@ -105,34 +105,34 @@ class AcheronListener(tweepy.StreamListener):
 			# ignore tweets that doesnt contain temporal words
 			if w in tweet:
 				# predict relevant tweet using tacitus
-			pred = self.tacitus.predict(use([tweet]))[0][1]
-			# record result
-			score = format(pred, 'f')
-			print("SCORE: " + score + "\n")
+				pred = self.tacitus.predict(use([tweet]))[0][1]
+				# record result
+				score = format(pred, 'f')
+				print("SCORE: " + score + "\n")
 
-			# parse tweet info
-			created_at = status._json["created_at"]
-			user = status._json["user"]["screen_name"]
-			url = "https://twitter.com/" + user + "/status/" + str(status._json["id"])
+				# parse tweet info
+				created_at = status._json["created_at"]
+				user = status._json["user"]["screen_name"]
+				url = "https://twitter.com/" + user + "/status/" + str(status._json["id"])
 
-			# compute output file name
-			now = datetime.datetime.now()
-			period = now.strftime("%Y%m%d") + "-" + str( get_period(now.hour) )
+				# compute output file name
+				now = datetime.datetime.now()
+				period = now.strftime("%Y%m%d") + "-" + str( get_period(now.hour) )
 
-			# check if period ended
-			if period != self.last_period:
-				# if so, compute sentiment of last period stream
-				tally(self.last_period)
+				# check if period ended
+				if period != self.last_period:
+					# if so, compute sentiment of last period stream
+					tally(self.last_period)
 
-			with open("data/" + period + ".txt", "a") as out:
-				print(created_at, file=out)
-				print(user, file=out)
-				print(url, file=out)
-				print(tweet, file=out)
-				print(">>> SCORE: " + score + "\n", file=out)
+				with open("data/" + period + ".txt", "a") as out:
+					print(created_at, file=out)
+					print(user, file=out)
+					print(url, file=out)
+					print(tweet, file=out)
+					print(">>> SCORE: " + score + "\n", file=out)
 
-			# take note of current period
-			self.last_period = period
+				# take note of current period
+				self.last_period = period
 
 # initialize tweepy api object
 auth = tweepy.OAuthHandler(config["CONSUMER_KEY"], config["CONSUMER_SECRET"])
