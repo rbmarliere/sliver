@@ -1,12 +1,19 @@
+from requests.exceptions import Timeout, ConnectionError
+from ssl import SSLError
+from urllib3.exceptions import ReadTimeoutError
 import argparse
 import datetime
 import json
+import logging
 import os
 import re
 import tensorflow
 import tensorflow_hub
 import tweepy
 
+logging.basicConfig(level=logging.INFO)
+
+logging.error("Loading USE...")
 use = tensorflow_hub.load("https://tfhub.dev/google/universal-sentence-encoder/4")
 
 # parsing acheron arguments
@@ -75,6 +82,7 @@ api = tweepy.API(auth)
 
 # load the ids of the users to track into memory
 def load_users():
+	logging.info("Loading users...")
 	uids = open("uids", "a")
 	users = []
 	for user in config["TRACK_USERS"]:
@@ -82,7 +90,7 @@ def load_users():
 		try:
 			uid = str(api.get_user(user.strip()).id)
 		except tweepy.error.TweepError:
-			print("ERROR: User '" + user + "' not found.")
+			logging.warning("User '" + user + "' not found.")
 		print(uid, file=uids)
 		users.append(uid)
 	return users
@@ -97,10 +105,19 @@ except FileNotFoundError:
 
 acheron = AcheronListener()
 stream = tweepy.Stream(auth = api.auth, listener=acheron, timeout=600)
-stream.filter(
-	languages=["en"],
-	follow=users,
-	#track=[ "bitcoin", "btc", "xbt" ],
-	is_async=True
-)
+
+while not stream.running:
+	try:
+		stream.filter(
+			languages=["en"],
+			#follow=users,
+			track=[ "bitcoin", "btc", "xbt" ],
+			is_async=False
+		)
+	except (Timeout, SSLError, ReadTimeoutError, ConnectionError) as e:
+		logging.warning("Network error!")
+	except Exception as e:
+		logging.error("Unexpected error!", e)
+	finally:
+		logging.info("Stream has crashed. System will restart twitter stream!")
 
