@@ -21,7 +21,7 @@ argp.add_argument("--model", help="Name to use when saving the model.", default=
 
 args = argp.parse_args()
 if os.path.exists(args.model):
-	print("Model already exists ('" + args.model + "')! Overwrite? [y|N]")
+	print("Model already exists ('" + args.model + "')! Overwrite? [ y | N ]")
 	if input() is not "y":
 		exit(1)
 
@@ -71,9 +71,9 @@ X_test = numpy.array(X_test)
 
 # build model
 model = tensorflow.keras.Sequential()
-model.add( tensorflow.keras.layers.Dense(units=256, input_shape=(X_train.shape[1], ), activation='relu') )
+model.add( tensorflow.keras.layers.Dense(units=512, input_shape=(X_train.shape[1], ), activation='relu') )
 model.add( tensorflow.keras.layers.Dropout(rate=0.5) )
-model.add( tensorflow.keras.layers.Dense(units=128, activation='relu') )
+model.add( tensorflow.keras.layers.Dense(units=512, activation='relu') )
 model.add( tensorflow.keras.layers.Dropout(rate=0.5) )
 model.add( tensorflow.keras.layers.Dense(2, activation='softmax') )
 model.compile( loss='categorical_crossentropy', optimizer=tensorflow.keras.optimizers.Adam(0.001), metrics=['accuracy'] )
