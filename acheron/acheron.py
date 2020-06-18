@@ -11,8 +11,10 @@ import tensorflow
 import tensorflow_hub
 import tweepy
 
+# define logging level
 logging.basicConfig(level=logging.INFO)
 
+# load USE
 logging.error("Loading USE...")
 use = tensorflow_hub.load("https://tfhub.dev/google/universal-sentence-encoder/4")
 
@@ -22,6 +24,7 @@ argp = argparse.ArgumentParser(description="Gather relevant tweets.")
 argp.add_argument("--model", help="Path to Tacitus' saved model.", type=os.path.abspath, default=tacitus_path + "/model")
 argp.add_argument("--config", help="Path to a configuration file.", type=os.path.abspath, default=os.path.dirname(os.path.realpath(__file__)) + "/config.json")
 
+# check if required files are there
 args = argp.parse_args()
 if not os.path.exists(args.config):
 	print("Configuration not found!")
@@ -51,19 +54,24 @@ def get_period(hour):
 
 # helper to compute sentiment over a stream of tweets
 def tally(period):
+	# get file names
 	inputfile = "data/" + period + ".txt"
 	outputfile = "data/" + period + "_tally.txt"
 
+	# load scores based on a regex
 	try:
 		with open(inputfile) as inp:
 			scores = [ re.findall(r'>>> SCORE: (.+)', line) for line in inp ]
 			scores = [ x for x in scores if x != [] ]
 	except FileNotFoundError:
+		# if no data file to read scores from, do nothing
 		return
 
+	# ignore no data
 	if scores == []:
 		return
 
+	# count the predictions based on these thresholds
 	pos = neg = 0
 	for score in scores:
 		if float(score[0]) <= 0.65:
@@ -71,6 +79,7 @@ def tally(period):
 		elif float(score[0]) >= 0.25:
 			neg += 1
 
+	# print to tally file
 	with open(outputfile, "w") as out:
 		print("Positives: " + str(pos), file=out)
 		print("Negatives: " + str(neg), file=out)
@@ -98,6 +107,8 @@ class AcheronListener(tweepy.StreamListener):
 			tweet = status.extended_tweet["full_text"]
 		else:
 			tweet = status.text
+
+		# make the tweet single-line
 		tweet = re.sub("\n", " ", tweet)
 
 		print("\n" + tweet)
@@ -106,7 +117,7 @@ class AcheronListener(tweepy.StreamListener):
 			if w in tweet:
 				# predict relevant tweet using tacitus
 				pred = self.tacitus.predict(use([tweet]))[0][1]
-				# record result
+				# print result to console
 				score = format(pred, 'f')
 				print(">>> SCORE: " + score + "\n")
 
@@ -124,6 +135,7 @@ class AcheronListener(tweepy.StreamListener):
 					# if so, compute sentiment of last period stream
 					tally(self.last_period)
 
+				# print tweet and its prediction to data file
 				with open("data/" + period + ".txt", "a") as out:
 					print(created_at, file=out)
 					print(user, file=out)
@@ -150,21 +162,27 @@ def load_users():
 			uid = str(api.get_user(user.strip()).id)
 		except tweepy.error.TweepError:
 			logging.warning("User '" + user + "' not found.")
+		# save found uids to a file so it doesn't consume api each run
 		print(uid, file=uids)
 		users.append(uid)
 	return users
 try:
+	# read saved uids file
 	uids = open("uids")
 	users = uids.read().splitlines()
+	# if config was changed, reload all users
 	if len(users) != len(config["TRACK_USERS"]):
 		os.remove("uids")
 		users = load_users()
 except FileNotFoundError:
+	# initially, if no uids file is found, create one
 	users = load_users()
 
+# declare listener and stream
 acheron = AcheronListener()
 stream = tweepy.Stream(auth = api.auth, listener=acheron, timeout=600)
 
+# start stream with proper exception handling so it doesn't crash
 while not stream.running:
 	try:
 		logging.info("Streaming...")
