@@ -28,8 +28,8 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 	}
 
 	def populate_indicators(self, dataframe: pandas.DataFrame, metadata: dict) -> pandas.DataFrame:
-		short_avg = ta.abstract.EMA(dataframe, timeperiod=2)
-		long_avg = ta.abstract.EMA(dataframe, timeperiod=17)
+		short_avg = ta.EMA(dataframe, timeperiod=2)
+		long_avg = ta.EMA(dataframe, timeperiod=17)
 
 		dataframe["trend"] = False
 		dataframe.loc[ ( short_avg > long_avg ), "trend"] = True
@@ -76,7 +76,7 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 		dataframe["time_to_new_moon"] = dataframe["date"].apply( lambda x: time_to_new_moon(moon, x) )
 
 		#RSI
-		dataframe['rsi'] = ta.abstract.RSI(dataframe, timeperiod=14)
+		dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
 		#StochRSI
 		period = 14
 		smoothd = 3
@@ -93,7 +93,6 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 	def populate_buy_trend(self, dataframe: pandas.DataFrame, metadata: dict) -> pandas.DataFrame:
 		res_to_sup = dataframe["resistance"] - dataframe["support"] / dataframe["close"] * 100
 		buy = (
-			(freqtrade.vendor.qtpylib.indicators.crossed_above(dataframe["srsi_k"], dataframe["srsi_d"])) &
 			(dataframe["srsi_k"] < 30) &
 			(res_to_sup > 1) &
 			(dataframe["close"] <= dataframe["support"]) &
