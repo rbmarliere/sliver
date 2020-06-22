@@ -1,8 +1,9 @@
 import freqtrade
 import numpy
 import pandas
-import talib
+import talib.abstract as ta
 import pylunar
+import os
 
 class hypnox(freqtrade.strategy.interface.IStrategy):
 	INTERFACE_VERSION = 2
@@ -27,8 +28,8 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 	}
 
 	def populate_indicators(self, dataframe: pandas.DataFrame, metadata: dict) -> pandas.DataFrame:
-		short_avg = talib.abstract.EMA(dataframe, timeperiod=2)
-		long_avg = talib.abstract.EMA(dataframe, timeperiod=17)
+		short_avg = ta.abstract.EMA(dataframe, timeperiod=2)
+		long_avg = ta.abstract.EMA(dataframe, timeperiod=17)
 
 		dataframe["trend"] = False
 		dataframe.loc[ ( short_avg > long_avg ), "trend"] = True
@@ -75,7 +76,7 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 		dataframe["time_to_new_moon"] = dataframe["date"].apply( lambda x: time_to_new_moon(moon, x) )
 
 		#RSI
-		dataframe['rsi'] = talib.abstract.RSI(dataframe, timeperiod=14)
+		dataframe['rsi'] = ta.abstract.RSI(dataframe, timeperiod=14)
 		#StochRSI
 		period = 14
 		smoothd = 3
@@ -83,6 +84,9 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 		stochrsi  = (dataframe['rsi'] - dataframe['rsi'].rolling(period).min()) / (dataframe['rsi'].rolling(period).max() - dataframe['rsi'].rolling(period).min())
 		dataframe['srsi_k'] = stochrsi.rolling(smoothk).mean() * 100
 		dataframe['srsi_d'] = dataframe['srsi_k'].rolling(smoothd).mean()
+
+		current_trend = os.path.dirname(os.path.realpath(__file__)) + "/current_trend"
+		dataframe["current_trend"] = current_trend
 
 		return dataframe
 
@@ -93,7 +97,8 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 			(dataframe["srsi_k"] < 30) &
 			(res_to_sup > 1) &
 			(dataframe["close"] <= dataframe["support"]) &
-			(dataframe["time_to_new_moon"] <= 15)
+			(dataframe["time_to_new_moon"] <= 15) &
+			(dataframe["current_trend"] == 1)
 		)
 		dataframe.loc[ buy, "buy" ] = 1
 		return dataframe
@@ -105,7 +110,8 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 			(dataframe["srsi_k"] > 70) &
 			(res_to_sup > 3) &
 			(dataframe["close"] >= dataframe["resistance"]) &
-			(dataframe["time_to_full_moon"] <= 10)
+			(dataframe["time_to_full_moon"] <= 10) &
+			(dataframe["current_trend"] == 0)
 		)
 		dataframe.loc[ sell, "sell" ] = 1
 		return dataframe
