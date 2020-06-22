@@ -37,8 +37,11 @@ if not os.path.exists(args.model):
 with open(args.config) as f:
 	config = json.load(f)
 
-# load temporal markers
-temporal = open("temporal").read().splitlines()
+# load include markers
+include = open("include").read().splitlines()
+
+# load exclude markers
+exclude = open("exclude").read().splitlines()
 
 # helper to map hours of day into 4h periods
 def get_period(hour):
@@ -112,39 +115,50 @@ class AcheronListener(tweepy.StreamListener):
 		tweet = re.sub("\n", " ", tweet)
 
 		print("\n" + tweet)
-		for w in temporal:
-			# ignore tweets that doesnt contain temporal words
-			if w in tweet:
-				# predict relevant tweet using tacitus
-				pred = self.tacitus.predict(use([tweet]))[0][1]
-				# print result to console
-				score = format(pred, 'f')
-				print(">>> SCORE: " + score + "\n")
 
-				# parse tweet info
-				created_at = status._json["created_at"]
-				user = status._json["user"]["screen_name"]
-				url = "https://twitter.com/" + user + "/status/" + str(status._json["id"])
+		# check tweet relevancy
+		proc_tweet = False
+		for word in tweet.split():
+			# process tweets that contain include words
+			if word in include:
+				proc_tweet = True
+			# ignore tweets that contain exclude words
+			if word in exclude:
+				proc_tweet = False
+				break
+		if proc_tweet == False:
+			return
 
-				# compute output file name
-				now = datetime.datetime.now()
-				period = now.strftime("%Y%m%d") + "-" + str( get_period(now.hour) )
+		# predict relevant tweet using tacitus
+		pred = self.tacitus.predict(use([tweet]))[0][1]
+		# print result to console
+		score = format(pred, 'f')
+		print(">>> SCORE: " + score + "\n")
 
-				# check if period ended
-				if period != self.last_period:
-					# if so, compute sentiment of last period stream
-					tally(self.last_period)
+		# parse tweet info
+		created_at = status._json["created_at"]
+		user = status._json["user"]["screen_name"]
+		url = "https://twitter.com/" + user + "/status/" + str(status._json["id"])
 
-				# print tweet and its prediction to data file
-				with open("data/" + period + ".txt", "a") as out:
-					print(created_at, file=out)
-					print(user, file=out)
-					print(url, file=out)
-					print(tweet, file=out)
-					print(">>> SCORE: " + score + "\n", file=out)
+		# compute output file name
+		now = datetime.datetime.now()
+		period = now.strftime("%Y%m%d") + "-" + str( get_period(now.hour) )
 
-				# take note of current period
-				self.last_period = period
+		# check if period ended
+		if period != self.last_period:
+			# if so, compute sentiment of last period stream
+			tally(self.last_period)
+
+		# print tweet and its prediction to data file
+		with open("data/" + period + ".txt", "a") as out:
+			print(created_at, file=out)
+			print(user, file=out)
+			print(url, file=out)
+			print(tweet, file=out)
+			print(">>> SCORE: " + score + "\n", file=out)
+
+		# take note of current period
+		self.last_period = period
 
 # initialize tweepy api object
 auth = tweepy.OAuthHandler(config["CONSUMER_KEY"], config["CONSUMER_SECRET"])
