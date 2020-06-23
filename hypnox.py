@@ -110,8 +110,6 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 		#EMAs
 		dataframe["ema9"] = ta.EMA(dataframe, timeperiod=9)
 		dataframe["ema55"] = ta.EMA(dataframe, timeperiod=55)
-		
-		print(dataframe)
 
 		return dataframe
 
