@@ -105,7 +105,6 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 	def populate_sell_trend(self, dataframe: pandas.DataFrame, metadata: dict) -> pandas.DataFrame:
 		res_to_sup = dataframe["resistance"] - dataframe["support"] / dataframe["close"] * 100
 		sell = (
-			(freqtrade.vendor.qtpylib.indicators.crossed_below(dataframe["srsi_k"], dataframe["srsi_d"])) &
 			(dataframe["srsi_k"] > 70) &
 			(res_to_sup > 3) &
 			(dataframe["close"] >= dataframe["resistance"]) &
