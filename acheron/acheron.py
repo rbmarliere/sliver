@@ -46,12 +46,12 @@ exclude = open("exclude").read().splitlines()
 # helper to map hours of day into 4h periods
 def get_period(hour):
 	hours_to_periods = {
-		0:0, 1:0, 2:0, 3:0,
-		4:1, 5:1, 6:1, 7:1,
-		8:2, 9:2, 10:2, 11:2,
-		12:3, 13:3, 14:3, 15:3,
-		16:4, 17:4, 18:4, 19:4,
-		20:5, 21:5, 22:5, 23:5
+		0:"00", 1:"00", 2:"00", 3:"00",
+		4:"04", 5:"04", 6:"04", 7:"04",
+		8:"08", 9:"08", 10:"08", 11:"08",
+		12:"12", 13:"12", 14:"12", 15:"12",
+		16:"16", 17:"16", 18:"16", 19:"16",
+		20:"20", 21:"20", 22:"20", 23:"20"
 	}
 	return hours_to_periods.get(hour)
 
@@ -59,7 +59,7 @@ def get_period(hour):
 def tally(period):
 	# get file names
 	inputfile = "data/" + period + ".txt"
-	outputfile = "data/" + period + "_tally.txt"
+	outputfile = "tally/" + period + ".txt"
 
 	# load scores based on a regex
 	try:
