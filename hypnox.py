@@ -35,13 +35,16 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 
 	def populate_indicators(self, dataframe: pandas.DataFrame, metadata: dict) -> pandas.DataFrame:
 		# TACITUS INDICATOR
+		dataframe.insert(0, "tacitus", False)
 		tally_dir = os.path.dirname(os.path.realpath(__file__)) + "/acheron/tally"
 		groups = collections.defaultdict(list)
 		for filename in os.listdir(tally_dir):
 			basename, extension = os.path.splitext(filename)
+			if extension != ".txt":
+				continue
 			tally_date = datetime.datetime.strptime(basename, "%Y%m%d-%H").replace(tzinfo=pytz.UTC)
-			tally_result = open(tally_dir + "/" + filename).read().splitlines()[2].split()[1] == 'True'
-			dataframe.loc[ dataframe["date"] == tally_date, "tally" ] = tally_result
+			tally_result = open(tally_dir + "/" + filename).read().splitlines()[2].split()[1] == "True"
+			dataframe.loc[ dataframe["date"] == tally_date, "tacitus" ] = tally_result
 
 		# RESISTANCE TO SUPPORT RATIO INDICATOR
 		short_avg = ta.EMA(dataframe, timeperiod=2)
@@ -117,8 +120,8 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 			(dataframe["srsi_k"] < 22) &
 			(dataframe["res2sup"] < 2) &
 			(dataframe["close"] <= dataframe["support"]) &
-			(dataframe["time_to_new_moon"] <= 15)
-			#(dataframe["current_trend"] == 1)
+			(dataframe["time_to_new_moon"] <= 15) &
+			(dataframe["tacitus"] == True)
 		)
 		dataframe.loc[ buy, "buy" ] = 1
 		return dataframe
@@ -128,8 +131,8 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 			(dataframe["srsi_k"] > 78) &
 			(dataframe["res2sup"] > 3) &
 			(dataframe["close"] >= dataframe["resistance"]) &
-			(dataframe["time_to_full_moon"] <= 10)
-			#(dataframe["current_trend"] == 0)
+			(dataframe["time_to_full_moon"] <= 10) &
+			(dataframe["tacitus"] == False)
 		)
 		dataframe.loc[ sell, "sell" ] = 1
 		return dataframe
