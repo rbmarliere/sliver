@@ -1,9 +1,12 @@
+import collections
+import datetime
 import freqtrade
 import numpy
-import pandas
-import talib.abstract as ta
-import pylunar
 import os
+import pandas
+import pylunar
+import talib.abstract as ta
+import pytz
 
 class hypnox(freqtrade.strategy.interface.IStrategy):
 	INTERFACE_VERSION = 2
@@ -16,6 +19,9 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 			"resistance": {}
 		},
 		"subplots": {
+			"res2sup": {
+				"res2sup": {},
+			}
 			#"moon": {
 			#	"time_to_full_moon": {},
 			#	"time_to_new_moon": {},
@@ -28,6 +34,16 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 	}
 
 	def populate_indicators(self, dataframe: pandas.DataFrame, metadata: dict) -> pandas.DataFrame:
+		# TACITUS INDICATOR
+		tally_dir = os.path.dirname(os.path.realpath(__file__)) + "/acheron/tally"
+		groups = collections.defaultdict(list)
+		for filename in os.listdir(tally_dir):
+			basename, extension = os.path.splitext(filename)
+			tally_date = datetime.datetime.strptime(basename, "%Y%m%d-%H").replace(tzinfo=pytz.UTC)
+			tally_result = open(tally_dir + "/" + filename).read().splitlines()[2].split()[1] == 'True'
+			dataframe.loc[ dataframe["date"] == tally_date, "tally" ] = tally_result
+
+		# RESISTANCE TO SUPPORT RATIO INDICATOR
 		short_avg = ta.EMA(dataframe, timeperiod=2)
 		long_avg = ta.EMA(dataframe, timeperiod=17)
 
@@ -57,14 +73,17 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 			last_cycles = [ 0, -1, -3 ] if candle["trend"] else [ 0, -2, -4 ]
 			for i in last_cycles:
 				support += dataframe[ dataframe["cycle"] == candle["cycle"] + i ]["high"].min()
-			dataframe.loc[ idx, "support" ] = int(support/3)
+			dataframe.loc[ idx, "support" ] = float(support/3)
 
 			resistance = 0
 			last_cycles = [ 0, -1, -3 ] if not candle["trend"] else [ 0, -2, -4 ]
 			for i in last_cycles:
 				resistance += dataframe[ dataframe["cycle"] == candle["cycle"] + i ]["low"].max()
-			dataframe.loc[ idx, "resistance" ] = int(resistance/3)
+			dataframe.loc[ idx, "resistance" ] = float(resistance/3)
 
+		dataframe["res2sup"] = 100 * ( dataframe["resistance"] - dataframe["support"] ) / dataframe["close"]
+
+		# LUNATIC INDICATORS
 		moon = pylunar.MoonInfo((57,15,55),(4,28,28))
 		def time_to_full_moon(moon, date):
 			moon.update(date)
@@ -75,41 +94,42 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 			return moon.time_to_new_moon()/24
 		dataframe["time_to_new_moon"] = dataframe["date"].apply( lambda x: time_to_new_moon(moon, x) )
 
+		# CLASSIC TECHNICAL INDICATORS
 		#RSI
-		dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
+		dataframe["rsi"] = ta.RSI(dataframe, timeperiod=14)
 		#StochRSI
 		period = 14
 		smoothd = 3
 		smoothk = 3
-		stochrsi  = (dataframe['rsi'] - dataframe['rsi'].rolling(period).min()) / (dataframe['rsi'].rolling(period).max() - dataframe['rsi'].rolling(period).min())
-		dataframe['srsi_k'] = stochrsi.rolling(smoothk).mean() * 100
-		dataframe['srsi_d'] = dataframe['srsi_k'].rolling(smoothd).mean()
-
-		current_trend = os.path.dirname(os.path.realpath(__file__)) + "/current_trend"
-		dataframe["current_trend"] = current_trend
+		stochrsi  = (dataframe["rsi"] - dataframe["rsi"].rolling(period).min()) / (dataframe["rsi"].rolling(period).max() - dataframe["rsi"].rolling(period).min())
+		dataframe["srsi_k"] = stochrsi.rolling(smoothk).mean() * 100
+		dataframe["srsi_d"] = dataframe["srsi_k"].rolling(smoothd).mean()
+		#EMAs
+		dataframe["ema9"] = ta.EMA(dataframe, timeperiod=9)
+		dataframe["ema55"] = ta.EMA(dataframe, timeperiod=55)
+		
+		print(dataframe)
 
 		return dataframe
 
 	def populate_buy_trend(self, dataframe: pandas.DataFrame, metadata: dict) -> pandas.DataFrame:
-		res_to_sup = dataframe["resistance"] - dataframe["support"] / dataframe["close"] * 100
 		buy = (
-			(dataframe["srsi_k"] < 30) &
-			(res_to_sup > 1) &
+			(dataframe["srsi_k"] < 22) &
+			(dataframe["res2sup"] < 2) &
 			(dataframe["close"] <= dataframe["support"]) &
-			(dataframe["time_to_new_moon"] <= 15) &
-			(dataframe["current_trend"] == 1)
+			(dataframe["time_to_new_moon"] <= 15)
+			#(dataframe["current_trend"] == 1)
 		)
 		dataframe.loc[ buy, "buy" ] = 1
 		return dataframe
 
 	def populate_sell_trend(self, dataframe: pandas.DataFrame, metadata: dict) -> pandas.DataFrame:
-		res_to_sup = dataframe["resistance"] - dataframe["support"] / dataframe["close"] * 100
 		sell = (
-			(dataframe["srsi_k"] > 70) &
-			(res_to_sup > 3) &
+			(dataframe["srsi_k"] > 78) &
+			(dataframe["res2sup"] > 3) &
 			(dataframe["close"] >= dataframe["resistance"]) &
-			(dataframe["time_to_full_moon"] <= 10) &
-			(dataframe["current_trend"] == 0)
+			(dataframe["time_to_full_moon"] <= 10)
+			#(dataframe["current_trend"] == 0)
 		)
 		dataframe.loc[ sell, "sell" ] = 1
 		return dataframe
