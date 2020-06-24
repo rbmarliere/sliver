@@ -77,9 +77,10 @@ def tally(period):
 	# count the predictions based on these thresholds
 	pos = neg = 0
 	for score in scores:
-		if float(score[0]) <= 0.65:
+		score = float(score[0])
+		if score >= 0.65:
 			pos += 1
-		elif float(score[0]) >= 0.25:
+		elif score >= 0.19 and score < 0.65:
 			neg += 1
 
 	# print to tally file
