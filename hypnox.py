@@ -8,26 +8,27 @@ import pylunar
 import talib.abstract as ta
 import pytz
 
-STOPLOSS_DEFAULT = -0.03
 
 class hypnox(freqtrade.strategy.interface.IStrategy):
 	INTERFACE_VERSION = 2
+	STOPLOSS_DEFAULT = -0.03
 	minimal_roi = { "0": 100 } # disabled
 	stoploss = STOPLOSS_DEFAULT
 
 	plot_config = {
 		"main_plot": {
 			"support": {},
-			"resistance": {}
+			"resistance": {},
+			"black": {}
 		},
 		"subplots": {
-			"res2sup": {
-				"res2sup": {},
-			}
-			#"moon": {
+			#"res2sup": {
+			#	"res2sup": {},
+			#}
+			"moon": {
 			#	"time_to_full_moon": {},
-			#	"time_to_new_moon": {},
-			#},
+				"moon_period": {}
+			},
 			#"srsi_k": {
 			#	"srsi_k": {},
 			#	"srsi_d": {},
@@ -96,17 +97,38 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 		dataframe["time_to_full_moon"] = dataframe["date"].apply( lambda x: time_to_full_moon(moon, x) )
 		def time_to_new_moon(moon, date):
 			moon.update(date)
-			return moon.time_to_new_moon()/24
+			return moon.time_to_new_moon()
 		dataframe["time_to_new_moon"] = dataframe["date"].apply( lambda x: time_to_new_moon(moon, x) )
 
-		moon.update(datetime.datetime.now())
-		black_start = 574020
-		black_end = 298620
-		nm_sec = moon.time_to_new_moon()*60*60
-		self.stoploss = STOPLOSS_DEFAULT
-		if nm_sec - black_start >= 0 and nm_sec - black_end >= 0:
-			self.stoploss = self.stoploss / 2
+		# LUNATIC PERIODS
+		def period(moon, date):
+			moon.update(date)
+			nm_sec = moon.time_to_new_moon()*60*60
+			if nm_sec - 1031220 <= 0 and nm_sec - 564020 > 0:
+				# green
+				return 1
+			if nm_sec - 564020 <= 0 and nm_sec - 298620 > 0:
+				# black
+				return 2
+			if nm_sec - 298620 <= 0 and nm_sec - 298620 + 612000 > 0:
+				# green
+				return 1
+			if nm_sec - 1819620 <= 0 and nm_sec - 1531920 >= 0:
+				# yellow
+				return -1
+			# red is remainder
+			return 0
+		dataframe["moon_period"] = dataframe["date"].apply( lambda x: period(moon, x) )
 
+		#moon.update(datetime.datetime.now())
+		#black_start = 574020
+		#black_end = 298620
+		#nm_sec = moon.time_to_new_moon()*60*60
+		#self.stoploss = self.STOPLOSS_DEFAULT
+		#if nm_sec - black_start >= 0 and nm_sec - black_end >= 0:
+		#	self.stoploss = self.stoploss / 2
+		#print(moon.time_to_new_moon())
+		#print(nm_sec)
 
 		# CLASSIC TECHNICAL INDICATORS
 		#RSI
