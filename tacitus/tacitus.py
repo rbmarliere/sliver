@@ -22,7 +22,7 @@ argp.add_argument("--model", help="Name to use when saving the model.", default=
 args = argp.parse_args()
 if os.path.exists(args.model):
 	print("Model already exists ('" + args.model + "')! Overwrite? [ y | N ]")
-	if input() is not "y":
+	if input() != "y":
 		exit(1)
 
 if not os.path.exists("train/pos"):
