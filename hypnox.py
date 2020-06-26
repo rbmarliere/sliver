@@ -8,10 +8,12 @@ import pylunar
 import talib.abstract as ta
 import pytz
 
+STOPLOSS_DEFAULT = -0.03
+
 class hypnox(freqtrade.strategy.interface.IStrategy):
 	INTERFACE_VERSION = 2
 	minimal_roi = { "0": 100 } # disabled
-	stoploss = -100.0 # disabled
+	stoploss = STOPLOSS_DEFAULT
 
 	plot_config = {
 		"main_plot": {
@@ -87,7 +89,7 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 		dataframe["res2sup"] = 100 * ( dataframe["resistance"] - dataframe["support"] ) / dataframe["close"]
 
 		# LUNATIC INDICATORS
-		moon = pylunar.MoonInfo((57,15,55),(4,28,28))
+		moon = pylunar.MoonInfo((28,2,4.9),(86,55,0.9))
 		def time_to_full_moon(moon, date):
 			moon.update(date)
 			return moon.time_to_full_moon()
@@ -96,6 +98,15 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 			moon.update(date)
 			return moon.time_to_new_moon()/24
 		dataframe["time_to_new_moon"] = dataframe["date"].apply( lambda x: time_to_new_moon(moon, x) )
+
+		moon.update(datetime.datetime.now())
+		black_start = 574020
+		black_end = 298620
+		nm_sec = moon.time_to_new_moon()*60*60
+		self.stoploss = STOPLOSS_DEFAULT
+		if nm_sec - black_start >= 0 and nm_sec - black_end >= 0:
+			self.stoploss = self.stoploss / 2
+
 
 		# CLASSIC TECHNICAL INDICATORS
 		#RSI
