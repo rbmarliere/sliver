@@ -10,13 +10,10 @@ import re
 import tensorflow
 import tensorflow_hub
 import tweepy
+import pandas
 
 # define logging level
 logging.basicConfig(level=logging.INFO)
-
-# load USE
-logging.error("Loading USE...")
-use = tensorflow_hub.load("https://tfhub.dev/google/universal-sentence-encoder/4")
 
 # parsing acheron arguments
 tacitus_path = os.path.dirname(os.path.realpath(__file__)) + "/../tacitus"
@@ -37,67 +34,20 @@ if not os.path.exists(args.model):
 with open(args.config) as f:
 	config = json.load(f)
 
+# load USE
+logging.error("Loading USE...")
+use = tensorflow_hub.load("https://tfhub.dev/google/universal-sentence-encoder/4")
+
 # load include markers
 include = open("include").read().splitlines()
 
 # load exclude markers
 exclude = open("exclude").read().splitlines()
 
-# helper to map hours of day into 4h periods
-def get_period(hour):
-	hours_to_periods = {
-		0:"00", 1:"00", 2:"00", 3:"00",
-		4:"04", 5:"04", 6:"04", 7:"04",
-		8:"08", 9:"08", 10:"08", 11:"08",
-		12:"12", 13:"12", 14:"12", 15:"12",
-		16:"16", 17:"16", 18:"16", 19:"16",
-		20:"20", 21:"20", 22:"20", 23:"20"
-	}
-	return hours_to_periods.get(hour)
-
-# helper to compute sentiment over a stream of tweets
-def tally(period):
-	# get file names
-	inputfile = "data/" + period + ".txt"
-	outputfile = "tally/" + period + ".txt"
-
-	# load scores based on a regex
-	try:
-		with open(inputfile) as inp:
-			scores = [ re.findall(r'>>> SCORE: (.+)', line) for line in inp ]
-			scores = [ x for x in scores if x != [] ]
-	except FileNotFoundError:
-		# if no data file to read scores from, do nothing
-		return
-
-	# ignore no data
-	if scores == []:
-		return
-
-	# count the predictions based on these thresholds
-	pos = neg = 0
-	for score in scores:
-		score = float(score[0])
-		if score >= 0.65:
-			pos += 1
-		elif score >= 0.19 and score < 0.65:
-			neg += 1
-
-	# print to tally file
-	with open(outputfile, "w") as out:
-		print("Positives: " + str(pos), file=out)
-		print("Negatives: " + str(neg), file=out)
-		print("Result: " + str(pos - neg > 0), file=out)
-
 class AcheronListener(tweepy.StreamListener):
 	def __init__(self):
 		super().__init__()
-
 		self.tacitus = tensorflow.keras.models.load_model(args.model)
-
-		# tally period tracker
-		now = datetime.datetime.now()
-		self.last_period = now.strftime("%Y%m%d") + "-" + str( get_period(now.hour) )
 
 	def on_status(self, status):
 		# ignore retweets
@@ -108,18 +58,18 @@ class AcheronListener(tweepy.StreamListener):
 			return
 		# if tweet is truncated, get all text
 		if "extended_tweet" in status._json:
-			tweet = status.extended_tweet["full_text"]
+			text = status.extended_tweet["full_text"]
 		else:
-			tweet = status.text
+			text = status.text
 
 		# make the tweet single-line
-		tweet = re.sub("\n", " ", tweet)
+		text = re.sub("\n", " ", text)
 
-		print("\n" + tweet)
+		print("\n" + text)
 
 		# check tweet relevancy
 		proc_tweet = False
-		for word in tweet.split():
+		for word in text.split():
 			# process tweets that contain include words
 			if word in include:
 				proc_tweet = True
@@ -131,35 +81,21 @@ class AcheronListener(tweepy.StreamListener):
 			return
 
 		# predict relevant tweet using tacitus
-		pred = self.tacitus.predict(use([tweet]))[0][1]
+		pred = self.tacitus.predict(use([text]))[0][1]
 		# print result to console
 		score = format(pred, 'f')
 		print(">>> SCORE: " + score + "\n")
 
 		# parse tweet info
-		created_at = status._json["created_at"]
+		created_at = datetime.datetime.strptime(status._json["created_at"], "%a %b %d %H:%M:%S %z %Y")
 		user = status._json["user"]["screen_name"]
 		url = "https://twitter.com/" + user + "/status/" + str(status._json["id"])
 
-		# compute output file name
-		now = datetime.datetime.now()
-		period = now.strftime("%Y%m%d") + "-" + str( get_period(now.hour) )
-
-		# check if period ended
-		if period != self.last_period:
-			# if so, compute sentiment of last period stream
-			tally(self.last_period)
-
-		# print tweet and its prediction to data file
-		with open("data/" + period + ".txt", "a") as out:
-			print(created_at, file=out)
-			print(user, file=out)
-			print(url, file=out)
-			print(tweet, file=out)
-			print(">>> SCORE: " + score + "\n", file=out)
-
-		# take note of current period
-		self.last_period = period
+		# output
+		filename = datetime.datetime.now().strftime("%Y%m%d")
+		tweet = pandas.DataFrame({ "date": [created_at], "username": [user], "url": [url], "score": [score], "tweet": [text] })
+		with open("data/"+filename+".csv", "a") as f:
+			tweet.to_csv(f, header=f.tell()==0, mode="a", index=False)
 
 # initialize tweepy api object
 auth = tweepy.OAuthHandler(config["CONSUMER_KEY"], config["CONSUMER_SECRET"])
