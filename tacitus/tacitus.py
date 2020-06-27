@@ -1,8 +1,3 @@
-# HYPERPARAMS
-RANDOM_SEED = 666
-EPOCHS=11
-BATCH_SIZE=32
-
 import argparse
 import os
 
@@ -13,84 +8,75 @@ import tensorflow_hub
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder
 from tqdm import tqdm
+import datetime
+import re
+import nltk
 
+import logging
+
+# define logging level
+logging.basicConfig(level=logging.INFO)
+
+# parsing tacitus' arguments
+argp = argparse.ArgumentParser(description="Compute all tweets in a directory.")
+argp.add_argument("--datadir", help="Path to directory containing text files to process.", default="")
+argp.add_argument("--tallydir", help="Path to output directory.", default="tally")
+argp.add_argument("--model", help="Path to saved model to use.", type=os.path.abspath, default="model")
+
+# check if required files are there
+args = argp.parse_args()
+if not os.path.exists(args.model):
+	print("Model not found!")
+	exit(1)
+if not os.path.exists(args.datadir):
+	print("Data directory not found!")
+	exit(1)
+if not os.path.exists(args.tallydir):
+	os.mkdir(args.tallydir)
+
+# load USE
+logging.error("Loading USE...")
 use = tensorflow_hub.load("https://tfhub.dev/google/universal-sentence-encoder/4")
 
-argp = argparse.ArgumentParser(description="Gather relevant tweets.")
-argp.add_argument("--model", help="Name to use when saving the model.", default="model")
+# helper to compute sentiment over a stream of tweets
+def tally(dataframe, outputfile):
+	pos = dataframe.loc[dataframe["score"] >= 0.65].size
+	neg = dataframe.loc[ (dataframe["score"] > 0.19) & (dataframe["score"] < 0.65)].size
+	with open(outputfile, "w") as out:
+		print("Positives: " + str( pos ), file=out)
+		print("Negatives: " + str( neg ), file=out)
+		print("Result: " + str(pos - neg > 0), file=out)
 
-args = argp.parse_args()
-if os.path.exists(args.model):
-	print("Model already exists ('" + args.model + "')! Overwrite? [ y | N ]")
-	if input() != "y":
-		exit(1)
+# helper to clean tweet text
+def clean(tweet):
+	# remove links
+	tweet = re.sub("http\S+", "", tweet)
+	# remove html entities
+	tweet = re.sub("&\w+;", "", tweet)
+	# remove usernames
+	tweet = re.sub("(?<=^|(?<=[^a-zA-Z0-9-_\.]))@([A-Za-z]+[A-Za-z0-9-_]+)", "", tweet)
+	# leave only words
+	tweet = re.sub("[^a-zA-Z]", " ", tweet)
+	# convert to lower case, split into individual words
+	words = tweet.lower().split()
+	# remove stopwords, but keep some
+	keep = [ "this", "that'll", "these", "having", "does", "doing", "until", "while", "about", "against", "between", "into", "through", "during", "before", "after", "above", "below", "from", "up", "down", "in", "out", "on", "off", "over", "under", "again", "further", "then", "once", "here", "there", "when", "few", "both", "more", "most", "other", "some", "than", "too", "very", "can", "will", "should", "should’ve", "now", "ain", "aren", "aren’t", "could", "couldn", "couldn't", "didn", "didn’t", "doesn", "doesn’t", "hadn", "hadn’t", "hasn", "hasn’t", "haven", "haven’t", "isn", "isn’t", "mighn", "mightn't", "mustn", "mustn’t", "needn", "needn’t", "shan", "shan’t", "shouldn", "shouldn’t", "wasn", "wasn’t", "weren","weren’t", "won’", "won’t", "wouldn", "wouldn't" ]
+	nltkstops = set(nltk.corpus.stopwords.words("english"))
+	stops = [w for w in nltkstops if not w in keep]
+	meaningful_words = [w for w in words if not w in stops]
+	# stem words
+	stemmer = nltk.stem.porter.PorterStemmer()
+	singles = [stemmer.stem(word) for word in meaningful_words]
+	# ignore single word sentences
+	if len(singles) > 1:
+		# join the words with more than one char back into one string
+		out = " ".join([w for w in singles if len(w) > 1])
+		return out
 
-if not os.path.exists("train/pos"):
-	print("train/pos file not found")
-	exit(1)
-if not os.path.exists("train/neg"):
-	print("train/neg file not found")
-	exit(1)
-
-# load positive tweets
-pos_file = open("train/pos")
-pos_lines = pos_file.read().splitlines()
-pos = pandas.DataFrame({ "tweet": pos_lines, "polarity": [1] * len(pos_lines) })
-
-# load negative tweets
-neg_file = open("train/neg")
-neg_lines = neg_file.read().splitlines()
-neg = pandas.DataFrame({ "tweet": neg_lines, "polarity": [0] * len(neg_lines) })
-
-# combine all data
-tweets = pandas.concat([pos, neg])
-
-# shuffle rows
-tweets = tweets.sample(frac=1).reset_index(drop=True)
-
-# remove None rows
-tweets = tweets.dropna()
-
-polarity = OneHotEncoder(sparse=False).fit_transform( tweets.polarity.to_numpy().reshape(-1, 1) )
-
-train_tweets, test_tweets, y_train, y_test = train_test_split( tweets.tweet, polarity, test_size = .1, random_state = RANDOM_SEED )
-
-X_train = []
-for r in tqdm(train_tweets):
-	emb = use([r])
-	tweet_emb = tensorflow.reshape(emb, [-1]).numpy()
-	X_train.append(tweet_emb)
-X_train = numpy.array(X_train)
-
-X_test = []
-for r in tqdm(test_tweets):
-	emb = use([r])
-	tweet_emb = tensorflow.reshape(emb, [-1]).numpy()
-	X_test.append(tweet_emb)
-X_test = numpy.array(X_test)
-
-# build model
-model = tensorflow.keras.Sequential()
-model.add( tensorflow.keras.layers.Dense(units=512, input_shape=(X_train.shape[1], ), activation='relu') )
-model.add( tensorflow.keras.layers.Dropout(rate=0.5) )
-model.add( tensorflow.keras.layers.Dense(units=512, activation='relu') )
-model.add( tensorflow.keras.layers.Dropout(rate=0.5) )
-model.add( tensorflow.keras.layers.Dense(2, activation='softmax') )
-model.compile( loss='categorical_crossentropy', optimizer=tensorflow.keras.optimizers.Adam(0.01), metrics=['accuracy'] )
-
-print(model.summary())
-
-# train model
-model.fit(
-	X_train, y_train,
-	epochs=EPOCHS,
-	batch_size=BATCH_SIZE,
-	validation_split=0.1,
-	verbose=1,
-	shuffle=True
-)
-
-model.evaluate(X_test, y_test)
-
-model.save(args.model)
+# iterate through all files in datadir
+for datafile in os.listdir(args.datadir):
+	# write simple tally
+	if datafile.endswith(".csv"):
+		tweets = pandas.read_csv(args.datadir + "/" + datafile)
+		tally(tweets, args.tallydir + "/" + datafile)
 
