@@ -89,7 +89,7 @@ class AcheronListener(tweepy.StreamListener):
 		# parse tweet info
 		created_at = datetime.datetime.strptime(status._json["created_at"], "%a %b %d %H:%M:%S %z %Y")
 		user = status._json["user"]["screen_name"]
-		url = "https://twitter.com/" + user + "/status/" + str(status._json["id"])
+		url = "https://twitter.com/" + user + "/status/" + str(status.id)
 
 		# output
 		filename = datetime.datetime.now().strftime("%Y%m%d")
