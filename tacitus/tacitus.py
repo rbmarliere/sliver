@@ -85,32 +85,68 @@ for datafile in os.listdir(args.datadir):
 	if not datafile.endswith(".csv"):
 		continue
 	# load csv file
-	print(datafile)
+	print("Processing " + datafile)
 	tweets = pandas.read_csv(args.datadir + "/" + datafile)
 	# remove duplicated tweets
 	tweets = tweets.drop_duplicates()
 	# write simple tally output
-	outputfile = args.tallydir + "/" + os.path.splitext(datafile)[0] + ".txt"
-	tally(tweets, outputfile)
+	outputfile = args.tallydir + "/" + os.path.splitext(datafile)[0]
+	tally(tweets, outputfile + "_tally.txt")
 	# clean tweets into a new column
 	tweets["cleaned_tweet"] = tweets["tweet"].apply( lambda x: clean(x) )
 
 	# compare each word in each tweet against glosema values
-	intensity_sum = 0
-	with open(outputfile, "a") as out:
-		print("Glosema words:", file=out)
-		for i, (idx, tweet) in enumerate(tweets.iterrows()):
-			for i, (idx, word) in enumerate(glosema.iterrows()):
-				if word.cleaned_word in tweet.cleaned_tweet:
-					intensity_sum += word.intensity
-					print(word.word, file=out)
-		print("", file=out)
-		print("Total intensity: " + str(intensity_sum), file=out)
-		print("", file=out)
+	found_glosema = pandas.DataFrame({ "word": [], "emotion": [], "intensity": [], "cleaned_word": [] })
+	for tweet in tweets.cleaned_tweet.values.astype(str):
+		for i, (idx, word) in enumerate(glosema.iterrows()):
+			if word.cleaned_word in tweet:
+				found_glosema = found_glosema.append(glosema.iloc[i])
+	# aggreggate words by emotions based on number of occurrences
+	found = found_glosema.sort_values(by=["emotion","word"]).groupby(["emotion","word","intensity"]).size().to_frame("occurrences")
+	# filter found words based on a threshold of occurrences
+	found = found[found["occurrences"] > 5]
+	found.reset_index(inplace=True)
+	found["total_intensity"] = found["intensity"] * found["occurrences"]
+	# print to csv file
+	found.to_csv(outputfile + "_glosema.csv")
+
+	# print total intensity grouped by emotions to tally file
+	intensities = found[["emotion","total_intensity"]].pivot_table(index=["emotion"], aggfunc="sum")
+	with open(outputfile + "_tally.txt", "a") as out:
+		with pandas.option_context("display.max_rows", None):
+			print(intensities, file=out)
 
 	# count unique words occurrences
 	unique = tweets["cleaned_tweet"].str.split(" ", expand=True).stack().value_counts()
-	with open(outputfile, "a") as out:
-		print("Unique words:", file=out)
-		with pandas.option_context("display.max_rows", None):
-			print(unique, file=out)
+	unique.to_csv(outputfile + "_unique.csv")
+
+# old data migration
+#for datafile in os.listdir(args.datadir):
+#	with open(args.datadir + "/" + datafile) as inp:
+#		lines = inp.read().splitlines()
+#		i = 0
+#		dates = []
+#		users = []
+#		urls = []
+#		scores = []
+#		tweets = []
+#		#tweet = pandas.DataFrame({ "date": [created_at], "username": [user], "url": [url], "score": [score], "tweet": [text] })
+#
+#		for line in lines:
+#			#print(i)
+#			#print(line)
+#			if line == '':
+#				dates.append(datetime.datetime.strptime(lines[i-5], "%a %b %d %H:%M:%S %z %Y"))
+#				users.append(lines[i-4])
+#				urls.append(lines[i-3])
+#				tweets.append(lines[i-2])
+#				scores.append(re.split(r'>>> SCORE: ', lines[i-1])[1])
+#			i = i+1
+#
+#		tweet = pandas.DataFrame({ "date": dates, "username": users, "url": urls, "score": scores, "tweet": tweets })
+#		#with pandas.option_context('display.max_rows', None, 'display.max_columns', None):
+#		#	print(tweet)
+#		#	input()
+#		with open(args.datadir + "/" +os.path.splitext(datafile)[0]+".csv", "a") as f:
+#			tweet.to_csv(f, header=f.tell()==0, mode="a", index=False)
+
