@@ -35,8 +35,8 @@ if not os.path.exists(args.tallydir):
 	os.mkdir(args.tallydir)
 
 # load USE
-logging.error("Loading USE...")
-use = tensorflow_hub.load("https://tfhub.dev/google/universal-sentence-encoder/4")
+#logging.error("Loading USE...")
+#use = tensorflow_hub.load("https://tfhub.dev/google/universal-sentence-encoder/4")
 
 # load nltk stopwords
 nltk.download('stopwords')
@@ -85,6 +85,7 @@ for datafile in os.listdir(args.datadir):
 	if not datafile.endswith(".csv"):
 		continue
 	# load csv file
+	print(datafile)
 	tweets = pandas.read_csv(args.datadir + "/" + datafile)
 	# remove duplicated tweets
 	tweets = tweets.drop_duplicates()
@@ -93,16 +94,23 @@ for datafile in os.listdir(args.datadir):
 	tally(tweets, outputfile)
 	# clean tweets into a new column
 	tweets["cleaned_tweet"] = tweets["tweet"].apply( lambda x: clean(x) )
+
+	# compare each word in each tweet against glosema values
+	intensity_sum = 0
+	with open(outputfile, "a") as out:
+		print("Glosema words:", file=out)
+		for i, (idx, tweet) in enumerate(tweets.iterrows()):
+			for i, (idx, word) in enumerate(glosema.iterrows()):
+				if word.cleaned_word in tweet.cleaned_tweet:
+					intensity_sum += word.intensity
+					print(word.word, file=out)
+		print("", file=out)
+		print("Total intensity: " + str(intensity_sum), file=out)
+		print("", file=out)
+
 	# count unique words occurrences
 	unique = tweets["cleaned_tweet"].str.split(" ", expand=True).stack().value_counts()
 	with open(outputfile, "a") as out:
 		print("Unique words:", file=out)
 		with pandas.option_context("display.max_rows", None):
 			print(unique, file=out)
-
-	# compare each word in each tweet against glosema values
-	#for i, (idx, tweet) in enumerate(tweets.iterrows()):
-	#	for i, (idx, word) in enumerate(glosema.iterrows()):
-	#		if word.cleaned_word in tweet.cleaned_tweet:
-	#			print("Found " + word.word + " in " + tweet.tweet)
-	#			input()
