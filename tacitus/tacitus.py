@@ -35,11 +35,14 @@ if not os.path.exists(args.tallydir):
 	os.mkdir(args.tallydir)
 
 # load USE
-#logging.error("Loading USE...")
-#use = tensorflow_hub.load("https://tfhub.dev/google/universal-sentence-encoder/4")
+logging.error("Loading USE...")
+use = tensorflow_hub.load("https://tfhub.dev/google/universal-sentence-encoder/4")
 
 # load nltk stopwords
 nltk.download('stopwords')
+
+# load tacitus model
+model = tensorflow.keras.models.load_model(args.model)
 
 # helper to compute sentiment over a stream of tweets
 def tally(dataframe, outputfile):
@@ -81,6 +84,7 @@ glosema["cleaned_word"] = glosema["word"].apply( lambda x: clean(x) )
 
 # iterate through all files in datadir
 for datafile in os.listdir(args.datadir):
+	outputfile = args.tallydir + "/" + os.path.splitext(datafile)[0]
 	# ignore non csv files
 	if not datafile.endswith(".csv"):
 		continue
@@ -89,18 +93,26 @@ for datafile in os.listdir(args.datadir):
 	tweets = pandas.read_csv(args.datadir + "/" + datafile)
 	# remove duplicated tweets
 	tweets = tweets.drop_duplicates()
-	# write simple tally output
-	outputfile = args.tallydir + "/" + os.path.splitext(datafile)[0]
-	tally(tweets, outputfile + "_tally.txt")
 	# clean tweets into a new column
 	tweets["cleaned_tweet"] = tweets["tweet"].apply( lambda x: clean(x) )
+	# count unique words occurrences
+	unique = tweets["cleaned_tweet"].str.split(" ", expand=True).stack().value_counts()
+	unique.to_csv(outputfile + "_unique.csv")
 
 	# compare each word in each tweet against glosema values
+	predictions = []
 	found_glosema = pandas.DataFrame({ "word": [], "emotion": [], "intensity": [], "cleaned_word": [] })
-	for tweet in tweets.cleaned_tweet.values.astype(str):
+	for i, (idx, tweet) in enumerate(tweets.iterrows()):
+		# predict the tweet
+		predictions.append( float(format( model.predict(use([tweet.tweet]))[0][1], 'f' )) )
 		for i, (idx, word) in enumerate(glosema.iterrows()):
-			if word.cleaned_word in tweet:
+			if word.cleaned_word in tweet.tweet:
 				found_glosema = found_glosema.append(glosema.iloc[i])
+
+	# writing new predictions and saving to csv
+	tweets["score"] = predictions
+	tweets.to_csv(outputfile + ".csv")
+
 	# aggreggate words by emotions based on number of occurrences
 	found = found_glosema.sort_values(by=["emotion","word"]).groupby(["emotion","word","intensity"]).size().to_frame("occurrences")
 	# filter found words based on a threshold of occurrences
@@ -110,43 +122,11 @@ for datafile in os.listdir(args.datadir):
 	# print to csv file
 	found.to_csv(outputfile + "_glosema.csv")
 
+	# write simple tally output
+	tally(tweets, outputfile + "_tally.txt")
 	# print total intensity grouped by emotions to tally file
 	intensities = found[["emotion","total_intensity"]].pivot_table(index=["emotion"], aggfunc="sum")
 	with open(outputfile + "_tally.txt", "a") as out:
 		with pandas.option_context("display.max_rows", None):
 			print(intensities, file=out)
-
-	# count unique words occurrences
-	unique = tweets["cleaned_tweet"].str.split(" ", expand=True).stack().value_counts()
-	unique.to_csv(outputfile + "_unique.csv")
-
-# old data migration
-#for datafile in os.listdir(args.datadir):
-#	with open(args.datadir + "/" + datafile) as inp:
-#		lines = inp.read().splitlines()
-#		i = 0
-#		dates = []
-#		users = []
-#		urls = []
-#		scores = []
-#		tweets = []
-#		#tweet = pandas.DataFrame({ "date": [created_at], "username": [user], "url": [url], "score": [score], "tweet": [text] })
-#
-#		for line in lines:
-#			#print(i)
-#			#print(line)
-#			if line == '':
-#				dates.append(datetime.datetime.strptime(lines[i-5], "%a %b %d %H:%M:%S %z %Y"))
-#				users.append(lines[i-4])
-#				urls.append(lines[i-3])
-#				tweets.append(lines[i-2])
-#				scores.append(re.split(r'>>> SCORE: ', lines[i-1])[1])
-#			i = i+1
-#
-#		tweet = pandas.DataFrame({ "date": dates, "username": users, "url": urls, "score": scores, "tweet": tweets })
-#		#with pandas.option_context('display.max_rows', None, 'display.max_columns', None):
-#		#	print(tweet)
-#		#	input()
-#		with open(args.datadir + "/" +os.path.splitext(datafile)[0]+".csv", "a") as f:
-#			tweet.to_csv(f, header=f.tell()==0, mode="a", index=False)
 
