@@ -1,16 +1,16 @@
-from requests.exceptions import Timeout, ConnectionError
-from ssl import SSLError
-from urllib3.exceptions import ReadTimeoutError
 import argparse
 import datetime
 import json
 import logging
 import os
 import re
-import tensorflow
-import tensorflow_hub
-import tweepy
+from ssl import SSLError
+
 import pandas
+import tensorflow
+import tweepy
+from requests.exceptions import Timeout, ConnectionError
+from urllib3.exceptions import ReadTimeoutError
 
 # define logging level
 logging.basicConfig(level=logging.INFO)
