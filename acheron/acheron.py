@@ -35,8 +35,8 @@ with open(args.config) as f:
 	config = json.load(f)
 
 # load USE
-logging.error("Loading USE...")
-use = tensorflow_hub.load("https://tfhub.dev/google/universal-sentence-encoder/4")
+#logging.error("Loading USE...")
+#use = tensorflow_hub.load("https://tfhub.dev/google/universal-sentence-encoder/4")
 
 # load include markers
 include = open("include").read().splitlines()
@@ -81,10 +81,10 @@ class AcheronListener(tweepy.StreamListener):
 			return
 
 		# predict relevant tweet using tacitus
-		pred = self.tacitus.predict(use([text]))[0][1]
+		#pred = self.tacitus.predict(use([text]))[0][1]
 		# print result to console
-		score = format(pred, 'f')
-		print(">>> SCORE: " + score + "\n")
+		#score = format(pred, 'f')
+		#print(">>> SCORE: " + score + "\n")
 
 		# parse tweet info
 		created_at = datetime.datetime.strptime(status._json["created_at"], "%a %b %d %H:%M:%S %z %Y")
@@ -93,7 +93,7 @@ class AcheronListener(tweepy.StreamListener):
 
 		# output
 		filename = datetime.datetime.now().strftime("%Y%m%d")
-		tweet = pandas.DataFrame({ "date": [created_at], "username": [user], "url": [url], "score": [score], "tweet": [text] })
+		tweet = pandas.DataFrame({ "date": [created_at], "username": [user], "url": [url], "tweet": [text] })
 		with open("data/"+filename+".csv", "a") as f:
 			tweet.to_csv(f, header=f.tell()==0, mode="a", index=False)
 
