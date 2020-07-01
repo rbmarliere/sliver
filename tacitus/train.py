@@ -4,6 +4,7 @@ EPOCHS=11
 BATCH_SIZE=32
 
 import argparse
+import logging
 import os
 
 import numpy
@@ -13,7 +14,6 @@ import tensorflow_hub
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder
 from tqdm import tqdm
-import logging
 
 # define logging level
 logging.basicConfig(level=logging.INFO)

@@ -1,18 +1,12 @@
 import argparse
+import logging
 import os
+import re
 
-import numpy
+import nltk
 import pandas
 import tensorflow
 import tensorflow_hub
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import OneHotEncoder
-from tqdm import tqdm
-import datetime
-import re
-import nltk
-
-import logging
 
 # define logging level
 logging.basicConfig(level=logging.INFO)
