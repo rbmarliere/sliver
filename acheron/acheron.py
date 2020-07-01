@@ -56,8 +56,6 @@ class AcheronListener(tweepy.StreamListener):
 		# make the tweet single-line
 		text = re.sub("\n", " ", text)
 
-		print("\n" + text)
-
 		# check tweet relevancy
 		proc_tweet = False
 		for word in text.split():
@@ -70,6 +68,8 @@ class AcheronListener(tweepy.StreamListener):
 				break
 		if proc_tweet == False:
 			return
+
+		print("\n" + text)
 
 		# parse tweet info
 		created_at = datetime.datetime.strptime(status._json["created_at"], "%a %b %d %H:%M:%S %z %Y")
