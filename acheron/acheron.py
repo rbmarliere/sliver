@@ -34,10 +34,6 @@ if not os.path.exists(args.model):
 with open(args.config) as f:
 	config = json.load(f)
 
-# load USE
-#logging.error("Loading USE...")
-#use = tensorflow_hub.load("https://tfhub.dev/google/universal-sentence-encoder/4")
-
 # load include markers
 include = open("include").read().splitlines()
 
@@ -79,12 +75,6 @@ class AcheronListener(tweepy.StreamListener):
 				break
 		if proc_tweet == False:
 			return
-
-		# predict relevant tweet using tacitus
-		#pred = self.tacitus.predict(use([text]))[0][1]
-		# print result to console
-		#score = format(pred, 'f')
-		#print(">>> SCORE: " + score + "\n")
 
 		# parse tweet info
 		created_at = datetime.datetime.strptime(status._json["created_at"], "%a %b %d %H:%M:%S %z %Y")
