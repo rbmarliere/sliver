@@ -111,7 +111,7 @@ for datafile in os.listdir(args.datadir):
 
 	# writing new predictions and saving to csv
 	tweets["score"] = predictions
-	tweets.to_csv(outputfile + ".csv")
+	tweets.to_csv(outputfile + "_predictions.csv")
 
 	# aggreggate words by emotions based on number of occurrences
 	found = found_glosema.sort_values(by=["emotion","word"]).groupby(["emotion","word","intensity"]).size().to_frame("occurrences")
