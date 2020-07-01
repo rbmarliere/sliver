@@ -7,7 +7,6 @@ import re
 from ssl import SSLError
 
 import pandas
-import tensorflow
 import tweepy
 from requests.exceptions import Timeout, ConnectionError
 from urllib3.exceptions import ReadTimeoutError
@@ -41,10 +40,6 @@ include = open("include").read().splitlines()
 exclude = open("exclude").read().splitlines()
 
 class AcheronListener(tweepy.StreamListener):
-	def __init__(self):
-		super().__init__()
-		self.tacitus = tensorflow.keras.models.load_model(args.model)
-
 	def on_status(self, status):
 		# ignore retweets
 		if "retweeted_status" in status._json:
