@@ -14,6 +14,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3" # tensorflow verbosity
 
 # helper to load google encoder
 def load_use():
+	import tensorflow_hub
 	logging.info("loading USE...")
 	use = tensorflow_hub.load("https://tfhub.dev/google/universal-sentence-encoder/4")
 	return use
@@ -78,6 +79,9 @@ def filter(argp, args):
 
 	logging.info("processing " + args.input)
 	for datafile in os.listdir(args.input):
+		if datafile.startswith("."):
+			continue
+
 		logging.info("processing " + datafile)
 		all_tweets = pandas.read_csv(args.input + "/" + datafile)
 		all_tweets["cleaned_tweet"] = all_tweets["tweet"].apply( lambda x: clean(x) )
@@ -132,6 +136,9 @@ def parse(argp, args):
 
 	logging.info("processing " + args.input)
 	for datafile in os.listdir(args.input):
+		if datafile.startswith("."):
+			continue
+
 		logging.info("processing " + datafile)
 		all_tweets = pandas.read_csv(args.input + "/" + datafile)
 		all_tweets["cleaned_tweet"] = all_tweets["tweet"].apply( lambda x: clean(x) )
@@ -166,7 +173,6 @@ def parse(argp, args):
 
 def predict(argp, args):
 	import tensorflow
-	import tensorflow_hub
 
 	if args.input == None:
 		logging.error("provide a data directory with --input")
@@ -191,6 +197,9 @@ def predict(argp, args):
 
 	logging.info("processing " + args.input)
 	for datafile in os.listdir(args.input):
+		if datafile.startswith("."):
+			continue
+
 		logging.info("processing " + datafile)
 		tweets = pandas.read_csv(args.input + "/" + datafile)
 		predictions = tweets["tweet"].apply( lambda x: format(model.predict( use([x]) )[0][1], "f") )
@@ -225,6 +234,9 @@ def tally(argp, args):
 
 	logging.info("processing " + args.input)
 	for datafile in os.listdir(args.input):
+		if datafile.startswith("."):
+			continue
+
 		logging.info("processing " + datafile)
 		predictions = pandas.read_csv(args.input + "/" + datafile)
 		pos = predictions.loc[ predictions["predict"] >= config["PREDICT_HIGH_THRESHOLD"] ].size
