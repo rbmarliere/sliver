@@ -123,6 +123,11 @@ def parse(argp, args):
 		return 1
 
 	logging.info("loading config...")
+	config_file = os.path.dirname(os.path.realpath(__file__)) + "/etc/tacitus.conf"
+	config = json.load(open(config_file))
+	if config["PARSE_OCCURRENCES_THRESHOLD"] == '':
+		logging.error("empty parameters in config! (PARSE_OCCURRENCES_THRESHOLD)")
+		return 1
 	outputdir = os.path.dirname(os.path.realpath(__file__)) + "/data/parse"
 	if not os.path.exists(outputdir):
 		logging.error(outputdir + " doesn't exist!")
@@ -156,11 +161,12 @@ def parse(argp, args):
 		# aggreggate words by emotions based on number of occurrences
 		found = in_glosema.sort_values(by=["emotion","word"]).groupby(["emotion","word","intensity"]).size().to_frame("occurrences")
 		# filter found words based on a threshold of occurrences
-		found = found[found["occurrences"] >= 1]
+		found = found[found["occurrences"] >= config["PARSE_OCCURRENCES_THRESHOLD"]]
 		found.reset_index(inplace=True)
 		# calc intensities
 		found["total_intensity"] = found["intensity"] * found["occurrences"]
 		intensities = found[["emotion","total_intensity"]].pivot_table(index=["emotion"], aggfunc="sum").reset_index()
+		found = found.drop("total_intensity", axis=1)
 
 		outputfile = outputdir + "/" + os.path.splitext(datafile)[0]
 		logging.info("writing to " + outputfile)
@@ -169,6 +175,7 @@ def parse(argp, args):
 			if input() != 'y':
 				continue
 		intensities.to_csv(outputfile, index=False)
+		print("", file=open(outputfile, "a"))
 		found.to_csv(outputfile, mode="a", index=False)
 
 def predict(argp, args):
