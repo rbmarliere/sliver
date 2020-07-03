@@ -8,7 +8,6 @@ import pylunar
 import talib.abstract as ta
 import pytz
 
-
 class hypnox(freqtrade.strategy.interface.IStrategy):
 	INTERFACE_VERSION = 2
 	STOPLOSS_DEFAULT = -0.03

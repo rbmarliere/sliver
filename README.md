@@ -1,3 +1,0 @@
-Hypnox
-
-sub noctem sapientia
