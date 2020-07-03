@@ -57,15 +57,20 @@ def save_uids(users, api):
 
 def stream(argp, args):
 	logging.info("loading config...")
-	config_file = os.path.dirname(os.path.realpath(__file__)) + "/etc/acheron.conf"
-	config = json.load(open(config_file))
+	config_filename = os.path.dirname(os.path.realpath(__file__)) + "/etc/acheron.conf"
+	config = json.load(open(config_filename))
+	keys_filename = os.path.dirname(os.path.realpath(__file__)) + "/etc/acheron.keys"
+	keys = json.load(open(keys_filename))
+	if config["TRACK_USERS"] == '':
+		logging.error("empty user list in config! (TRACK_USERS) in (" + config_filename + ")")
+		return 1
 
 	logging.info("loading twitter API keys...")
-	if config["CONSUMER_KEY"] == '' or config["CONSUMER_SECRET"] == '' or config["ACCESS_KEY"] == '' or config["ACCESS_SECRET"] == '':
-		logging.error("empty keys in config!")
+	if keys["CONSUMER_KEY"] == '' or keys["CONSUMER_SECRET"] == '' or keys["ACCESS_KEY"] == '' or keys["ACCESS_SECRET"] == '':
+		logging.error("empty keys in config! (CONSUMER_KEY, CONSUMER_SECRET, ACCESS_KEY, ACCESS_SECRET) in file (" + keys_filename + ")")
 		return 1
-	auth = tweepy.OAuthHandler(config["CONSUMER_KEY"], config["CONSUMER_SECRET"])
-	auth.set_access_token(config["ACCESS_KEY"], config["ACCESS_SECRET"])
+	auth = tweepy.OAuthHandler(keys["CONSUMER_KEY"], keys["CONSUMER_SECRET"])
+	auth.set_access_token(keys["ACCESS_KEY"], keys["ACCESS_SECRET"])
 	api = tweepy.API(auth)
 
 	logging.info("initializing...")
@@ -80,12 +85,12 @@ def stream(argp, args):
 	logging.info("reading users...")
 	try:
 		# read saved uids file
-		uids_file = os.path.dirname(os.path.realpath(__file__)) + "/etc/acheron.uids"
-		uids = open(uids_file)
+		uids_filename = os.path.dirname(os.path.realpath(__file__)) + "/etc/acheron.uids"
+		uids_file = open(uids_filename)
 		users = uids.read().splitlines()
 		# if config was changed, reload all users
 		if len(users) != len(config["TRACK_USERS"]):
-			os.remove(uids_file)
+			os.remove(uids_filename)
 			users = save_uids(config["TRACK_USERS"], api)
 	except FileNotFoundError:
 		# initially, if no uids file is found, create one
