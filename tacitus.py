@@ -9,8 +9,6 @@ import numpy
 import os
 import pandas
 import re
-import tensorflow
-import tensorflow_hub
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3" # tensorflow verbosity
 
@@ -159,6 +157,9 @@ def parse(argp, args):
 		found.to_csv(outputfile, mode="a", index=False)
 
 def predict(argp, args):
+	import tensorflow
+	import tensorflow_hub
+
 	if args.input == None:
 		logging.error("provide a data directory with --input")
 		return 1
@@ -226,6 +227,9 @@ def tally(argp, args):
 		tally.to_csv(outputfile, index=False)
 
 def train(argp, args):
+	import tensorflow
+	import tensorflow_hub
+
 	use = load_use()
 
 	logging.info("loading config...")
