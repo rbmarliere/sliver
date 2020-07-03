@@ -71,6 +71,10 @@ def filter(argp, args):
 	except:
 		logging.error("can't read filter directory! (" + include_filename + "," + exclude_filename + ")")
 		return 1
+	outputdir = os.path.dirname(os.path.realpath(__file__)) + "/data/filter"
+	if not os.path.exists(outputdir):
+		logging.error(outputdir + " doesn't exist!")
+		return 1
 
 	logging.info("processing " + args.input)
 	for datafile in os.listdir(args.input):
@@ -98,7 +102,6 @@ def filter(argp, args):
 		tweets = tweets.drop("cleaned_tweet", axis=1)
 		tweets = tweets.drop_duplicates()
 
-		outputdir = os.path.dirname(os.path.realpath(__file__)) + "/data/filter"
 		outputfile = outputdir + "/" + os.path.splitext(datafile)[0]
 		logging.info("writing to " + outputfile)
 		if os.path.exists(outputfile):
@@ -113,6 +116,12 @@ def parse(argp, args):
 		return 1
 	if not os.path.exists(args.input):
 		logging.error("can't find data directory! (" + args.input + ")")
+		return 1
+
+	logging.info("loading config...")
+	outputdir = os.path.dirname(os.path.realpath(__file__)) + "/data/parse"
+	if not os.path.exists(outputdir):
+		logging.error(outputdir + " doesn't exist!")
 		return 1
 
 	logging.info("loading lexicon...")
@@ -146,7 +155,6 @@ def parse(argp, args):
 		found["total_intensity"] = found["intensity"] * found["occurrences"]
 		intensities = found[["emotion","total_intensity"]].pivot_table(index=["emotion"], aggfunc="sum").reset_index()
 
-		outputdir = os.path.dirname(os.path.realpath(__file__)) + "/data/parse"
 		outputfile = outputdir + "/" + os.path.splitext(datafile)[0]
 		logging.info("writing to " + outputfile)
 		if os.path.exists(outputfile):
@@ -176,6 +184,10 @@ def predict(argp, args):
 	except:
 		logging.error("can't load model at " + model_file)
 		return 1
+	outputdir = os.path.dirname(os.path.realpath(__file__)) + "/data/predict"
+	if not os.path.exists(outputdir):
+		logging.error(outputdir + " doesn't exist!")
+		return 1
 
 	logging.info("processing " + args.input)
 	for datafile in os.listdir(args.input):
@@ -184,7 +196,6 @@ def predict(argp, args):
 		predictions = tweets["tweet"].apply( lambda x: format(model.predict( use([x]) )[0][1], "f") )
 		predictions.name = "predict"
 
-		outputdir = os.path.dirname(os.path.realpath(__file__)) + "/data/predict"
 		outputfile = outputdir + "/" + os.path.splitext(datafile)[0]
 		logging.info("writing to " + outputfile)
 		if os.path.exists(outputfile):
@@ -207,9 +218,12 @@ def tally(argp, args):
 	if config["PREDICT_LOW_THRESHOLD"] == '' or config["PREDICT_HIGH_THRESHOLD"] == '':
 		logging.error("empty parameters in config! (PREDICT_LOW_THRESHOLD, PREDICT_HIGH_THRESHOLD)")
 		return 1
+	outputdir = os.path.dirname(os.path.realpath(__file__)) + "/data/tally"
+	if not os.path.exists(outputdir):
+		logging.error(outputdir + " doesn't exist!")
+		return 1
 
 	logging.info("processing " + args.input)
-	outputdir = os.path.dirname(os.path.realpath(__file__)) + "/data/tally"
 	for datafile in os.listdir(args.input):
 		logging.info("processing " + datafile)
 		predictions = pandas.read_csv(args.input + "/" + datafile)
