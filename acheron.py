@@ -94,8 +94,8 @@ def stream(argp, args):
 			logging.info("streaming...")
 			stream.filter(
 				languages=["en"],
-				#follow=users,
-				track=[ "bitcoin", "btc", "xbt" ],
+				follow=users,
+				#track=[ "bitcoin", "btc", "xbt" ],
 				is_async=False
 			)
 		except (Timeout, SSLError, ReadTimeoutError, ConnectionError) as e:
