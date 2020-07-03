@@ -1,5 +1,5 @@
 __pycache__
 venv
 data/*
+etc/acheron.keys
 etc/models/*
-etc/*.keys
