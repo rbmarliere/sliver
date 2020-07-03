@@ -87,14 +87,14 @@ def stream(argp, args):
 		# read saved uids file
 		uids_filename = os.path.dirname(os.path.realpath(__file__)) + "/etc/acheron.uids"
 		uids_file = open(uids_filename)
-		users = uids.read().splitlines()
+		uids = uids_file.read().splitlines()
 		# if config was changed, reload all users
-		if len(users) != len(config["TRACK_USERS"]):
+		if len(uids) != len(config["TRACK_USERS"]):
 			os.remove(uids_filename)
-			users = save_uids(config["TRACK_USERS"], api)
+			uids = save_uids(config["TRACK_USERS"], api)
 	except FileNotFoundError:
 		# initially, if no uids file is found, create one
-		users = save_uids(config["TRACK_USERS"], api)
+		uids = save_uids(config["TRACK_USERS"], api)
 
 	# start stream with proper exception handling so it doesn't crash
 	while not stream.running:
@@ -102,7 +102,7 @@ def stream(argp, args):
 			logging.info("streaming...")
 			stream.filter(
 				languages=["en"],
-				follow=users,
+				follow=uids,
 				#track=[ "bitcoin", "btc", "xbt" ],
 				is_async=False
 			)
