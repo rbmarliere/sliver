@@ -41,8 +41,8 @@ class Acheron(tweepy.StreamListener):
 # save the ids of the users to track to disk
 def save_uids(users, api):
 	logging.info("loading uids...")
-	f = os.path.dirname(os.path.realpath(__file__)) + "/etc/acheron.uids"
-	uids_file = open(f, "a")
+	uids_filename = os.path.dirname(os.path.realpath(__file__)) + "/etc/acheron.uids"
+	uids_file = open(uids_filename, "a")
 	uids = []
 	for user in users:
 		# retrieve user id by name from twitter api
