@@ -1,9 +1,11 @@
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import scale
 from tqdm import tqdm
 import datetime
 import json
 import logging
+import math
 import nltk
 import numpy
 import os
@@ -125,8 +127,8 @@ def parse(argp, args):
 	logging.info("loading config...")
 	config_file = os.path.dirname(os.path.realpath(__file__)) + "/etc/tacitus.conf"
 	config = json.load(open(config_file))
-	if config["PARSE_OCCURRENCES_THRESHOLD"] == '':
-		logging.error("empty parameters in config! (PARSE_OCCURRENCES_THRESHOLD)")
+	if config["PARSE_OCCURRENCES_THRESHOLD"] == '' or config["PARSE_FREQUENCY_THRESHOLD"] == '':
+		logging.error("empty parameters in config! (PARSE_OCCURRENCES_THRESHOLD,PARSE_FREQUENCY_THRESHOLD)")
 		return 1
 	outputdir = os.path.dirname(os.path.realpath(__file__)) + "/data/parse"
 	if not os.path.exists(outputdir):
@@ -140,33 +142,63 @@ def parse(argp, args):
 	glosema = glosema.set_index("cleaned_word")
 
 	logging.info("processing " + args.input)
+	last_unique = pandas.DataFrame()
 	for datafile in os.listdir(args.input):
 		if datafile.startswith("."):
 			continue
 
 		logging.info("processing " + datafile)
-		all_tweets = pandas.read_csv(args.input + "/" + datafile)
-		all_tweets["cleaned_tweet"] = all_tweets["tweet"].apply( lambda x: clean(x) )
+		tweets = pandas.read_csv(args.input + "/" + datafile)
+		tweets["cleaned_tweet"] = tweets["tweet"].apply( lambda x: clean(x) )
 
-		# take unique words
-		unique = all_tweets["cleaned_tweet"].str.split(" ", expand=True).stack().value_counts()
-		# subtract single use words
-		unique = pandas.DataFrame({ "cleaned_word": unique[unique > 1] })
-
-		i1 = glosema.index
-		i2 = unique.index
-
-		in_glosema = glosema[i1.isin(i2)].reset_index()
-
-		# aggreggate words by emotions based on number of occurrences
-		found = in_glosema.sort_values(by=["emotion","word"]).groupby(["emotion","word","intensity"]).size().to_frame("occurrences")
-		# filter found words based on a threshold of occurrences
-		found = found[found["occurrences"] >= config["PARSE_OCCURRENCES_THRESHOLD"]]
-		found.reset_index(inplace=True)
-		# calc intensities
-		found["total_intensity"] = found["intensity"] * found["occurrences"]
-		intensities = found[["emotion","total_intensity"]].pivot_table(index=["emotion"], aggfunc="sum").reset_index()
-		found = found.drop("total_intensity", axis=1)
+		# take unique words used in all tweets
+		unique = tweets["cleaned_tweet"].str.split(" ", expand=True).stack().value_counts()
+		# filter found unique words based on an occurrence threshold
+		unique = pandas.DataFrame({ "occurrences": unique[ unique >= config["PARSE_OCCURRENCES_THRESHOLD"] ] })
+		# select only the words that also appear in the last period
+		intersect = unique.loc[ unique.index.intersection(last_unique.index) ]
+		# check if first datafile
+		if last_unique.empty:
+			last_unique = unique
+			continue
+		# grab the occurrences from the last period
+		intersect["last_occurrences"] = last_unique.loc[ unique.index.intersection(last_unique.index) ]
+		# update loop index
+		last_unique = unique
+		# scale occurrences of each word into frequency
+		intersect["frequency"] = scale(intersect.occurrences.values)
+		intersect["last_frequency"] = scale(intersect.last_occurrences.values)
+		# compute deltas from last period
+		intersect["delta"] = intersect["frequency"] - intersect["last_frequency"]
+		# filter based on a frequency threshold
+		intersect = intersect[ intersect["frequency"] < config["PARSE_FREQUENCY_THRESHOLD"] ]
+		# filter based on a delta threshold
+		intersect = intersect[ intersect["frequency"] < config["PARSE_FREQUENCY_THRESHOLD"] ]
+		# sort by frequency
+		intersect = intersect.sort_values(by=["delta"])
+		# keep only words from glosema
+		found = glosema.loc[ intersect.index.intersection(glosema.index) ]
+		# concatenate into a single frame
+		mirari = pandas.concat([intersect.loc[ found.index ],found], axis=1)
+		# aggreggate deltas by emotions
+		emotions = mirari.reset_index()[["emotion","delta"]].groupby(["emotion"]).sum()
+		# sum opposite emotions and aggregate
+		eg = emotions.delta.get("ecstasy", 0) + emotions.delta.get("grief", 0)
+		js = emotions.delta.get("joy", 0) + emotions.delta.get("sadness", 0)
+		sp = emotions.delta.get("serenity", 0) + emotions.delta.get("pensiveness", 0)
+		happiness = eg + js + sp
+		al = emotions.delta.get("admiration", 0) + emotions.delta.get("loathing", 0)
+		td = emotions.delta.get("trust", 0) + emotions.delta.get("disgust", 0)
+		ab = emotions.delta.get("acceptance", 0) + emotions.delta.get("boredom", 0)
+		likeness = al + td + ab
+		rt = emotions.delta.get("rage", 0) + emotions.delta.get("terror", 0)
+		af = emotions.delta.get("anger", 0) + emotions.delta.get("fear", 0)
+		aa = emotions.delta.get("annoyance", 0) + emotions.delta.get("apprehension", 0)
+		engagedness = rt + af + aa
+		vai = emotions.delta.get("vigilance", 0) + emotions.delta.get("anticipation", 0) + emotions.delta.get("interest", 0)
+		asd = emotions.delta.get("amazement", 0) + emotions.delta.get("surprise", 0) + emotions.delta.get("distraction", 0)
+		asd = 1 if asd == 0 else math.sqrt(asd%1)
+		building_tension = vai / asd
 
 		outputfile = outputdir + "/" + os.path.splitext(datafile)[0]
 		logging.info("writing to " + outputfile)
@@ -174,9 +206,9 @@ def parse(argp, args):
 			logging.warning(outputfile + " already exists, overwrite? [y|N]")
 			if input() != 'y':
 				continue
-		intensities.to_csv(outputfile, index=False)
-		print("", file=open(outputfile, "a"))
-		found.to_csv(outputfile, mode="a", index=False)
+		mirari.to_csv(outputfile + ".mirari", index=False)
+		emotions.reset_index().to_csv(outputfile + ".deltas", index=False)
+		pandas.DataFrame({ "happiness": [happiness], "likeness": [likeness], "engagedness": [engagedness] }).to_csv(outputfile, index=False)
 
 def predict(argp, args):
 	import tensorflow
