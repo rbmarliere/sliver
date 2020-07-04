@@ -23,11 +23,12 @@ fmap = {
 	"train" : tacitus.train,
 	}
 
-argp = argparse.ArgumentParser(description='''
- |_|  \_/  |_)  |\ |  / \  \/ 
- | |   |   |    | \|  \_/  /\\
+argp = argparse.ArgumentParser(description='''          _        _     
+ |_| \_/ |_) |\ | / \ \/ 
+ | |  |  |   | \| \_/ /\ 
+                         \
 
-sub noctem sapientia
+   sub noctem sapientia
 ''',
 formatter_class=argparse.RawTextHelpFormatter)
 argp.add_argument("--input")
