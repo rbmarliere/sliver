@@ -127,8 +127,8 @@ def parse(argp, args):
 	logging.info("loading config...")
 	config_file = os.path.dirname(os.path.realpath(__file__)) + "/etc/tacitus.conf"
 	config = json.load(open(config_file))
-	if config["PARSE_OCCURRENCES_THRESHOLD"] == '' or config["PARSE_FREQUENCY_THRESHOLD"] == '':
-		logging.error("empty parameters in config! (PARSE_OCCURRENCES_THRESHOLD,PARSE_FREQUENCY_THRESHOLD)")
+	if config["PARSE_OCCURRENCES_THRESHOLD"] == '' or config["PARSE_FREQUENCY_THRESHOLD"] == '' or config["PARSE_DELTA_THRESHOLD"] == '':
+		logging.error("empty parameters in config! (PARSE_OCCURRENCES_THRESHOLD,PARSE_FREQUENCY_THRESHOLD,PARSE_DELTA_THRESHOLD)")
 		return 1
 	outputdir = os.path.dirname(os.path.realpath(__file__)) + "/data/parse"
 	if not os.path.exists(outputdir):
@@ -173,7 +173,7 @@ def parse(argp, args):
 		# filter based on a frequency threshold
 		intersect = intersect[ intersect["frequency"] < config["PARSE_FREQUENCY_THRESHOLD"] ]
 		# filter based on a delta threshold
-		intersect = intersect[ intersect["frequency"] < config["PARSE_FREQUENCY_THRESHOLD"] ]
+		intersect = intersect[ intersect["frequency"] < config["PARSE_DELTA_THRESHOLD"] ]
 		# sort by frequency
 		intersect = intersect.sort_values(by=["delta"])
 		# keep only words from glosema
