@@ -1,6 +1,5 @@
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder
-from sklearn.preprocessing import scale
 from tqdm import tqdm
 import datetime
 import json
@@ -127,8 +126,8 @@ def parse(argp, args):
 	logging.info("loading config...")
 	config_file = os.path.dirname(os.path.realpath(__file__)) + "/etc/tacitus.conf"
 	config = json.load(open(config_file))
-	if config["PARSE_OCCURRENCES_THRESHOLD"] == '' or config["PARSE_FREQUENCY_THRESHOLD"] == '' or config["PARSE_DELTA_THRESHOLD"] == '':
-		logging.error("empty parameters in config! (PARSE_OCCURRENCES_THRESHOLD,PARSE_FREQUENCY_THRESHOLD,PARSE_DELTA_THRESHOLD)")
+	if config["PARSE_OCCURRENCES_THRESHOLD"] == '' or config["PARSE_FREQUENCY_THRESHOLD"] == '' or config["PARSE_DELTA_THRESHOLD"] == '' or config["PARSE_TENSION_BUY_THRESHOLD"] == '' or config["PARSE_TENSION_SELL_THRESHOLD"] == '':
+		logging.error("empty parameters in config! (PARSE_OCCURRENCES_THRESHOLD,PARSE_FREQUENCY_THRESHOLD,PARSE_DELTA_THRESHOLD,PARSE_TENSION_BUY_THRESHOLD,PARSE_TENSION_SELL_THRESHOLD)")
 		return 1
 	outputdir = os.path.dirname(os.path.realpath(__file__)) + "/data/parse"
 	if not os.path.exists(outputdir):
@@ -143,7 +142,7 @@ def parse(argp, args):
 
 	logging.info("processing " + args.input)
 	last_unique = pandas.DataFrame()
-	for datafile in os.listdir(args.input):
+	for datafile in sorted(os.listdir(args.input)):
 		if datafile.startswith("."):
 			continue
 
@@ -165,17 +164,16 @@ def parse(argp, args):
 		intersect["last_occurrences"] = last_unique.loc[ unique.index.intersection(last_unique.index) ]
 		# update loop index
 		last_unique = unique
-		# scale occurrences of each word into frequency
-		intersect["frequency"] = scale(intersect.occurrences.values)
-		intersect["last_frequency"] = scale(intersect.last_occurrences.values)
+		# make occurrences percentages as frequency
+		intersect["frequency"] = intersect["occurrences"] / intersect["occurrences"].sum()
+		intersect["last_frequency"] = intersect["last_occurrences"] / intersect["last_occurrences"].sum()
+		# filter based on a frequency threshold
+		intersect = intersect[ intersect.frequency < intersect.frequency.quantile( config["PARSE_FREQUENCY_THRESHOLD"] ) ]
 		# compute deltas from last period
 		intersect["delta"] = intersect["frequency"] - intersect["last_frequency"]
-		# filter based on a frequency threshold
-		intersect = intersect[ intersect["frequency"] < config["PARSE_FREQUENCY_THRESHOLD"] ]
 		# filter based on a delta threshold
-		intersect = intersect[ intersect["frequency"] < config["PARSE_DELTA_THRESHOLD"] ]
-		# sort by frequency
-		intersect = intersect.sort_values(by=["delta"])
+		intersect = intersect[ intersect.delta < intersect.delta.quantile( config["PARSE_DELTA_THRESHOLD"] ) ]
+
 		# keep only words from glosema
 		found = glosema.loc[ intersect.index.intersection(glosema.index) ]
 		# concatenate into a single frame
@@ -186,19 +184,26 @@ def parse(argp, args):
 		eg = emotions.delta.get("ecstasy", 0) + emotions.delta.get("grief", 0)
 		js = emotions.delta.get("joy", 0) + emotions.delta.get("sadness", 0)
 		sp = emotions.delta.get("serenity", 0) + emotions.delta.get("pensiveness", 0)
-		happiness = eg + js + sp
+		happy = eg + js + sp
 		al = emotions.delta.get("admiration", 0) + emotions.delta.get("loathing", 0)
 		td = emotions.delta.get("trust", 0) + emotions.delta.get("disgust", 0)
 		ab = emotions.delta.get("acceptance", 0) + emotions.delta.get("boredom", 0)
-		likeness = al + td + ab
+		like = al + td + ab
 		rt = emotions.delta.get("rage", 0) + emotions.delta.get("terror", 0)
 		af = emotions.delta.get("anger", 0) + emotions.delta.get("fear", 0)
 		aa = emotions.delta.get("annoyance", 0) + emotions.delta.get("apprehension", 0)
-		engagedness = rt + af + aa
+		action = rt + af + aa
 		vai = emotions.delta.get("vigilance", 0) + emotions.delta.get("anticipation", 0) + emotions.delta.get("interest", 0)
 		asd = emotions.delta.get("amazement", 0) + emotions.delta.get("surprise", 0) + emotions.delta.get("distraction", 0)
 		asd = 1 if asd == 0 else math.sqrt(asd%1)
-		building_tension = vai / asd
+		tension = vai / asd
+
+		signal = "hodl"
+		signal_sum = happy + like + action + tension
+		if signal_sum > config["PARSE_TENSION_BUY_THRESHOLD"]:
+			signal = "buy"
+		elif signal_sum < config["PARSE_TENSION_SELL_THRESHOLD"]:
+			signal = "sell"
 
 		outputfile = outputdir + "/" + os.path.splitext(datafile)[0]
 		logging.info("writing to " + outputfile)
@@ -208,7 +213,7 @@ def parse(argp, args):
 				continue
 		mirari.to_csv(outputfile + ".mirari", index=False)
 		emotions.reset_index().to_csv(outputfile + ".deltas", index=False)
-		pandas.DataFrame({ "happiness": [happiness], "likeness": [likeness], "engagedness": [engagedness] }).to_csv(outputfile, index=False)
+		pandas.DataFrame({ "signal": [signal], "happy": [happy], "like": [like], "action": [action], "tension": [tension] }).to_csv(outputfile, index=False)
 
 def predict(argp, args):
 	import tensorflow
@@ -307,8 +312,8 @@ def train(argp, args):
 			return 1
 
 	logging.info("loading hyperparameters...")
-	if config["SEED"] == '' or config["EPOCHS"] == '' or config["BATCH_SIZE"] == '':
-		logging.error("empty parameters in config! (SEED, EPOCHS, BATCH_SIZE)")
+	if config["TRAIN_SEED"] == '' or config["TRAIN_EPOCHS"] == '' or config["TRAIN_BATCH_SIZE"] == '':
+		logging.error("empty parameters in config! (TRAIN_SEED, TRAIN_EPOCHS, TRAIN_BATCH_SIZE)")
 		return 1
 
 	logging.info("loading training data...")
@@ -333,7 +338,7 @@ def train(argp, args):
 
 	logging.info("building training data...")
 	polarity = OneHotEncoder(sparse=False).fit_transform( tweets.polarity.to_numpy().reshape(-1, 1) )
-	train_tweets, test_tweets, y_train, y_test = train_test_split( tweets.tweet, polarity, test_size = .1, random_state = config["SEED"] )
+	train_tweets, test_tweets, y_train, y_test = train_test_split( tweets.tweet, polarity, test_size = .1, random_state = config["TRAIN_SEED"] )
 	X_train = []
 	for r in tqdm(train_tweets):
 		emb = use([r])
@@ -360,8 +365,8 @@ def train(argp, args):
 	logging.info("training model...")
 	model.fit(
 		X_train, y_train,
-		epochs=config["EPOCHS"],
-		batch_size=config["BATCH_SIZE"],
+		epochs=config["TRAIN_EPOCHS"],
+		batch_size=config["TRAIN_BATCH_SIZE"],
 		validation_split=0.1,
 		verbose=1,
 		shuffle=True
