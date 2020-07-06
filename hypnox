@@ -6,6 +6,7 @@ import logging
 import nltk
 import os
 import tacitus
+import time
 
 #import code
 #code.interact(local=locals())
@@ -23,19 +24,23 @@ fmap = {
 	"train" : tacitus.train,
 	}
 
-argp = argparse.ArgumentParser(description='''          _        _     
- |_| \_/ |_) |\ | / \ \/ 
- | |  |  |   | \| \_/ /\ 
-                         \
+argp = argparse.ArgumentParser(description='''
+          _        _
+ |_| \_/ |_) |\ | / \ \/
+ | |  |  |   | \| \_/ /\\
 
    sub noctem sapientia
 ''',
 formatter_class=argparse.RawTextHelpFormatter)
-argp.add_argument("--input")
+argp.add_argument("--input", help="directory containing input csv files")
+argp.add_argument("--ignore", action="store_true", help="ignore input files already processed")
 argp.add_argument("command", choices=fmap.keys())
 args = argp.parse_args()
 
 func = fmap[args.command]
 nltk.download('stopwords')
+
+t_start = time.time()
 func(argp, args)
+print(">>> execution done after %s seconds!" % (time.time() - t_start))
 
