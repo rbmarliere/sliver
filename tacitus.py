@@ -234,6 +234,11 @@ def predict(argp, args):
 	use = load_use()
 
 	logging.info("loading config...")
+	config_file = os.path.dirname(os.path.realpath(__file__)) + "/etc/tacitus.conf"
+	config = json.load(open(config_file))
+	if config["PREDICT_LOW_THRESHOLD"] == '' or config["PREDICT_HIGH_THRESHOLD"] == '':
+		logging.error("empty parameters in config! (PREDICT_LOW_THRESHOLD, PREDICT_HIGH_THRESHOLD)")
+		return 1
 	model_file = os.path.dirname(os.path.realpath(__file__)) + "/etc/models/default"
 	try:
 		model = tensorflow.keras.models.load_model(model_file)
@@ -260,11 +265,19 @@ def predict(argp, args):
 
 		logging.info("processing " + datafile)
 		tweets = pandas.read_csv(args.input + "/" + datafile, encoding="utf-8", lineterminator="\n")
-		predictions = tweets["tweet"].apply( lambda x: format(model.predict( use([x]) )[0][1], "f") )
-		predictions.name = "predict"
+		def pred(x):
+			score = model.predict( use([x]) )[0][1]
+			if score > config["PREDICT_LOW_THRESHOLD"] and score < config["PREDICT_HIGH_THRESHOLD"]:
+				return 0
+			elif score >= config["PREDICT_HIGH_THRESHOLD"]:
+				return 1
+			else:
+				return -1
+		tweets["predict"] = tweets["tweet"].apply( pred )
+		tweets = tweets[ tweets["predict"] > 0 ]
 
 		logging.info("writing to " + outputfile)
-		predictions.to_csv(outputfile, index=False)
+		tweets.to_csv(outputfile, index=False)
 
 def tally(argp, args):
 	if args.input == None:
@@ -275,11 +288,6 @@ def tally(argp, args):
 		return 1
 
 	logging.info("loading config...")
-	config_file = os.path.dirname(os.path.realpath(__file__)) + "/etc/tacitus.conf"
-	config = json.load(open(config_file))
-	if config["PREDICT_LOW_THRESHOLD"] == '' or config["PREDICT_HIGH_THRESHOLD"] == '':
-		logging.error("empty parameters in config! (PREDICT_LOW_THRESHOLD, PREDICT_HIGH_THRESHOLD)")
-		return 1
 	outputdir = os.path.dirname(os.path.realpath(__file__)) + "/data/tally"
 	if not os.path.exists(outputdir):
 		logging.error(outputdir + " doesn't exist!")
@@ -300,8 +308,8 @@ def tally(argp, args):
 
 		logging.info("processing " + datafile)
 		predictions = pandas.read_csv(args.input + "/" + datafile, encoding="utf-8", lineterminator="\n")
-		pos = predictions.loc[ predictions["predict"] >= config["PREDICT_HIGH_THRESHOLD"] ].size
-		neg = predictions.loc[ (predictions["predict"] > config["PREDICT_LOW_THRESHOLD"]) & (predictions["predict"] < config["PREDICT_HIGH_THRESHOLD"]) ].size
+		pos = predictions.loc[ predictions["predict"] == 1 ].size
+		neg = predictions.loc[ predictions["predict"] == 0 ].size
 		trend = str( pos - neg > 0 )
 
 		logging.info("writing to " + outputfile)
