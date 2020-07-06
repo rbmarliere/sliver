@@ -79,22 +79,30 @@ def filter(argp, args):
 		return 1
 
 	logging.info("processing " + args.input)
-	for datafile in os.listdir(args.input):
+	for datafile in sorted(os.listdir(args.input)):
 		if datafile.startswith("."):
 			continue
 
+		outputfile = outputdir + "/" + os.path.splitext(datafile)[0]
+		if os.path.exists(outputfile):
+			if args.ignore:
+				continue
+			logging.warning(outputfile + " already exists, overwrite? [y|N]")
+			if input() != 'y':
+				continue
+
 		logging.info("processing " + datafile)
-		all_tweets = pandas.read_csv(args.input + "/" + datafile)
-		all_tweets["cleaned_tweet"] = all_tweets["tweet"].apply( lambda x: clean(x) )
-		all_tweets = all_tweets.set_index("cleaned_tweet")
+		alltweets = pandas.read_csv(args.input + "/" + datafile, encoding="utf-8", lineterminator="\n")
+		alltweets["cleaned_tweet"] = alltweets["tweet"].apply( lambda x: clean(x) )
+		alltweets = alltweets.set_index("cleaned_tweet")
 
 		tweets = None
 		for word in include:
 			word = clean(word)
 			try:
-				tweets = pandas.concat([ tweets, all_tweets.filter(regex=word, axis=0).reset_index() ])
+				tweets = pandas.concat([ tweets, alltweets.filter(regex=word, axis=0).reset_index() ])
 			except NameError:
-				tweets = all_tweets.filter(regex=word, axis=0).reset_index()
+				tweets = alltweets.filter(regex=word, axis=0).reset_index()
 
 		tweets = tweets.drop_duplicates()
 		tweets = tweets.set_index("cleaned_tweet")
@@ -107,12 +115,7 @@ def filter(argp, args):
 		tweets = tweets.drop("cleaned_tweet", axis=1)
 		tweets = tweets.drop_duplicates()
 
-		outputfile = outputdir + "/" + os.path.splitext(datafile)[0]
 		logging.info("writing to " + outputfile)
-		if os.path.exists(outputfile):
-			logging.warning(outputfile + " already exists, overwrite? [y|N]")
-			if input() != 'y':
-				continue
 		tweets.to_csv(outputfile, index=False)
 
 def parse(argp, args):
@@ -136,7 +139,7 @@ def parse(argp, args):
 
 	logging.info("loading lexicon...")
 	lexicon = os.path.dirname(os.path.realpath(__file__)) + "/etc/lexicon"
-	glosema = pandas.read_csv(lexicon)
+	glosema = pandas.read_csv(lexicon, encoding="utf-8", lineterminator="\n")
 	glosema["cleaned_word"] = glosema["word"].apply( lambda x: clean(x) )
 	glosema = glosema.set_index("cleaned_word")
 
@@ -146,8 +149,16 @@ def parse(argp, args):
 		if datafile.startswith("."):
 			continue
 
+		outputfile = outputdir + "/" + os.path.splitext(datafile)[0]
+		if os.path.exists(outputfile):
+			if args.ignore:
+				continue
+			logging.warning(outputfile + " already exists, overwrite? [y|N]")
+			if input() != 'y':
+				continue
+
 		logging.info("processing " + datafile)
-		tweets = pandas.read_csv(args.input + "/" + datafile)
+		tweets = pandas.read_csv(args.input + "/" + datafile, encoding="utf-8", lineterminator="\n")
 		tweets["cleaned_tweet"] = tweets["tweet"].apply( lambda x: clean(x) )
 
 		# take unique words used in all tweets
@@ -172,7 +183,7 @@ def parse(argp, args):
 		# compute deltas from last period
 		intersect["delta"] = intersect["frequency"] - intersect["last_frequency"]
 		# filter based on a delta threshold
-		intersect = intersect[ intersect.delta < intersect.delta.quantile( config["PARSE_DELTA_THRESHOLD"] ) ]
+		intersect = intersect[ intersect.delta > intersect.delta.quantile( config["PARSE_DELTA_THRESHOLD"] ) ]
 
 		# keep only words from glosema
 		found = glosema.loc[ intersect.index.intersection(glosema.index) ]
@@ -205,12 +216,7 @@ def parse(argp, args):
 		elif signal_sum < config["PARSE_TENSION_SELL_THRESHOLD"]:
 			signal = "sell"
 
-		outputfile = outputdir + "/" + os.path.splitext(datafile)[0]
 		logging.info("writing to " + outputfile)
-		if os.path.exists(outputfile):
-			logging.warning(outputfile + " already exists, overwrite? [y|N]")
-			if input() != 'y':
-				continue
 		mirari.to_csv(outputfile + ".mirari", index=False)
 		emotions.reset_index().to_csv(outputfile + ".deltas", index=False)
 		pandas.DataFrame({ "signal": [signal], "happy": [happy], "like": [like], "action": [action], "tension": [tension] }).to_csv(outputfile, index=False)
@@ -240,21 +246,24 @@ def predict(argp, args):
 		return 1
 
 	logging.info("processing " + args.input)
-	for datafile in os.listdir(args.input):
+	for datafile in sorted(os.listdir(args.input)):
 		if datafile.startswith("."):
 			continue
 
-		logging.info("processing " + datafile)
-		tweets = pandas.read_csv(args.input + "/" + datafile)
-		predictions = tweets["tweet"].apply( lambda x: format(model.predict( use([x]) )[0][1], "f") )
-		predictions.name = "predict"
-
 		outputfile = outputdir + "/" + os.path.splitext(datafile)[0]
-		logging.info("writing to " + outputfile)
 		if os.path.exists(outputfile):
+			if args.ignore:
+				continue
 			logging.warning(outputfile + " already exists, overwrite? [y|N]")
 			if input() != 'y':
 				continue
+
+		logging.info("processing " + datafile)
+		tweets = pandas.read_csv(args.input + "/" + datafile, encoding="utf-8", lineterminator="\n")
+		predictions = tweets["tweet"].apply( lambda x: format(model.predict( use([x]) )[0][1], "f") )
+		predictions.name = "predict"
+
+		logging.info("writing to " + outputfile)
 		predictions.to_csv(outputfile, index=False)
 
 def tally(argp, args):
@@ -277,22 +286,25 @@ def tally(argp, args):
 		return 1
 
 	logging.info("processing " + args.input)
-	for datafile in os.listdir(args.input):
+	for datafile in sorted(os.listdir(args.input)):
 		if datafile.startswith("."):
 			continue
 
+		outputfile = outputdir + "/" + os.path.splitext(datafile)[0]
+		if os.path.exists(outputfile):
+			if args.ignore:
+				continue
+			logging.warning(outputfile + " already exists, overwrite? [y|N]")
+			if input() != 'y':
+				continue
+
 		logging.info("processing " + datafile)
-		predictions = pandas.read_csv(args.input + "/" + datafile)
+		predictions = pandas.read_csv(args.input + "/" + datafile, encoding="utf-8", lineterminator="\n")
 		pos = predictions.loc[ predictions["predict"] >= config["PREDICT_HIGH_THRESHOLD"] ].size
 		neg = predictions.loc[ (predictions["predict"] > config["PREDICT_LOW_THRESHOLD"]) & (predictions["predict"] < config["PREDICT_HIGH_THRESHOLD"]) ].size
 		trend = str( pos - neg > 0 )
 
-		outputfile = outputdir + "/" + os.path.splitext(datafile)[0]
 		logging.info("writing to " + outputfile)
-		if os.path.exists(outputfile):
-			logging.warning(outputfile + " already exists, overwrite? [y|N]")
-			if input() != 'y':
-				continue
 		tally = pandas.DataFrame({ "pos": [pos], "neg": [neg], "trend": [trend] })
 		tally.to_csv(outputfile, index=False)
 
