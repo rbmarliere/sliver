@@ -255,6 +255,10 @@ def predict(argp, args):
 		if datafile.startswith("."):
 			continue
 
+		#import code
+		#code.interact(local=locals())
+		#input()
+
 		outputfile = outputdir + "/" + os.path.splitext(datafile)[0]
 		if os.path.exists(outputfile):
 			if args.ignore:
