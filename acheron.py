@@ -61,12 +61,12 @@ def stream(argp, args):
 	config = json.load(open(config_filename))
 	keys_filename = os.path.dirname(os.path.realpath(__file__)) + "/etc/acheron.keys"
 	keys = json.load(open(keys_filename))
-	if config["TRACK_USERS"] == '':
+	if config["TRACK_USERS"] == "":
 		logging.error("empty user list in config! (TRACK_USERS) in (" + config_filename + ")")
 		return 1
 
 	logging.info("loading twitter API keys...")
-	if keys["CONSUMER_KEY"] == '' or keys["CONSUMER_SECRET"] == '' or keys["ACCESS_KEY"] == '' or keys["ACCESS_SECRET"] == '':
+	if keys["CONSUMER_KEY"] == "" or keys["CONSUMER_SECRET"] == "" or keys["ACCESS_KEY"] == "" or keys["ACCESS_SECRET"] == "":
 		logging.error("empty keys in config! (CONSUMER_KEY, CONSUMER_SECRET, ACCESS_KEY, ACCESS_SECRET) in file (" + keys_filename + ")")
 		return 1
 	auth = tweepy.OAuthHandler(keys["CONSUMER_KEY"], keys["CONSUMER_SECRET"])
