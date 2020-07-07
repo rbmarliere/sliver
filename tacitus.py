@@ -34,7 +34,7 @@ def clean(text):
 	words = text.lower().split()
 	# remove stopwords, but keep some
 	keep = [ "this", "that'll", "these", "having", "does", "doing", "until", "while", "about", "against", "between", "into", "through", "during", "before", "after", "above", "below", "from", "up", "down", "in", "out", "on", "off", "over", "under", "again", "further", "then", "once", "here", "there", "when", "few", "both", "more", "most", "other", "some", "than", "too", "very", "can", "will", "should", "should've", "now", "ain", "aren", "aren't", "could", "couldn", "couldn't", "didn", "didn't", "doesn", "doesn't", "hadn", "hadn't", "hasn", "hasn't", "haven", "haven't", "isn", "isn't", "mighn", "mightn't", "mustn", "mustn't", "needn", "needn't", "shan", "shan't", "shouldn", "shouldn't", "wasn", "wasn't", "weren","weren't", "won'", "won't", "wouldn", "wouldn't" ]
-        # load nltk stopwords
+		# load nltk stopwords
 	nltkstops = set(nltk.corpus.stopwords.words("english"))
 	stops = [w for w in nltkstops if not w in keep]
 	meaningful_words = [w for w in words if not w in stops]
@@ -88,13 +88,16 @@ def filter(argp, args):
 			if args.ignore:
 				continue
 			logging.warning(outputfile + " already exists, overwrite? [y|N]")
-			if input() != 'y':
+			if input() != "y":
 				continue
 
 		logging.info("processing " + datafile)
 		alltweets = pandas.read_csv(args.input + "/" + datafile, encoding="utf-8", lineterminator="\n")
 		alltweets["cleaned_tweet"] = alltweets["tweet"].apply( lambda x: clean(x) )
 		alltweets = alltweets.set_index("cleaned_tweet")
+		if alltweets.empty:
+			logging.info("empty datafile")
+			continue
 
 		tweets = None
 		for word in include:
@@ -116,6 +119,9 @@ def filter(argp, args):
 		tweets = tweets.drop_duplicates()
 
 		logging.info("writing to " + outputfile)
+		if tweets.empty:
+			logging.info("empty dataframe")
+			continue
 		tweets.to_csv(outputfile, index=False)
 
 def parse(argp, args):
@@ -129,7 +135,7 @@ def parse(argp, args):
 	logging.info("loading config...")
 	config_file = os.path.dirname(os.path.realpath(__file__)) + "/etc/tacitus.conf"
 	config = json.load(open(config_file))
-	if config["PARSE_OCCURRENCES_THRESHOLD"] == '' or config["PARSE_FREQUENCY_THRESHOLD"] == '' or config["PARSE_DELTA_THRESHOLD"] == '' or config["PARSE_TENSION_BUY_THRESHOLD"] == '' or config["PARSE_TENSION_SELL_THRESHOLD"] == '':
+	if config["PARSE_OCCURRENCES_THRESHOLD"] == "" or config["PARSE_FREQUENCY_THRESHOLD"] == "" or config["PARSE_DELTA_THRESHOLD"] == "" or config["PARSE_TENSION_BUY_THRESHOLD"] == "" or config["PARSE_TENSION_SELL_THRESHOLD"] == "":
 		logging.error("empty parameters in config! (PARSE_OCCURRENCES_THRESHOLD,PARSE_FREQUENCY_THRESHOLD,PARSE_DELTA_THRESHOLD,PARSE_TENSION_BUY_THRESHOLD,PARSE_TENSION_SELL_THRESHOLD)")
 		return 1
 	outputdir = os.path.dirname(os.path.realpath(__file__)) + "/data/parse"
@@ -154,12 +160,15 @@ def parse(argp, args):
 			if args.ignore:
 				continue
 			logging.warning(outputfile + " already exists, overwrite? [y|N]")
-			if input() != 'y':
+			if input() != "y":
 				continue
 
 		logging.info("processing " + datafile)
 		tweets = pandas.read_csv(args.input + "/" + datafile, encoding="utf-8", lineterminator="\n")
 		tweets["cleaned_tweet"] = tweets["tweet"].apply( lambda x: clean(x) )
+		if tweets.empty:
+			logging.info("empty datafile")
+			continue
 
 		# take unique words used in all tweets
 		unique = tweets["cleaned_tweet"].str.split(" ", expand=True).stack().value_counts()
@@ -179,7 +188,7 @@ def parse(argp, args):
 		intersect["frequency"] = intersect["occurrences"] / intersect["occurrences"].sum()
 		intersect["last_frequency"] = intersect["last_occurrences"] / intersect["last_occurrences"].sum()
 		# filter based on a frequency threshold
-		intersect = intersect[ intersect.frequency < intersect.frequency.quantile( config["PARSE_FREQUENCY_THRESHOLD"] ) ]
+		intersect = intersect[ intersect.frequency <= intersect.frequency.quantile( config["PARSE_FREQUENCY_THRESHOLD"] ) ]
 		# compute deltas from last period
 		intersect["delta"] = intersect["frequency"] - intersect["last_frequency"]
 		# filter based on a delta threshold
@@ -189,37 +198,41 @@ def parse(argp, args):
 		found = glosema.loc[ intersect.index.intersection(glosema.index) ]
 		# concatenate into a single frame
 		mirari = pandas.concat([intersect.loc[ found.index ],found], axis=1)
-		# aggreggate deltas by emotions
-		emotions = mirari.reset_index()[["emotion","delta"]].groupby(["emotion"]).sum()
+		# aggreggate occurrences by emotions
+		emotions = mirari.reset_index()[["emotion","occurrences"]].groupby(["emotion"]).sum()
 		# sum opposite emotions and aggregate
-		eg = emotions.delta.get("ecstasy", 0) + emotions.delta.get("grief", 0)
-		js = emotions.delta.get("joy", 0) + emotions.delta.get("sadness", 0)
-		sp = emotions.delta.get("serenity", 0) + emotions.delta.get("pensiveness", 0)
+		eg = emotions.occurrences.get("ecstasy", 0) + emotions.occurrences.get("grief", 0)
+		js = emotions.occurrences.get("joy", 0) + emotions.occurrences.get("sadness", 0)
+		sp = emotions.occurrences.get("serenity", 0) + emotions.occurrences.get("pensiveness", 0)
 		happy = eg + js + sp
-		al = emotions.delta.get("admiration", 0) + emotions.delta.get("loathing", 0)
-		td = emotions.delta.get("trust", 0) + emotions.delta.get("disgust", 0)
-		ab = emotions.delta.get("acceptance", 0) + emotions.delta.get("boredom", 0)
+		al = emotions.occurrences.get("admiration", 0) + emotions.occurrences.get("loathing", 0)
+		td = emotions.occurrences.get("trust", 0) + emotions.occurrences.get("disgust", 0)
+		ab = emotions.occurrences.get("acceptance", 0) + emotions.occurrences.get("boredom", 0)
 		like = al + td + ab
-		rt = emotions.delta.get("rage", 0) + emotions.delta.get("terror", 0)
-		af = emotions.delta.get("anger", 0) + emotions.delta.get("fear", 0)
-		aa = emotions.delta.get("annoyance", 0) + emotions.delta.get("apprehension", 0)
+		rt = emotions.occurrences.get("rage", 0) + emotions.occurrences.get("terror", 0)
+		af = emotions.occurrences.get("anger", 0) + emotions.occurrences.get("fear", 0)
+		aa = emotions.occurrences.get("annoyance", 0) + emotions.occurrences.get("apprehension", 0)
 		action = rt + af + aa
-		vai = emotions.delta.get("vigilance", 0) + emotions.delta.get("anticipation", 0) + emotions.delta.get("interest", 0)
-		asd = emotions.delta.get("amazement", 0) + emotions.delta.get("surprise", 0) + emotions.delta.get("distraction", 0)
+		vai = emotions.occurrences.get("vigilance", 0) + emotions.occurrences.get("anticipation", 0) + emotions.occurrences.get("interest", 0)
+		asd = emotions.occurrences.get("amazement", 0) + emotions.occurrences.get("surprise", 0) + emotions.occurrences.get("distraction", 0)
 		asd = 1 if asd == 0 else math.sqrt(asd%1)
-		tension = vai / asd
+		tension = (vai+93) / (asd+93)
 
-		signal = "hodl"
+		signal = 0
 		signal_sum = happy + like + action + tension
-		if signal_sum > config["PARSE_TENSION_BUY_THRESHOLD"]:
-			signal = "buy"
-		elif signal_sum < config["PARSE_TENSION_SELL_THRESHOLD"]:
-			signal = "sell"
+		if signal_sum >= config["PARSE_TENSION_BUY_THRESHOLD"] and signal_sum < config["PARSE_TENSION_SELL_THRESHOLD"]:
+			signal = 1
+		elif signal_sum >= config["PARSE_TENSION_SELL_THRESHOLD"]:
+			signal = -1
 
 		logging.info("writing to " + outputfile)
+		result = pandas.DataFrame({ "signal": [signal], "happy": [happy], "like": [like], "action": [action], "tension": [tension] })
+		if mirari.empty or emotions.empty or result.empty:
+			logging.info("empty dataframe")
+			continue
 		mirari.to_csv(outputfile + ".mirari", index=False)
 		emotions.reset_index().to_csv(outputfile + ".deltas", index=False)
-		pandas.DataFrame({ "signal": [signal], "happy": [happy], "like": [like], "action": [action], "tension": [tension] }).to_csv(outputfile, index=False)
+		result.to_csv(outputfile, index=False)
 
 def predict(argp, args):
 	import tensorflow
@@ -236,18 +249,20 @@ def predict(argp, args):
 	logging.info("loading config...")
 	config_file = os.path.dirname(os.path.realpath(__file__)) + "/etc/tacitus.conf"
 	config = json.load(open(config_file))
-	if config["PREDICT_LOW_THRESHOLD"] == '' or config["PREDICT_HIGH_THRESHOLD"] == '':
+	if config["PREDICT_LOW_THRESHOLD"] == "" or config["PREDICT_HIGH_THRESHOLD"] == "":
 		logging.error("empty parameters in config! (PREDICT_LOW_THRESHOLD, PREDICT_HIGH_THRESHOLD)")
-		return 1
-	model_file = os.path.dirname(os.path.realpath(__file__)) + "/etc/models/default"
-	try:
-		model = tensorflow.keras.models.load_model(model_file)
-	except:
-		logging.error("can't load model at " + model_file)
 		return 1
 	outputdir = os.path.dirname(os.path.realpath(__file__)) + "/data/predict"
 	if not os.path.exists(outputdir):
 		logging.error(outputdir + " doesn't exist!")
+		return 1
+
+	model_file = os.path.dirname(os.path.realpath(__file__)) + "/etc/models/default"
+	logging.info("loading model at " + model_file)
+	try:
+		model = tensorflow.keras.models.load_model(model_file)
+	except:
+		logging.error("can't load model")
 		return 1
 
 	logging.info("processing " + args.input)
@@ -255,32 +270,34 @@ def predict(argp, args):
 		if datafile.startswith("."):
 			continue
 
-		#import code
-		#code.interact(local=locals())
-		#input()
-
 		outputfile = outputdir + "/" + os.path.splitext(datafile)[0]
 		if os.path.exists(outputfile):
 			if args.ignore:
 				continue
 			logging.warning(outputfile + " already exists, overwrite? [y|N]")
-			if input() != 'y':
+			if input() != "y":
 				continue
 
 		logging.info("processing " + datafile)
 		tweets = pandas.read_csv(args.input + "/" + datafile, encoding="utf-8", lineterminator="\n")
-		def pred(x):
-			score = model.predict( use([x]) )[0][1]
-			if score > config["PREDICT_LOW_THRESHOLD"] and score < config["PREDICT_HIGH_THRESHOLD"]:
+		if tweets.empty:
+			logging.info("empty datafile")
+			continue
+		tweets["predict"] = model.predict( use(tweets["tweet"]) ).flatten()[1::2]
+		def pred(score):
+			if score >= config["PREDICT_LOW_THRESHOLD"] and score < config["PREDICT_HIGH_THRESHOLD"]:
 				return 0
 			elif score >= config["PREDICT_HIGH_THRESHOLD"]:
 				return 1
 			else:
 				return -1
-		tweets["predict"] = tweets["tweet"].apply( pred )
-		tweets = tweets[ tweets["predict"] > 0 ]
+		tweets["predict"] = tweets["predict"].apply( pred )
+		tweets = tweets[ tweets["predict"] >= 0 ]
 
 		logging.info("writing to " + outputfile)
+		if tweets.empty:
+			logging.info("empty dataframe")
+			continue
 		tweets.to_csv(outputfile, index=False)
 
 def tally(argp, args):
@@ -307,17 +324,23 @@ def tally(argp, args):
 			if args.ignore:
 				continue
 			logging.warning(outputfile + " already exists, overwrite? [y|N]")
-			if input() != 'y':
+			if input() != "y":
 				continue
 
 		logging.info("processing " + datafile)
 		predictions = pandas.read_csv(args.input + "/" + datafile, encoding="utf-8", lineterminator="\n")
+		if predictions.empty:
+			logging.info("empty datafile")
+			continue
 		pos = predictions.loc[ predictions["predict"] == 1 ].size
 		neg = predictions.loc[ predictions["predict"] == 0 ].size
 		trend = str( pos - neg > 0 )
 
 		logging.info("writing to " + outputfile)
 		tally = pandas.DataFrame({ "pos": [pos], "neg": [neg], "trend": [trend] })
+		if tally.empty:
+			logging.info("empty dataframe")
+			continue
 		tally.to_csv(outputfile, index=False)
 
 def train(argp, args):
@@ -332,11 +355,11 @@ def train(argp, args):
 	modeldir = os.path.dirname(os.path.realpath(__file__)) + "/etc/models/" + datetime.datetime.now().strftime("%Y%m%d")
 	if os.path.exists(modeldir):
 		logging.warning(modeldir + " already exists, overwrite? [y|N]")
-		if input() != 'y':
+		if input() != "y":
 			return 1
 
 	logging.info("loading hyperparameters...")
-	if config["TRAIN_SEED"] == '' or config["TRAIN_EPOCHS"] == '' or config["TRAIN_BATCH_SIZE"] == '':
+	if config["TRAIN_SEED"] == "" or config["TRAIN_EPOCHS"] == "" or config["TRAIN_BATCH_SIZE"] == "":
 		logging.error("empty parameters in config! (TRAIN_SEED, TRAIN_EPOCHS, TRAIN_BATCH_SIZE)")
 		return 1
 
@@ -378,12 +401,12 @@ def train(argp, args):
 
 	logging.info("building model...")
 	model = tensorflow.keras.Sequential()
-	model.add( tensorflow.keras.layers.Dense(units=512, input_shape=(X_train.shape[1], ), activation='relu') )
+	model.add( tensorflow.keras.layers.Dense(units=512, input_shape=(X_train.shape[1], ), activation="relu") )
 	model.add( tensorflow.keras.layers.Dropout(rate=0.5) )
-	model.add( tensorflow.keras.layers.Dense(units=512, activation='relu') )
+	model.add( tensorflow.keras.layers.Dense(units=512, activation="relu") )
 	model.add( tensorflow.keras.layers.Dropout(rate=0.5) )
-	model.add( tensorflow.keras.layers.Dense(2, activation='softmax') )
-	model.compile( loss='categorical_crossentropy', optimizer=tensorflow.keras.optimizers.Adam(0.01), metrics=['accuracy'] )
+	model.add( tensorflow.keras.layers.Dense(2, activation="softmax") )
+	model.compile( loss="categorical_crossentropy", optimizer=tensorflow.keras.optimizers.Adam(0.01), metrics=["accuracy"] )
 	logging.info(model.summary())
 
 	logging.info("training model...")

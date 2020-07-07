@@ -12,21 +12,27 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 	INTERFACE_VERSION = 2
 	STOPLOSS_DEFAULT = -0.03
 	minimal_roi = { "0": 100 } # disabled
-	stoploss = STOPLOSS_DEFAULT
+	stoploss = -100.0 # disabled
+	#stoploss = STOPLOSS_DEFAULT
 
 	plot_config = {
 		"main_plot": {
 			"support": {},
 			"resistance": {},
-			"black": {}
 		},
 		"subplots": {
 			#"res2sup": {
 			#	"res2sup": {},
 			#}
-			"moon": {
+			#"moon": {
 			#	"time_to_full_moon": {},
-				"moon_period": {}
+			#	"moon_period": {}
+			#},
+			"tacitus_signal": {
+				"tacitus_signal": { },
+			},
+			"tacitus_trend": {
+				"tacitus_trend": { },
 			},
 			#"srsi_k": {
 			#	"srsi_k": {},
@@ -37,16 +43,29 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 
 	def populate_indicators(self, dataframe: pandas.DataFrame, metadata: dict) -> pandas.DataFrame:
 		# TACITUS INDICATOR
-		dataframe.insert(0, "tacitus", False)
-		tally_dir = os.path.dirname(os.path.realpath(__file__)) + "/acheron/tally"
-		groups = collections.defaultdict(list)
+
+		# load concious tally
+		dataframe.insert(0, "tacitus_trend", False)
+		tally_dir = os.path.dirname(os.path.realpath(__file__)) + "/data/tally"
 		for filename in os.listdir(tally_dir):
-			basename, extension = os.path.splitext(filename)
-			if extension != ".txt":
+			if filename.startswith("."):
 				continue
-			tally_date = datetime.datetime.strptime(basename, "%Y%m%d-%H").replace(tzinfo=pytz.UTC)
-			tally_result = open(tally_dir + "/" + filename).read().splitlines()[2].split()[1] == "True"
-			dataframe.loc[ dataframe["date"] == tally_date, "tacitus" ] = tally_result
+			tally_date = datetime.datetime.strptime(filename, "%Y%m%d").replace(tzinfo=pytz.UTC)
+			tally_result = pandas.read_csv(tally_dir + "/" + filename)
+			dataframe.loc[ dataframe["date"] == tally_date, "tacitus_trend" ] = tally_result["trend"][0]
+
+		# load unconscious tally
+		dataframe.insert(0, "tacitus_signal", 1)
+		parse_dir = os.path.dirname(os.path.realpath(__file__)) + "/data/parse"
+		for filename in sorted(os.listdir(parse_dir)):
+			if filename.startswith("."):
+				continue
+			basename, extension = os.path.splitext(filename)
+			if extension != "":
+				continue
+			parse_date = datetime.datetime.strptime(filename, "%Y%m%d").replace(tzinfo=pytz.UTC)
+			parse_result = pandas.read_csv(parse_dir + "/" + filename)
+			dataframe.loc[ dataframe["date"] == parse_date, "tacitus_signal" ] = parse_result["tension"][0]
 
 		# RESISTANCE TO SUPPORT RATIO INDICATOR
 		short_avg = ta.EMA(dataframe, timeperiod=2)
@@ -119,6 +138,7 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 			return 0
 		dataframe["moon_period"] = dataframe["date"].apply( lambda x: period(moon, x) )
 
+		# todo: idea is a dynamic stoploss. probably not possible
 		#moon.update(datetime.datetime.now())
 		#black_start = 574020
 		#black_end = 298620
@@ -130,16 +150,15 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 		#print(nm_sec)
 
 		# CLASSIC TECHNICAL INDICATORS
-		#RSI
 		dataframe["rsi"] = ta.RSI(dataframe, timeperiod=14)
-		#StochRSI
+
 		period = 14
 		smoothd = 3
 		smoothk = 3
 		stochrsi  = (dataframe["rsi"] - dataframe["rsi"].rolling(period).min()) / (dataframe["rsi"].rolling(period).max() - dataframe["rsi"].rolling(period).min())
 		dataframe["srsi_k"] = stochrsi.rolling(smoothk).mean() * 100
 		dataframe["srsi_d"] = dataframe["srsi_k"].rolling(smoothd).mean()
-		#EMAs
+
 		dataframe["ema9"] = ta.EMA(dataframe, timeperiod=9)
 		dataframe["ema55"] = ta.EMA(dataframe, timeperiod=55)
 
@@ -147,22 +166,22 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 
 	def populate_buy_trend(self, dataframe: pandas.DataFrame, metadata: dict) -> pandas.DataFrame:
 		buy = (
-			(dataframe["srsi_k"] < 22) &
-			(dataframe["res2sup"] < 2) &
-			(dataframe["close"] <= dataframe["support"]) &
-			(dataframe["time_to_new_moon"] <= 15) &
-			(dataframe["tacitus"] == True)
+			#(dataframe["srsi_k"] < 40) &
+			#(dataframe["res2sup"] < 2) &
+			#(dataframe["close"] < dataframe["support"]) &
+			#(dataframe["time_to_new_moon"] <= 15) &
+			(dataframe["tacitus_signal"] == 1)
 		)
 		dataframe.loc[ buy, "buy" ] = 1
 		return dataframe
 
 	def populate_sell_trend(self, dataframe: pandas.DataFrame, metadata: dict) -> pandas.DataFrame:
 		sell = (
-			(dataframe["srsi_k"] > 78) &
-			(dataframe["res2sup"] > 3) &
-			(dataframe["close"] >= dataframe["resistance"]) &
-			(dataframe["time_to_full_moon"] <= 10) &
-			(dataframe["tacitus"] == False)
+			#(dataframe["srsi_k"] > 60) &
+			#(dataframe["res2sup"] > 3) &
+			#(dataframe["close"] > dataframe["support"]) &
+			#(dataframe["time_to_full_moon"] <= 10) &
+			(dataframe["tacitus_signal"] == -1)
 		)
 		dataframe.loc[ sell, "sell" ] = 1
 		return dataframe
