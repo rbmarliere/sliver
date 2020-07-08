@@ -334,7 +334,7 @@ def tally(argp, args):
 			continue
 		pos = predictions.loc[ predictions["predict"] == 1 ].size
 		neg = predictions.loc[ predictions["predict"] == 0 ].size
-		trend = str( pos - neg > 0 )
+		trend = pos - neg > 0
 
 		logging.info("writing to " + outputfile)
 		tally = pandas.DataFrame({ "pos": [pos], "neg": [neg], "trend": [trend] })

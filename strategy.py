@@ -162,6 +162,8 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 		dataframe["ema9"] = ta.EMA(dataframe, timeperiod=9)
 		dataframe["ema55"] = ta.EMA(dataframe, timeperiod=55)
 
+		print(dataframe)
+
 		return dataframe
 
 	def populate_buy_trend(self, dataframe: pandas.DataFrame, metadata: dict) -> pandas.DataFrame:
