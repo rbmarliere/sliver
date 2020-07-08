@@ -19,9 +19,10 @@ fmap = {
 	"filter": tacitus.filter,
 	"parse": tacitus.parse,
 	"predict": tacitus.predict,
+	"split" : tacitus.split,
 	"stream" : acheron.stream,
 	"tally": tacitus.tally,
-	"train" : tacitus.train,
+	"train" : tacitus.train
 	}
 
 argp = argparse.ArgumentParser(description='''
@@ -33,6 +34,7 @@ argp = argparse.ArgumentParser(description='''
 ''',
 formatter_class=argparse.RawTextHelpFormatter)
 argp.add_argument("--input", help="directory containing input csv files")
+argp.add_argument("--timeframe", help="granularity for split action (1d, 12h, 4h)")
 argp.add_argument("--ignore", action="store_true", help="ignore input files already processed")
 argp.add_argument("command", choices=fmap.keys())
 args = argp.parse_args()
