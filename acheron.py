@@ -34,7 +34,9 @@ class Acheron(tweepy.StreamListener):
 		# output
 		output_filename = datetime.datetime.now().strftime("%Y%m%d")
 		tweet = pandas.DataFrame({ "date": [created_at], "username": [user], "url": [url], "tweet": [text] })
-		logging.info(tweet)
+		logging.info(url)
+		logging.info(text)
+		logging.info()
 		with open(self.outputdir+"/"+output_filename, "a") as f:
 			tweet.to_csv(f, header=f.tell()==0, mode="a", index=False)
 
