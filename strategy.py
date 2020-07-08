@@ -10,15 +10,13 @@ import pytz
 
 class hypnox(freqtrade.strategy.interface.IStrategy):
 	INTERFACE_VERSION = 2
-	STOPLOSS_DEFAULT = -0.03
 	minimal_roi = { "0": 100 } # disabled
 	stoploss = -100.0 # disabled
-	#stoploss = STOPLOSS_DEFAULT
 
 	plot_config = {
 		"main_plot": {
-			"support": {},
-			"resistance": {},
+			#"support": {},
+			#"resistance": {},
 		},
 		"subplots": {
 			#"res2sup": {
@@ -28,11 +26,18 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 			#	"time_to_full_moon": {},
 			#	"moon_period": {}
 			#},
-			"tacitus_signal": {
+			#"res2sup": {
+			#	"res2sup": { },
+			#},
+			"signal": {
 				"tacitus_signal": { },
 			},
-			"tacitus_trend": {
-				"tacitus_trend": { },
+			"trend": {
+				"tally": { },
+			},
+			"tally": {
+				"pos": { },
+				"neg": { },
 			},
 			#"srsi_k": {
 			#	"srsi_k": {},
@@ -44,18 +49,22 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 	def populate_indicators(self, dataframe: pandas.DataFrame, metadata: dict) -> pandas.DataFrame:
 		# TACITUS INDICATOR
 
+		dateformat = "%Y%m%d_%H"
+		if self.timeframe == "1d":
+			dateformat = "%Y%m%d"
+
 		# load concious tally
-		dataframe.insert(0, "tacitus_trend", False)
 		tally_dir = os.path.dirname(os.path.realpath(__file__)) + "/data/tally"
 		for filename in os.listdir(tally_dir):
 			if filename.startswith("."):
 				continue
-			tally_date = datetime.datetime.strptime(filename, "%Y%m%d").replace(tzinfo=pytz.UTC)
+			tally_date = datetime.datetime.strptime(filename, dateformat).replace(tzinfo=pytz.UTC)
 			tally_result = pandas.read_csv(tally_dir + "/" + filename)
-			dataframe.loc[ dataframe["date"] == tally_date, "tacitus_trend" ] = tally_result["trend"][0]
+			dataframe.loc[ dataframe["date"] == tally_date, "tally" ] = tally_result["trend"][0]
+			dataframe.loc[ dataframe["date"] == tally_date, "pos" ] = tally_result["neg"][0]
+			dataframe.loc[ dataframe["date"] == tally_date, "neg" ] = tally_result["pos"][0]
 
 		# load unconscious tally
-		dataframe.insert(0, "tacitus_signal", 1)
 		parse_dir = os.path.dirname(os.path.realpath(__file__)) + "/data/parse"
 		for filename in sorted(os.listdir(parse_dir)):
 			if filename.startswith("."):
@@ -63,9 +72,9 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 			basename, extension = os.path.splitext(filename)
 			if extension != "":
 				continue
-			parse_date = datetime.datetime.strptime(filename, "%Y%m%d").replace(tzinfo=pytz.UTC)
+			parse_date = datetime.datetime.strptime(filename, dateformat).replace(tzinfo=pytz.UTC)
 			parse_result = pandas.read_csv(parse_dir + "/" + filename)
-			dataframe.loc[ dataframe["date"] == parse_date, "tacitus_signal" ] = parse_result["tension"][0]
+			dataframe.loc[ dataframe["date"] == parse_date, "tacitus_signal" ] = parse_result["signal"][0]
 
 		# RESISTANCE TO SUPPORT RATIO INDICATOR
 		short_avg = ta.EMA(dataframe, timeperiod=2)
@@ -162,8 +171,6 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 		dataframe["ema9"] = ta.EMA(dataframe, timeperiod=9)
 		dataframe["ema55"] = ta.EMA(dataframe, timeperiod=55)
 
-		print(dataframe)
-
 		return dataframe
 
 	def populate_buy_trend(self, dataframe: pandas.DataFrame, metadata: dict) -> pandas.DataFrame:
@@ -172,7 +179,8 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 			#(dataframe["res2sup"] < 2) &
 			#(dataframe["close"] < dataframe["support"]) &
 			#(dataframe["time_to_new_moon"] <= 15) &
-			(dataframe["tacitus_signal"] == 1)
+
+			(dataframe["tacitus_signal"] >= 1.005)
 		)
 		dataframe.loc[ buy, "buy" ] = 1
 		return dataframe
@@ -183,7 +191,8 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 			#(dataframe["res2sup"] > 3) &
 			#(dataframe["close"] > dataframe["support"]) &
 			#(dataframe["time_to_full_moon"] <= 10) &
-			(dataframe["tacitus_signal"] == -1)
+
+			(dataframe["tacitus_signal"] <= 0.985)
 		)
 		dataframe.loc[ sell, "sell" ] = 1
 		return dataframe

@@ -10,6 +10,7 @@ import numpy
 import os
 import pandas
 import re
+import pytz
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3" # tensorflow verbosity
 
@@ -34,7 +35,7 @@ def clean(text):
 	words = text.lower().split()
 	# remove stopwords, but keep some
 	keep = [ "this", "that'll", "these", "having", "does", "doing", "until", "while", "about", "against", "between", "into", "through", "during", "before", "after", "above", "below", "from", "up", "down", "in", "out", "on", "off", "over", "under", "again", "further", "then", "once", "here", "there", "when", "few", "both", "more", "most", "other", "some", "than", "too", "very", "can", "will", "should", "should've", "now", "ain", "aren", "aren't", "could", "couldn", "couldn't", "didn", "didn't", "doesn", "doesn't", "hadn", "hadn't", "hasn", "hasn't", "haven", "haven't", "isn", "isn't", "mighn", "mightn't", "mustn", "mustn't", "needn", "needn't", "shan", "shan't", "shouldn", "shouldn't", "wasn", "wasn't", "weren","weren't", "won'", "won't", "wouldn", "wouldn't" ]
-		# load nltk stopwords
+	# load nltk stopwords
 	nltkstops = set(nltk.corpus.stopwords.words("english"))
 	stops = [w for w in nltkstops if not w in keep]
 	meaningful_words = [w for w in words if not w in stops]
@@ -44,13 +45,6 @@ def clean(text):
 
 	# join the words with more than one char back into one string
 	out = " ".join([w for w in singles if len(w) > 1])
-
-	#logging.debug(text)
-	#logging.debug(words)
-	#logging.debug(stops)
-	#logging.debug(meaningful_words)
-	#logging.debug(singles)
-	#logging.debug(out)
 
 	return out
 
@@ -93,11 +87,11 @@ def filter(argp, args):
 
 		logging.info("processing " + datafile)
 		alltweets = pandas.read_csv(args.input + "/" + datafile, encoding="utf-8", lineterminator="\n")
-		alltweets["cleaned_tweet"] = alltweets["tweet"].apply( lambda x: clean(x) )
-		alltweets = alltweets.set_index("cleaned_tweet")
 		if alltweets.empty:
 			logging.info("empty datafile")
 			continue
+		alltweets["cleaned_tweet"] = alltweets["tweet"].apply( lambda x: clean(x) )
+		alltweets = alltweets.set_index("cleaned_tweet")
 
 		tweets = None
 		for word in include:
@@ -135,8 +129,8 @@ def parse(argp, args):
 	logging.info("loading config...")
 	config_file = os.path.dirname(os.path.realpath(__file__)) + "/etc/tacitus.conf"
 	config = json.load(open(config_file))
-	if config["PARSE_OCCURRENCES_THRESHOLD"] == "" or config["PARSE_FREQUENCY_THRESHOLD"] == "" or config["PARSE_DELTA_THRESHOLD"] == "" or config["PARSE_TENSION_BUY_THRESHOLD"] == "" or config["PARSE_TENSION_SELL_THRESHOLD"] == "":
-		logging.error("empty parameters in config! (PARSE_OCCURRENCES_THRESHOLD,PARSE_FREQUENCY_THRESHOLD,PARSE_DELTA_THRESHOLD,PARSE_TENSION_BUY_THRESHOLD,PARSE_TENSION_SELL_THRESHOLD)")
+	if config["PARSE_OCCURRENCES_THRESHOLD"] == "" or config["PARSE_FREQUENCY_THRESHOLD"] == "" or config["PARSE_DELTA_THRESHOLD"] == "":
+		logging.error("empty parameters in config! (PARSE_OCCURRENCES_THRESHOLD,PARSE_FREQUENCY_THRESHOLD,PARSE_DELTA_THRESHOLD)")
 		return 1
 	outputdir = os.path.dirname(os.path.realpath(__file__)) + "/data/parse"
 	if not os.path.exists(outputdir):
@@ -165,10 +159,10 @@ def parse(argp, args):
 
 		logging.info("processing " + datafile)
 		tweets = pandas.read_csv(args.input + "/" + datafile, encoding="utf-8", lineterminator="\n")
-		tweets["cleaned_tweet"] = tweets["tweet"].apply( lambda x: clean(x) )
 		if tweets.empty:
 			logging.info("empty datafile")
 			continue
+		tweets["cleaned_tweet"] = tweets["tweet"].apply( lambda x: clean(x) )
 
 		# take unique words used in all tweets
 		unique = tweets["cleaned_tweet"].str.split(" ", expand=True).stack().value_counts()
@@ -190,48 +184,41 @@ def parse(argp, args):
 		# filter based on a frequency threshold
 		intersect = intersect[ intersect.frequency <= intersect.frequency.quantile( config["PARSE_FREQUENCY_THRESHOLD"] ) ]
 		# compute deltas from last period
-		intersect["delta"] = intersect["frequency"] - intersect["last_frequency"]
+		intersect["deltas"] = intersect["frequency"] - intersect["last_frequency"]
 		# filter based on a delta threshold
-		intersect = intersect[ intersect.delta > intersect.delta.quantile( config["PARSE_DELTA_THRESHOLD"] ) ]
+		intersect = intersect[ intersect.deltas > intersect.deltas.quantile( config["PARSE_DELTA_THRESHOLD"] ) ]
 
 		# keep only words from glosema
 		found = glosema.loc[ intersect.index.intersection(glosema.index) ]
 		# concatenate into a single frame
 		mirari = pandas.concat([intersect.loc[ found.index ],found], axis=1)
 		# aggreggate occurrences by emotions
-		emotions = mirari.reset_index()[["emotion","occurrences"]].groupby(["emotion"]).sum()
+		emotions = mirari.reset_index()[["emotion","deltas"]].groupby(["emotion"]).sum()
 		# sum opposite emotions and aggregate
-		eg = emotions.occurrences.get("ecstasy", 0) + emotions.occurrences.get("grief", 0)
-		js = emotions.occurrences.get("joy", 0) + emotions.occurrences.get("sadness", 0)
-		sp = emotions.occurrences.get("serenity", 0) + emotions.occurrences.get("pensiveness", 0)
+		eg = emotions.deltas.get("ecstasy", 0) + emotions.deltas.get("grief", 0)
+		js = emotions.deltas.get("joy", 0) + emotions.deltas.get("sadness", 0)
+		sp = emotions.deltas.get("serenity", 0) + emotions.deltas.get("pensiveness", 0)
 		happy = eg + js + sp
-		al = emotions.occurrences.get("admiration", 0) + emotions.occurrences.get("loathing", 0)
-		td = emotions.occurrences.get("trust", 0) + emotions.occurrences.get("disgust", 0)
-		ab = emotions.occurrences.get("acceptance", 0) + emotions.occurrences.get("boredom", 0)
+		al = emotions.deltas.get("admiration", 0) + emotions.deltas.get("loathing", 0)
+		td = emotions.deltas.get("trust", 0) + emotions.deltas.get("disgust", 0)
+		ab = emotions.deltas.get("acceptance", 0) + emotions.deltas.get("boredom", 0)
 		like = al + td + ab
-		rt = emotions.occurrences.get("rage", 0) + emotions.occurrences.get("terror", 0)
-		af = emotions.occurrences.get("anger", 0) + emotions.occurrences.get("fear", 0)
-		aa = emotions.occurrences.get("annoyance", 0) + emotions.occurrences.get("apprehension", 0)
+		rt = emotions.deltas.get("rage", 0) + emotions.deltas.get("terror", 0)
+		af = emotions.deltas.get("anger", 0) + emotions.deltas.get("fear", 0)
+		aa = emotions.deltas.get("annoyance", 0) + emotions.deltas.get("apprehension", 0)
 		action = rt + af + aa
-		vai = emotions.occurrences.get("vigilance", 0) + emotions.occurrences.get("anticipation", 0) + emotions.occurrences.get("interest", 0)
-		asd = emotions.occurrences.get("amazement", 0) + emotions.occurrences.get("surprise", 0) + emotions.occurrences.get("distraction", 0)
+		vai = emotions.deltas.get("vigilance", 0) + emotions.deltas.get("anticipation", 0) + emotions.deltas.get("interest", 0)
+		asd = emotions.deltas.get("amazement", 0) + emotions.deltas.get("surprise", 0) + emotions.deltas.get("distraction", 0)
 		asd = 1 if asd == 0 else math.sqrt(asd%1)
-		tension = (vai+93) / (asd+93)
-
-		signal = 0
-		signal_sum = happy + like + action + tension
-		if signal_sum >= config["PARSE_TENSION_BUY_THRESHOLD"] and signal_sum < config["PARSE_TENSION_SELL_THRESHOLD"]:
-			signal = 1
-		elif signal_sum >= config["PARSE_TENSION_SELL_THRESHOLD"]:
-			signal = -1
+		signal = happy + like + action + ( (vai+93) / (asd+93) )
 
 		logging.info("writing to " + outputfile)
-		result = pandas.DataFrame({ "signal": [signal], "happy": [happy], "like": [like], "action": [action], "tension": [tension] })
+		result = pandas.DataFrame({ "signal": [signal] })
 		if mirari.empty or emotions.empty or result.empty:
 			logging.info("empty dataframe")
 			continue
-		mirari.to_csv(outputfile + ".mirari", index=False)
-		emotions.reset_index().to_csv(outputfile + ".deltas", index=False)
+		#mirari.to_csv(outputfile + ".mirari", index=False)
+		#emotions.reset_index().to_csv(outputfile + ".deltas", index=False)
 		result.to_csv(outputfile, index=False)
 
 def predict(argp, args):
@@ -283,7 +270,7 @@ def predict(argp, args):
 		if tweets.empty:
 			logging.info("empty datafile")
 			continue
-		tweets["predict"] = model.predict( use(tweets["tweet"]) ).flatten()[1::2]
+		tweets["score"] = model.predict( use(tweets["tweet"]) ).flatten()[1::2]
 		def pred(score):
 			if score >= config["PREDICT_LOW_THRESHOLD"] and score < config["PREDICT_HIGH_THRESHOLD"]:
 				return 0
@@ -291,7 +278,7 @@ def predict(argp, args):
 				return 1
 			else:
 				return -1
-		tweets["predict"] = tweets["predict"].apply( pred )
+		tweets["predict"] = tweets["score"].apply( pred )
 		tweets = tweets[ tweets["predict"] >= 0 ]
 
 		logging.info("writing to " + outputfile)
@@ -424,4 +411,52 @@ def train(argp, args):
 
 	logging.info("saving model...")
 	model.save(modeldir)
+
+def split(argp, args):
+	if args.input == None:
+		logging.error("provide a data directory with --input")
+		return 1
+	if not os.path.exists(args.input):
+		logging.error("can't find data directory! (" + args.input + ")")
+		return 1
+	if args.timeframe == None:
+		logging.error("provide a timeframe with --timeframe (12h, 4h)")
+		return 1
+	elif args.timeframe != "12h" and args.timeframe != "4h":
+		logging.error("provide a valid timeframe (12h, 4h)")
+		return 1
+
+	logging.info("loading config...")
+	outputdir = os.path.dirname(os.path.realpath(__file__)) + "/data/split"
+	if not os.path.exists(outputdir):
+		logging.error(outputdir + " doesn't exist!")
+		return 1
+
+	logging.info("processing " + args.input)
+	for datafile in sorted(os.listdir(args.input)):
+		if datafile.startswith("."):
+			continue
+
+		logging.info("processing " + datafile)
+
+		tweets = pandas.read_csv(args.input + "/" + datafile, encoding="utf-8", lineterminator="\n", parse_dates=["date"]).set_index("date")
+		filedate = datetime.datetime.strptime(datafile, "%Y%m%d").replace(tzinfo=pytz.UTC)
+		index = pandas.date_range(start=filedate, end=filedate+datetime.timedelta(days=1)-datetime.timedelta(minutes=1), freq=args.timeframe)
+		for i in index:
+			tweets.loc[i] = ""
+
+		for gran_tweets in [ group[1] for group in tweets.resample(args.timeframe) ]:
+			i = gran_tweets.index[0].hour
+			outputfile = outputdir + "/" + os.path.splitext(datafile)[0] + "_" + str(i)
+			if os.path.exists(outputfile):
+				import code
+				code.interact(local=locals())
+				input()
+				if args.ignore:
+					continue
+				logging.warning(outputfile + " already exists, overwrite? [y|N]")
+				if input() != "y":
+					continue
+			logging.info("writing to " + outputfile)
+			gran_tweets.replace("", numpy.nan).reset_index().dropna().to_csv(outputfile, index=False)
 
