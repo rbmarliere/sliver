@@ -40,11 +40,11 @@ def clean(text):
 	stops = [w for w in nltkstops if not w in keep]
 	meaningful_words = [w for w in words if not w in stops]
 	# stem words
-	stemmer = nltk.stem.porter.PorterStemmer()
-	singles = [stemmer.stem(word) for word in meaningful_words]
+	#stemmer = nltk.stem.porter.PorterStemmer()
+	#singles = [stemmer.stem(word) for word in meaningful_words]
 
 	# join the words with more than one char back into one string
-	out = " ".join([w for w in singles if len(w) > 1])
+	out = " ".join([w for w in meaningful_words if len(w) > 1])
 
 	return out
 
@@ -176,27 +176,32 @@ def parse(argp, args):
 			continue
 		# grab the occurrences from the last period
 		intersect["last_occurrences"] = last_unique.loc[ unique.index.intersection(last_unique.index) ]
-		# update loop index
-		last_unique = unique
-		# make occurrences percentages as frequency
-		intersect["frequency"] = intersect["occurrences"] / intersect["occurrences"].sum()
-		intersect["last_frequency"] = intersect["last_occurrences"] / intersect["last_occurrences"].sum()
-		# filter based on a frequency threshold
-		intersect = intersect[ intersect.frequency <= intersect.frequency.quantile( config["PARSE_FREQUENCY_THRESHOLD"] ) ]
-		# recalc frequencies to get more accurate deltas (?)
-		#intersect["frequency"] = intersect["occurrences"] / intersect["occurrences"].sum()
-		#intersect["last_frequency"] = intersect["last_occurrences"] / intersect["last_occurrences"].sum()
-		# compute deltas from last period
-		intersect["deltas"] = intersect["frequency"] - intersect["last_frequency"]
-		# filter based on a delta threshold
-		intersect = intersect[ intersect.deltas > intersect.deltas.quantile( config["PARSE_DELTA_THRESHOLD"] ) ]
-
 		# keep only words from lexicon
 		found = lexicon.loc[ intersect.index.intersection(lexicon.index) ]
 		#not_found = intersect.loc[ intersect.index.difference(lexicon.index) ]
 		#not_found.reset_index()["index"].to_csv(outputfile + ".notfound", index=False)
 		# concatenate into a single frame
-		mirari = pandas.concat([intersect.loc[ found.index ],found], axis=1)
+		mirari = pandas.concat( [intersect.loc[ found.index ], found], axis=1 )
+		# multiply lexicon factors
+		mirari["intensity_total"] = mirari["occurrences"] * mirari["intensity"]
+		mirari["last_intensity_total"] = mirari["last_occurrences"] * mirari["intensity"] * mirari["duration"]
+		# make occurrences percentages as frequency
+		#mirari["frequency"] = mirari["intensities"] / mirari["intensities"].sum()
+		#mirari["last_frequency"] = mirari["last_intensities"] / mirari["last_intensities"].sum()
+		# filter based on a frequency threshold
+		#mirari = mirari[ mirari.frequency <= mirari.frequency.quantile( config["PARSE_FREQUENCY_THRESHOLD"] ) ]
+		# recalc frequencies to get more accurate deltas (?)
+		#mirari["frequency"] = mirari["occurrences"] / mirari["occurrences"].sum()
+		#mirari["last_frequency"] = mirari["last_occurrences"] / mirari["last_occurrences"].sum()
+		# compute deltas from last period
+		mirari["deltas"] = mirari["intensity_total"] - mirari["last_intensity_total"]
+		# filter based on a delta threshold
+		#mirari = mirari[ mirari.deltas > mirari.deltas.quantile( config["PARSE_DELTA_THRESHOLD"] ) ]
+
+		mirari["deltas"] = mirari["deltas"] * mirari["archetype"]
+		#import code
+		#code.interact(local=locals())
+		#input()
 		# aggreggate occurrences by emotions
 		emotions = mirari.reset_index()[["emotion","deltas"]].groupby(["emotion"]).sum()
 		# sum opposite emotions and aggregate
@@ -215,7 +220,10 @@ def parse(argp, args):
 		vai = emotions.deltas.get("vigilance", 0) + emotions.deltas.get("anticipation", 0) + emotions.deltas.get("interest", 0)
 		asd = emotions.deltas.get("amazement", 0) + emotions.deltas.get("surprise", 0) + emotions.deltas.get("distraction", 0)
 		asd = 1 if asd == 0 else math.sqrt(asd%1)
-		signal = happy + like + action + ( (vai+93) / (asd+93) )
+		signal = happy + like + action + ( vai / asd )
+
+		# update loop index
+		last_unique = unique
 
 		logging.info("writing to " + outputfile)
 		result = pandas.DataFrame({ "signal": [signal] })
@@ -327,10 +335,9 @@ def tally(argp, args):
 			continue
 		pos = predictions.loc[ predictions["predict"] == 1 ].size
 		neg = predictions.loc[ predictions["predict"] == 0 ].size
-		trend = pos - neg > 0
 
 		logging.info("writing to " + outputfile)
-		tally = pandas.DataFrame({ "pos": [pos], "neg": [neg], "trend": [trend] })
+		tally = pandas.DataFrame({ "pos": [pos], "neg": [neg] })
 		if tally.empty:
 			logging.info("empty dataframe")
 			continue
