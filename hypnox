@@ -23,7 +23,7 @@ fmap = {
 	"stream" : acheron.stream,
 	"tally": tacitus.tally,
 	"train" : tacitus.train
-	}
+}
 
 argp = argparse.ArgumentParser(description='''
           _        _
