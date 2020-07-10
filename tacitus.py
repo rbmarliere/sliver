@@ -12,8 +12,6 @@ import pandas
 import re
 import pytz
 
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3" # tensorflow verbosity
-
 # helper to load google encoder
 def load_use():
 	import tensorflow_hub
@@ -346,6 +344,9 @@ def tally(argp, args):
 def train(argp, args):
 	import tensorflow
 	import tensorflow_hub
+
+	os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3" # tensorflow verbosity
+	os.environ["TFHUB_CACHE_DIR"] = ".tfhub"
 
 	use = load_use()
 
