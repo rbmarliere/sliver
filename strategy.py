@@ -7,6 +7,7 @@ import pandas
 import pylunar
 import talib.abstract as ta
 import pytz
+from sklearn import preprocessing
 
 class hypnox(freqtrade.strategy.interface.IStrategy):
 	INTERFACE_VERSION = 2
@@ -22,24 +23,21 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 			#"res2sup": {
 			#	"res2sup": { },
 			#},
-			#"ema": {
-			#	"short": { },
-			#	"long": { },
-			#},
+			"ema": {
+				"short": { },
+				"long": { },
+			},
 			#"moon": {
 			#	"time_to_full_moon": { },
 			#	"time_to_new_moon": { },
 			#},
-			"signal": {
-				"tacitus_signal": { },
+			"tacitus": {
+				"tacitus": { },
 			},
-			#"tally": {
-			#	"tacitus_tally": { },
-			#},
-			#"srsi_k": {
-			#	"srsi_k": { },
-			#	"srsi_d": { },
-			#}
+			"srsi_k": {
+				"srsi_k": { },
+				"srsi_d": { },
+			}
 		}
 	}
 
@@ -69,7 +67,7 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 				continue
 			tally_date = datetime.datetime.strptime(filename, dateformat).replace(tzinfo=pytz.UTC)
 			tally_result = pandas.read_csv(tally_dir + "/" + filename)
-			dataframe.loc[ dataframe["date"] == tally_date, "tacitus_tally" ] = ( tally_result["neg"][0] - tally_result["pos"][0] ) / 100
+			dataframe.loc[ dataframe["date"] == tally_date, "tacitus_tally" ] = tally_result["neg"][0] - tally_result["pos"][0]
 
 		# load unconscious tally
 		parse_dir = os.path.dirname(os.path.realpath(__file__)) + "/data/parse"
@@ -82,6 +80,13 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 			parse_date = datetime.datetime.strptime(filename, dateformat).replace(tzinfo=pytz.UTC)
 			parse_result = pandas.read_csv(parse_dir + "/" + filename)
 			dataframe.loc[ dataframe["date"] == parse_date, "tacitus_signal" ] = parse_result["signal"][0]
+
+		# normalize
+		scaler = preprocessing.MinMaxScaler()
+		dataframe["tacitus_signal"] = scaler.fit_transform(dataframe[["tacitus_signal"]])
+		dataframe["tacitus_tally"] = scaler.fit_transform(dataframe[["tacitus_tally"]])
+		dataframe["tacitus"] = dataframe["tacitus_signal"] - dataframe["tacitus_tally"]
+		dataframe["tacitus"] = scaler.fit_transform(dataframe[["tacitus"]])
 
 		# RESISTANCE TO SUPPORT RATIO INDICATOR
 		short_avg = ta.EMA(dataframe, timeperiod=2)
@@ -176,22 +181,19 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 
 	def populate_buy_trend(self, dataframe: pandas.DataFrame, metadata: dict) -> pandas.DataFrame:
 		buy = (
-			#(dataframe["srsi_k"] < 40) &
-			#(dataframe["res2sup"] < 2) &
-			#(dataframe["close"] < dataframe["support"]) &
-
-			(dataframe["tacitus_tally"] > 0.55)
+			(dataframe["tacitus"] < 0.40) &
+			(dataframe["srsi_k"] < dataframe["srsi_d"]) &
+			(dataframe["short"] < dataframe["long"])
 		)
 		dataframe.loc[ buy, "buy" ] = 1
 		return dataframe
 
 	def populate_sell_trend(self, dataframe: pandas.DataFrame, metadata: dict) -> pandas.DataFrame:
 		sell = (
-			#(dataframe["srsi_k"] > 60) &
-			#(dataframe["res2sup"] > 3) &
-			#(dataframe["close"] > dataframe["support"]) &
-
-			(dataframe["tacitus_signal"] > 1.05)
+			(dataframe["tacitus"] > 0.90) &
+			((dataframe["srsi_k"] > dataframe["srsi_d"]) | (dataframe["srsi_k"] > 0.9)) &
+			(dataframe["srsi_k"] > 50) &
+			(dataframe["short"] > dataframe["long"])
 		)
 		dataframe.loc[ sell, "sell" ] = 1
 		return dataframe
