@@ -20,35 +20,44 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 		},
 		"subplots": {
 			#"res2sup": {
-			#	"res2sup": {},
-			#}
-			#"moon": {
-			#	"time_to_full_moon": {},
-			#	"moon_period": {}
-			#},
-			#"res2sup": {
 			#	"res2sup": { },
+			#},
+			#"ema": {
+			#	"short": { },
+			#	"long": { },
+			#},
+			#"moon": {
+			#	"time_to_full_moon": { },
+			#	"time_to_new_moon": { },
 			#},
 			"signal": {
 				"tacitus_signal": { },
 			},
-			"trend": {
-				"tally": { },
-			},
-			"tally": {
-				"pos": { },
-				"neg": { },
-			},
+			#"tally": {
+			#	"tacitus_tally": { },
+			#},
 			#"srsi_k": {
-			#	"srsi_k": {},
-			#	"srsi_d": {},
+			#	"srsi_k": { },
+			#	"srsi_d": { },
 			#}
 		}
 	}
 
 	def populate_indicators(self, dataframe: pandas.DataFrame, metadata: dict) -> pandas.DataFrame:
-		# TACITUS INDICATOR
+		# CLASSIC TECHNICAL INDICATORS
+		dataframe["rsi"] = ta.RSI(dataframe, timeperiod=14)
 
+		period = 14
+		smoothd = 3
+		smoothk = 3
+		stochrsi  = (dataframe["rsi"] - dataframe["rsi"].rolling(period).min()) / (dataframe["rsi"].rolling(period).max() - dataframe["rsi"].rolling(period).min())
+		dataframe["srsi_k"] = stochrsi.rolling(smoothk).mean() * 100
+		dataframe["srsi_d"] = dataframe["srsi_k"].rolling(smoothd).mean()
+
+		dataframe["short"] = ta.EMA(dataframe, timeperiod=2)
+		dataframe["long"] = ta.EMA(dataframe, timeperiod=5)
+
+		# TACITUS INDICATOR
 		dateformat = "%Y%m%d_%H"
 		if self.timeframe == "1d":
 			dateformat = "%Y%m%d"
@@ -60,9 +69,7 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 				continue
 			tally_date = datetime.datetime.strptime(filename, dateformat).replace(tzinfo=pytz.UTC)
 			tally_result = pandas.read_csv(tally_dir + "/" + filename)
-			dataframe.loc[ dataframe["date"] == tally_date, "tally" ] = tally_result["trend"][0]
-			dataframe.loc[ dataframe["date"] == tally_date, "pos" ] = tally_result["neg"][0]
-			dataframe.loc[ dataframe["date"] == tally_date, "neg" ] = tally_result["pos"][0]
+			dataframe.loc[ dataframe["date"] == tally_date, "tacitus_tally" ] = ( tally_result["neg"][0] - tally_result["pos"][0] ) / 100
 
 		# load unconscious tally
 		parse_dir = os.path.dirname(os.path.realpath(__file__)) + "/data/parse"
@@ -114,38 +121,38 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 				resistance += dataframe[ dataframe["cycle"] == candle["cycle"] + i ]["low"].max()
 			dataframe.loc[ idx, "resistance" ] = float(resistance/3)
 
-		dataframe["res2sup"] = 100 * ( dataframe["resistance"] - dataframe["support"] ) / dataframe["close"]
+		# MOON INDICATORS
+		#moon = pylunar.MoonInfo((28,2,4.9),(86,55,0.9))
+		#def time_to_full_moon(moon, date):
+		#	moon.update(date)
+		#	return moon.time_to_full_moon() * 24
+		#dataframe["time_to_full_moon"] = dataframe["date"].apply( lambda x: time_to_full_moon(moon, x) )
+		#def time_to_new_moon(moon, date):
+		#	moon.update(date)
+		#	return moon.time_to_new_moon()
+		#dataframe["time_to_new_moon"] = dataframe["date"].apply( lambda x: time_to_new_moon(moon, x) )
 
-		# LUNATIC INDICATORS
-		moon = pylunar.MoonInfo((28,2,4.9),(86,55,0.9))
-		def time_to_full_moon(moon, date):
-			moon.update(date)
-			return moon.time_to_full_moon()
-		dataframe["time_to_full_moon"] = dataframe["date"].apply( lambda x: time_to_full_moon(moon, x) )
-		def time_to_new_moon(moon, date):
-			moon.update(date)
-			return moon.time_to_new_moon()
-		dataframe["time_to_new_moon"] = dataframe["date"].apply( lambda x: time_to_new_moon(moon, x) )
+		# MOON PERIODS
+		#def period(moon, date):
+		#	moon.update(date)
+		#	nm_sec = moon.time_to_new_moon()*60*60
+		#	if nm_sec - 1031220 <= 0 and nm_sec - 564020 > 0:
+		#		# green
+		#		return 1.12
+		#	if nm_sec - 564020 <= 0 and nm_sec - 298620 > 0:
+		#		# black
+		#		return 0.78
+		#	if nm_sec - 298620 <= 0 and nm_sec - 298620 + 612000 > 0:
+		#		# green
+		#		return 1.12
+		#	if nm_sec - 1819620 <= 0 and nm_sec - 1531920 >= 0:
+		#		# yellow
+		#		return 1.22
+		#	# red is remainder
+		#	return 0.93
+		#dataframe["moon_period"] = dataframe["date"].apply( lambda x: period(moon, x) )
 
-		# LUNATIC PERIODS
-		def period(moon, date):
-			moon.update(date)
-			nm_sec = moon.time_to_new_moon()*60*60
-			if nm_sec - 1031220 <= 0 and nm_sec - 564020 > 0:
-				# green
-				return 1
-			if nm_sec - 564020 <= 0 and nm_sec - 298620 > 0:
-				# black
-				return 2
-			if nm_sec - 298620 <= 0 and nm_sec - 298620 + 612000 > 0:
-				# green
-				return 1
-			if nm_sec - 1819620 <= 0 and nm_sec - 1531920 >= 0:
-				# yellow
-				return -1
-			# red is remainder
-			return 0
-		dataframe["moon_period"] = dataframe["date"].apply( lambda x: period(moon, x) )
+		#dataframe["res2sup"] = ( dataframe["resistance"] / dataframe["support"] ) * dataframe["moon_period"]
 
 		# todo: idea is a dynamic stoploss. probably not possible
 		#moon.update(datetime.datetime.now())
@@ -158,18 +165,12 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 		#print(moon.time_to_new_moon())
 		#print(nm_sec)
 
-		# CLASSIC TECHNICAL INDICATORS
-		dataframe["rsi"] = ta.RSI(dataframe, timeperiod=14)
 
-		period = 14
-		smoothd = 3
-		smoothk = 3
-		stochrsi  = (dataframe["rsi"] - dataframe["rsi"].rolling(period).min()) / (dataframe["rsi"].rolling(period).max() - dataframe["rsi"].rolling(period).min())
-		dataframe["srsi_k"] = stochrsi.rolling(smoothk).mean() * 100
-		dataframe["srsi_d"] = dataframe["srsi_k"].rolling(smoothd).mean()
-
-		dataframe["ema9"] = ta.EMA(dataframe, timeperiod=9)
-		dataframe["ema55"] = ta.EMA(dataframe, timeperiod=55)
+		#pandas.set_option("display.max_rows", 200)
+		#print(dataframe)
+		#import code
+		#code.interact(local=locals())
+		#input()
 
 		return dataframe
 
@@ -178,9 +179,8 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 			#(dataframe["srsi_k"] < 40) &
 			#(dataframe["res2sup"] < 2) &
 			#(dataframe["close"] < dataframe["support"]) &
-			#(dataframe["time_to_new_moon"] <= 15) &
 
-			(dataframe["tacitus_signal"] >= 1.005)
+			(dataframe["tacitus_tally"] > 0.55)
 		)
 		dataframe.loc[ buy, "buy" ] = 1
 		return dataframe
@@ -190,9 +190,8 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 			#(dataframe["srsi_k"] > 60) &
 			#(dataframe["res2sup"] > 3) &
 			#(dataframe["close"] > dataframe["support"]) &
-			#(dataframe["time_to_full_moon"] <= 10) &
 
-			(dataframe["tacitus_signal"] <= 0.985)
+			(dataframe["tacitus_signal"] > 1.05)
 		)
 		dataframe.loc[ sell, "sell" ] = 1
 		return dataframe
