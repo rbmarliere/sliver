@@ -4,3 +4,4 @@ venv
 data/*
 etc/acheron.keys
 etc/models/*
+.tfhub
