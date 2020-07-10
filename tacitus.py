@@ -139,9 +139,9 @@ def parse(argp, args):
 
 	logging.info("loading lexicon...")
 	lexicon = os.path.dirname(os.path.realpath(__file__)) + "/etc/lexicon"
-	glosema = pandas.read_csv(lexicon, encoding="utf-8", lineterminator="\n")
-	glosema["cleaned_word"] = glosema["word"].apply( lambda x: clean(x) )
-	glosema = glosema.set_index("cleaned_word")
+	lexicon = pandas.read_csv(lexicon, encoding="utf-8", lineterminator="\n")
+	lexicon["cleaned_word"] = lexicon["word"].apply( lambda x: clean(x) )
+	lexicon = lexicon.set_index("cleaned_word")
 
 	logging.info("processing " + args.input)
 	last_unique = pandas.DataFrame()
@@ -183,13 +183,18 @@ def parse(argp, args):
 		intersect["last_frequency"] = intersect["last_occurrences"] / intersect["last_occurrences"].sum()
 		# filter based on a frequency threshold
 		intersect = intersect[ intersect.frequency <= intersect.frequency.quantile( config["PARSE_FREQUENCY_THRESHOLD"] ) ]
+		# recalc frequencies to get more accurate deltas (?)
+		#intersect["frequency"] = intersect["occurrences"] / intersect["occurrences"].sum()
+		#intersect["last_frequency"] = intersect["last_occurrences"] / intersect["last_occurrences"].sum()
 		# compute deltas from last period
 		intersect["deltas"] = intersect["frequency"] - intersect["last_frequency"]
 		# filter based on a delta threshold
 		intersect = intersect[ intersect.deltas > intersect.deltas.quantile( config["PARSE_DELTA_THRESHOLD"] ) ]
 
-		# keep only words from glosema
-		found = glosema.loc[ intersect.index.intersection(glosema.index) ]
+		# keep only words from lexicon
+		found = lexicon.loc[ intersect.index.intersection(lexicon.index) ]
+		#not_found = intersect.loc[ intersect.index.difference(lexicon.index) ]
+		#not_found.reset_index()["index"].to_csv(outputfile + ".notfound", index=False)
 		# concatenate into a single frame
 		mirari = pandas.concat([intersect.loc[ found.index ],found], axis=1)
 		# aggreggate occurrences by emotions
@@ -217,6 +222,7 @@ def parse(argp, args):
 		if mirari.empty or emotions.empty or result.empty:
 			logging.info("empty dataframe")
 			continue
+
 		#mirari.to_csv(outputfile + ".mirari", index=False)
 		#emotions.reset_index().to_csv(outputfile + ".deltas", index=False)
 		result.to_csv(outputfile, index=False)
@@ -446,12 +452,11 @@ def split(argp, args):
 			tweets.loc[i] = ""
 
 		for gran_tweets in [ group[1] for group in tweets.resample(args.timeframe) ]:
-			i = gran_tweets.index[0].hour
-			outputfile = outputdir + "/" + os.path.splitext(datafile)[0] + "_" + str(i)
+			hour = gran_tweets.index[0].hour
+			if hour < 10:
+				hour = "0" + str(hour)
+			outputfile = outputdir + "/" + os.path.splitext(datafile)[0] + "_" + str(hour)
 			if os.path.exists(outputfile):
-				import code
-				code.interact(local=locals())
-				input()
 				if args.ignore:
 					continue
 				logging.warning(outputfile + " already exists, overwrite? [y|N]")
