@@ -23,21 +23,24 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 			#"res2sup": {
 			#	"res2sup": { },
 			#},
-			"ema": {
-				"short": { },
-				"long": { },
-			},
+			#"ema": {
+			#	"short": { },
+			#	"long": { },
+			#},
 			#"moon": {
 			#	"time_to_full_moon": { },
 			#	"time_to_new_moon": { },
 			#},
-			"tacitus": {
-				"tacitus": { },
+			"signal": {
+				"tacitus_signal": { },
 			},
-			"srsi_k": {
-				"srsi_k": { },
-				"srsi_d": { },
-			}
+			"tally": {
+				"tacitus_tally": { },
+			},
+			#"srsi_k": {
+			#	"srsi_k": { },
+			#	"srsi_d": { },
+			#}
 		}
 	}
 
