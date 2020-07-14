@@ -22,7 +22,8 @@ fmap = {
 	"split" : tacitus.split,
 	"stream" : acheron.stream,
 	"tally": tacitus.tally,
-	"train" : tacitus.train
+	"train" : tacitus.train,
+	"vader": tacitus.vader
 }
 
 argp = argparse.ArgumentParser(description='''
