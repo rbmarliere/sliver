@@ -11,6 +11,7 @@ import os
 import pandas
 import re
 import pytz
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
 # helper to load google encoder
 def load_use():
@@ -162,6 +163,8 @@ def parse(argp, args):
 			continue
 		tweets["cleaned_tweet"] = tweets["tweet"].apply( lambda x: clean(x) )
 
+		tweets = tweets[ (tweets["compound"] < config["VADER_LOW_THRESHOLD"]) | (tweets["compound"] > config["VADER_HIGH_THRESHOLD"]) ]
+
 		# take unique words used in all tweets
 		unique = tweets["cleaned_tweet"].str.split(" ", expand=True).stack().value_counts()
 		# filter found unique words based on an occurrence threshold
@@ -223,9 +226,9 @@ def parse(argp, args):
 		#	input()
 
 		asd = math.sqrt( abs(asd) )
-		if asd < 0.00001:
-			asd = 0.0001
-		signal = happy + like + action + ( vai + 93 / asd + 93 )
+		#if asd < 0.00001:
+		#	asd = 0.0001
+		signal = happy + like + action + ( ( vai + 93 ) / ( asd + 93 ) )
 
 		# update loop index
 		last_unique = unique
@@ -479,4 +482,38 @@ def split(argp, args):
 					continue
 			logging.info("writing to " + outputfile)
 			gran_tweets.replace("", numpy.nan).reset_index().dropna().to_csv(outputfile, index=False)
+
+def vader(argp, args):
+	if args.input == None:
+		logging.error("provide a data directory with --input")
+		return 1
+	if not os.path.exists(args.input):
+		logging.error("can't find data directory! (" + args.input + ")")
+		return 1
+
+	logging.info("loading config...")
+	outputdir = os.path.dirname(os.path.realpath(__file__)) + "/data/vader"
+	if not os.path.exists(outputdir):
+		logging.error(outputdir + " doesn't exist!")
+		return 1
+	analyzer = SentimentIntensityAnalyzer()
+
+	logging.info("processing " + args.input)
+	for datafile in sorted(os.listdir(args.input)):
+		if datafile.startswith("."):
+			continue
+
+		outputfile = outputdir + "/" + os.path.splitext(datafile)[0]
+		if os.path.exists(outputfile):
+			if args.ignore:
+				continue
+			logging.warning(outputfile + " already exists, overwrite? [y|N]")
+			if input() != "y":
+				continue
+
+		logging.info("processing " + datafile)
+
+		tweets = pandas.read_csv(args.input + "/" + datafile, encoding="utf-8", lineterminator="\n", parse_dates=["date"]).set_index("date")
+		tweets["compound"] = tweets["tweet"].apply( lambda x: analyzer.polarity_scores(x)["compound"] )
+		tweets.reset_index().to_csv(outputfile, index=False)
 
