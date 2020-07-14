@@ -217,8 +217,15 @@ def parse(argp, args):
 		action = rt + af + aa
 		vai = emotions.deltas.get("vigilance", 0) + emotions.deltas.get("anticipation", 0) + emotions.deltas.get("interest", 0)
 		asd = emotions.deltas.get("amazement", 0) + emotions.deltas.get("surprise", 0) + emotions.deltas.get("distraction", 0)
-		asd = 1 if asd == 0 else math.sqrt(asd%1)
-		signal = happy + like + action + ( vai / asd )
+		#if datafile == "20200425_20":
+		#	import code
+		#	code.interact(local=locals())
+		#	input()
+
+		asd = math.sqrt( abs(asd) )
+		if asd < 0.00001:
+			asd = 0.0001
+		signal = happy + like + action + ( vai + 93 / asd + 93 )
 
 		# update loop index
 		last_unique = unique
