@@ -9,10 +9,10 @@ import pandas
 import re
 import tweepy
 
-class Acheron(tweepy.StreamListener):
-	def __init__(self, outputdir):
-		super().__init__()
-		self.outputdir = outputdir
+class Acheron(tweepy.Stream):
+	#def __init__(self, outputdir):
+	#	super().__init__()
+	#	self.outputdir = outputdir
 	def on_status(self, status):
 		# ignore retweets
 		if "retweeted_status" in status._json:
@@ -48,11 +48,11 @@ def save_uids(users, api):
 	for user in users:
 		# retrieve user id by name from twitter api
 		try:
-			uid = str(api.get_user(user.strip()).id)
+			uid = str(api.get_user(screen_name=user.strip()).id)
 			# save found uids to a file so it doesn't consume api each run
 			print(uid, file=uids_file)
 			uids.append(uid)
-		except tweepy.error.TweepError:
+		except tweepy.errors.TweepyException:
 			logging.error("User '" + user + "' not found.")
 	return uids
 
@@ -80,8 +80,9 @@ def stream(argp, args):
 		logging.error(outputdir + " doesn't exist!")
 		return 1
 	logging.info("output directory set to " + outputdir)
-	acheron = Acheron(outputdir)
-	stream = tweepy.Stream(auth = api.auth, listener=acheron, timeout=600)
+	acheron = Acheron(keys["CONSUMER_KEY"], keys["CONSUMER_SECRET"], keys["ACCESS_KEY"], keys["ACCESS_SECRET"])
+	acheron.outputdir = outputdir
+	#stream = tweepy.Stream(auth = api.auth, listener=acheron, timeout=600)
 
 	logging.info("reading users...")
 	try:
@@ -98,14 +99,13 @@ def stream(argp, args):
 		uids = save_uids(config["TRACK_USERS"], api)
 
 	# start stream with proper exception handling so it doesn't crash
-	while not stream.running:
+	while not acheron.running:
 		try:
 			logging.info("streaming...")
-			stream.filter(
+			acheron.filter(
 				languages=["en"],
 				follow=uids,
-				#track=[ "bitcoin", "btc", "xbt" ],
-				is_async=False
+				#track=[ "bitcoin", "btc", "xbt" ]
 			)
 		except (Timeout, SSLError, ReadTimeoutError, ConnectionError) as e:
 			logging.error("network error!")
