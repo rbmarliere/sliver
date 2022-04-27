@@ -55,14 +55,14 @@ def filter(argp, args):
 		logging.error("can't find data directory! (" + args.input + ")")
 		return 1
 
-	logging.info("loading config...")
+	logging.info("FILTER loading config...")
 	try:
 		include_filename = os.path.dirname(os.path.realpath(__file__)) + "/etc/filter/include"
 		exclude_filename = os.path.dirname(os.path.realpath(__file__)) + "/etc/filter/exclude"
 		include = open( include_filename ).read().splitlines()
 		exclude = open( exclude_filename ).read().splitlines()
-		logging.info("including tweets from " + include_filename)
-		logging.info("excluding tweets from " + exclude_filename)
+		logging.info("FILTER including tweets from " + include_filename)
+		logging.info("FILTER excluding tweets from " + exclude_filename)
 	except:
 		logging.error("can't read filter directory! (" + include_filename + "," + exclude_filename + ")")
 		return 1
@@ -71,7 +71,7 @@ def filter(argp, args):
 		logging.error(outputdir + " doesn't exist!")
 		return 1
 
-	logging.info("processing " + args.input)
+	logging.info("FILTER processing " + args.input)
 	for datafile in sorted(os.listdir(args.input)):
 		if datafile.startswith("."):
 			continue
@@ -84,7 +84,7 @@ def filter(argp, args):
 			if input() != "y":
 				continue
 
-		logging.info("processing " + datafile)
+		logging.info("FILTER processing " + datafile)
 		alltweets = pandas.read_csv(args.input + "/" + datafile, encoding="utf-8", lineterminator="\n")
 		if alltweets.empty:
 			logging.info("empty datafile")
@@ -111,7 +111,7 @@ def filter(argp, args):
 		tweets = tweets.drop("cleaned_tweet", axis=1)
 		tweets = tweets.drop_duplicates()
 
-		logging.info("writing to " + outputfile)
+		logging.info("FILTER writing to " + outputfile)
 		if tweets.empty:
 			logging.info("empty dataframe")
 			continue
@@ -125,7 +125,7 @@ def parse(argp, args):
 		logging.error("can't find data directory! (" + args.input + ")")
 		return 1
 
-	logging.info("loading config...")
+	logging.info("PARSE loading config...")
 	config_file = os.path.dirname(os.path.realpath(__file__)) + "/etc/tacitus.conf"
 	config = json.load(open(config_file))
 	if config["PARSE_OCCURRENCES_THRESHOLD"] == "" or config["PARSE_FREQUENCY_THRESHOLD"] == "" or config["PARSE_DELTA_THRESHOLD"] == "":
@@ -136,13 +136,13 @@ def parse(argp, args):
 		logging.error(outputdir + " doesn't exist!")
 		return 1
 
-	logging.info("loading lexicon...")
+	logging.info("PARSE loading lexicon...")
 	lexicon = os.path.dirname(os.path.realpath(__file__)) + "/etc/lexicon"
 	lexicon = pandas.read_csv(lexicon, encoding="utf-8", lineterminator="\n")
 	lexicon["cleaned_word"] = lexicon["word"].apply( lambda x: clean(x) )
 	lexicon = lexicon.set_index("cleaned_word")
 
-	logging.info("processing " + args.input)
+	logging.info("PARSE processing " + args.input)
 	last_unique = pandas.DataFrame()
 	for datafile in sorted(os.listdir(args.input)):
 		if datafile.startswith("."):
@@ -156,14 +156,14 @@ def parse(argp, args):
 			if input() != "y":
 				continue
 
-		logging.info("processing " + datafile)
+		logging.info("PARSE processing " + datafile)
 		tweets = pandas.read_csv(args.input + "/" + datafile, encoding="utf-8", lineterminator="\n")
 		if tweets.empty:
 			logging.info("empty datafile")
 			continue
 		tweets["cleaned_tweet"] = tweets["tweet"].apply( lambda x: clean(x) )
 
-		tweets = tweets[ (tweets["compound"] < config["VADER_LOW_THRESHOLD"]) | (tweets["compound"] > config["VADER_HIGH_THRESHOLD"]) ]
+		#tweets = tweets[ (tweets["compound"] < config["VADER_LOW_THRESHOLD"]) | (tweets["compound"] > config["VADER_HIGH_THRESHOLD"]) ]
 
 		# take unique words used in all tweets
 		unique = tweets["cleaned_tweet"].str.split(" ", expand=True).stack().value_counts()
@@ -230,10 +230,16 @@ def parse(argp, args):
 		#	asd = 0.0001
 		signal = happy + like + action + ( ( vai + 93 ) / ( asd + 93 ) )
 
+		#signal = tweets["compound"].mean()
+
+		#import code
+		#code.interact(local=locals())
+		#input()
+
 		# update loop index
 		last_unique = unique
 
-		logging.info("writing to " + outputfile)
+		logging.info("PARSE writing to " + outputfile)
 		result = pandas.DataFrame({ "signal": [signal] })
 		if mirari.empty or emotions.empty or result.empty:
 			logging.info("empty dataframe")
@@ -255,7 +261,7 @@ def predict(argp, args):
 
 	use = load_use()
 
-	logging.info("loading config...")
+	logging.info("PREDICT loading config...")
 	config_file = os.path.dirname(os.path.realpath(__file__)) + "/etc/tacitus.conf"
 	config = json.load(open(config_file))
 	if config["PREDICT_LOW_THRESHOLD"] == "" or config["PREDICT_HIGH_THRESHOLD"] == "":
@@ -267,14 +273,14 @@ def predict(argp, args):
 		return 1
 
 	model_file = os.path.dirname(os.path.realpath(__file__)) + "/etc/models/default"
-	logging.info("loading model at " + model_file)
+	logging.info("PREDICT loading model at " + model_file)
 	try:
 		model = tensorflow.keras.models.load_model(model_file)
 	except:
 		logging.error("can't load model")
 		return 1
 
-	logging.info("processing " + args.input)
+	logging.info("PREDICT processing " + args.input)
 	for datafile in sorted(os.listdir(args.input)):
 		if datafile.startswith("."):
 			continue
@@ -287,7 +293,7 @@ def predict(argp, args):
 			if input() != "y":
 				continue
 
-		logging.info("processing " + datafile)
+		logging.info("PREDICT processing " + datafile)
 		tweets = pandas.read_csv(args.input + "/" + datafile, encoding="utf-8", lineterminator="\n")
 		if tweets.empty:
 			logging.info("empty datafile")
@@ -303,7 +309,7 @@ def predict(argp, args):
 		tweets["predict"] = tweets["score"].apply( pred )
 		tweets = tweets[ tweets["predict"] >= 0 ]
 
-		logging.info("writing to " + outputfile)
+		logging.info("PREDICT writing to " + outputfile)
 		if tweets.empty:
 			logging.info("empty dataframe")
 			continue
@@ -317,13 +323,13 @@ def tally(argp, args):
 		logging.error("can't find data directory! (" + args.input + ")")
 		return 1
 
-	logging.info("loading config...")
+	logging.info("TALLY loading config...")
 	outputdir = os.path.dirname(os.path.realpath(__file__)) + "/data/tally"
 	if not os.path.exists(outputdir):
 		logging.error(outputdir + " doesn't exist!")
 		return 1
 
-	logging.info("processing " + args.input)
+	logging.info("TALLY processing " + args.input)
 	for datafile in sorted(os.listdir(args.input)):
 		if datafile.startswith("."):
 			continue
@@ -336,7 +342,7 @@ def tally(argp, args):
 			if input() != "y":
 				continue
 
-		logging.info("processing " + datafile)
+		logging.info("TALLY processing " + datafile)
 		predictions = pandas.read_csv(args.input + "/" + datafile, encoding="utf-8", lineterminator="\n")
 		if predictions.empty:
 			logging.info("empty datafile")
@@ -344,7 +350,7 @@ def tally(argp, args):
 		pos = predictions.loc[ predictions["predict"] == 1 ].size
 		neg = predictions.loc[ predictions["predict"] == 0 ].size
 
-		logging.info("writing to " + outputfile)
+		logging.info("TALLY writing to " + outputfile)
 		tally = pandas.DataFrame({ "pos": [pos], "neg": [neg] })
 		if tally.empty:
 			logging.info("empty dataframe")
@@ -360,7 +366,7 @@ def train(argp, args):
 
 	use = load_use()
 
-	logging.info("loading config...")
+	logging.info("TRAIN loading config...")
 	config_file = os.path.dirname(os.path.realpath(__file__)) + "/etc/tacitus.conf"
 	config = json.load(open(config_file))
 	modeldir = os.path.dirname(os.path.realpath(__file__)) + "/etc/models/" + datetime.datetime.now().strftime("%Y%m%d")
@@ -369,12 +375,12 @@ def train(argp, args):
 		if input() != "y":
 			return 1
 
-	logging.info("loading hyperparameters...")
+	logging.info("TRAIN loading hyperparameters...")
 	if config["TRAIN_SEED"] == "" or config["TRAIN_EPOCHS"] == "" or config["TRAIN_BATCH_SIZE"] == "":
 		logging.error("empty parameters in config! (TRAIN_SEED, TRAIN_EPOCHS, TRAIN_BATCH_SIZE)")
 		return 1
 
-	logging.info("loading training data...")
+	logging.info("TRAIN loading training data...")
 	try:
 		train_datadir = os.path.dirname(os.path.realpath(__file__)) + "/etc/train"
 		pos_file = open(train_datadir + "/pos")
@@ -394,7 +400,7 @@ def train(argp, args):
 	# remove None rows
 	tweets = tweets.dropna()
 
-	logging.info("building training data...")
+	logging.info("TRAIN building training data...")
 	polarity = OneHotEncoder(sparse=False).fit_transform( tweets.polarity.to_numpy().reshape(-1, 1) )
 	train_tweets, test_tweets, y_train, y_test = train_test_split( tweets.tweet, polarity, test_size = .1, random_state = config["TRAIN_SEED"] )
 	X_train = []
@@ -410,7 +416,7 @@ def train(argp, args):
 		X_test.append(tweet_emb)
 	X_test = numpy.array(X_test)
 
-	logging.info("building model...")
+	logging.info("TRAIN building model...")
 	model = tensorflow.keras.Sequential()
 	model.add( tensorflow.keras.layers.Dense(units=512, input_shape=(X_train.shape[1], ), activation="relu") )
 	model.add( tensorflow.keras.layers.Dropout(rate=0.5) )
@@ -420,7 +426,7 @@ def train(argp, args):
 	model.compile( loss="categorical_crossentropy", optimizer=tensorflow.keras.optimizers.Adam(0.01), metrics=["accuracy"] )
 	logging.info(model.summary())
 
-	logging.info("training model...")
+	logging.info("TRAIN training model...")
 	model.fit(
 		X_train, y_train,
 		epochs=config["TRAIN_EPOCHS"],
@@ -430,10 +436,10 @@ def train(argp, args):
 		shuffle=True
 	)
 
-	logging.info("evaluating model...")
+	logging.info("TRAIN evaluating model...")
 	model.evaluate(X_test, y_test)
 
-	logging.info("saving model...")
+	logging.info("TRAIN saving model...")
 	model.save(modeldir)
 
 def split(argp, args):
@@ -450,18 +456,18 @@ def split(argp, args):
 		logging.error("provide a valid timeframe (12h, 4h)")
 		return 1
 
-	logging.info("loading config...")
+	logging.info("SPLIT loading config...")
 	outputdir = os.path.dirname(os.path.realpath(__file__)) + "/data/split"
 	if not os.path.exists(outputdir):
 		logging.error(outputdir + " doesn't exist!")
 		return 1
 
-	logging.info("processing " + args.input)
+	logging.info("SPLIT processing " + args.input)
 	for datafile in sorted(os.listdir(args.input)):
 		if datafile.startswith("."):
 			continue
 
-		logging.info("processing " + datafile)
+		logging.info("SPLIT processing " + datafile)
 
 		tweets = pandas.read_csv(args.input + "/" + datafile, encoding="utf-8", lineterminator="\n", parse_dates=["date"]).set_index("date")
 		filedate = datetime.datetime.strptime(datafile, "%Y%m%d").replace(tzinfo=pytz.UTC)
@@ -480,7 +486,7 @@ def split(argp, args):
 				logging.warning(outputfile + " already exists, overwrite? [y|N]")
 				if input() != "y":
 					continue
-			logging.info("writing to " + outputfile)
+			logging.info("SPLIT writing to " + outputfile)
 			gran_tweets.replace("", numpy.nan).reset_index().dropna().to_csv(outputfile, index=False)
 
 def vader(argp, args):
@@ -491,14 +497,14 @@ def vader(argp, args):
 		logging.error("can't find data directory! (" + args.input + ")")
 		return 1
 
-	logging.info("loading config...")
+	logging.info("VADER loading config...")
 	outputdir = os.path.dirname(os.path.realpath(__file__)) + "/data/vader"
 	if not os.path.exists(outputdir):
 		logging.error(outputdir + " doesn't exist!")
 		return 1
 	analyzer = SentimentIntensityAnalyzer()
 
-	logging.info("processing " + args.input)
+	logging.info("VADER processing " + args.input)
 	for datafile in sorted(os.listdir(args.input)):
 		if datafile.startswith("."):
 			continue
@@ -511,7 +517,7 @@ def vader(argp, args):
 			if input() != "y":
 				continue
 
-		logging.info("processing " + datafile)
+		logging.info("VADER processing " + datafile)
 
 		tweets = pandas.read_csv(args.input + "/" + datafile, encoding="utf-8", lineterminator="\n", parse_dates=["date"]).set_index("date")
 		tweets["compound"] = tweets["tweet"].apply( lambda x: analyzer.polarity_scores(x)["compound"] )
