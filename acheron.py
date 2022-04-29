@@ -10,9 +10,6 @@ import re
 import tweepy
 
 class Acheron(tweepy.Stream):
-	#def __init__(self, outputdir):
-	#	super().__init__()
-	#	self.outputdir = outputdir
 	def on_status(self, status):
 		# ignore retweets
 		if "retweeted_status" in status._json:
@@ -32,11 +29,10 @@ class Acheron(tweepy.Stream):
 		user = status._json["user"]["screen_name"]
 		url = "https://twitter.com/" + user + "/status/" + str(status.id)
 		# output
-		output_filename = datetime.datetime.now().strftime("%Y%m%d")
 		tweet = pandas.DataFrame({ "date": [created_at], "username": [user], "url": [url], "tweet": [text] })
 		logging.info(url)
 		logging.info(text)
-		with open(self.outputdir+"/"+output_filename, "a") as f:
+		with open("data/raw.csv", "a") as f:
 			tweet.to_csv(f, header=f.tell()==0, mode="a", index=False)
 
 # save the ids of the users to track to disk
@@ -75,14 +71,7 @@ def stream(argp, args):
 	api = tweepy.API(auth)
 
 	logging.info("initializing...")
-	outputdir = os.path.dirname(os.path.realpath(__file__)) + "/data/raw"
-	if not os.path.exists(outputdir):
-		logging.error(outputdir + " doesn't exist!")
-		return 1
-	logging.info("output directory set to " + outputdir)
 	acheron = Acheron(keys["CONSUMER_KEY"], keys["CONSUMER_SECRET"], keys["ACCESS_KEY"], keys["ACCESS_SECRET"])
-	acheron.outputdir = outputdir
-	#stream = tweepy.Stream(auth = api.auth, listener=acheron, timeout=600)
 
 	logging.info("reading users...")
 	try:
