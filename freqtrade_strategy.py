@@ -4,7 +4,7 @@ import freqtrade
 import numpy
 import os
 import pandas
-import pylunar
+#import pylunar
 import talib.abstract as ta
 import pytz
 from sklearn import preprocessing
@@ -12,7 +12,7 @@ from sklearn import preprocessing
 class hypnox(freqtrade.strategy.interface.IStrategy):
 	INTERFACE_VERSION = 2
 	minimal_roi = { "0": 0.03 }
-	stoploss = -100.0 # disabled
+	stoploss = -0.02 # disabled
 
 	plot_config = {
 		"main_plot": {
@@ -85,8 +85,8 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 			dataframe.loc[ dataframe["date"] == parse_date, "tacitus_signal" ] = parse_result["signal"][0]
 
 		# normalize
-		scaler = preprocessing.MinMaxScaler()
-		dataframe["tacitus_signal"] = scaler.fit_transform(dataframe[["tacitus_signal"]])
+		#scaler = preprocessing.MinMaxScaler()
+		#dataframe["tacitus_signal"] = scaler.fit_transform(dataframe[["tacitus_signal"]])
 		#dataframe["tacitus_tally"] = scaler.fit_transform(dataframe[["tacitus_tally"]])
 		#dataframe["tacitus"] = dataframe["tacitus_signal"] - dataframe["tacitus_tally"]
 		#dataframe["tacitus"] = scaler.fit_transform(dataframe[["tacitus_signal"]])
@@ -184,7 +184,7 @@ class hypnox(freqtrade.strategy.interface.IStrategy):
 
 	def populate_buy_trend(self, dataframe: pandas.DataFrame, metadata: dict) -> pandas.DataFrame:
 		buy = (
-			(dataframe["tacitus_signal"] > 0.58)
+			(dataframe["tacitus_signal"] < 0.11)
 			#(dataframe["srsi_k"] < dataframe["srsi_d"]) &
 			#(dataframe["short"] < dataframe["long"])
 		)

@@ -9,7 +9,7 @@ import pandas
 import re
 import tweepy
 
-class Acheron(tweepy.Stream):
+class Stream(tweepy.Stream):
 	def on_status(self, status):
 		# ignore retweets
 		if "retweeted_status" in status._json:
@@ -38,8 +38,7 @@ class Acheron(tweepy.Stream):
 # save the ids of the users to track to disk
 def save_uids(users, api):
 	logging.info("loading uids...")
-	uids_filename = os.path.dirname(os.path.realpath(__file__)) + "/etc/acheron.uids"
-	uids_file = open(uids_filename, "a")
+	uids_file = open(".uids", "a")
 	uids = []
 	for user in users:
 		# retrieve user id by name from twitter api
@@ -54,47 +53,37 @@ def save_uids(users, api):
 
 def stream(argp, args):
 	logging.info("loading config...")
-	config_filename = os.path.dirname(os.path.realpath(__file__)) + "/etc/acheron.conf"
-	config = json.load(open(config_filename))
-	keys_filename = os.path.dirname(os.path.realpath(__file__)) + "/etc/acheron.keys"
-	keys = json.load(open(keys_filename))
+	config = json.load(open("hypnox.conf"))
 	if config["TRACK_USERS"] == "":
 		logging.error("empty user list in config! (TRACK_USERS) in (" + config_filename + ")")
 		return 1
 
 	logging.info("loading twitter API keys...")
-	if keys["CONSUMER_KEY"] == "" or keys["CONSUMER_SECRET"] == "" or keys["ACCESS_KEY"] == "" or keys["ACCESS_SECRET"] == "":
-		logging.error("empty keys in config! (CONSUMER_KEY, CONSUMER_SECRET, ACCESS_KEY, ACCESS_SECRET) in file (" + keys_filename + ")")
+	if config["CONSUMER_KEY"] == "" or config["CONSUMER_SECRET"] == "" or config["ACCESS_KEY"] == "" or config["ACCESS_SECRET"] == "":
+		logging.error("empty keys in config! (CONSUMER_KEY, CONSUMER_SECRET, ACCESS_KEY, ACCESS_SECRET)")
 		return 1
-	auth = tweepy.OAuthHandler(keys["CONSUMER_KEY"], keys["CONSUMER_SECRET"])
-	auth.set_access_token(keys["ACCESS_KEY"], keys["ACCESS_SECRET"])
+	auth = tweepy.OAuthHandler(config["CONSUMER_KEY"], config["CONSUMER_SECRET"])
+	auth.set_access_token(config["ACCESS_KEY"], config["ACCESS_SECRET"])
 	api = tweepy.API(auth)
 
 	logging.info("initializing...")
-	acheron = Acheron(keys["CONSUMER_KEY"], keys["CONSUMER_SECRET"], keys["ACCESS_KEY"], keys["ACCESS_SECRET"])
+	stream = Stream(config["CONSUMER_KEY"], config["CONSUMER_SECRET"], config["ACCESS_KEY"], config["ACCESS_SECRET"])
 
 	logging.info("reading users...")
 	try:
-		# read saved uids file
-		uids_filename = os.path.dirname(os.path.realpath(__file__)) + "/etc/acheron.uids"
-		uids_file = open(uids_filename)
-		uids = uids_file.read().splitlines()
-		# if config was changed, reload all users
+		uids = open(".uids").read().splitlines()
 		if len(uids) != len(config["TRACK_USERS"]):
-			os.remove(uids_filename)
+			os.remove(".uids")
 			uids = save_uids(config["TRACK_USERS"], api)
 	except FileNotFoundError:
-		# initially, if no uids file is found, create one
 		uids = save_uids(config["TRACK_USERS"], api)
 
-	# start stream with proper exception handling so it doesn't crash
-	while not acheron.running:
+	while not stream.running:
 		try:
 			logging.info("streaming...")
-			acheron.filter(
+			stream.filter(
 				languages=["en"],
 				follow=uids,
-				#track=[ "bitcoin", "btc", "xbt" ]
 			)
 		except (Timeout, SSLError, ReadTimeoutError, ConnectionError) as e:
 			logging.error("network error!")
