@@ -13,6 +13,8 @@ import re
 import pytz
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
+logging.basicConfig(level=logging.INFO)
+
 # helper to load google encoder
 def load_use():
 	import tensorflow_hub
@@ -35,13 +37,16 @@ def clean(text):
 	# remove stopwords, but keep some
 	keep = [ "this", "that'll", "these", "having", "does", "doing", "until", "while", "about", "against", "between", "into", "through", "during", "before", "after", "above", "below", "from", "up", "down", "in", "out", "on", "off", "over", "under", "again", "further", "then", "once", "here", "there", "when", "few", "both", "more", "most", "other", "some", "than", "too", "very", "can", "will", "should", "should've", "now", "ain", "aren", "aren't", "could", "couldn", "couldn't", "didn", "didn't", "doesn", "doesn't", "hadn", "hadn't", "hasn", "hasn't", "haven", "haven't", "isn", "isn't", "mighn", "mightn't", "mustn", "mustn't", "needn", "needn't", "shan", "shan't", "shouldn", "shouldn't", "wasn", "wasn't", "weren","weren't", "won'", "won't", "wouldn", "wouldn't" ]
 	# load nltk stopwords
+	try:
+		nltk.data.find("corpora/stopwords")
+	except LookupError:
+		nltk.download('stopwords')
 	nltkstops = set(nltk.corpus.stopwords.words("english"))
 	stops = [w for w in nltkstops if not w in keep]
 	meaningful_words = [w for w in words if not w in stops]
 	# stem words
-	#stemmer = nltk.stem.porter.PorterStemmer()
-	#singles = [stemmer.stem(word) for word in meaningful_words]
-
+	stemmer = nltk.stem.porter.PorterStemmer()
+	singles = [stemmer.stem(word) for word in meaningful_words]
 	# join the words with more than one char back into one string
 	out = " ".join([w for w in meaningful_words if len(w) > 1])
 
@@ -49,26 +54,10 @@ def clean(text):
 
 def filter(argp, args):
 	if args.input == None:
-		logging.error("provide a data directory with --input")
+		logging.error("provide a csv file with --input")
 		return 1
 	if not os.path.exists(args.input):
-		logging.error("can't find data directory! (" + args.input + ")")
-		return 1
-
-	logging.info("FILTER loading config...")
-	try:
-		include_filename = os.path.dirname(os.path.realpath(__file__)) + "/etc/filter/include"
-		exclude_filename = os.path.dirname(os.path.realpath(__file__)) + "/etc/filter/exclude"
-		include = open( include_filename ).read().splitlines()
-		exclude = open( exclude_filename ).read().splitlines()
-		logging.info("FILTER including tweets from " + include_filename)
-		logging.info("FILTER excluding tweets from " + exclude_filename)
-	except:
-		logging.error("can't read filter directory! (" + include_filename + "," + exclude_filename + ")")
-		return 1
-	outputdir = os.path.dirname(os.path.realpath(__file__)) + "/data/filter"
-	if not os.path.exists(outputdir):
-		logging.error(outputdir + " doesn't exist!")
+		logging.error("can't find data file! (" + args.input + ")")
 		return 1
 
 	logging.info("FILTER processing " + args.input)
@@ -315,48 +304,6 @@ def predict(argp, args):
 			continue
 		tweets.to_csv(outputfile, index=False)
 
-def tally(argp, args):
-	if args.input == None:
-		logging.error("provide a data directory with --input")
-		return 1
-	if not os.path.exists(args.input):
-		logging.error("can't find data directory! (" + args.input + ")")
-		return 1
-
-	logging.info("TALLY loading config...")
-	outputdir = os.path.dirname(os.path.realpath(__file__)) + "/data/tally"
-	if not os.path.exists(outputdir):
-		logging.error(outputdir + " doesn't exist!")
-		return 1
-
-	logging.info("TALLY processing " + args.input)
-	for datafile in sorted(os.listdir(args.input)):
-		if datafile.startswith("."):
-			continue
-
-		outputfile = outputdir + "/" + os.path.splitext(datafile)[0]
-		if os.path.exists(outputfile):
-			if args.ignore:
-				continue
-			logging.warning(outputfile + " already exists, overwrite? [y|N]")
-			if input() != "y":
-				continue
-
-		logging.info("TALLY processing " + datafile)
-		predictions = pandas.read_csv(args.input + "/" + datafile, encoding="utf-8", lineterminator="\n")
-		if predictions.empty:
-			logging.info("empty datafile")
-			continue
-		pos = predictions.loc[ predictions["predict"] == 1 ].size
-		neg = predictions.loc[ predictions["predict"] == 0 ].size
-
-		logging.info("TALLY writing to " + outputfile)
-		tally = pandas.DataFrame({ "pos": [pos], "neg": [neg] })
-		if tally.empty:
-			logging.info("empty dataframe")
-			continue
-		tally.to_csv(outputfile, index=False)
-
 def train(argp, args):
 	import tensorflow
 	import tensorflow_hub
@@ -441,85 +388,4 @@ def train(argp, args):
 
 	logging.info("TRAIN saving model...")
 	model.save(modeldir)
-
-def split(argp, args):
-	if args.input == None:
-		logging.error("provide a data directory with --input")
-		return 1
-	if not os.path.exists(args.input):
-		logging.error("can't find data directory! (" + args.input + ")")
-		return 1
-	if args.timeframe == None:
-		logging.error("provide a timeframe with --timeframe (12h, 4h)")
-		return 1
-	elif args.timeframe != "12h" and args.timeframe != "4h":
-		logging.error("provide a valid timeframe (12h, 4h)")
-		return 1
-
-	logging.info("SPLIT loading config...")
-	outputdir = os.path.dirname(os.path.realpath(__file__)) + "/data/split"
-	if not os.path.exists(outputdir):
-		logging.error(outputdir + " doesn't exist!")
-		return 1
-
-	logging.info("SPLIT processing " + args.input)
-	for datafile in sorted(os.listdir(args.input)):
-		if datafile.startswith("."):
-			continue
-
-		logging.info("SPLIT processing " + datafile)
-
-		tweets = pandas.read_csv(args.input + "/" + datafile, encoding="utf-8", lineterminator="\n", parse_dates=["date"]).set_index("date")
-		filedate = datetime.datetime.strptime(datafile, "%Y%m%d").replace(tzinfo=pytz.UTC)
-		index = pandas.date_range(start=filedate, end=filedate+datetime.timedelta(days=1)-datetime.timedelta(minutes=1), freq=args.timeframe)
-		for i in index:
-			tweets.loc[i] = ""
-
-		for gran_tweets in [ group[1] for group in tweets.resample(args.timeframe) ]:
-			hour = gran_tweets.index[0].hour
-			if hour < 10:
-				hour = "0" + str(hour)
-			outputfile = outputdir + "/" + os.path.splitext(datafile)[0] + "_" + str(hour)
-			if os.path.exists(outputfile):
-				if args.ignore:
-					continue
-				logging.warning(outputfile + " already exists, overwrite? [y|N]")
-				if input() != "y":
-					continue
-			logging.info("SPLIT writing to " + outputfile)
-			gran_tweets.replace("", numpy.nan).reset_index().dropna().to_csv(outputfile, index=False)
-
-def vader(argp, args):
-	if args.input == None:
-		logging.error("provide a data directory with --input")
-		return 1
-	if not os.path.exists(args.input):
-		logging.error("can't find data directory! (" + args.input + ")")
-		return 1
-
-	logging.info("VADER loading config...")
-	outputdir = os.path.dirname(os.path.realpath(__file__)) + "/data/vader"
-	if not os.path.exists(outputdir):
-		logging.error(outputdir + " doesn't exist!")
-		return 1
-	analyzer = SentimentIntensityAnalyzer()
-
-	logging.info("VADER processing " + args.input)
-	for datafile in sorted(os.listdir(args.input)):
-		if datafile.startswith("."):
-			continue
-
-		outputfile = outputdir + "/" + os.path.splitext(datafile)[0]
-		if os.path.exists(outputfile):
-			if args.ignore:
-				continue
-			logging.warning(outputfile + " already exists, overwrite? [y|N]")
-			if input() != "y":
-				continue
-
-		logging.info("VADER processing " + datafile)
-
-		tweets = pandas.read_csv(args.input + "/" + datafile, encoding="utf-8", lineterminator="\n", parse_dates=["date"]).set_index("date")
-		tweets["compound"] = tweets["tweet"].apply( lambda x: analyzer.polarity_scores(x)["compound"] )
-		tweets.reset_index().to_csv(outputfile, index=False)
 

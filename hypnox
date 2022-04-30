@@ -1,29 +1,12 @@
 #!/usr/bin/env python3
 
-import acheron
 import argparse
-import logging
-import nltk
+import hypnox
 import os
-import tacitus
-import time
-
-#import code
-#code.interact(local=locals())
-#input()
-
-logging.basicConfig(level=logging.INFO)
-#logging.basicConfig(level=logging.DEBUG)
+import twitter_stream
 
 fmap = {
-	"filter": tacitus.filter,
-	"parse": tacitus.parse,
-	"predict": tacitus.predict,
-	"split" : tacitus.split,
-	"stream" : acheron.stream,
-	"tally": tacitus.tally,
-	"train" : tacitus.train,
-	"vader": tacitus.vader
+	"stream" : twitter_stream.stream,
 }
 
 argp = argparse.ArgumentParser(description='''
@@ -34,16 +17,10 @@ argp = argparse.ArgumentParser(description='''
    sub noctem sapientia
 ''',
 formatter_class=argparse.RawTextHelpFormatter)
-argp.add_argument("--input", help="directory containing input csv files")
-argp.add_argument("--timeframe", help="granularity for split action (1d, 12h, 4h)")
-argp.add_argument("--ignore", action="store_true", help="ignore input files already processed")
+argp.add_argument("--input", help="file containing tweets to process")
 argp.add_argument("command", choices=fmap.keys())
 args = argp.parse_args()
 
 func = fmap[args.command]
-nltk.download('stopwords')
-
-t_start = time.time()
 func(argp, args)
-print(">>> execution done after %s seconds!" % (time.time() - t_start))
 
