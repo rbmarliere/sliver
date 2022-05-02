@@ -36,7 +36,6 @@ class Stream(tweepy.Stream):
 		url = "https://twitter.com/" + user + "/status/" + str(status.id)
 		# output
 		tweet = pandas.DataFrame({ "date": [created_at], "username": [user], "url": [url], "tweet": [text] })
-		#logging.info(url)
 		logging.info(text)
 		with open("data/raw.csv", "a") as f:
 			tweet.to_csv(f, header=f.tell()==0, mode="a", index=False)
@@ -87,7 +86,6 @@ def stream(argp, args):
 
 	while not stream.running:
 		try:
-			logging.info("streaming")
 			stream.filter(
 				languages=["en"],
 				follow=uids,
@@ -96,13 +94,11 @@ def stream(argp, args):
 		except (requests.exceptions.Timeout, ssl.SSLError, urllib3.exceptions.ReadTimeoutError, requests.exceptions.ConnectionError) as e:
 			logging.error("network error")
 		except Exception as e:
-			logging.error("unexpected error")
-		except Exception as e:
-			logging.error("unexpected error!", e)
+			logging.error("unexpected error", e)
 		except KeyboardInterrupt:
 			return 1
 		finally:
-			logging.error("exiting")
+			logging.error("stream has crashed")
 
 def train(argp, args):
 	if args.model == None:
@@ -164,7 +160,6 @@ def train(argp, args):
 		return vectorize_layer(text), label
 	train_ds = raw_train_ds.map(vectorize_text)
 	val_ds = raw_val_ds.map(vectorize_text)
-	#test_ds = raw_test_ds.map(vectorize_text)
 
 	model = tensorflow.keras.Sequential([
 		tensorflow.keras.layers.Embedding(max_features + 1, embedding_dim),
@@ -180,10 +175,10 @@ def train(argp, args):
 		optimizer='adam',
 		metrics=tensorflow.metrics.BinaryAccuracy(threshold=0.0))
 
-	model.fit(train_ds, validation_data=val_ds, epochs=epochs)
-	#loss, accuracy = model.evaluate(test_ds)
-	#print("Loss: ", loss)
-	#print("Accuracy: ", accuracy)
+	log_dir = "models/logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+	tensorboard_callback = tensorflow.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
+
+	model.fit(train_ds, validation_data=val_ds, epochs=epochs, callbacks=[tensorboard_callback])
 
 	export_model = tensorflow.keras.Sequential([
 	  vectorize_layer,
