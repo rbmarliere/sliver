@@ -97,8 +97,12 @@ def stream(argp, args):
 			logging.error("network error")
 		except Exception as e:
 			logging.error("unexpected error")
+		except Exception as e:
+			logging.error("unexpected error!", e)
 		except KeyboardInterrupt:
 			return 1
+		finally:
+			logging.error("exiting")
 
 def train(argp, args):
 	if args.model == None:
@@ -126,7 +130,7 @@ def train(argp, args):
 	embedding_dim = 16
 	epochs = 10
 
-	raw_df = pandas.read_csv("data/training1.csv", encoding="utf-8", lineterminator="\n")
+	raw_df = pandas.read_csv("data/training.csv", encoding="utf-8", lineterminator="\n")
 
 	train_df = raw_df.head(int(len(raw_df)*(80/100))) # 80% of raw_df
 	val_df = raw_df.iloc[max(train_df.index):]
