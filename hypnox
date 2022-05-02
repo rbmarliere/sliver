@@ -2,11 +2,10 @@
 
 import argparse
 import hypnox
-import os
-import twitter_stream
 
 fmap = {
-	"stream" : twitter_stream.stream,
+	"train"  : hypnox.train,
+	"stream" : hypnox.stream,
 }
 
 argp = argparse.ArgumentParser(description='''
@@ -17,7 +16,7 @@ argp = argparse.ArgumentParser(description='''
    sub noctem sapientia
 ''',
 formatter_class=argparse.RawTextHelpFormatter)
-argp.add_argument("--input", help="file containing tweets to process")
+argp.add_argument("--model", help="name of model to use or save")
 argp.add_argument("command", choices=fmap.keys())
 args = argp.parse_args()
 
