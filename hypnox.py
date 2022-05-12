@@ -15,6 +15,15 @@ import urllib3
 
 logging.basicConfig(level=logging.INFO)
 
+config = json.load(open(os.path.dirname(os.path.realpath(__file__)) + "/hypnox.conf"))
+
+try:
+	nltk.data.find("corpora/stopwords")
+except LookupError:
+	nltk.download('stopwords')
+nltkstops = set(nltk.corpus.stopwords.words("english"))
+stops = [w for w in nltkstops if not w in config["TO_KEEP_STOPWORDS"]]
+
 class Stream(tweepy.Stream):
 	def on_status(self, status):
 		# ignore retweets
@@ -59,7 +68,6 @@ def save_uids(users, api):
 
 def stream(argp, args):
 	logging.info("loading config")
-	config = json.load(open(os.path.dirname(os.path.realpath(__file__)) + "/hypnox.conf"))
 	if config["TRACK_USERS"] == "":
 		logging.error("empty user list in config! (TRACK_USERS) in (" + config_filename + ")")
 		return 1
@@ -89,7 +97,7 @@ def stream(argp, args):
 			stream.filter(
 				languages=["en"],
 				follow=uids,
-				#track=["bitcoin"],
+				#track=["bitcoin"], -> need to filter bots by follower count
 			)
 		except (requests.exceptions.Timeout, ssl.SSLError, urllib3.exceptions.ReadTimeoutError, requests.exceptions.ConnectionError) as e:
 			logging.error("network error")
@@ -100,59 +108,80 @@ def stream(argp, args):
 		finally:
 			logging.error("stream has crashed")
 
+def standardize(tweet):
+	# convert to lower case
+	tweet = tensorflow.strings.lower(tweet)
+	# remove links
+	tweet = tensorflow.strings.regex_replace(tweet, "http\S+", "")
+	# remove hashtags, usernames and html entities
+	tweet = tensorflow.strings.regex_replace(tweet, "(#|@|&|\$)\S+", "")
+	# remove punctuation
+	tweet = tensorflow.strings.regex_replace(tweet, "[%s]" % re.escape(string.punctuation), " ")
+	# remove some stopwords
+	tweet = tensorflow.strings.regex_replace(tweet, "\\b(" + "|".join(stops) + ")\\b\s*", "")
+	# keep only letters
+	tweet = tensorflow.strings.regex_replace(tweet, "[^a-zA-Z]", " ")
+	# keep only words with more than 2 characters
+	tweet = tensorflow.strings.regex_replace(tweet, "\\b\S\S?\\b", "")
+	# remove excess white spaces
+	tweet = tensorflow.strings.regex_replace(tweet, " +", " ")
+	# remove leading and trailing white spaces
+	tweet = tensorflow.strings.strip(tweet)
+	return tweet
+
+#def split(tweet):
+#	# split tweet into array of words
+#	tweet = tensorflow.strings.split(tweet)
+#	# apply stemming to each word
+#	tweet = tweet.with_flat_values(
+#			tensorflow.map_fn(
+#				lambda x: tensorflow.constant(st.stem(x.numpy().decode("utf-8"))),
+#				tweet.flat_values) )
+#	return tweet
+
 def train(argp, args):
 	if args.model == None:
 		logging.error("provide a model name with --model")
 		return 1
-
+	if args.input == None:
+		logging.error("provide a training data .csv file name with --input")
+		return 1
+	if not os.path.exists(args.input):
+		logging.warning(args.input + " not found")
+		return 1
 	modelpath = os.path.dirname(os.path.realpath(__file__)) + "/models/" + args.model
 	if os.path.exists(modelpath):
 		logging.warning(modelpath + " already exists, overwrite? [y|N]")
 		if input() != "y":
-			return 1
+			exit
 		shutil.rmtree(modelpath)
 
-	try:
-		nltk.data.find("corpora/stopwords")
-	except LookupError:
-		nltk.download('stopwords')
-	keep_stopwords = [ "this", "that'll", "these", "having", "does", "doing", "until", "while", "about", "against", "between", "into", "through", "during", "before", "after", "above", "below", "from", "up", "down", "in", "out", "on", "off", "over", "under", "again", "further", "then", "once", "here", "there", "when", "few", "both", "more", "most", "other", "some", "than", "too", "very", "can", "will", "should", "should've", "now", "ain", "aren", "aren't", "could", "couldn", "couldn't", "didn", "didn't", "doesn", "doesn't", "hadn", "hadn't", "hasn", "hasn't", "haven", "haven't", "isn", "isn't", "mighn", "mightn't", "mustn", "mustn't", "needn", "needn't", "shan", "shan't", "shouldn", "shouldn't", "wasn", "wasn't", "weren","weren't", "won'", "won't", "wouldn", "wouldn't" ]
-	nltkstops = set(nltk.corpus.stopwords.words("english"))
-	stops = [w for w in nltkstops if not w in keep_stopwords]
-
-	batch_size = 32
-	max_features = 10000
+	batch_size = 16
+	max_features = 20000
 	sequence_length = 280
-	embedding_dim = 16
-	epochs = 10
+	embedding_dim = 32
+	epochs = 11
 
-	raw_df = pandas.read_csv("data/training.csv", encoding="utf-8", lineterminator="\n")
+	raw_df = pandas.read_csv(args.input, encoding="utf-8", lineterminator="\n")
 
-	train_df = raw_df.head(int(len(raw_df)*(80/100))) # 80% of raw_df
-	val_df = raw_df.iloc[max(train_df.index):]
+	i = int(len(raw_df)*(70/100)) # 70% of raw_df
+	j = int(len(raw_df)*(90/100)) # 90% of raw_df
+	train_df = raw_df.head(i)
+	val_df = raw_df.iloc[max(train_df.index):j]
+	test_df = raw_df.iloc[j:max(raw_df.index)]
 
 	raw_train_ds = tensorflow.data.Dataset.from_tensor_slices( (train_df["tweet"], train_df["is_prediction"]) ).batch(batch_size)
 	raw_val_ds = tensorflow.data.Dataset.from_tensor_slices( (val_df["tweet"], val_df["is_prediction"]) ).batch(batch_size)
-
-	def clean(tweet):
-		# convert to lower case
-		tweet = tensorflow.strings.lower(tweet)
-		# remove links
-		tweet = tensorflow.strings.regex_replace(tweet, "http\S+", "")
-		# remove hashtags, usernames and html entities
-		tweet = tensorflow.strings.regex_replace(tweet, "(#|@|&|\$)\S+", "")
-		# remove punctuation
-		tweet = tensorflow.strings.regex_replace(tweet, "[%s]" % re.escape(string.punctuation), "")
-		# remove some stopwords
-		tweet = tensorflow.strings.regex_replace(tweet, r'\b(' + r'|'.join(stops) + r')\b\s*',"")
-		return tweet
+	raw_test_ds = tensorflow.data.Dataset.from_tensor_slices( (test_df["tweet"], test_df["is_prediction"]) ).batch(batch_size)
 
 	vectorize_layer = tensorflow.keras.layers.TextVectorization(
-		standardize=clean,
+		standardize=standardize,
+		#split=split,
 		max_tokens=max_features,
 		output_mode='int',
 		output_sequence_length=sequence_length)
 	train_text = raw_train_ds.map(lambda x, y: x)
+	vectorize_layer.compile()
 	vectorize_layer.adapt(train_text)
 
 	def vectorize_text(text, label):
@@ -160,16 +189,15 @@ def train(argp, args):
 		return vectorize_layer(text), label
 	train_ds = raw_train_ds.map(vectorize_text)
 	val_ds = raw_val_ds.map(vectorize_text)
+	test_ds = raw_test_ds.map(vectorize_text)
 
 	model = tensorflow.keras.Sequential([
 		tensorflow.keras.layers.Embedding(max_features + 1, embedding_dim),
-		tensorflow.keras.layers.Dropout(0.2),
 		tensorflow.keras.layers.GlobalAveragePooling1D(),
 		tensorflow.keras.layers.Dropout(0.2),
+		tensorflow.keras.layers.Dense(16, activation="relu"),
 		tensorflow.keras.layers.Dense(1)])
-
 	model.summary()
-
 	model.compile(
 		loss=tensorflow.keras.losses.BinaryCrossentropy(from_logits=True),
 		optimizer='adam',
@@ -177,15 +205,21 @@ def train(argp, args):
 
 	log_dir = "models/logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 	tensorboard_callback = tensorflow.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
+	history = model.fit(train_ds, validation_data=val_ds, epochs=epochs, callbacks=[tensorboard_callback])
 
-	model.fit(train_ds, validation_data=val_ds, epochs=epochs, callbacks=[tensorboard_callback])
+	loss, accuracy = model.evaluate(test_ds)
+	print("Loss: ", loss)
+	print("Accuracy: ", accuracy)
 
 	export_model = tensorflow.keras.Sequential([
-	  vectorize_layer,
-	  model,
-	  tensorflow.keras.layers.Activation('sigmoid')
-	])
+		vectorize_layer,
+		model,
+		tensorflow.keras.layers.Activation('sigmoid') ])
+	export_model.summary()
 	export_model.compile(
-	    loss=tensorflow.keras.losses.BinaryCrossentropy(from_logits=False), optimizer="adam", metrics=['accuracy']
+		loss=tensorflow.keras.losses.BinaryCrossentropy(from_logits=False),
+		optimizer="adam",
+		metrics=['accuracy']
 	)
 	export_model.save(modelpath)
+
