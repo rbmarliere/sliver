@@ -172,7 +172,7 @@ def train(argp, args):
 		shutil.rmtree(modelpath)
 	modelcfgpath = os.path.dirname(os.path.realpath(__file__)) + "/models/" + args.model + ".conf"
 	if not os.path.exists(modelcfgpath):
-		logging.warning(modelcfg + " not found")
+		logging.warning(modelcfgpath + " not found")
 		return 1
 
 	modelcfg = json.load(open(modelcfgpath))
@@ -215,7 +215,7 @@ def train(argp, args):
 		tensorflow.keras.layers.Embedding(max_features + 1, embedding_dim),
 		tensorflow.keras.layers.GlobalAveragePooling1D(),
 		tensorflow.keras.layers.Dropout(0.2),
-		tensorflow.keras.layers.Dense(16, activation="relu"),
+		tensorflow.keras.layers.Dense(16, activation='relu'),
 		tensorflow.keras.layers.Dense(1)])
 	model.summary()
 	model.compile(
