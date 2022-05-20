@@ -77,11 +77,14 @@ class Stream(tweepy.Stream):
 		# is predictive tweet?
 		is_prediction = self.model.predict([text])[0][0]
 		# output
-		tweet = pandas.DataFrame({ "is_prediction": [is_prediction], "date": [created_at], "username": [user], "url": [url], "tweet": [text] })
+		raw_output = pandas.DataFrame({ "date": [created_at], "username": [user], "url": [url], "tweet": [text] })
+		model_output = raw_output.insert(0, "is_prediction", [is_prediction])
 		logging.info(text)
 		logging.info("is_prediction: " + str(is_prediction))
+		with open("data/raw.csv", "a") as f:
+			raw_output.to_csv(f, header=f.tell()==0, mode="a", index=False)
 		with open("data/" + self.modelname + ".csv", "a") as f:
-			tweet.to_csv(f, header=f.tell()==0, mode="a", index=False)
+			model_output.to_csv(f, header=f.tell()==0, mode="a", index=False)
 
 # save the ids of the users to track to disk
 def save_uids(users, api):
