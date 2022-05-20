@@ -77,7 +77,7 @@ class Stream(tweepy.Stream):
 		# is predictive tweet?
 		is_prediction = self.model.predict([text])[0][0]
 		# output
-		tweet = pandas.DataFrame({ "date": [created_at], "username": [user], "url": [url], "tweet": [text], "is_prediction": [is_prediction], "model": [self.modelname] })
+		tweet = pandas.DataFrame({ "date": [created_at], "username": [user], "url": [url], "tweet": [text] })
 		logging.info(text)
 		logging.info("is_prediction: " + str(is_prediction))
 		with open("data/raw.csv", "a") as f:
