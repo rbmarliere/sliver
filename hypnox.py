@@ -20,7 +20,7 @@ config = json.load(open(os.path.dirname(os.path.realpath(__file__)) + "/hypnox.c
 try:
 	nltk.data.find("corpora/stopwords")
 except LookupError:
-	nltk.download('stopwords')
+	nltk.download("stopwords")
 nltkstops = set(nltk.corpus.stopwords.words("english"))
 stops = [w for w in nltkstops if not w in config["TO_KEEP_STOPWORDS"]]
 
@@ -198,7 +198,7 @@ def train(argp, args):
 		standardize=standardize,
 		#split=split,
 		max_tokens=max_features,
-		output_mode='int',
+		output_mode="int",
 		output_sequence_length=sequence_length)
 	train_text = raw_train_ds.map(lambda x, y: x)
 	vectorize_layer.compile()
@@ -215,30 +215,30 @@ def train(argp, args):
 		tensorflow.keras.layers.Embedding(max_features + 1, embedding_dim),
 		tensorflow.keras.layers.GlobalAveragePooling1D(),
 		tensorflow.keras.layers.Dropout(0.2),
-		tensorflow.keras.layers.Dense(16, activation='relu'),
+		tensorflow.keras.layers.Dense(16, activation="relu"),
 		tensorflow.keras.layers.Dense(1)])
 	model.summary()
 	model.compile(
 		loss=tensorflow.keras.losses.BinaryCrossentropy(from_logits=True),
-		optimizer='adam',
+		optimizer="adam",
 		metrics=tensorflow.metrics.BinaryAccuracy(threshold=0.0))
 
 	tensorboard_callback = tensorflow.keras.callbacks.TensorBoard(log_dir=modelpath+"/logs", histogram_freq=1)
 	history = model.fit(train_ds, validation_data=val_ds, epochs=epochs, callbacks=[tensorboard_callback])
 
-	loss, accuracy = model.evaluate(test_ds)
+	loss, accuracy = model.evaluate(test_ds, callbacks=[tensorboard_callback])
 	print("Loss: ", loss)
 	print("Accuracy: ", accuracy)
 
 	export_model = tensorflow.keras.Sequential([
 		vectorize_layer,
 		model,
-		tensorflow.keras.layers.Activation('sigmoid') ])
+		tensorflow.keras.layers.Activation("sigmoid") ])
 	export_model.summary()
 	export_model.compile(
 		loss=tensorflow.keras.losses.BinaryCrossentropy(from_logits=False),
 		optimizer="adam",
-		metrics=['accuracy']
+		metrics=["accuracy"]
 	)
 	export_model.save(modelpath)
 
