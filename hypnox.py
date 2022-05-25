@@ -76,11 +76,11 @@ class Stream(tweepy.Stream):
 		user = status._json["user"]["screen_name"]
 		url = "https://twitter.com/" + user + "/status/" + str(status.id)
 		# is predictive tweet?
-		is_prediction = self.model.predict([text])[0][0]
+		is_prediction = "{:.8f}".format(self.model.predict([text])[0][0])
 		# output
 		raw_output = pandas.DataFrame({ "date": [created_at], "username": [user], "url": [url], "tweet": [text] })
 		logging.info(text)
-		logging.info("is_prediction: " + str(is_prediction))
+		logging.info("is_prediction: " + is_prediction)
 		with open("data/raw/raw.csv", "a") as f:
 			raw_output.to_csv(f, header=f.tell()==0, mode="a", index=False)
 		raw_output.insert(0, "is_prediction", [is_prediction])
@@ -267,6 +267,6 @@ def replay(argp, args):
 	model = tensorflow.keras.models.load_model(modelpath, custom_objects={"standardize": standardize})
 
 	df = pandas.read_csv(args.input, lineterminator="\n", encoding="utf-8")
-	df["is_prediction"] = df.apply(lambda x: model.predict([x.tweet])[0][0], axis=1)
+	df["is_prediction"] = df.apply(lambda x: "{:.8f}".format(model.predict([x.tweet])[0][0]), axis=1)
 	df.to_csv("data/replay/" + args.model + ".csv", index=False)
 
