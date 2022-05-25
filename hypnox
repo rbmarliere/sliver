@@ -5,6 +5,7 @@ import hypnox
 
 fmap = {
 	"train"  : hypnox.train,
+	"replay"  : hypnox.replay,
 	"stream" : hypnox.stream,
 }
 
@@ -16,7 +17,7 @@ argp = argparse.ArgumentParser(description='''
    sub noctem sapientia
 ''',
 formatter_class=argparse.RawTextHelpFormatter)
-argp.add_argument("--input", help="csv data file to use for training")
+argp.add_argument("--input", help="csv data file to use as input")
 argp.add_argument("--model", help="name of model to use or save")
 argp.add_argument("command", choices=fmap.keys())
 args = argp.parse_args()
