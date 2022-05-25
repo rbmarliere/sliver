@@ -80,10 +80,11 @@ class Stream(tweepy.Stream):
 		raw_output = pandas.DataFrame({ "date": [created_at], "username": [user], "url": [url], "tweet": [text] })
 		logging.info(text)
 		logging.info("is_prediction: " + str(is_prediction))
-		with open("data/raw.csv", "a") as f:
+		with open("data/raw/raw.csv", "a") as f:
 			raw_output.to_csv(f, header=f.tell()==0, mode="a", index=False)
 		raw_output.insert(0, "is_prediction", [is_prediction])
-		with open("data/" + self.modelname + ".csv", "a") as f:
+		raw_output.insert(1, "is_bullish", 0)
+		with open("data/raw/" + self.modelname + ".csv", "a") as f:
 			raw_output.to_csv(f, header=f.tell()==0, mode="a", index=False)
 
 # save the ids of the users to track to disk
@@ -238,4 +239,26 @@ def train(argp, args):
 		metrics=["accuracy"]
 	)
 	export_model.save(modelpath)
+
+def replay(argp, args):
+	if args.model == None:
+		logging.error("provide a model name with --model")
+		return 1
+	modelpath = os.path.dirname(os.path.realpath(__file__)) + "/models/" + args.model
+	if not os.path.exists(modelpath):
+		logging.warning(modelpath + " not found")
+		return 1
+	if args.input == None:
+		logging.error("provide a training data .csv file name with --input")
+		return 1
+	if not os.path.exists(args.input):
+		logging.warning(args.input + " not found")
+		return 1
+
+	model = tensorflow.keras.models.load_model(modelpath, custom_objects={"standardize": standardize})
+
+	df = pandas.read_csv(args.input, lineterminator="\n", encoding="utf-8")
+	df["is_prediction"] = df.apply(lambda x: model.predict([x.tweet])[0][0], axis=1)
+	df.insert(1, "is_bullish", 0)
+	df.to_csv("data/replay/" + args.model + ".csv", index=False)
 
