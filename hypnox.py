@@ -184,14 +184,11 @@ def train(argp, args):
 
 	raw_df = pandas.read_csv(args.input, encoding="utf-8", lineterminator="\n")
 
-	i = int(len(raw_df)*(70/100)) # 70% of raw_df
-	j = int(len(raw_df)*(90/100)) # 90% of raw_df
+	i = int(len(raw_df)*(90/100)) # 90% of raw_df
 	train_df = raw_df.head(i)
-	val_df = raw_df.iloc[max(train_df.index):j]
-	test_df = raw_df.iloc[j:max(raw_df.index)]
+	test_df = raw_df.iloc[i:max(raw_df.index)]
 
 	raw_train_ds = tensorflow.data.Dataset.from_tensor_slices( (train_df["tweet"], train_df["is_prediction"]) ).batch(batch_size)
-	raw_val_ds = tensorflow.data.Dataset.from_tensor_slices( (val_df["tweet"], val_df["is_prediction"]) ).batch(batch_size)
 	raw_test_ds = tensorflow.data.Dataset.from_tensor_slices( (test_df["tweet"], test_df["is_prediction"]) ).batch(batch_size)
 
 	vectorize_layer = tensorflow.keras.layers.TextVectorization(
@@ -208,25 +205,25 @@ def train(argp, args):
 		text = tensorflow.expand_dims(text, -1)
 		return vectorize_layer(text), label
 	train_ds = raw_train_ds.map(vectorize_text)
-	val_ds = raw_val_ds.map(vectorize_text)
 	test_ds = raw_test_ds.map(vectorize_text)
 
 	model = tensorflow.keras.Sequential([
-		tensorflow.keras.layers.Embedding(max_features + 1, embedding_dim),
-		tensorflow.keras.layers.GlobalAveragePooling1D(),
-		tensorflow.keras.layers.Dropout(0.2),
-		tensorflow.keras.layers.Dense(16, activation="relu"),
+		tensorflow.keras.layers.Embedding(max_features + 1, embedding_dim, mask_zero=True),
+		tensorflow.keras.layers.Bidirectional(tensorflow.keras.layers.LSTM(64, return_sequences=True)),
+		tensorflow.keras.layers.Bidirectional(tensorflow.keras.layers.LSTM(32)),
+		tensorflow.keras.layers.Dense(64, activation="relu"),
+		tensorflow.keras.layers.Dropout(0.5),
 		tensorflow.keras.layers.Dense(1)])
 	model.summary()
 	model.compile(
 		loss=tensorflow.keras.losses.BinaryCrossentropy(from_logits=True),
 		optimizer="adam",
-		metrics=tensorflow.metrics.BinaryAccuracy(threshold=0.0))
+		metrics=["accuracy"])
 
 	tensorboard_callback = tensorflow.keras.callbacks.TensorBoard(log_dir=modelpath+"/logs", histogram_freq=1)
-	history = model.fit(train_ds, validation_data=val_ds, epochs=epochs, callbacks=[tensorboard_callback])
+	history = model.fit(train_ds, validation_data=test_ds, epochs=epochs, callbacks=[tensorboard_callback])
 
-	loss, accuracy = model.evaluate(test_ds, callbacks=[tensorboard_callback])
+	loss, accuracy = model.evaluate(test_ds)
 	print("Loss: ", loss)
 	print("Accuracy: ", accuracy)
 
