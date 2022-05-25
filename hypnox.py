@@ -12,10 +12,11 @@ import string
 import tensorflow
 import tweepy
 import urllib3
+import yaml
 
 logging.basicConfig(level=logging.INFO)
 
-config = json.load(open(os.path.dirname(os.path.realpath(__file__)) + "/hypnox.conf"))
+config = json.load(open(os.path.dirname(os.path.realpath(__file__)) + "/config.json"))
 
 try:
 	nltk.data.find("corpora/stopwords")
@@ -171,26 +172,31 @@ def train(argp, args):
 		if input() != "y":
 			return 1
 		shutil.rmtree(modelpath)
-	modelcfgpath = os.path.dirname(os.path.realpath(__file__)) + "/models/" + args.model + ".conf"
+	modelcfgpath = os.path.dirname(os.path.realpath(__file__)) + "/models/" + args.model + ".yaml"
 	if not os.path.exists(modelcfgpath):
 		logging.warning(modelcfgpath + " not found")
 		return 1
 
-	modelcfg = json.load(open(modelcfgpath))
-	batch_size = modelcfg["BATCH_SIZE"]
-	max_features = modelcfg["MAX_FEATURES"]
-	sequence_length = modelcfg["SEQUENCE_LENGTH"]
-	embedding_dim = modelcfg["EMBEDDING_DIM"]
-	epochs = modelcfg["EPOCHS"]
+	with open(modelcfgpath, "r") as stream:
+		try:
+			modelcfg = yaml.safe_load(stream)
+		except yaml.YAMLError as exc:
+			print(exc)
+			return 1
+	batch_size = modelcfg["batch_size"]
+	max_features = modelcfg["max_features"]
+	sequence_length = modelcfg["sequence_length"]
+	embedding_dim = modelcfg["embedding_dim"]
+	epochs = modelcfg["epochs"]
 
 	raw_df = pandas.read_csv(args.input, encoding="utf-8", lineterminator="\n")
 
-	i = int(len(raw_df)*(90/100)) # 90% of raw_df
+	i = int(len(raw_df)*(80/100)) # 80% of raw_df
 	train_df = raw_df.head(i)
-	test_df = raw_df.iloc[i:max(raw_df.index)]
+	val_df = raw_df.iloc[i:max(raw_df.index)]
 
 	raw_train_ds = tensorflow.data.Dataset.from_tensor_slices( (train_df["tweet"], train_df["is_prediction"]) ).batch(batch_size)
-	raw_test_ds = tensorflow.data.Dataset.from_tensor_slices( (test_df["tweet"], test_df["is_prediction"]) ).batch(batch_size)
+	raw_val_ds = tensorflow.data.Dataset.from_tensor_slices( (val_df["tweet"], val_df["is_prediction"]) ).batch(batch_size)
 
 	vectorize_layer = tensorflow.keras.layers.TextVectorization(
 		standardize=standardize,
@@ -206,7 +212,7 @@ def train(argp, args):
 		text = tensorflow.expand_dims(text, -1)
 		return vectorize_layer(text), label
 	train_ds = raw_train_ds.map(vectorize_text)
-	test_ds = raw_test_ds.map(vectorize_text)
+	val_ds = raw_val_ds.map(vectorize_text)
 
 	model = tensorflow.keras.Sequential([
 		tensorflow.keras.layers.Embedding(max_features + 1, embedding_dim, mask_zero=True),
@@ -214,29 +220,32 @@ def train(argp, args):
 		tensorflow.keras.layers.Bidirectional(tensorflow.keras.layers.LSTM(32)),
 		tensorflow.keras.layers.Dense(64, activation="relu"),
 		tensorflow.keras.layers.Dropout(0.5),
-		tensorflow.keras.layers.Dense(1)])
+		tensorflow.keras.layers.Dense(1)
+	])
 	model.summary()
 	model.compile(
 		loss=tensorflow.keras.losses.BinaryCrossentropy(from_logits=True),
 		optimizer="adam",
-		metrics=["accuracy"])
+		metrics="binary_accuracy"
+	)
 
 	tensorboard_callback = tensorflow.keras.callbacks.TensorBoard(log_dir=modelpath+"/logs", histogram_freq=1)
-	history = model.fit(train_ds, validation_data=test_ds, epochs=epochs, callbacks=[tensorboard_callback])
+	history = model.fit(train_ds, validation_data=val_ds, epochs=epochs, callbacks=[tensorboard_callback])
 
-	loss, accuracy = model.evaluate(test_ds)
+	loss, accuracy = model.evaluate(val_ds)
 	print("Loss: ", loss)
 	print("Accuracy: ", accuracy)
 
 	export_model = tensorflow.keras.Sequential([
 		vectorize_layer,
 		model,
-		tensorflow.keras.layers.Activation("sigmoid") ])
+		tensorflow.keras.layers.Activation("sigmoid")
+	])
 	export_model.summary()
 	export_model.compile(
 		loss=tensorflow.keras.losses.BinaryCrossentropy(from_logits=False),
 		optimizer="adam",
-		metrics=["accuracy"]
+		metrics="binary_accuracy"
 	)
 	export_model.save(modelpath)
 
@@ -259,6 +268,5 @@ def replay(argp, args):
 
 	df = pandas.read_csv(args.input, lineterminator="\n", encoding="utf-8")
 	df["is_prediction"] = df.apply(lambda x: model.predict([x.tweet])[0][0], axis=1)
-	df.insert(1, "is_bullish", 0)
 	df.to_csv("data/replay/" + args.model + ".csv", index=False)
 
