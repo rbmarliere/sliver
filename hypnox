@@ -4,9 +4,10 @@ import argparse
 import hypnox
 
 fmap = {
-	"train"  : hypnox.train,
+	"preprocess": hypnox.preprocess,
 	"replay"  : hypnox.replay,
 	"stream" : hypnox.stream,
+	"train"  : hypnox.train,
 }
 
 argp = argparse.ArgumentParser(description='''
