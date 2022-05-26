@@ -261,7 +261,7 @@ def replay(argp, args):
 		logging.warning(modelpath + " not found")
 		return 1
 	if args.input == None:
-		logging.error("provide a training data .csv file name with --input")
+		logging.error("provide an input data .csv file name with --input")
 		return 1
 	if not os.path.exists(args.input):
 		logging.warning(args.input + " not found")
@@ -273,3 +273,14 @@ def replay(argp, args):
 	df["is_prediction"] = df.apply(lambda x: "{:.8f}".format(model.predict([x.tweet])[0][0]), axis=1)
 	df.to_csv("data/replay/" + args.model + ".csv", index=False)
 
+def preprocess(argp, args):
+	if args.input == None:
+		logging.error("provide an input data .csv file name with --input")
+		return 1
+	if not os.path.exists(args.input):
+		logging.warning(args.input + " not found")
+		return 1
+
+	df = pandas.read_csv(args.input, lineterminator="\n", encoding="utf-8")
+	df["std_tweet"] = df.apply(lambda x: standardize([x.tweet])[0].numpy().decode("utf-8"), axis=1)
+	df.to_csv("data/preprocess/" + args.input.split("/")[-1], index=False)
