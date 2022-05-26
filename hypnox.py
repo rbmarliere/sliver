@@ -2,6 +2,7 @@ import datetime
 import json
 import logging
 import nltk
+import numpy
 import os
 import pandas
 import re
@@ -79,7 +80,9 @@ class Stream(tweepy.Stream):
 		is_prediction = "{:.8f}".format(self.model.predict([text])[0][0])
 		# output
 		raw_output = pandas.DataFrame({ "date": [created_at], "username": [user], "url": [url], "tweet": [text] })
+		logging.info("---")
 		logging.info(text)
+		logging.info(standardize(text).numpy().decode("utf-8"))
 		logging.info("is_prediction: " + is_prediction)
 		with open("data/raw/raw.csv", "a") as f:
 			raw_output.to_csv(f, header=f.tell()==0, mode="a", index=False)
