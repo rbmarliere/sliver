@@ -194,7 +194,7 @@ def train(argp, args):
 
 	raw_df = pandas.read_csv(args.input, encoding="utf-8", lineterminator="\n")
 
-	i = int(len(raw_df)*(80/100)) # 80% of raw_df
+	i = int(len(raw_df)*(70/100)) # 70% of raw_df
 	train_df = raw_df.head(i)
 	val_df = raw_df.iloc[i:max(raw_df.index)]
 
@@ -222,7 +222,7 @@ def train(argp, args):
 		tensorflow.keras.layers.Bidirectional(tensorflow.keras.layers.LSTM(64, return_sequences=True)),
 		tensorflow.keras.layers.Bidirectional(tensorflow.keras.layers.LSTM(32)),
 		tensorflow.keras.layers.Dense(64, activation="relu"),
-		tensorflow.keras.layers.Dropout(0.5),
+		tensorflow.keras.layers.Dropout(0.3),
 		tensorflow.keras.layers.Dense(1)
 	])
 	model.summary()
