@@ -88,6 +88,7 @@ class Stream(tweepy.Stream):
 			raw_output.to_csv(f, header=f.tell()==0, mode="a", index=False)
 		raw_output.insert(0, "is_prediction", [is_prediction])
 		raw_output.insert(1, "is_bullish", 0)
+		raw_output = raw_output.drop(["date", "username", "url"], axis=1)
 		with open("data/raw/" + self.modelname + ".csv", "a") as f:
 			raw_output.to_csv(f, header=f.tell()==0, mode="a", index=False)
 
@@ -222,7 +223,7 @@ def train(argp, args):
 		tensorflow.keras.layers.Bidirectional(tensorflow.keras.layers.LSTM(64, return_sequences=True)),
 		tensorflow.keras.layers.Bidirectional(tensorflow.keras.layers.LSTM(32)),
 		tensorflow.keras.layers.Dense(64, activation="relu"),
-		tensorflow.keras.layers.Dropout(0.3),
+		tensorflow.keras.layers.Dropout(0.5),
 		tensorflow.keras.layers.Dense(1)
 	])
 	model.summary()
