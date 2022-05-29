@@ -130,6 +130,7 @@ class Stream(tweepy.Stream):
 			text = status.text
 		# make the tweet single-line
 		text = re.sub("\n", " ", text).strip()
+		text = re.sub("\r", " ", text).strip()
 		# remove any tab character
 		text = re.sub("\t", " ", text).strip()
 		# format data
@@ -139,7 +140,7 @@ class Stream(tweepy.Stream):
 		logging.info("---")
 		logging.info(text)
 		# log to cache csv
-		with open("data/cache/" + created_at.strftime("%Y%m%d") + ".tsv", "a") as f:
+		with open("data/cache/" + created_at.strftime("%Y%m%d%H") + ".tsv", "a") as f:
 			output.to_csv(f, header=f.tell()==0, mode="a", index=False, sep="\t")
 
 # save the ids of the users to track to disk
