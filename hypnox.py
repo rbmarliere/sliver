@@ -189,8 +189,8 @@ def stream(argp, args):
 		try:
 			stream.filter(
 				languages=["en"],
-				#follow=uids,
-				track=["bitcoin", "btc", "crypto", "cryptocurrency"]
+				follow=uids,
+				#track=["bitcoin", "btc", "crypto", "cryptocurrency"]
 			)
 		except (requests.exceptions.Timeout, ssl.SSLError, urllib3.exceptions.ReadTimeoutError, requests.exceptions.ConnectionError) as e:
 			logging.error("network error")
