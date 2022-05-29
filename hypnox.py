@@ -5,6 +5,7 @@ import nltk
 import numpy
 import os
 import pandas
+import psycopg2
 import re
 import requests
 import shutil
@@ -17,45 +18,102 @@ import yaml
 
 logging.basicConfig(level=logging.INFO)
 
-config = json.load(open(os.path.dirname(os.path.realpath(__file__)) + "/config.json"))
+CONFIG = json.load(open(os.path.dirname(os.path.realpath(__file__)) + "/config.json"))
 
 try:
 	nltk.data.find("corpora/stopwords")
 except LookupError:
 	nltk.download("stopwords")
 nltkstops = set(nltk.corpus.stopwords.words("english"))
-stops = [w for w in nltkstops if not w in config["TO_KEEP_STOPWORDS"]]
+stops = [w for w in nltkstops if not w in CONFIG["TO_KEEP_STOPWORDS"]]
 
-def standardize(tweet):
+def standardize(text):
 	# convert to lower case
-	tweet = tensorflow.strings.lower(tweet)
+	text = tensorflow.strings.lower(text)
 	# remove links
-	tweet = tensorflow.strings.regex_replace(tweet, "http\S+", "")
+	text = tensorflow.strings.regex_replace(text, "http\S+", "")
 	# remove hashtags, usernames and html entities
-	tweet = tensorflow.strings.regex_replace(tweet, "(#|@|&|\$)\S+", "")
+	text = tensorflow.strings.regex_replace(text, "(#|@|&|\$)\S+", "")
 	# remove punctuation
-	tweet = tensorflow.strings.regex_replace(tweet, "[%s]" % re.escape(string.punctuation), " ")
+	text = tensorflow.strings.regex_replace(text, "[%s]" % re.escape(string.punctuation), " ")
 	# remove some stopwords
-	tweet = tensorflow.strings.regex_replace(tweet, "\\b(" + "|".join(stops) + ")\\b\s*", "")
+	text = tensorflow.strings.regex_replace(text, "\\b(" + "|".join(stops) + ")\\b\s*", "")
 	# keep only letters
-	tweet = tensorflow.strings.regex_replace(tweet, "[^a-zA-Z]", " ")
+	text = tensorflow.strings.regex_replace(text, "[^a-zA-Z]", " ")
 	# keep only words with more than 2 characters
-	tweet = tensorflow.strings.regex_replace(tweet, "\\b\S\S?\\b", "")
+	text = tensorflow.strings.regex_replace(text, "\\b\S\S?\\b", "")
 	# remove excess white spaces
-	tweet = tensorflow.strings.regex_replace(tweet, " +", " ")
+	text = tensorflow.strings.regex_replace(text, " +", " ")
 	# remove leading and trailing white spaces
-	tweet = tensorflow.strings.strip(tweet)
-	return tweet
+	text = tensorflow.strings.strip(text)
+	return text
 
-#def split(tweet):
-#	# split tweet into array of words
-#	tweet = tensorflow.strings.split(tweet)
-#	# apply stemming to each word
-#	tweet = tweet.with_flat_values(
-#			tensorflow.map_fn(
-#				lambda x: tensorflow.constant(st.stem(x.numpy().decode("utf-8"))),
-#				tweet.flat_values) )
-#	return tweet
+def replay(argp, args):
+	if args.model == None:
+		logging.error("provide a model name with --model")
+		return 1
+	modelpath = os.path.dirname(os.path.realpath(__file__)) + "/models/" + args.model
+	if not os.path.exists(modelpath):
+		logging.warning(modelpath + " not found")
+		return 1
+
+	model = tensorflow.keras.models.load_model(modelpath, custom_objects={"standardize": standardize})
+	db = psycopg2.connect(host=CONFIG["DB_HOST"], database=CONFIG["DB_DATABASE"], user=CONFIG["DB_USER"], password=CONFIG["DB_PASSWORD"])
+	cursor = db.cursor()
+
+	cursor.execute("SELECT * FROM stream_user")
+	while True:
+		rows = cursor.fetchmany(1024)
+		for row in rows:
+			intensity = "{:.8f}".format(model.predict([row[2]])[0][0])
+			db.cursor().execute("UPDATE stream_user SET intensity = %s, model = %s WHERE id = %s", (intensity, args.model, row[0]))
+		if not rows:
+			break
+
+	db.commit()
+	cursor.close()
+	db.close()
+
+def predict(argp, args):
+	if args.model == None:
+		logging.error("provide a model name with --model")
+		return 1
+	modelpath = os.path.dirname(os.path.realpath(__file__)) + "/models/" + args.model
+	if not os.path.exists(modelpath):
+		logging.warning(modelpath + " not found")
+		return 1
+	if args.input == None:
+		logging.error("provide an input data .tsv file name with --input")
+		return 1
+	if not os.path.exists(args.input):
+		logging.warning(args.input + " not found")
+		return 1
+
+	model = tensorflow.keras.models.load_model(modelpath, custom_objects={"standardize": standardize})
+
+	df = pandas.read_csv(args.input, lineterminator="\n", encoding="utf-8", sep="\t")
+	df["model"] = args.model
+	df["intensity"] = df.apply(lambda x: "{:.8f}".format(model.predict([x.text])[0][0]), axis=1)
+	df.to_csv("data/replay/" + args.model + ".tsv", index=False, sep="\t")
+
+def store(argp, args):
+	if args.input == None:
+		logging.error("provide a data .tsv file name with --input")
+		return 1
+	if not os.path.exists(args.input):
+		logging.warning(args.input + " not found")
+		return 1
+
+	db = psycopg2.connect(host=CONFIG["DB_HOST"], database=CONFIG["DB_DATABASE"], user=CONFIG["DB_USER"], password=CONFIG["DB_PASSWORD"])
+	cursor = db.cursor()
+
+	query = "COPY stream_user(created_at,text,model,intensity,polarity) FROM STDOUT WITH CSV HEADER ENCODING 'UTF8' DELIMITER AS '\t'"
+	with open(args.input, "r", encoding="utf-8") as f:
+		cursor.copy_expert(query, f)
+
+	db.commit()
+	cursor.close()
+	db.close()
 
 class Stream(tweepy.Stream):
 	def on_status(self, status):
@@ -71,26 +129,18 @@ class Stream(tweepy.Stream):
 		else:
 			text = status.text
 		# make the tweet single-line
-		text = re.sub("\n", " ", text)
-		# parse tweet info
+		text = re.sub("\n", " ", text).strip()
+		# remove any tab character
+		text = re.sub("\t", " ", text).strip()
+		# format data
 		created_at = datetime.datetime.strptime(status._json["created_at"], "%a %b %d %H:%M:%S %z %Y")
-		user = status._json["user"]["screen_name"]
-		url = "https://twitter.com/" + user + "/status/" + str(status.id)
-		# is predictive tweet?
-		is_prediction = "{:.8f}".format(self.model.predict([text])[0][0])
-		# output
-		raw_output = pandas.DataFrame({ "date": [created_at], "username": [user], "url": [url], "tweet": [text] })
+		output = pandas.DataFrame({ "created_at": [created_at], "text": text, "model": "", "intensity": 0, "polarity": 0 })
+		# log to stdin
 		logging.info("---")
 		logging.info(text)
-		logging.info(standardize(text).numpy().decode("utf-8"))
-		logging.info("is_prediction: " + is_prediction)
-		with open("data/raw/raw.csv", "a") as f:
-			raw_output.to_csv(f, header=f.tell()==0, mode="a", index=False)
-		raw_output.insert(0, "is_prediction", [is_prediction])
-		raw_output.insert(1, "is_bullish", 0)
-		raw_output = raw_output.drop(["date", "username", "url"], axis=1)
-		with open("data/raw/" + self.modelname + ".csv", "a") as f:
-			raw_output.to_csv(f, header=f.tell()==0, mode="a", index=False)
+		# log to cache csv
+		with open("data/cache/" + created_at.strftime("%Y%m%d") + ".tsv", "a") as f:
+			output.to_csv(f, header=f.tell()==0, mode="a", index=False, sep="\t")
 
 # save the ids of the users to track to disk
 def save_uids(users, api):
@@ -111,45 +161,36 @@ def save_uids(users, api):
 
 def stream(argp, args):
 	logging.info("loading config")
-	if config["TRACK_USERS"] == "":
-		logging.error("empty user list in config! (TRACK_USERS) in (" + config_filename + ")")
-		return 1
-	if args.model == None:
-		logging.error("provide a model name with --model")
-		return 1
-	modelpath = os.path.dirname(os.path.realpath(__file__)) + "/models/" + args.model
-	if not os.path.exists(modelpath):
-		logging.warning(modelpath + " not found")
+	if CONFIG["TRACK_USERS"] == "":
+		logging.error("empty user list in config! (TRACK_USERS)")
 		return 1
 
 	logging.info("loading twitter API keys")
-	if config["CONSUMER_KEY"] == "" or config["CONSUMER_SECRET"] == "" or config["ACCESS_KEY"] == "" or config["ACCESS_SECRET"] == "":
+	if CONFIG["CONSUMER_KEY"] == "" or CONFIG["CONSUMER_SECRET"] == "" or CONFIG["ACCESS_KEY"] == "" or CONFIG["ACCESS_SECRET"] == "":
 		logging.error("empty keys in config! (CONSUMER_KEY, CONSUMER_SECRET, ACCESS_KEY, ACCESS_SECRET)")
 		return 1
-	auth = tweepy.OAuthHandler(config["CONSUMER_KEY"], config["CONSUMER_SECRET"])
-	auth.set_access_token(config["ACCESS_KEY"], config["ACCESS_SECRET"])
+	auth = tweepy.OAuthHandler(CONFIG["CONSUMER_KEY"], CONFIG["CONSUMER_SECRET"])
+	auth.set_access_token(CONFIG["ACCESS_KEY"], CONFIG["ACCESS_SECRET"])
 	api = tweepy.API(auth)
 
 	logging.info("initializing")
-	stream = Stream(config["CONSUMER_KEY"], config["CONSUMER_SECRET"], config["ACCESS_KEY"], config["ACCESS_SECRET"])
-	stream.model = tensorflow.keras.models.load_model(modelpath, custom_objects={"standardize": standardize})
-	stream.modelname = args.model
+	stream = Stream(CONFIG["CONSUMER_KEY"], CONFIG["CONSUMER_SECRET"], CONFIG["ACCESS_KEY"], CONFIG["ACCESS_SECRET"])
 
 	logging.info("reading users")
 	try:
 		uids = open(".uids").read().splitlines()
-		if len(uids) != len(config["TRACK_USERS"]):
+		if len(uids) != len(CONFIG["TRACK_USERS"]):
 			os.remove(".uids")
-			uids = save_uids(config["TRACK_USERS"], api)
+			uids = save_uids(CONFIG["TRACK_USERS"], api)
 	except FileNotFoundError:
-		uids = save_uids(config["TRACK_USERS"], api)
+		uids = save_uids(CONFIG["TRACK_USERS"], api)
 
 	while not stream.running:
 		try:
 			stream.filter(
 				languages=["en"],
-				follow=uids,
-				#track=["bitcoin"], -> need to filter bots by follower count
+				#follow=uids,
+				track=["bitcoin", "btc", "crypto", "cryptocurrency"]
 			)
 		except (requests.exceptions.Timeout, ssl.SSLError, urllib3.exceptions.ReadTimeoutError, requests.exceptions.ConnectionError) as e:
 			logging.error("network error")
@@ -157,18 +198,16 @@ def stream(argp, args):
 			logging.error("unexpected error", e)
 		except KeyboardInterrupt:
 			return 1
-		finally:
-			logging.error("stream has crashed")
 
 def train(argp, args):
-	if args.model == None:
-		logging.error("provide a model name with --model")
-		return 1
 	if args.input == None:
-		logging.error("provide a training data .csv file name with --input")
+		logging.error("provide a training data .tsv file name with --input")
 		return 1
 	if not os.path.exists(args.input):
 		logging.warning(args.input + " not found")
+		return 1
+	if args.model == None:
+		logging.error("provide a model name with --model")
 		return 1
 	modelpath = os.path.dirname(os.path.realpath(__file__)) + "/models/" + args.model
 	if os.path.exists(modelpath):
@@ -193,14 +232,14 @@ def train(argp, args):
 	embedding_dim = modelcfg["embedding_dim"]
 	epochs = modelcfg["epochs"]
 
-	raw_df = pandas.read_csv(args.input, encoding="utf-8", lineterminator="\n")
+	raw_df = pandas.read_csv(args.input, encoding="utf-8", lineterminator="\n", sep="\t")
 
 	i = int(len(raw_df)*(70/100)) # 70% of raw_df
 	train_df = raw_df.head(i)
 	val_df = raw_df.iloc[i:max(raw_df.index)]
 
-	raw_train_ds = tensorflow.data.Dataset.from_tensor_slices( (train_df["tweet"], train_df["is_prediction"]) ).batch(batch_size)
-	raw_val_ds = tensorflow.data.Dataset.from_tensor_slices( (val_df["tweet"], val_df["is_prediction"]) ).batch(batch_size)
+	raw_train_ds = tensorflow.data.Dataset.from_tensor_slices( (train_df["text"], train_df["intensity"]) ).batch(batch_size)
+	raw_val_ds = tensorflow.data.Dataset.from_tensor_slices( (val_df["text"], val_df["intensity"]) ).batch(batch_size)
 
 	vectorize_layer = tensorflow.keras.layers.TextVectorization(
 		standardize=standardize,
@@ -253,35 +292,3 @@ def train(argp, args):
 	)
 	export_model.save(modelpath)
 
-def replay(argp, args):
-	if args.model == None:
-		logging.error("provide a model name with --model")
-		return 1
-	modelpath = os.path.dirname(os.path.realpath(__file__)) + "/models/" + args.model
-	if not os.path.exists(modelpath):
-		logging.warning(modelpath + " not found")
-		return 1
-	if args.input == None:
-		logging.error("provide an input data .csv file name with --input")
-		return 1
-	if not os.path.exists(args.input):
-		logging.warning(args.input + " not found")
-		return 1
-
-	model = tensorflow.keras.models.load_model(modelpath, custom_objects={"standardize": standardize})
-
-	df = pandas.read_csv(args.input, lineterminator="\n", encoding="utf-8")
-	df["is_prediction"] = df.apply(lambda x: "{:.8f}".format(model.predict([x.tweet])[0][0]), axis=1)
-	df.to_csv("data/replay/" + args.model + ".csv", index=False)
-
-def preprocess(argp, args):
-	if args.input == None:
-		logging.error("provide an input data .csv file name with --input")
-		return 1
-	if not os.path.exists(args.input):
-		logging.warning(args.input + " not found")
-		return 1
-
-	df = pandas.read_csv(args.input, lineterminator="\n", encoding="utf-8")
-	df["std_tweet"] = df.apply(lambda x: standardize([x.tweet])[0].numpy().decode("utf-8"), axis=1)
-	df.to_csv("data/preprocess/" + args.input.split("/")[-1], index=False)
