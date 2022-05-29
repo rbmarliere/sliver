@@ -4,22 +4,26 @@ import argparse
 import hypnox
 
 fmap = {
-	"preprocess": hypnox.preprocess,
+	"predict": hypnox.predict,
 	"replay"  : hypnox.replay,
+	"store": hypnox.store,
 	"stream" : hypnox.stream,
 	"train"  : hypnox.train,
 }
 
-argp = argparse.ArgumentParser(description='''
-          _        _
- |_| \_/ |_) |\ | / \ \/
- | |  |  |   | \| \_/ /\\
+argp = argparse.ArgumentParser(
+	prog="hypnox",
+	usage="%(prog)s [options] command",
+	description='''
+		  _        _
+	 |_| \_/ |_) |\ | / \ \/
+	 | |  |  |   | \| \_/ /\\
 
-   sub noctem sapientia
-''',
-formatter_class=argparse.RawTextHelpFormatter)
-argp.add_argument("--input", help="csv data file to use as input")
-argp.add_argument("--model", help="name of model to use or save")
+	   sub noctem sapientia
+	''',
+	formatter_class=argparse.RawTextHelpFormatter)
+argp.add_argument("-i", "--input", help="csv data file to use as input")
+argp.add_argument("-m", "--model", help="name of model to use or save")
 argp.add_argument("command", choices=fmap.keys())
 args = argp.parse_args()
 
