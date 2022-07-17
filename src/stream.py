@@ -33,14 +33,16 @@ class Stream(tweepy.Stream):
 		tweet = {}
 		tweet["created_at"] = datetime.datetime.strptime(status._json["created_at"], "%a %b %d %H:%M:%S %z %Y")
 		tweet["text"] = text
-		#output = pandas.DataFrame({ "created_at": [created_at], "text": text, "model": "", "intensity": 0, "polarity": 0 })
 		# log to stdin
 		logging.info("---")
 		logging.info(text)
-		# log to cache csv
-		#with open("data/cache/" + created_at.strftime("%Y%m%d%H") + ".tsv", "a") as f:
-		#	output.to_csv(f, header=f.tell()==0, mode="a", index=False, sep="\t")
-		src.db.insert(tweet)
+		try:
+			src.db.insert(tweet)
+		except:
+			# log to cache csv
+			output = pandas.DataFrame({ "created_at": [tweet["created_at"]], "text": text, "model": "", "intensity": 0, "polarity": 0 })
+			with open("data/cache/" + created_at.strftime("%Y%m%d%H") + ".tsv", "a") as f:
+				output.to_csv(f, header=f.tell()==0, mode="a", index=False, sep="\t")
 
 # save the ids of the users to track to disk
 def save_uids(users, api):
