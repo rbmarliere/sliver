@@ -3,6 +3,8 @@ import logging
 import pandas
 import re
 import requests
+import src.config
+import src.db
 import ssl
 import tweepy
 import urllib3
@@ -28,14 +30,17 @@ class Stream(tweepy.Stream):
 		# remove any tab character
 		text = re.sub("\t", " ", text).strip()
 		# format data
-		created_at = datetime.datetime.strptime(status._json["created_at"], "%a %b %d %H:%M:%S %z %Y")
-		output = pandas.DataFrame({ "created_at": [created_at], "text": text, "model": "", "intensity": 0, "polarity": 0 })
+		tweet = {}
+		tweet["created_at"] = datetime.datetime.strptime(status._json["created_at"], "%a %b %d %H:%M:%S %z %Y")
+		tweet["text"] = text
+		#output = pandas.DataFrame({ "created_at": [created_at], "text": text, "model": "", "intensity": 0, "polarity": 0 })
 		# log to stdin
 		logging.info("---")
 		logging.info(text)
 		# log to cache csv
-		with open("data/cache/" + created_at.strftime("%Y%m%d%H") + ".tsv", "a") as f:
-			output.to_csv(f, header=f.tell()==0, mode="a", index=False, sep="\t")
+		#with open("data/cache/" + created_at.strftime("%Y%m%d%H") + ".tsv", "a") as f:
+		#	output.to_csv(f, header=f.tell()==0, mode="a", index=False, sep="\t")
+		src.db.insert(tweet)
 
 # save the ids of the users to track to disk
 def save_uids(users, api):
@@ -56,15 +61,16 @@ def save_uids(users, api):
 
 def stream(argp, args):
 	logging.info("loading twitter API keys")
-	if args.config["CONSUMER_KEY"] == "" or args.config["CONSUMER_SECRET"] == "" or args.config["ACCESS_KEY"] == "" or args.config["ACCESS_SECRET"] == "":
+	config = src.config.Config()
+	if config.config["CONSUMER_KEY"] == "" or config.config["CONSUMER_SECRET"] == "" or config.config["ACCESS_KEY"] == "" or config.config["ACCESS_SECRET"] == "":
 		logging.error("empty keys in config! (CONSUMER_KEY, CONSUMER_SECRET, ACCESS_KEY, ACCESS_SECRET)")
 		return 1
-	auth = tweepy.OAuthHandler(args.config["CONSUMER_KEY"], args.config["CONSUMER_SECRET"])
-	auth.set_access_token(args.config["ACCESS_KEY"], args.config["ACCESS_SECRET"])
+	auth = tweepy.OAuthHandler(config.config["CONSUMER_KEY"], config.config["CONSUMER_SECRET"])
+	auth.set_access_token(config.config["ACCESS_KEY"], config.config["ACCESS_SECRET"])
 	api = tweepy.API(auth)
 
 	logging.info("initializing")
-	stream = Stream(args.config["CONSUMER_KEY"], args.config["CONSUMER_SECRET"], args.config["ACCESS_KEY"], args.config["ACCESS_SECRET"])
+	stream = Stream(config.config["CONSUMER_KEY"], config.config["CONSUMER_SECRET"], config.config["ACCESS_KEY"], config.config["ACCESS_SECRET"])
 
 	logging.info("reading users")
 	try:
@@ -79,8 +85,8 @@ def stream(argp, args):
 		try:
 			stream.filter(
 				languages=["en"],
-				follow=uids,
-				#track=["bitcoin", "btc", "crypto", "cryptocurrency"]
+				#follow=uids,
+				track=["bitcoin", "btc", "crypto", "cryptocurrency"]
 			)
 		except (requests.exceptions.Timeout, ssl.SSLError, urllib3.exceptions.ReadTimeoutError, requests.exceptions.ConnectionError) as e:
 			logging.error("network error")

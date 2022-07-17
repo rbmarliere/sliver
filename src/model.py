@@ -1,8 +1,8 @@
-from src.standardize import standardize
 import logging
 import os
 import pandas
 import shutil
+import src.standardize
 import tensorflow
 import yaml
 
