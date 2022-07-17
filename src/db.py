@@ -1,7 +1,15 @@
-from src.standardize import standardize
+import logging
 import os
 import psycopg2
+import src.config
+import src.standardize
 import tensorflow
+
+def init():
+	config = src.config.Config()
+	db = psycopg2.connect(host=config.config["DB_HOST"], database=config.config["DB_DATABASE"], user=config.config["DB_USER"], password=config.config["DB_PASSWORD"])
+	cursor = db.cursor()
+	return db, cursor
 
 def replay(argp, args):
 	if args.model == None:
@@ -12,13 +20,12 @@ def replay(argp, args):
 		logging.warning(modelpath + " not found")
 		return 1
 
-	model = tensorflow.keras.models.load_model(modelpath, custom_objects={"standardize": standardize})
-	db = psycopg2.connect(host=args.config["DB_HOST"], database=args.config["DB_DATABASE"], user=args.config["DB_USER"], password=args.config["DB_PASSWORD"])
-	cursor = db.cursor()
+	model = tensorflow.keras.models.load_model(modelpath, custom_objects={"standardize": src.standardize.standardize})
+	db, c = init()
 
-	cursor.execute("SELECT * FROM stream_user")
+	c.execute("SELECT * FROM stream_user")
 	while True:
-		rows = cursor.fetchmany(1024)
+		rows = c.fetchmany(1024)
 		for row in rows:
 			intensity = "{:.8f}".format(model.predict([row[2]])[0][0])
 			db.cursor().execute("UPDATE stream_user SET intensity = %s, model = %s WHERE id = %s", (intensity, args.model, row[0]))
@@ -26,7 +33,7 @@ def replay(argp, args):
 			break
 
 	db.commit()
-	cursor.close()
+	c.close()
 	db.close()
 
 def store(argp, args):
@@ -37,14 +44,19 @@ def store(argp, args):
 		logging.warning(args.input + " not found")
 		return 1
 
-	db = psycopg2.connect(host=args.config["DB_HOST"], database=args.config["DB_DATABASE"], user=args.config["DB_USER"], password=args.config["DB_PASSWORD"])
-	cursor = db.cursor()
-
-	query = "COPY stream_user(created_at,text,model,intensity,polarity) FROM STDOUT WITH CSV HEADER ENCODING 'UTF8' DELIMITER AS '\t'"
+	db, c = init()
+	sql = "COPY stream_user(created_at,text,model,intensity,polarity) FROM STDOUT WITH CSV HEADER ENCODING 'UTF8' DELIMITER AS '\t'"
 	with open(args.input, "r", encoding="utf-8") as f:
-		cursor.copy_expert(query, f)
+		c.copy_expert(sql, f)
 
 	db.commit()
-	cursor.close()
+	c.close()
 	db.close()
 
+def insert(tweet):
+	db, c = init()
+	sql = "INSERT INTO stream_user(created_at,text) VALUES(%s, %s)"
+	c.execute(sql, (tweet["created_at"], tweet["text"]))
+	db.commit()
+	c.close()
+	db.close()
