@@ -21,7 +21,7 @@ def predict(argp, args):
 		logging.warning(args.input + " not found")
 		return 1
 
-	model = tensorflow.keras.models.load_model(modelpath, custom_objects={"standardize": standardize})
+	model = tensorflow.keras.models.load_model(modelpath, custom_objects={"standardize": src.standardize.standardize})
 
 	df = pandas.read_csv(args.input, lineterminator="\n", encoding="utf-8", sep="\t")
 	df["model"] = args.model
@@ -73,7 +73,7 @@ def train(argp, args):
 	raw_val_ds = tensorflow.data.Dataset.from_tensor_slices( (val_df["text"], val_df["intensity"]) ).batch(batch_size)
 
 	vectorize_layer = tensorflow.keras.layers.TextVectorization(
-		standardize=standardize,
+		standardize=src.standardize.standardize,
 		max_tokens=max_features,
 		output_mode="int",
 		output_sequence_length=sequence_length)
