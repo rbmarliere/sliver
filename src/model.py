@@ -20,15 +20,20 @@ def predict(argp, args):
 	if not os.path.exists(args.input):
 		logging.warning(args.input + " not found")
 		return 1
-
+	if args.polarity:
+		modelcol = "model_p"
+		target = "polarity"
+	else:
+		modelcol = "model_i"
+		target = "intensity"
 	model = tensorflow.keras.models.load_model(modelpath, custom_objects={"standardize": src.standardize.standardize})
-
 	df = pandas.read_csv(args.input, lineterminator="\n", encoding="utf-8", sep="\t")
-	df["model"] = args.model
-	df["intensity"] = df.apply(lambda x: "{:.8f}".format(model.predict([x.text])[0][0]), axis=1)
+	df[target] = [ x[0] for x in model.predict(df["tweet"], verbose=1, use_multiprocessing=True, workers=os.cpu_count) ]
+	df["intensity"] = df["intensity"].apply("{:.8f}".format)
+	df["polarity"] = df["polarity"].apply("{:.8f}".format)
 	output = "data/predict/" + args.model + ".tsv"
 	df.to_csv(output, index=False, sep="\t")
-	logging.info("output saved to " + output)
+	logging.info("saved output data to " + output)
 
 def train(argp, args):
 	if args.input == None:
@@ -50,6 +55,12 @@ def train(argp, args):
 	if not os.path.exists(modelcfgpath):
 		logging.warning(modelcfgpath + " not found")
 		return 1
+	if args.polarity:
+		modelcol = "model_p"
+		target = "polarity"
+	else:
+		modelcol = "model_i"
+		target = "intensity"
 
 	with open(modelcfgpath, "r") as stream:
 		try:
@@ -65,12 +76,12 @@ def train(argp, args):
 
 	raw_df = pandas.read_csv(args.input, encoding="utf-8", lineterminator="\n", sep="\t")
 
-	i = int(len(raw_df)*(70/100)) # 70% of raw_df
+	i = int(len(raw_df)*(80/100))
 	train_df = raw_df.head(i)
 	val_df = raw_df.iloc[i:max(raw_df.index)]
 
-	raw_train_ds = tensorflow.data.Dataset.from_tensor_slices( (train_df["text"], train_df["intensity"]) ).batch(batch_size)
-	raw_val_ds = tensorflow.data.Dataset.from_tensor_slices( (val_df["text"], val_df["intensity"]) ).batch(batch_size)
+	raw_train_ds = tensorflow.data.Dataset.from_tensor_slices( (train_df["tweet"], train_df[target]) ).batch(batch_size)
+	raw_val_ds = tensorflow.data.Dataset.from_tensor_slices( (val_df["tweet"], val_df[target]) ).batch(batch_size)
 
 	vectorize_layer = tensorflow.keras.layers.TextVectorization(
 		standardize=src.standardize.standardize,
@@ -89,7 +100,7 @@ def train(argp, args):
 
 	model = tensorflow.keras.Sequential([
 		tensorflow.keras.layers.Embedding(max_features + 1, embedding_dim, mask_zero=True),
-		tensorflow.keras.layers.Bidirectional(tensorflow.keras.layers.LSTM(64, return_sequences=True)),
+		tensorflow.keras.layers.Bidirectional(tensorflow.keras.layers.LSTM(128, return_sequences=True)),
 		tensorflow.keras.layers.Bidirectional(tensorflow.keras.layers.LSTM(32)),
 		tensorflow.keras.layers.Dense(64, activation="relu"),
 		tensorflow.keras.layers.Dropout(0.5),
@@ -98,16 +109,23 @@ def train(argp, args):
 	model.summary()
 	model.compile(
 		loss=tensorflow.keras.losses.BinaryCrossentropy(from_logits=True),
-		optimizer="adam",
-		metrics="binary_accuracy"
+		optimizer=tensorflow.keras.optimizers.Adam(),
+		metrics=tensorflow.keras.metrics.BinaryAccuracy()
 	)
 
+	callback = tensorflow.keras.callbacks.EarlyStopping(monitor='loss', patience=2, min_delta=0.005)
 	tensorboard_callback = tensorflow.keras.callbacks.TensorBoard(log_dir=modelpath+"/logs", histogram_freq=1)
-	history = model.fit(train_ds, validation_data=val_ds, epochs=epochs, callbacks=[tensorboard_callback])
+	history = model.fit(
+		train_ds,
+		validation_data=val_ds,
+		epochs=epochs,
+		callbacks=[callback, tensorboard_callback]
+	)
 
-	loss, accuracy = model.evaluate(val_ds)
-	print("Loss: ", loss)
-	print("Accuracy: ", accuracy)
+	# test_ds
+	#loss, accuracy = model.evaluate(test_ds)
+	#print("Loss: ", loss)
+	#print("Accuracy: ", accuracy)
 
 	export_model = tensorflow.keras.Sequential([
 		vectorize_layer,
@@ -116,9 +134,9 @@ def train(argp, args):
 	])
 	export_model.summary()
 	export_model.compile(
-		loss=tensorflow.keras.losses.BinaryCrossentropy(from_logits=False),
-		optimizer="adam",
-		metrics="binary_accuracy"
+		loss=tensorflow.keras.losses.BinaryCrossentropy(from_logits=True),
+		optimizer=tensorflow.keras.optimizers.Adam(),
+		metrics=tensorflow.keras.metrics.BinaryAccuracy()
 	)
 	export_model.save(modelpath)
 
