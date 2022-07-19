@@ -31,8 +31,8 @@ class Stream(tweepy.Stream):
 		text = re.sub("\t", " ", text).strip()
 		# format data
 		tweet = {}
-		tweet["created_at"] = datetime.datetime.strptime(status._json["created_at"], "%a %b %d %H:%M:%S %z %Y")
-		tweet["text"] = text
+		tweet["time"] = datetime.datetime.strptime(status._json["created_at"], "%a %b %d %H:%M:%S %z %Y")
+		tweet["tweet"] = text
 		# log to stdin
 		logging.info("---")
 		logging.info(text)
@@ -40,7 +40,7 @@ class Stream(tweepy.Stream):
 			src.db.insert(tweet)
 		except:
 			# log to cache csv
-			output = pandas.DataFrame({ "created_at": [tweet["created_at"]], "text": text, "model": "", "intensity": 0, "polarity": 0 })
+			output = pandas.DataFrame({ "time": [tweet["created_at"]], "tweet": text, "model_i": "", "intensity": 0, "polarity": 0, "model_p": "" })
 			with open("data/cache/" + created_at.strftime("%Y%m%d%H") + ".tsv", "a") as f:
 				output.to_csv(f, header=f.tell()==0, mode="a", index=False, sep="\t")
 
