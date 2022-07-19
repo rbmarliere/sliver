@@ -9,7 +9,6 @@ logging.basicConfig(level=logging.INFO)
 fmap = {
 	"predict": model.predict,
 	"replay"  : db.replay,
-	"store": db.store,
 	"stream" : stream.stream,
 	"train"  : model.train,
 }
@@ -27,6 +26,8 @@ argp = argparse.ArgumentParser(
 	formatter_class=argparse.RawTextHelpFormatter)
 argp.add_argument("-i", "--input", help="tsv data file to use as input")
 argp.add_argument("-m", "--model", help="name of model to use or save")
+argp.add_argument("-p", "--polarity", help="use polarity model instead of intensity", action="store_true")
+argp.add_argument("-t", "--table", help="name of the database table to use")
 argp.add_argument("command", choices=fmap.keys())
 args = argp.parse_args()
 

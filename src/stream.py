@@ -32,7 +32,7 @@ class Stream(tweepy.Stream):
 		# format data
 		tweet = {}
 		tweet["time"] = datetime.datetime.strptime(status._json["created_at"], "%a %b %d %H:%M:%S %z %Y")
-		tweet["tweet"] = text
+		tweet["text"] = text
 		# log to stdin
 		logging.info("---")
 		logging.info(text)
