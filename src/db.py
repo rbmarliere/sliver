@@ -55,6 +55,6 @@ def store(argp, args):
 
 def insert(tweet):
 	db, c = init()
-	sql = "INSERT INTO stream_user(created_at,text) VALUES(%s, %s)"
-	c.execute(sql, (tweet["created_at"], tweet["text"]))
+	sql = "INSERT INTO stream_user(time,tweet) VALUES(%s, %s)"
+	c.execute(sql, (tweet["time"], tweet["tweet"]))
 	close(db, c)
