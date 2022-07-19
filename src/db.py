@@ -39,12 +39,15 @@ def replay(argp, args):
 	db, c = init()
 
 	c.execute("SELECT * FROM \"%s\" WHERE %s IS NULL OR %s <> '%s' ORDER BY id ASC" % (table, modelcol, modelcol, args.model))
-	rows = c.fetchall()
-	ids = [ row[0] for row in rows ]
-	tweets = [ row[2] for row in rows ]
-	scores = [ "{:.8f}".format(x[0]) for x in model.predict(tweets, verbose=1, use_multiprocessing=True, workers=os.cpu_count) ]
-	for tweet_id, tweet_score in zip(ids, scores):
-		db.cursor().execute("UPDATE \"%s\" SET %s = %s, %s = '%s' WHERE id = %s" % (table, target, tweet_score, modelcol, args.model, tweet_id))
+	while True:
+		rows = c.fetchmany(100000)
+		if not rows:
+			break
+		ids = [ row[0] for row in rows ]
+		tweets = [ row[2] for row in rows ]
+		scores = [ "{:.8f}".format(x[0]) for x in model.predict(tweets, verbose=1, use_multiprocessing=True, workers=os.cpu_count) ]
+		for tweet_id, tweet_score in zip(ids, scores):
+			db.cursor().execute("UPDATE \"%s\" SET %s = %s, %s = '%s' WHERE id = %s" % (table, target, tweet_score, modelcol, args.model, tweet_id))
 
 	close(db, c)
 
