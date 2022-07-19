@@ -40,8 +40,8 @@ class Stream(tweepy.Stream):
 			src.db.insert(tweet)
 		except:
 			# log to cache csv
-			output = pandas.DataFrame({ "time": [tweet["created_at"]], "tweet": text, "model_i": "", "intensity": 0, "polarity": 0, "model_p": "" })
-			with open("data/cache/" + created_at.strftime("%Y%m%d%H") + ".tsv", "a") as f:
+			output = pandas.DataFrame({ "time": [tweet["time"]], "tweet": text, "model_i": "", "intensity": 0, "polarity": 0, "model_p": "" })
+			with open("data/cache/" + tweet["time"].strftime("%Y%m%d%H") + ".tsv", "a") as f:
 				output.to_csv(f, header=f.tell()==0, mode="a", index=False, sep="\t")
 
 # save the ids of the users to track to disk
