@@ -113,7 +113,7 @@ def train(argp, args):
 		metrics=tensorflow.keras.metrics.BinaryAccuracy()
 	)
 
-	callback = tensorflow.keras.callbacks.EarlyStopping(monitor='loss', patience=2, min_delta=0.005)
+	callback = tensorflow.keras.callbacks.EarlyStopping(monitor='loss', patience=1, min_delta=0.01)
 	tensorboard_callback = tensorflow.keras.callbacks.TensorBoard(log_dir=modelpath+"/logs", histogram_freq=1)
 	history = model.fit(
 		train_ds,
