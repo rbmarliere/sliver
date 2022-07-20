@@ -40,7 +40,7 @@ def replay(argp, args):
 	model = tensorflow.keras.models.load_model(modelpath, custom_objects={"standardize": src.standardize.standardize})
 	db, c = init()
 
-	c.execute("SELECT * FROM \"%s\" WHERE %s IS NULL OR %s <> '%s' ORDER BY id ASC limit 3" % (table, modelcol, modelcol, args.model))
+	c.execute("SELECT * FROM \"%s\" WHERE %s IS NULL OR %s <> '%s' ORDER BY id ASC" % (table, modelcol, modelcol, args.model))
 	rows = c.fetchall()
 	ids = [ row[0] for row in rows ]
 	tweets = [ row[2] for row in rows ]
