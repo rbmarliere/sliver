@@ -7,27 +7,29 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 fmap = {
-	"predict": model.predict,
-	"replay"  : db.replay,
-	"stream" : stream.stream,
-	"train"  : model.train,
+    "predict": model.predict,
+    "replay"  : db.replay,
+    "vader"  : db.vader,
+    "stream" : stream.stream,
+    "train"  : model.train,
 }
 
 argp = argparse.ArgumentParser(
-	prog="hypnox",
-	usage="%(prog)s [options] command",
-	description='''
-		  _        _
-	 |_| \_/ |_) |\ | / \ \/
-	 | |  |  |   | \| \_/ /\\
+    prog="hypnox",
+    usage="%(prog)s [options] command",
+    description='''
+          _        _
+     |_| \_/ |_) |\ | / \ \/
+     | |  |  |   | \| \_/ /\\
 
-	   sub noctem sapientia
-	''',
-	formatter_class=argparse.RawTextHelpFormatter)
+       sub noctem sapientia
+    ''',
+    formatter_class=argparse.RawTextHelpFormatter)
 argp.add_argument("-i", "--input", help="tsv data file to use as input")
 argp.add_argument("-m", "--model", help="name of model to use or save")
 argp.add_argument("-p", "--polarity", help="use polarity model instead of intensity", action="store_true")
-argp.add_argument("-t", "--table", help="name of the database table to use")
+argp.add_argument("-t", "--table", help="name of the database table to replay into")
+argp.add_argument("-u", "--update-only", help="replay only rows lacking", action="store_true")
 argp.add_argument("command", choices=fmap.keys())
 args = argp.parse_args()
 
