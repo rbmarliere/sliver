@@ -8,10 +8,13 @@ logging.basicConfig(level=logging.INFO)
 
 fmap = {
     "predict": model.predict,
+    "predictb": model.predictb,
     "replay"  : db.replay,
+    "replayb"  : db.replayb,
     "vader"  : db.vader,
     "stream" : stream.stream,
     "train"  : model.train,
+    "trainb"  : model.trainb,
 }
 
 argp = argparse.ArgumentParser(
