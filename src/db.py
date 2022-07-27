@@ -5,6 +5,9 @@ import src.config
 import src.standardize
 import tensorflow
 
+import pandas
+from transformers import BertTokenizer, TFBertForSequenceClassification, pipeline
+
 def init():
     config = src.config.Config()
     db = psycopg2.connect(host=config.config["DB_HOST"], database=config.config["DB_DATABASE"], user=config.config["DB_USER"], password=config.config["DB_PASSWORD"])
@@ -94,4 +97,47 @@ def vader(argp, args):
     tuples = str(list(zip( ids, scores, ["vader"] * len(ids) )))[1:-1]
     query = "UPDATE \"%s\" AS t SET %s = t2.%s, %s = t2.%s from (values %s) as t2(id,%s,%s) where t2.id = t.id" % (table, target, target, modelcol, modelcol, tuples, target, modelcol)
     c.execute(query)
+    close(db, c)
+
+def replayb(argp, args):
+    if args.model == None:
+        logging.error("provide a model name with --model")
+        return 1
+    modelpath = "models/" + args.model
+    if not os.path.exists(modelpath):
+        logging.warning(modelpath + " not found")
+        return 1
+    modelcol = "model_p"
+    target = "polarity"
+    if args.table:
+        # TODO check if table exists
+        table = args.table
+    else:
+        table = "stream_user"
+    if args.update_only:
+        update_only = "WHERE intensity > 0.3 AND %s IS NULL OR %s <> '%s'" % (modelcol, modelcol, args.model)
+    else:
+        update_only = "WHERE intensity > 0.3"
+
+    model = TFBertForSequenceClassification.from_pretrained(modelpath)
+    tokenizer = BertTokenizer.from_pretrained(modelpath + "/tokenizer")
+    nlp = pipeline("text-classification", model=model, tokenizer=tokenizer)
+    labels = {"Neutral": 0, "Negative": -1, "Positive": 1}
+    db, c = init()
+
+    query = "SELECT * FROM \"%s\" %s" % (table, update_only)
+    print(query)
+
+    c.execute(query)
+    rows = c.fetchall()
+
+    ids = [ row[0] for row in rows ]
+    df = pandas.DataFrame(ids, columns=["id"])
+    df["tweet"] = [ row[2] for row in rows ]
+    df["clean_tweet"] = df["tweet"].apply(src.standardize.clean)
+    df = df.dropna()
+    df["polarity"] = [ labels[i["label"]] for i in nlp(df["clean_tweet"].values.tolist()) ]
+    tuples = str(list(zip( df["id"].values, df["polarity"].values, [args.model] * len(df) )))[1:-1]
+    c.execute("UPDATE \"%s\" AS t SET %s = t2.%s, %s = t2.%s from (values %s) as t2(id,%s,%s) where t2.id = t.id" % (table, target, target, modelcol, modelcol, tuples, target, modelcol) )
+
     close(db, c)
