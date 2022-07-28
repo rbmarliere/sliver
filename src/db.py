@@ -5,6 +5,7 @@ import src.config
 import src.standardize
 import tensorflow
 
+import numpy
 import pandas
 from transformers import BertTokenizer, TFBertForSequenceClassification, pipeline
 
@@ -54,7 +55,7 @@ def replay(argp, args):
     # TODO check if there are rows
     ids = [ row[0] for row in rows ]
     tweets = [ row[2] for row in rows ]
-    scores = [ x[0] for x in model.predict(tweets, verbose=1, use_multiprocessing=True, workers=os.cpu_count()) ]
+    scores = [ x[0] for x in model.predict(tweets, verbose=1) ]
     tuples = str(list(zip( ids, scores, [args.model] * len(ids) )))[1:-1]
     c.execute("UPDATE \"%s\" AS t SET %s = t2.%s, %s = t2.%s from (values %s) as t2(id,%s,%s) where t2.id = t.id" % (table, target, target, modelcol, modelcol, tuples, target, modelcol) )
 
@@ -115,14 +116,15 @@ def replayb(argp, args):
     else:
         table = "stream_user"
     if args.update_only:
-        update_only = "WHERE intensity > 0.3 AND %s IS NULL OR %s <> '%s'" % (modelcol, modelcol, args.model)
+        update_only = "WHERE %s IS NULL OR %s <> '%s'" % (modelcol, modelcol, args.model)
     else:
-        update_only = "WHERE intensity > 0.3"
+        # TODO where intensity > 0.3
+        update_only = ""
 
     model = TFBertForSequenceClassification.from_pretrained(modelpath)
     tokenizer = BertTokenizer.from_pretrained(modelpath + "/tokenizer")
-    nlp = pipeline("text-classification", model=model, tokenizer=tokenizer)
-    labels = {"Neutral": 0, "Negative": -1, "Positive": 1}
+    #nlp = pipeline("text-classification", model=model, tokenizer=tokenizer)
+    labels = {0: 0, 2: -1, 1: 1}
     db, c = init()
 
     query = "SELECT * FROM \"%s\" %s" % (table, update_only)
@@ -136,7 +138,13 @@ def replayb(argp, args):
     df["tweet"] = [ row[2] for row in rows ]
     df["clean_tweet"] = df["tweet"].apply(src.standardize.clean)
     df = df.dropna()
-    df["polarity"] = [ labels[i["label"]] for i in nlp(df["clean_tweet"].values.tolist()) ]
+
+    tweets = df["clean_tweet"].values.tolist()
+    inputs = tokenizer(tweets, truncation=True, padding='max_length', max_length=280, return_tensors="tf")
+    outputs = model.predict([inputs["input_ids"], inputs["attention_mask"], inputs["token_type_ids"]], verbose=1)
+    prob = tensorflow.nn.softmax( outputs.logits )
+
+    df["polarity"] = [ labels[numpy.argmax(x)] for x in prob.numpy() ]
     tuples = str(list(zip( df["id"].values, df["polarity"].values, [args.model] * len(df) )))[1:-1]
     c.execute("UPDATE \"%s\" AS t SET %s = t2.%s, %s = t2.%s from (values %s) as t2(id,%s,%s) where t2.id = t.id" % (table, target, target, modelcol, modelcol, tuples, target, modelcol) )
 
