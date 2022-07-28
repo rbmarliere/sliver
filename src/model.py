@@ -32,7 +32,7 @@ def predict(argp, args):
         target = "intensity"
     model = tensorflow.keras.models.load_model(modelpath, custom_objects={"standardize": src.standardize.standardize})
     df = pandas.read_csv(args.input, lineterminator="\n", encoding="utf-8", sep="\t")
-    df[target] = [ x[0] for x in model.predict(df["tweet"], verbose=1, use_multiprocessing=True, workers=os.cpu_count) ]
+    df[target] = [ x[0] for x in model.predict(df["tweet"], verbose=1) ]
     df["intensity"] = df["intensity"].apply("{:.8f}".format)
     df["polarity"] = df["polarity"].apply("{:.8f}".format)
     output = "data/predict/" + args.model + ".tsv"
@@ -77,23 +77,25 @@ def train(argp, args):
     sequence_length = modelcfg["sequence_length"]
     embedding_dim = modelcfg["embedding_dim"]
     epochs = modelcfg["epochs"]
+    patience = modelcfg["patience"]
+    min_delta = modelcfg["min_delta"]
+    test_size = modelcfg["test_size"]
 
     raw_df = pandas.read_csv(args.input, encoding="utf-8", lineterminator="\n", sep="\t")
-
-    i = int(len(raw_df)*(80/100))
-    train_df = raw_df.head(i)
-    val_df = raw_df.iloc[i:max(raw_df.index)]
-
-    raw_train_ds = tensorflow.data.Dataset.from_tensor_slices( (train_df["tweet"], train_df[target]) ).batch(batch_size)
-    raw_val_ds = tensorflow.data.Dataset.from_tensor_slices( (val_df["tweet"], val_df[target]) ).batch(batch_size)
+    df_train, df_test, = train_test_split(raw_df, stratify=raw_df['intensity'], test_size=test_size, random_state=93)
+    df_train, df_val = train_test_split(df_train, stratify=df_train['intensity'], test_size=test_size, random_state=93)
+    raw_train_ds = tensorflow.data.Dataset.from_tensor_slices( (df_train["tweet"], df_train["intensity"]) ).batch(batch_size)
+    raw_test_ds = tensorflow.data.Dataset.from_tensor_slices( (df_test["tweet"], df_test["intensity"]) ).batch(batch_size)
+    raw_val_ds = tensorflow.data.Dataset.from_tensor_slices( (df_val["tweet"], df_val["intensity"]) ).batch(batch_size)
 
     vectorize_layer = tensorflow.keras.layers.TextVectorization(
         standardize=src.standardize.standardize,
         max_tokens=max_features,
         output_mode="int",
         output_sequence_length=sequence_length)
-    train_text = raw_train_ds.map(lambda x, y: x)
     vectorize_layer.compile()
+
+    train_text = raw_train_ds.map(lambda x, y: x)
     vectorize_layer.adapt(train_text)
 
     def vectorize_text(text, label):
@@ -104,25 +106,26 @@ def train(argp, args):
 
     model = tensorflow.keras.Sequential([
         tensorflow.keras.layers.Embedding(max_features + 1, embedding_dim, mask_zero=True),
-        tensorflow.keras.layers.Bidirectional(tensorflow.keras.layers.LSTM(256, return_sequences=True)),
+        tensorflow.keras.layers.Bidirectional(tensorflow.keras.layers.LSTM(128, return_sequences=True)),
         tensorflow.keras.layers.Bidirectional(tensorflow.keras.layers.LSTM(32)),
         tensorflow.keras.layers.Dense(64, activation="relu"),
         tensorflow.keras.layers.Dropout(0.5),
-        tensorflow.keras.layers.Dense(1, activation="tanh")
+        tensorflow.keras.layers.Dense(1)
     ])
     model.compile(
-        loss=tensorflow.keras.losses.MeanSquaredError(),
-        optimizer=tensorflow.keras.optimizers.Adam()
+        loss=tensorflow.keras.losses.BinaryCrossentropy(from_logits=True),
+        optimizer=tensorflow.keras.optimizers.Adam(),
+        metrics=tensorflow.metrics.BinaryAccuracy()
     )
-
     model.summary()
-    callback = tensorflow.keras.callbacks.EarlyStopping(monitor='loss', patience=2, min_delta=0.01)
-    tensorboard_callback = tensorflow.keras.callbacks.TensorBoard(log_dir=modelpath+"/logs", histogram_freq=1)
+
+    earlystop = tensorflow.keras.callbacks.EarlyStopping(monitor='loss', patience=patience, min_delta=min_delta)
+    tensorboard = tensorflow.keras.callbacks.TensorBoard(log_dir=modelpath+"/logs", histogram_freq=1)
     history = model.fit(
         train_ds,
         validation_data=val_ds,
         epochs=epochs,
-        callbacks=[callback, tensorboard_callback]
+        callbacks=[earlystop, tensorboard]
     )
 
     # test_ds
@@ -133,13 +136,13 @@ def train(argp, args):
     export_model = tensorflow.keras.Sequential([
         vectorize_layer,
         model,
-        tensorflow.keras.layers.Activation("tanh")
+        tensorflow.keras.layers.Activation("sigmoid")
     ])
     export_model.compile(
-        loss=tensorflow.keras.losses.MeanSquaredError(),
+        loss=tensorflow.keras.losses.BinaryCrossentropy(from_logits=True),
         optimizer=tensorflow.keras.optimizers.Adam(),
+        metrics=tensorflow.metrics.BinaryAccuracy()
     )
-
     export_model.summary()
     export_model.save(modelpath)
 
@@ -215,6 +218,7 @@ def trainb(argp, args):
     patience = modelcfg["patience"]
     min_delta = modelcfg["min_delta"]
 
+    # original labels = {0:'neutral', 1:'positive',2:'negative'}
     model = TFBertForSequenceClassification.from_pretrained('yiyanghkust/finbert-tone', num_labels=3, from_pt=True)
     tokenizer = BertTokenizer.from_pretrained('yiyanghkust/finbert-tone')
 
