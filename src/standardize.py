@@ -41,6 +41,7 @@ def standardize(text):
     text = tensorflow.strings.regex_replace(text, " +", " ")
     # remove leading and trailing white spaces
     text = tensorflow.strings.strip(text)
+
     return text
 
 def clean(text):
@@ -65,6 +66,7 @@ def clean(text):
     text = re.sub(" +", " ", text)
     # remove leading and trailing white spaces
     text = text.strip()
+
     # keep only sentences with four words minimum
     if len(text.split()) > 4:
         # lemmatize each word
