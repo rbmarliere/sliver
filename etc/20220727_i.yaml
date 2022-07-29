@@ -1,0 +1,23 @@
+---
+batch_size: 32
+embedding_dim: 280
+epochs: 3
+learning_rate: 0.001
+max_features: 20000
+min_delta: 0.03
+patience: 1
+sequence_length: 280
+test_size: 0.1
+model: >
+model: >
+    loss = tensorflow.keras.losses.BinaryCrossentropy(from_logits=True),
+    optimizer = tensorflow.keras.optimizers.Adam(learning_rate=modelcfg["learning_rate"]),
+    metrics = tensorflow.metrics.BinaryAccuracy("accuracy")
+    model = tensorflow.keras.Sequential([
+        tensorflow.keras.layers.Embedding(max_features + 1, embedding_dim, mask_zero=True),
+        tensorflow.keras.layers.Bidirectional(tensorflow.keras.layers.LSTM(128, return_sequences=True)),
+        tensorflow.keras.layers.Bidirectional(tensorflow.keras.layers.LSTM(32)),
+        tensorflow.keras.layers.Dense(64, activation="relu"),
+        tensorflow.keras.layers.Dropout(0.5),
+        tensorflow.keras.layers.Dense(1)
+    ])

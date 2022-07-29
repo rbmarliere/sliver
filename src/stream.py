@@ -1,10 +1,10 @@
 import datetime
 import logging
+import os
 import pandas
 import re
 import requests
-import src.config
-import src.db
+import src
 import ssl
 import tweepy
 import urllib3
@@ -61,7 +61,7 @@ def save_uids(users, api):
             logging.error("user '" + user + "' not found")
     return uids
 
-def stream(argp, args):
+def stream(args):
     logging.info("loading twitter API keys")
     config = src.config.Config()
     if config.config["CONSUMER_KEY"] == "" or config.config["CONSUMER_SECRET"] == "" or config.config["ACCESS_KEY"] == "" or config.config["ACCESS_SECRET"] == "":
@@ -76,7 +76,8 @@ def stream(argp, args):
 
     logging.info("reading users")
     try:
-        uids = open(".uids").read().splitlines()
+        path = os.path.dirname(os.path.abspath(__file__))
+        uids = open(path + "/../etc/.uids").read().splitlines()
         if len(uids) != len(TRACK_USERS):
             os.remove(".uids")
             uids = save_uids(TRACK_USERS, api)

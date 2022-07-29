@@ -1,65 +1,32 @@
 import logging
-import os
-import psycopg2
-import src.config
-import src.standardize
-import tensorflow
-
 import numpy
+import os
 import pandas
-from transformers import BertTokenizer, TFBertForSequenceClassification, pipeline
+import psycopg2
+import src
+import sys
+import tensorflow
+import transformers
 
 def init():
+    # get config object
     config = src.config.Config()
-    db = psycopg2.connect(host=config.config["DB_HOST"], database=config.config["DB_DATABASE"], user=config.config["DB_USER"], password=config.config["DB_PASSWORD"])
-    # TODO check connection
-    cursor = db.cursor()
-    return db, cursor
+
+    # connect to database
+    try:
+        db = psycopg2.connect(host=config.config["DB_HOST"], database=config.config["DB_DATABASE"], user=config.config["DB_USER"], password=config.config["DB_PASSWORD"])
+        cursor = db.cursor()
+
+        return db, cursor
+
+    except psycopg2.errors.OperationalError:
+        logging.error("could not complete database connection")
+        sys.exit(1)
 
 def close(db, c):
     db.commit()
     c.close()
     db.close()
-
-def replay(argp, args):
-    if args.model == None:
-        logging.error("provide a model name with --model")
-        return 1
-    modelpath = "models/" + args.model
-    if not os.path.exists(modelpath):
-        logging.warning(modelpath + " not found")
-        return 1
-    if args.polarity:
-        modelcol = "model_p"
-        target = "polarity"
-    else:
-        modelcol = "model_i"
-        target = "intensity"
-    if args.table:
-        # TODO check if table exists
-        table = args.table
-    else:
-        table = "stream_user"
-    if args.update_only:
-        update_only = "WHERE %s IS NULL OR %s <> '%s'" % (modelcol, modelcol, args.model)
-    else:
-        update_only = ""
-
-    model = tensorflow.keras.models.load_model(modelpath, custom_objects={"standardize": src.standardize.standardize})
-    db, c = init()
-
-    query = "SELECT * FROM \"%s\" %s" % (table, update_only)
-    print(query)
-    c.execute(query)
-    rows = c.fetchall()
-    # TODO check if there are rows
-    ids = [ row[0] for row in rows ]
-    tweets = [ row[2] for row in rows ]
-    scores = [ x[0] for x in model.predict(tweets, verbose=1) ]
-    tuples = str(list(zip( ids, scores, [args.model] * len(ids) )))[1:-1]
-    c.execute("UPDATE \"%s\" AS t SET %s = t2.%s, %s = t2.%s from (values %s) as t2(id,%s,%s) where t2.id = t.id" % (table, target, target, modelcol, modelcol, tuples, target, modelcol) )
-
-    close(db, c)
 
 def insert(tweet):
     db, c = init()
@@ -67,85 +34,82 @@ def insert(tweet):
     c.execute(sql, (tweet["time"], tweet["tweet"]))
     close(db, c)
 
-def vader(argp, args):
+def replay(args):
+    # check if model exists
+    modelpath = "models/" + args.model
+    if not os.path.exists(modelpath):
+        logging.error(modelpath + " not found")
+        return 1
+
+    db, c = init()
+
+    # check if target table exists
+    try:
+        query = "SELECT * FROM \"%s\" LIMIT 1" % args.table
+        c.execute(query)
+    except psycopg2.errors.UndefinedTable:
+        logging.error("table \"%s\" doesn't exist" % args.table)
+        sys.exit(1)
+
+    # check which column to use
     if args.polarity:
         modelcol = "model_p"
         target = "polarity"
     else:
         modelcol = "model_i"
         target = "intensity"
-    if args.table:
-        # TODO check if table exists
-        table = args.table
-    else:
-        table = "stream_user"
+
+    # check which rows to update
     if args.update_only:
         update_only = "WHERE %s IS NULL OR %s <> '%s'" % (modelcol, modelcol, args.model)
     else:
         update_only = ""
-    from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-    analyzer = SentimentIntensityAnalyzer()
-    db, c = init()
-    query = "SELECT * FROM \"%s\"" % (table)
-    print(query)
+
+    # fetch rows to update
+    query = "SELECT * FROM \"%s\" %s" % (args.table, update_only)
     c.execute(query)
     rows = c.fetchall()
-    # TODO check if there are rows
-    ids = [ row[0] for row in rows ]
-    tweets = [ row[2] for row in rows ]
-    from src.standardize import standardize
-    scores = [ analyzer.polarity_scores(x)["compound"] for x in tweets ]
-    tuples = str(list(zip( ids, scores, ["vader"] * len(ids) )))[1:-1]
-    query = "UPDATE \"%s\" AS t SET %s = t2.%s, %s = t2.%s from (values %s) as t2(id,%s,%s) where t2.id = t.id" % (table, target, target, modelcol, modelcol, tuples, target, modelcol)
-    c.execute(query)
-    close(db, c)
+    if not rows:
+        logging.error("no rows to update")
+        sys.exit(1)
 
-def replayb(argp, args):
-    if args.model == None:
-        logging.error("provide a model name with --model")
-        return 1
-    modelpath = "models/" + args.model
-    if not os.path.exists(modelpath):
-        logging.warning(modelpath + " not found")
-        return 1
-    modelcol = "model_p"
-    target = "polarity"
-    if args.table:
-        # TODO check if table exists
-        table = args.table
-    else:
-        table = "stream_user"
-    if args.update_only:
-        update_only = "WHERE %s IS NULL OR %s <> '%s'" % (modelcol, modelcol, args.model)
-    else:
-        # TODO where intensity > 0.3
-        update_only = ""
-
-    model = TFBertForSequenceClassification.from_pretrained(modelpath)
-    tokenizer = BertTokenizer.from_pretrained(modelpath + "/tokenizer")
-    #nlp = pipeline("text-classification", model=model, tokenizer=tokenizer)
-    labels = {0: 0, 2: -1, 1: 1}
-    db, c = init()
-
-    query = "SELECT * FROM \"%s\" %s" % (table, update_only)
-    print(query)
-
-    c.execute(query)
-    rows = c.fetchall()
-
+    # process data
     ids = [ row[0] for row in rows ]
     df = pandas.DataFrame(ids, columns=["id"])
     df["tweet"] = [ row[2] for row in rows ]
-    df["clean_tweet"] = df["tweet"].apply(src.standardize.clean)
-    df = df.dropna()
 
-    tweets = df["clean_tweet"].values.tolist()
-    inputs = tokenizer(tweets, truncation=True, padding='max_length', max_length=280, return_tensors="tf")
-    outputs = model.predict([inputs["input_ids"], inputs["attention_mask"], inputs["token_type_ids"]], verbose=1)
-    prob = tensorflow.nn.softmax( outputs.logits )
+    # check which model to use
+    if args.polarity:
+        # load BERT model
+        model = transformers.TFBertForSequenceClassification.from_pretrained(modelpath)
+        tokenizer = transformers.BertTokenizer.from_pretrained(modelpath + "/tokenizer")
+        labels = {0: 0, 2: -1, 1: 1}
 
-    df["polarity"] = [ labels[numpy.argmax(x)] for x in prob.numpy() ]
-    tuples = str(list(zip( df["id"].values, df["polarity"].values, [args.model] * len(df) )))[1:-1]
-    c.execute("UPDATE \"%s\" AS t SET %s = t2.%s, %s = t2.%s from (values %s) as t2(id,%s,%s) where t2.id = t.id" % (table, target, target, modelcol, modelcol, tuples, target, modelcol) )
+        # preprocess model input
+        df["clean_tweet"] = df["tweet"].apply(src.standardize.clean)
+        df = df.dropna()
 
+        # compute predictions
+        inputs = tokenizer(df["clean_tweet"].values.tolist(), truncation=True, padding='max_length', max_length=280, return_tensors="tf")
+        outputs = model.predict([inputs["input_ids"], inputs["attention_mask"], inputs["token_type_ids"]], verbose=1)
+        prob = tensorflow.nn.softmax( outputs.logits )
+        df["polarity"] = [ labels[numpy.argmax(x)] for x in prob.numpy() ]
+
+    else:
+        # load model
+        model = tensorflow.keras.models.load_model(modelpath, custom_objects={"standardize": src.standardize.standardize})
+
+        # compute predictions
+        df["intensity"] = [ x[0] for x in model.predict(df["tweet"].values.tolist(), verbose=1) ]
+
+    # update database
+    try:
+        tuples = str(list(zip( df["id"].values, df[target].values, [args.model] * len(df) )))[1:-1]
+        c.execute("UPDATE \"%s\" AS t SET %s = t2.%s, %s = t2.%s from (values %s) as t2(id,%s,%s) where t2.id = t.id" % (args.table, target, target, modelcol, modelcol, tuples, target, modelcol) )
+    except psycopg2.errors.OperationalError:
+        logging.error("could not complete database update")
+        sys.exit(1)
+
+    # close connection
     close(db, c)
+
