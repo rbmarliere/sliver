@@ -41,16 +41,18 @@ def predict(args):
         inputs = tokenizer(df["clean_tweet"].values.tolist(), truncation=True, padding="max_length", max_length=280, return_tensors="tf")
         outputs = model.predict([inputs["input_ids"], inputs["attention_mask"], inputs["token_type_ids"]], verbose=1)
         prob = tensorflow.nn.softmax( outputs.logits )
-        df["model_p"] = args.model
         df["polarity"] = [ labels[numpy.argmax(x)] for x in prob.numpy() ]
+        df = df.drop("clean_tweet", axis=1)
 
     else:
         # load model
         model = tensorflow.keras.models.load_model(modelpath, custom_objects={"standardize": src.standardize.standardize})
 
         # compute predictions
-        df["model_i"] = args.model
         df["intensity"] = [ "{:.8f}".format(x[0]) for x in model.predict(df["tweet"], verbose=1) ]
+
+    # format intensity values
+    df["intensity"] = df["intensity"].apply( "{:.8f}".format )
 
     # output data
     output = "data/predict/" + args.model + ".tsv"
