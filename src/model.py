@@ -49,7 +49,7 @@ def predict(args):
         model = tensorflow.keras.models.load_model(modelpath, custom_objects={"standardize": src.standardize.standardize})
 
         # compute predictions
-        df["intensity"] = [ "{:.8f}".format(x[0]) for x in model.predict(df["tweet"], verbose=1) ]
+        df["intensity"] = [ x[0] for x in model.predict(df["tweet"], verbose=1) ]
 
     # format intensity values
     df["intensity"] = df["intensity"].apply( "{:.8f}".format )
@@ -145,7 +145,7 @@ def train_i(modelcfg, raw_df):
     # compile model
     model = tensorflow.keras.Sequential([
         tensorflow.keras.layers.Embedding(modelcfg["max_features"] + 1, modelcfg["embedding_dim"], mask_zero=True),
-        tensorflow.keras.layers.Bidirectional(tensorflow.keras.layers.LSTM(128, return_sequences=True)),
+        tensorflow.keras.layers.Bidirectional(tensorflow.keras.layers.LSTM(32, return_sequences=True)),
         tensorflow.keras.layers.Bidirectional(tensorflow.keras.layers.LSTM(32)),
         tensorflow.keras.layers.Dense(64, activation="relu"),
         tensorflow.keras.layers.Dropout(0.5),
