@@ -170,10 +170,9 @@ def train_i(modelcfg, raw_df):
 
 def train_p(modelcfg, raw_df):
     # take only labeled polarity rows
-    raw_df = raw_df[raw_df.polarity != 0]
+    raw_df = raw_df[raw_df.polarity != 0].reset_index(drop=True)
 
     # preprocess training data and drop empty rows (based on output of clean)
-    # TODO: error "A value is trying to be set on a copy of a slice from a DataFrame."
     raw_df["tweet"] = raw_df["tweet"].apply(src.standardize.clean)
     raw_df = raw_df.dropna()
 
