@@ -87,18 +87,21 @@ def train(args):
             sys.exit(1)
 
     # check if training data file exists
-    training_filepath = path + "/../data/training/" + args.model + ".tsv"
+    training_filepath = path + "/../data/training/" + modelcfg["training_file"]
     if not os.path.exists(training_filepath):
         logging.error("training data file " + training_filepath + " not found")
         sys.exit(1)
+
+    # load training data
+    raw_df = pandas.read_csv(training_filepath, encoding="utf-8", lineterminator="\n", sep="\t")
 
     # check training data
     if "tweet" not in raw_df.columns and "intensity" not in raw_df.columns and "polarity" not in raw_df.columns:
         logging.error("malformed training data")
         sys.exit(1)
 
-    # load training data
-    raw_df = pandas.read_csv(training_filepath, encoding="utf-8", lineterminator="\n", sep="\t")
+    # drop duplicates
+    raw_df = raw_df.drop_duplicates(subset="tweet", keep="last")
 
     # check which class of model to train
     if args.polarity:
@@ -166,7 +169,11 @@ def train_i(modelcfg, raw_df):
     e2e_model.save(modelcfg["path"])
 
 def train_p(modelcfg, raw_df):
+    # take only labeled polarity rows
+    raw_df = raw_df[raw_df.polarity != 0]
+
     # preprocess training data and drop empty rows (based on output of clean)
+    # TODO: error "A value is trying to be set on a copy of a slice from a DataFrame."
     raw_df["tweet"] = raw_df["tweet"].apply(src.standardize.clean)
     raw_df = raw_df.dropna()
 
@@ -195,9 +202,11 @@ def train_p(modelcfg, raw_df):
 
     # compile model
     model.compile(loss=loss, optimizer=optimizer, metrics=metrics)
+    # model.add(softmax?)
+    model.summary()
 
     # train and evaluate model
-    earlystop = tensorflow.keras.callbacks.EarlyStopping(monitor="accuracy", patience=modelcfg["patience"], min_delta=modelcfg["min_delta"])
+    earlystop = tensorflow.keras.callbacks.EarlyStopping(monitor="loss", patience=modelcfg["patience"], min_delta=modelcfg["min_delta"])
     tensorboard = tensorflow.keras.callbacks.TensorBoard(log_dir=modelcfg["path"] + "/logs", histogram_freq=1)
     model.fit( train_ds, validation_data=val_ds, epochs=modelcfg["epochs"], callbacks=[earlystop, tensorboard], batch_size=modelcfg["batch_size"])
     model.evaluate( test_ds, callbacks=[tensorboard] )
