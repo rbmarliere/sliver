@@ -1,4 +1,5 @@
 ---
+training_file: "20220727_i.tsv"
 batch_size: 32
 embedding_dim: 280
 epochs: 3

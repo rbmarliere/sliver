@@ -1,4 +1,5 @@
 ---
+training_file: "20220520.tsv"
 batch_size: 32
 embedding_dim: 32
 epochs: 3
