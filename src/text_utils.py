@@ -1,7 +1,6 @@
 import nltk
 import re
 import string
-import tensorflow
 
 try:
     nltk.data.find("corpora/stopwords.zip")
@@ -20,31 +19,6 @@ stops = [w for w in nltkstops if not w in TO_KEEP_STOPWORDS]
 lem = nltk.stem.wordnet.WordNetLemmatizer()
 
 def standardize(text):
-    # convert to lower case
-    text = tensorflow.strings.lower(text)
-    # remove carriages and tabs
-    text = tensorflow.strings.regex_replace(text, "(\n|\r|\t)", " ")
-    text = tensorflow.strings.strip(text)
-    # remove links
-    text = tensorflow.strings.regex_replace(text, "http\S+", "")
-    # remove hashtags, usernames and html entities
-    text = tensorflow.strings.regex_replace(text, "(#|@|&|\$)\S+", "")
-    # remove punctuation
-    text = tensorflow.strings.regex_replace(text, "[%s]" % re.escape(string.punctuation), " ")
-    # remove some stopwords
-    text = tensorflow.strings.regex_replace(text, "\\b(" + "|".join(stops) + ")\\b\s*", "")
-    # keep only letters
-    text = tensorflow.strings.regex_replace(text, "[^a-zA-Z]", " ")
-    # keep only words with more than 2 characters
-    text = tensorflow.strings.regex_replace(text, "\\b\S\S?\\b", "")
-    # remove excess white spaces
-    text = tensorflow.strings.regex_replace(text, " +", " ")
-    # remove leading and trailing white spaces
-    text = tensorflow.strings.strip(text)
-
-    return text
-
-def clean(text):
     # convert to lower case
     text = text.lower()
     # remove carriages and tabs

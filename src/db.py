@@ -35,12 +35,19 @@ def insert(tweet):
     close(db, c)
 
 def replay(args):
-    # check if model exists
-    modelpath = "models/" + args.model
-    if not os.path.exists(modelpath):
-        logging.error(modelpath + " not found")
-        return 1
+    # load model config
+    model_config = src.config.ModelConfig(args.model)
+    model_config.check_model()
 
+    # load transformer
+    bert = transformers.TFAutoModel.from_pretrained(model_config.yaml["bert"], num_labels=model_config.yaml["num_labels"], from_pt=True)
+    tokenizer = transformers.AutoTokenizer.from_pretrained(model_config.yaml["bert"])
+    labels = {0: 0, 2: -1, 1: 1}
+
+    # load model
+    model = tensorflow.keras.models.load_model(model_config.model_path, custom_objects={"TFBertModel": bert})
+
+    # start database connection
     db, c = init()
 
     # check if target table exists
@@ -52,12 +59,15 @@ def replay(args):
         sys.exit(1)
 
     # check which column to use
-    if args.polarity:
+    if model_config.yaml["class"] == "polarity":
         modelcol = "model_p"
         target = "polarity"
-    else:
+    elif model_config.yaml["class"] == "intensity":
         modelcol = "model_i"
         target = "intensity"
+    else:
+        logging.error("could not parse model config file (model class is missing)")
+        sys.exit(1)
 
     # check which rows to update
     if args.update_only:
@@ -73,34 +83,26 @@ def replay(args):
         logging.error("no rows to update")
         sys.exit(1)
 
-    # process data
+    # load data
     ids = [ row[0] for row in rows ]
     df = pandas.DataFrame(ids, columns=["id"])
     df["tweet"] = [ row[2] for row in rows ]
 
-    # check which model to use
-    if args.polarity:
-        # load BERT model
-        model = transformers.TFBertForSequenceClassification.from_pretrained(modelpath)
-        tokenizer = transformers.BertTokenizer.from_pretrained(modelpath + "/tokenizer")
-        labels = {0: 0, 2: -1, 1: 1}
+    # preprocess model input
+    df["clean_tweet"] = df["tweet"].apply(src.text_utils.standardize)
+    df = df.dropna()
 
-        # preprocess model input
-        df["clean_tweet"] = df["tweet"].apply(src.standardize.clean)
-        df = df.dropna()
+    # compute predictions
+    inputs = tokenizer(df["clean_tweet"].values.tolist(), truncation=True, padding='max_length', max_length=model_config.yaml["max_length"], return_tensors="tf")
+    prob = model.predict({ "input_ids": inputs["input_ids"], "attention_mask": inputs["attention_mask"] }, verbose=1)
 
-        # compute predictions
-        inputs = tokenizer(df["clean_tweet"].values.tolist(), truncation=True, padding='max_length', max_length=280, return_tensors="tf")
-        outputs = model.predict([inputs["input_ids"], inputs["attention_mask"], inputs["token_type_ids"]], verbose=1)
-        prob = tensorflow.nn.softmax( outputs.logits )
-        df["polarity"] = [ labels[numpy.argmax(x)] for x in prob.numpy() ]
-
+    # check model class
+    if model_config.yaml["class"] == "polarity":
+        df["polarity"] = [ labels[numpy.argmax(x)] * x[numpy.argmax(x)] for x in prob ]
+        df["polarity"] = df["polarity"].apply("{:.8f}".format).apply(pandas.to_numeric)
     else:
-        # load model
-        model = tensorflow.keras.models.load_model(modelpath, custom_objects={"standardize": src.standardize.standardize})
-
-        # compute predictions
-        df["intensity"] = [ x[0] for x in model.predict(df["tweet"].values.tolist(), verbose=1) ]
+        df["intensity"] = [ x[1] for x in prob ]
+        df["intensity"] = df["intensity"].apply("{:.8f}".format).apply(pandas.to_numeric)
 
     # update database
     try:
@@ -110,6 +112,6 @@ def replay(args):
         logging.error("could not complete database update")
         sys.exit(1)
 
-    # close connection
+    # close database connection
     close(db, c)
 
