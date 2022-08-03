@@ -18,13 +18,11 @@ argp = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter, de
 sub_parsers = argp.add_subparsers(title="commands", dest="command", required=True)
 
 predict_parser = sub_parsers.add_parser("predict", help="use a trained model to predict the content of a tsv data file")
-predict_parser.add_argument("-p", "--polarity", help="use polarity model instead of intensity", action="store_true")
 predict_parser.add_argument("-i", "--input", help="path to tsv data file to predict", required=True)
 predict_parser.add_argument("-m", "--model", help="name of the model to use", required=True)
 predict_parser.set_defaults(func=src.model.predict)
 
 replay_parser = sub_parsers.add_parser("replay", help="use a trained model to replay a database")
-replay_parser.add_argument("-p", "--polarity", help="use polarity model instead of intensity", action="store_true")
 replay_parser.add_argument("-u", "--update-only", help="replay only rows lacking", action="store_true")
 replay_parser.add_argument("-m", "--model", help="name of the model to use", required=True)
 replay_parser.add_argument("-t", "--table", help="name of the table to update", required=True)
@@ -34,7 +32,6 @@ stream_parser = sub_parsers.add_parser("stream", help="stream twitter in real ti
 stream_parser.set_defaults(func=src.stream.stream)
 
 train_parser = sub_parsers.add_parser("train", help="train a model")
-train_parser.add_argument("-p", "--polarity", help="train a polarity model instead of intensity", action="store_true")
 train_parser.add_argument("-m", "--model", help="name of the model to save", required=True)
 train_parser.set_defaults(func=src.model.train)
 

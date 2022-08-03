@@ -1,0 +1,13 @@
+---
+class: "intensity"
+training_file: "20220729.tsv"
+bert: "yiyanghkust/finbert-pretrain"
+num_labels: 2
+test_size: 0.133
+max_length: 128
+batch_size: 16
+epochs: 9
+learning_rate: 0.0000666
+min_delta: 0.0418
+patience: 2
+rmk: >
