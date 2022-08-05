@@ -10,4 +10,33 @@ epochs: 9
 learning_rate: 0.0000666
 min_delta: 0.0418
 patience: 2
+monitor: "loss"
 rmk: >
+    input_ids = tensorflow.keras.layers.Input(shape=(model_config.yaml["max_length"],), name='input_ids', dtype='int32')
+    mask = tensorflow.keras.layers.Input(shape=(model_config.yaml["max_length"],), name='attention_mask', dtype='int32')
+    embeddings = bert(input_ids, attention_mask=mask)[0]
+    X = tensorflow.keras.layers.GlobalMaxPool1D()(embeddings)
+    X = tensorflow.keras.layers.BatchNormalization()(X)
+    X = tensorflow.keras.layers.Dense(128, activation='relu')(X)
+    X = tensorflow.keras.layers.Dropout(0.1)(X)
+    y = tensorflow.keras.layers.Dense(model_config.yaml["num_labels"], activation='softmax', name='outputs')(X)
+    model = tensorflow.keras.Model(inputs=[input_ids, mask], outputs=y)
+    model.layers[2].trainable = False
+    loss = tensorflow.keras.losses.SparseCategoricalCrossentropy()
+    metrics = tensorflow.keras.metrics.SparseCategoricalAccuracy("accuracy")
+    optimizer = tensorflow.keras.optimizers.Adam(learning_rate=model_config.yaml["learning_rate"])
+
+Total params: 109,967,514
+Trainable params: 215,706
+Non-trainable params: 109,751,808
+__________________________________________________________________________________________________
+Epoch 1/9
+2022-08-03 19:44:09.336103: I tensorflow/stream_executor/cuda/cuda_dnn.cc:368] Loaded cuDNN version 8400
+Could not load symbol cublasGetSmCountTarget from libcublas.so.11. Error: /lib/x86_64-linux-gnu/libcublas.so.11: undefined symbol: cublasGetSmCountTarget
+791/791 [==============================] - 168s 201ms/step - loss: 0.2329 - accuracy: 0.9581 - val_loss: 0.1561 - val_accuracy: 0.9606
+Epoch 2/9
+791/791 [==============================] - 160s 202ms/step - loss: 0.2010 - accuracy: 0.9604 - val_loss: 0.1540 - val_accuracy: 0.9606
+Epoch 3/9
+791/791 [==============================] - 160s 202ms/step - loss: 0.1956 - accuracy: 0.9605 - val_loss: 0.1514 - val_accuracy: 0.9606
+140/140 [==============================] - 21s 146ms/step - loss: 0.1578 - accuracy: 0.9604
+
