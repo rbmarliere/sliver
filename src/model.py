@@ -81,9 +81,6 @@ def train(args):
         # take only labeled polarity rows (positive 1 or negative 2)
         raw_df = raw_df[raw_df.polarity != 0].reset_index(drop=True)
 
-    earlystop = tensorflow.keras.callbacks.EarlyStopping(monitor="loss", patience=model_config.yaml["patience"], min_delta=model_config.yaml["min_delta"])
-    tensorboard = tensorflow.keras.callbacks.TensorBoard(log_dir=model_config.model_path + "/logs", histogram_freq=1)
-
     # load transformer
     bert = transformers.TFAutoModel.from_pretrained(model_config.yaml["bert"], num_labels=model_config.yaml["num_labels"], from_pt=True)
     tokenizer = transformers.AutoTokenizer.from_pretrained(model_config.yaml["bert"])
@@ -106,28 +103,17 @@ def train(args):
     input_ids = tensorflow.keras.layers.Input(shape=(model_config.yaml["max_length"],), name='input_ids', dtype='int32')
     mask = tensorflow.keras.layers.Input(shape=(model_config.yaml["max_length"],), name='attention_mask', dtype='int32')
     embeddings = bert(input_ids, attention_mask=mask)[0]
-
     X = tensorflow.keras.layers.GlobalMaxPool1D()(embeddings)
     X = tensorflow.keras.layers.BatchNormalization()(X)
-    X = tensorflow.keras.layers.Dense(128, activation='relu')(X)
-    X = tensorflow.keras.layers.Dropout(0.1)(X)
+    X = tensorflow.keras.layers.Dense(156, activation='relu')(X)
+    X = tensorflow.keras.layers.Dropout(0.2)(X)
+    #X = tensorflow.keras.layers.Bidirectional(tensorflow.keras.layers.LSTM(32, return_sequences=True))(embeddings)
+    #X = tensorflow.keras.layers.Bidirectional(tensorflow.keras.layers.LSTM(16))(X)
+    #X = tensorflow.keras.layers.Dense(8, activation="relu")(X)
+    #X = tensorflow.keras.layers.Dropout(0.3)(X)
     y = tensorflow.keras.layers.Dense(model_config.yaml["num_labels"], activation='softmax', name='outputs')(X)
     model = tensorflow.keras.Model(inputs=[input_ids, mask], outputs=y)
     model.layers[2].trainable = False
-
-    ## define model params
-    #loss = tensorflow.keras.losses.BinaryCrossentropy(from_logits=True)
-    #optimizer = tensorflow.keras.optimizers.Adam(learning_rate=modelcfg["learning_rate"])
-    #metrics = tensorflow.metrics.BinaryAccuracy("accuracy")
-    ## compile model
-    #model = tensorflow.keras.Sequential([
-    #    tensorflow.keras.layers.Embedding(modelcfg["max_features"] + 1, modelcfg["embedding_dim"], mask_zero=True),
-    #    tensorflow.keras.layers.Bidirectional(tensorflow.keras.layers.LSTM(32, return_sequences=True)),
-    #    tensorflow.keras.layers.Bidirectional(tensorflow.keras.layers.LSTM(32)),
-    #    tensorflow.keras.layers.Dense(64, activation="relu"),
-    #    tensorflow.keras.layers.Dropout(0.5),
-    #    tensorflow.keras.layers.Dense(1)
-    #])
 
     # set up model parameters
     loss = tensorflow.keras.losses.SparseCategoricalCrossentropy()
@@ -139,6 +125,8 @@ def train(args):
     model.summary()
 
     # train and evaluate model
+    earlystop = tensorflow.keras.callbacks.EarlyStopping(monitor=model_config.yaml["val_loss"], patience=model_config.yaml["patience"], min_delta=model_config.yaml["min_delta"], verbose=1, mode="min", restore_best_weights=True)
+    tensorboard = tensorflow.keras.callbacks.TensorBoard(log_dir=model_config.model_path + "/logs", histogram_freq=1)
     model.fit( train_ds, validation_data=val_ds, epochs=model_config.yaml["epochs"], callbacks=[earlystop, tensorboard], batch_size=model_config.yaml["batch_size"])
     model.evaluate( test_ds, callbacks=[tensorboard] )
 
