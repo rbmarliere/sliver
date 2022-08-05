@@ -37,4 +37,3 @@ train_parser.set_defaults(func=src.model.train)
 
 args = argp.parse_args()
 args.func(args)
-
