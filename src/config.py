@@ -7,17 +7,19 @@ import shutil
 
 
 class Config():
+
     def __init__(self):
         try:
             path = os.path.dirname(os.path.abspath(__file__))
             env_path = os.path.abspath(path + "/../etc/.env")
             self.config = json.load(open(env_path))
-        except:
+        except OSError:
             logging.error(env_path + " not found")
             sys.exit(1)
 
 
 class ModelConfig():
+
     def __init__(self, name):
         path = os.path.dirname(os.path.abspath(__file__))
         self.model_path = os.path.abspath(path + "/../models/" + name)
@@ -32,12 +34,12 @@ class ModelConfig():
         with open(self.config_path, "r") as stream:
             try:
                 self.yaml = yaml.safe_load(stream)
-            except yaml.YAMLError as exc:
+            except yaml.YAMLError:
                 logging.error("could not parse model config file")
                 sys.exit(1)
 
-        self.training_path = os.path.abspath(
-            path + "/../data/training/" + self.yaml["training_file"])
+        self.training_path = os.path.abspath(path + "/../data/training/" +
+                                             self.yaml["training_file"])
 
     def check_model(self):
         # check if model exists
