@@ -14,8 +14,10 @@ def init():
 
     # connect to database
     try:
-        db = psycopg2.connect(host=config.config["DB_HOST"], database=config.config["DB_DATABASE"],
-                              user=config.config["DB_USER"], password=config.config["DB_PASSWORD"])
+        db = psycopg2.connect(host=config.config["DB_HOST"],
+                              database=config.config["DB_DATABASE"],
+                              user=config.config["DB_USER"],
+                              password=config.config["DB_PASSWORD"])
         cursor = db.cursor()
 
         return db, cursor
@@ -45,7 +47,9 @@ def replay(args):
 
     # load transformer
     bert = transformers.TFAutoModel.from_pretrained(
-        model_config.yaml["bert"], num_labels=model_config.yaml["num_labels"], from_pt=True)
+        model_config.yaml["bert"],
+        num_labels=model_config.yaml["num_labels"],
+        from_pt=True)
     tokenizer = transformers.AutoTokenizer.from_pretrained(
         model_config.yaml["bert"])
     labels = {0: 0, 2: -1, 1: 1}
@@ -79,8 +83,8 @@ def replay(args):
 
     # check which rows to update
     if args.update_only:
-        update_only = "WHERE %s IS NULL OR %s <> '%s'" % (
-            modelcol, modelcol, args.model)
+        update_only = "WHERE %s IS NULL OR %s <> '%s'" % (modelcol, modelcol,
+                                                          args.model)
     else:
         update_only = ""
 
@@ -102,28 +106,41 @@ def replay(args):
     df = df.dropna()
 
     # compute predictions
-    inputs = tokenizer(df["clean_tweet"].values.tolist(), truncation=True, padding='max_length',
-                       max_length=model_config.yaml["max_length"], return_tensors="tf")
+    inputs = tokenizer(df["clean_tweet"].values.tolist(),
+                       truncation=True,
+                       padding='max_length',
+                       max_length=model_config.yaml["max_length"],
+                       return_tensors="tf")
     prob = model.predict(
-        {"input_ids": inputs["input_ids"], "attention_mask": inputs["attention_mask"]}, verbose=1)
+        {
+            "input_ids": inputs["input_ids"],
+            "attention_mask": inputs["attention_mask"]
+        },
+        verbose=1)
 
     # check model class
     if model_config.yaml["class"] == "polarity":
         df["polarity"] = [
-            labels[numpy.argmax(x)] * x[numpy.argmax(x)] for x in prob]
-        df["polarity"] = df["polarity"].apply(
-            "{:.8f}".format).apply(pandas.to_numeric)
+            labels[numpy.argmax(x)] * x[numpy.argmax(x)] for x in prob
+        ]
+        df["polarity"] = df["polarity"].apply("{:.8f}".format).apply(
+            pandas.to_numeric)
     else:
         df["intensity"] = [x[1] for x in prob]
-        df["intensity"] = df["intensity"].apply(
-            "{:.8f}".format).apply(pandas.to_numeric)
+        df["intensity"] = df["intensity"].apply("{:.8f}".format).apply(
+            pandas.to_numeric)
 
     # update database
     try:
         tuples = str(
-            list(zip(df["id"].values, df[target].values, [args.model] * len(df))))[1:-1]
-        c.execute("UPDATE \"%s\" AS t SET %s = t2.%s, %s = t2.%s from (values %s) as t2(id,%s,%s) where t2.id = t.id" % (
-            args.table, target, target, modelcol, modelcol, tuples, target, modelcol))
+            list(
+                zip(df["id"].values, df[target].values,
+                    [args.model] * len(df))))[1:-1]
+        update = "UPDATE \"%s\" AS t SET %s = t2.%s, %s = t2.%s" \
+            % args.table, target, target, modelcol, modelcol
+        update += "FROM (values %s) AS t2(id,%s,%s) WHERE t2.id = t.id" \
+            % tuples, target, modelcol
+        c.execute(update)
     except psycopg2.errors.OperationalError:
         logging.error("could not complete database update")
         sys.exit(1)
