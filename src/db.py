@@ -2,7 +2,7 @@ import logging
 import numpy
 import pandas
 import psycopg2
-import src
+import src as hypnox
 import sys
 import tensorflow
 import transformers
@@ -10,7 +10,7 @@ import transformers
 
 def init():
     # get config object
-    config = src.config.Config()
+    config = hypnox.config.Config()
 
     # connect to database
     try:
@@ -42,7 +42,7 @@ def insert(tweet):
 
 def replay(args):
     # load model config
-    model_config = src.config.ModelConfig(args.model)
+    model_config = hypnox.config.ModelConfig(args.model)
     model_config.check_model()
 
     # load transformer
@@ -102,7 +102,7 @@ def replay(args):
     df["tweet"] = [row[2] for row in rows]
 
     # preprocess model input
-    df["clean_tweet"] = df["tweet"].apply(src.text_utils.standardize)
+    df["clean_tweet"] = df["tweet"].apply(hypnox.text_utils.standardize)
     df = df.dropna()
 
     # compute predictions

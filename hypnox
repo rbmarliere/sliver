@@ -2,7 +2,7 @@
 
 import argparse
 import logging
-import src
+import src as hypnox
 
 logging.basicConfig(format='hypnox: %(levelname)s: %(message)s',
                     level=logging.INFO)
@@ -32,7 +32,7 @@ predict_parser.add_argument("-m",
                             "--model",
                             help="name of the model to use",
                             required=True)
-predict_parser.set_defaults(func=src.model.predict)
+predict_parser.set_defaults(func=hypnox.model.predict)
 
 replay_parser = sub_parsers.add_parser(
     "replay", help="use a trained model to replay a database")
@@ -48,18 +48,18 @@ replay_parser.add_argument("-t",
                            "--table",
                            help="name of the table to update",
                            required=True)
-replay_parser.set_defaults(func=src.db.replay)
+replay_parser.set_defaults(func=hypnox.db.replay)
 
 stream_parser = sub_parsers.add_parser("stream",
                                        help="stream twitter in real time")
-stream_parser.set_defaults(func=src.stream.stream)
+stream_parser.set_defaults(func=hypnox.stream.stream)
 
 train_parser = sub_parsers.add_parser("train", help="train a model")
 train_parser.add_argument("-m",
                           "--model",
                           help="name of the model to save",
                           required=True)
-train_parser.set_defaults(func=src.model.train)
+train_parser.set_defaults(func=hypnox.model.train)
 
 args = argp.parse_args()
 args.func(args)
