@@ -55,7 +55,7 @@ def standardize(text):
     text = text.strip()
 
     # keep only sentences with four words minimum
-    if len(text.split()) > 4:
+    if len(text.split()) >= 4:
         # lemmatize each word
         text = " ".join([lem.lemmatize(w) for w in text.split()])
         return text
