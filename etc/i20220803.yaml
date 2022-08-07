@@ -1,4 +1,5 @@
 ---
+name: "i20220803"
 class: "intensity"
 training_file: "20220803.tsv"
 bert: "yiyanghkust/finbert-pretrain"

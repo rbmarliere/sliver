@@ -22,7 +22,6 @@ class ModelConfig():
 
     def __init__(self, name):
         path = os.path.dirname(os.path.abspath(__file__))
-        self.model_path = os.path.abspath(path + "/../models/" + name)
         self.config_path = os.path.abspath(path + "/../etc/" + name + ".yaml")
 
         # check if config exists
@@ -38,6 +37,8 @@ class ModelConfig():
                 logging.error("could not parse model config file")
                 sys.exit(1)
 
+        self.model_path = os.path.abspath(path + "/../models/" +
+                                          self.yaml["name"])
         self.training_path = os.path.abspath(path + "/../data/training/" +
                                              self.yaml["training_file"])
 

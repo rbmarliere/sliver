@@ -117,7 +117,8 @@ class Stream(tweepy.Stream):
 
 def save_uids(users, api):
     logging.info("loading user ids")
-    uids_file = open(".uids", "a")
+    path = os.path.dirname(os.path.abspath(__file__)) + "/../etc/user_ids.txt"
+    uids_file = open(path, "a")
     uids = []
     for user in users:
         # retrieve user id by name from twitter api
@@ -154,10 +155,11 @@ def stream(args):
 
     logging.info("reading users")
     try:
-        path = os.path.dirname(os.path.abspath(__file__))
-        uids = open(path + "/../etc/.uids").read().splitlines()
+        path = os.path.dirname(
+            os.path.abspath(__file__)) + "/../etc/user_ids.txt"
+        uids = open(path).read().splitlines()
         if len(uids) != len(TRACK_USERS):
-            os.remove(".uids")
+            os.remove(path)
             uids = save_uids(TRACK_USERS, api)
     except FileNotFoundError:
         uids = save_uids(TRACK_USERS, api)
