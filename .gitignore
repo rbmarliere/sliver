@@ -1,4 +1,5 @@
 *__pycache__*
-etc/config.json
-.vscode
 .venv
+.vscode
+data/predict/*
+etc/config.json
