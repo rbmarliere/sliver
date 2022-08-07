@@ -11,7 +11,7 @@ class Config():
     def __init__(self):
         try:
             path = os.path.dirname(os.path.abspath(__file__))
-            env_path = os.path.abspath(path + "/../etc/.env")
+            env_path = os.path.abspath(path + "/../etc/config.json")
             self.config = json.load(open(env_path))
         except OSError:
             logging.error(env_path + " not found")
