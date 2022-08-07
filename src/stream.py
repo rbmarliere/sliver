@@ -4,7 +4,7 @@ import os
 import pandas
 import re
 import requests
-import src
+import src as hypnox
 import ssl
 import tweepy
 import urllib3
@@ -90,7 +90,7 @@ class Stream(tweepy.Stream):
         logging.info("---")
         logging.info(text)
         try:
-            src.db.insert(tweet)
+            hypnox.db.insert(tweet)
         except Exception:
             # log to cache csv
             logging.warning("error on inserting, caching instead...")
@@ -134,7 +134,7 @@ def save_uids(users, api):
 
 def stream(args):
     logging.info("loading twitter API keys")
-    config = src.config.Config()
+    config = hypnox.config.Config()
     if config.config["CONSUMER_KEY"] == "" or config.config[
             "CONSUMER_SECRET"] == "" or config.config[
                 "ACCESS_KEY"] == "" or config.config["ACCESS_SECRET"] == "":

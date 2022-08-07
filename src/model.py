@@ -3,7 +3,7 @@ import numpy
 import os
 import pandas
 import sklearn
-import src
+import src as hypnox
 import sys
 import tensorflow
 import transformers
@@ -16,7 +16,7 @@ def predict(args):
         sys.exit(1)
 
     # load model config
-    model_config = src.config.ModelConfig(args.model)
+    model_config = hypnox.config.ModelConfig(args.model)
     model_config.check_model()
 
     # load transformer
@@ -39,7 +39,7 @@ def predict(args):
                          sep="\t")
 
     # preprocess model input
-    df["clean_tweet"] = df["tweet"].apply(src.text_utils.standardize)
+    df["clean_tweet"] = df["tweet"].apply(hypnox.text_utils.standardize)
     df = df.dropna()
 
     # compute predictions
@@ -80,7 +80,7 @@ def predict(args):
 
 def train(args):
     # load model config
-    model_config = src.config.ModelConfig(args.model)
+    model_config = hypnox.config.ModelConfig(args.model)
     model_config.check_overwrite()
     model_config.check_training()
 
@@ -99,7 +99,7 @@ def train(args):
     raw_df = raw_df.drop_duplicates(subset="tweet", keep="last")
 
     # preprocess training data and drop empty rows (based on output of clean)
-    raw_df["tweet"] = raw_df["tweet"].apply(src.text_utils.standardize)
+    raw_df["tweet"] = raw_df["tweet"].apply(hypnox.text_utils.standardize)
     raw_df = raw_df.dropna()
 
     if model_config.yaml["class"] == "polarity":
