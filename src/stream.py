@@ -1,13 +1,15 @@
 import datetime
 import logging
 import os
-import pandas
 import re
-import requests
-import src as hypnox
 import ssl
+
+import pandas
+import requests
 import tweepy
 import urllib3
+
+import src as hypnox
 
 TRACK_USERS = [
     "22loops", "Amdtrades", "Ameba_NM", "Anbessa100", "AnondranCrypto",
@@ -82,29 +84,26 @@ class Stream(tweepy.Stream):
         # remove any tab character
         text = re.sub("\t", " ", text).strip()
         # format data
-        tweet = {}
-        tweet["time"] = datetime.datetime.strptime(status._json["created_at"],
-                                                   "%a %b %d %H:%M:%S %z %Y")
-        tweet["text"] = text
+        time = datetime.datetime.strptime(status._json["created_at"],
+                                          "%a %b %d %H:%M:%S %z %Y")
         # log to stdin
         logging.info("---")
         logging.info(text)
         try:
-            hypnox.db.insert(tweet)
+            hypnox.db.Tweet(time=time, text=text).save()
         except Exception:
             # log to cache csv
             logging.warning("error on inserting, caching instead...")
             output = pandas.DataFrame({
-                "time": [tweet["time"]],
-                "tweet": text,
+                "time": time,
+                "text": text,
                 "model_i": "",
                 "intensity": 0,
                 "polarity": 0,
                 "model_p": ""
             })
-            with open(
-                    "data/cache/" + tweet["time"].strftime("%Y%m%d%H") +
-                    ".tsv", "a") as f:
+            with open("data/cache/" + time.strftime("%Y%m%d%H") + ".tsv",
+                      "a") as f:
                 output.to_csv(f,
                               header=f.tell() == 0,
                               mode="a",
@@ -112,10 +111,8 @@ class Stream(tweepy.Stream):
                               sep="\t")
 
 
-# save the ids of the users to track to disk
-
-
 def save_uids(users, api):
+    # save the ids of the users to track to disk
     logging.info("loading user ids")
     path = os.path.dirname(os.path.abspath(__file__)) + "/../etc/user_ids.txt"
     uids_file = open(path, "a")
@@ -125,33 +122,33 @@ def save_uids(users, api):
         logging.info("fetching user %s id" % user)
         try:
             uid = str(api.get_user(screen_name=user.strip()).id)
-            # save found uids to a file so it doesn't consume api each run
+            # save found uids to a file so it does not consume api each run
             print(uid, file=uids_file)
             uids.append(uid)
         except tweepy.errors.TweepyException:
-            logging.error("user '" + user + "' not found")
+            logging.error("user " + user + " not found")
     return uids
 
 
 def stream(args):
     logging.info("loading twitter API keys")
-    config = hypnox.config.Config()
-    if config.config["CONSUMER_KEY"] == "" or config.config[
-            "CONSUMER_SECRET"] == "" or config.config[
-                "ACCESS_KEY"] == "" or config.config["ACCESS_SECRET"] == "":
+    if hypnox.config.config["CONSUMER_KEY"] == "" or hypnox.config.config[
+            "CONSUMER_SECRET"] == "" or hypnox.config.config[
+                "ACCESS_KEY"] == "" or hypnox.config.config[
+                    "ACCESS_SECRET"] == "":
         logging.error("empty keys in config!")
         return 1
-    auth = tweepy.OAuthHandler(config.config["CONSUMER_KEY"],
-                               config.config["CONSUMER_SECRET"])
-    auth.set_access_token(config.config["ACCESS_KEY"],
-                          config.config["ACCESS_SECRET"])
+    auth = tweepy.OAuthHandler(hypnox.config.config["CONSUMER_KEY"],
+                               hypnox.config.config["CONSUMER_SECRET"])
+    auth.set_access_token(hypnox.config.config["ACCESS_KEY"],
+                          hypnox.config.config["ACCESS_SECRET"])
     api = tweepy.API(auth)
 
     logging.info("initializing")
-    stream = Stream(config.config["CONSUMER_KEY"],
-                    config.config["CONSUMER_SECRET"],
-                    config.config["ACCESS_KEY"],
-                    config.config["ACCESS_SECRET"])
+    stream = Stream(hypnox.config.config["CONSUMER_KEY"],
+                    hypnox.config.config["CONSUMER_SECRET"],
+                    hypnox.config.config["ACCESS_KEY"],
+                    hypnox.config.config["ACCESS_SECRET"])
 
     logging.info("reading users")
     try:
@@ -166,11 +163,8 @@ def stream(args):
 
     while not stream.running:
         try:
-            stream.filter(
-                languages=["en"],
-                follow=uids,
-                # track=["bitcoin", "btc", "crypto", "cryptocurrency"]
-            )
+            stream.filter(languages=["en"], follow=uids)
+            # track=["bitcoin", "btc", "crypto", "cryptocurrency"])
         except (requests.exceptions.Timeout, ssl.SSLError,
                 urllib3.exceptions.ReadTimeoutError,
                 requests.exceptions.ConnectionError) as e:
