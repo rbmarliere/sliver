@@ -1,17 +1,15 @@
 import datetime
-import logging
-import sys
 
-import matplotlib.pyplot as plt
-import numpy
 import pandas
 import peewee
-import talib.abstract as ta
 
 import src as hypnox
 
-# min_roi
-# stop_loss
+# import talib.abstract as ta
+
+min_roi = 0.05
+stop_loss = -0.025
+position_size = 1
 
 
 def backtest(args):
@@ -25,11 +23,7 @@ def backtest(args):
     timegroup = peewee.fn.DATE_TRUNC("day", hypnox.db.Tweet.time)
     filter = (hypnox.db.Tweet.time > start) \
         & (hypnox.db.Tweet.time < end) \
-        & (hypnox.db.Tweet.intensity > 0.08) \
         & (hypnox.db.Tweet.text.iregexp(r"btc|bitcoin"))
-
-    # TODO: if intensity should be mostly 0, why filter it here?
-    # it shouldn't change much of the std dev
 
     stddev = peewee.fn.STDDEV(hypnox.db.Tweet.intensity)
     delta = stddev - peewee.fn.LAG(stddev).over(order_by=timegroup)
@@ -38,12 +32,6 @@ def backtest(args):
             filter
             & (hypnox.db.Tweet.model_i == "i20220811")).group_by(1)
     intensities = pandas.DataFrame(intensities_q.dicts())
-    cur = hypnox.db.connection.cursor()
-    print(cur.mogrify(*intensities_q.sql()).decode('utf-8'))
-
-    if intensities.empty:
-        logging.error("empty intensity scores")
-        sys.exit(1)
 
     # sum = peewee.fn.SUM(hypnox.db.Tweet.polarity)
     # polarities_q = hypnox.db.Tweet.select(
@@ -52,29 +40,49 @@ def backtest(args):
     #         & (hypnox.db.Tweet.model_p == "p20220802")).group_by(1)
     # polarities = pandas.DataFrame(polarities_q.dicts())
 
-    # if polarities.empty:
-    #     logging.error("empty polarity scores")
-    #     sys.exit(1)
-
     intensities = intensities.set_index("time").resample("4H").ffill()
     # polarities = polarities.set_index("time").resample("4H").ffill()
     prices["intensity"] = intensities["intensity"]
     # prices["polarity"] = polarities["polarity"]
 
-    # buy = ((prices["intensity"] > 0.1) & (prices["polarity"] > 0))
+    buys = prices.loc[(prices["intensity"] < 0.026)]
+
     # prices.loc[buy, "buy"] = 1
+    # sell = (prices["intensity"] < 0.1)
     # sell = ((prices["intensity"] > 0.1) & (prices["polarity"] < 0))
     # prices.loc[sell, "sell"] = 1
 
-    short_avg = ta.EMA(prices, timeperiod=2)
-    long_avg = ta.EMA(prices, timeperiod=17)
-    prices["trend"] = False
-    prices.loc[(short_avg > long_avg), "trend"] = True
+    # short_avg = ta.EMA(prices, timeperiod=2)
+    # long_avg = ta.EMA(prices, timeperiod=17)
+    # prices["trend"] = False
+    # prices.loc[(short_avg > long_avg), "trend"] = True
 
-    prices.reset_index(inplace=True)
+    # compute entries
+    positions = []
+    for i, row in buys.iterrows():
+        positions.append(
+            hypnox.db.Position(market="BTC/USDT",
+                               size=position_size,
+                               amount=position_size * row["open"],
+                               entry_time=i,
+                               entry_price=row["open"]))
 
-    x = numpy.arange(0, len(prices))
-    fig, ax = plt.subplots(1, figsize=(12, 6))
-    for idx, val in prices.iterrows():
-        plt.plot([x[idx], x[idx]], [val["low"], val["high"]])
-    plt.show()
+    # compute exits
+    hypnox.db.Position.drop_table()
+    hypnox.db.Position.create_table()
+    total_pnl = 0
+    for position in positions:
+        for time, row in prices.loc[position.entry_time:].iterrows():
+            price_delta = row["open"] - position.entry_price
+
+            tmp_roi = price_delta / position.amount
+
+            if tmp_roi >= min_roi or tmp_roi <= stop_loss:
+                total_pnl += price_delta
+                position.exit_time = time
+                position.exit_price = row["open"]
+                position.pnl = price_delta
+                position.save()
+                break
+
+    print("")
