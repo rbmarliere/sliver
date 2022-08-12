@@ -2,17 +2,18 @@
 
 import argparse
 import logging
+
 import src as hypnox
 
 logging.basicConfig(format='hypnox: %(levelname)s: %(message)s',
                     level=logging.INFO)
-description = '''
-          _        _
-     |_| \_/ |_) |\ | / \ \/
-     | |  |  |   | \| \_/ /\\
+description = """
+              _        _
+     |_| \\_/ |_) |\\ | / \\ \\/
+     | |  |  |   | \\| \\_/ /\\
 
        sub noctem sapientia
-    '''
+    """
 
 argp = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter,
                                description=description)
@@ -21,18 +22,20 @@ sub_parsers = argp.add_subparsers(title="commands",
                                   dest="command",
                                   required=True)
 
-predict_parser = sub_parsers.add_parser(
-    "predict",
-    help="use a trained model to predict the content of a tsv data file")
-predict_parser.add_argument("-i",
-                            "--input",
-                            help="path to tsv data file to predict",
-                            required=True)
-predict_parser.add_argument("-m",
-                            "--model",
-                            help="name of the model to use",
-                            required=True)
-predict_parser.set_defaults(func=hypnox.model.predict)
+backtest_parser = sub_parsers.add_parser(
+    "backtest", help="backtest a strategy against a timeframe")
+backtest_parser.add_argument("-s",
+                             "--strategy",
+                             help="name of the strategy to backtest")
+# TODO: require strategy
+# TODO: add timeframe argument
+backtest_parser.set_defaults(func=hypnox.strategy.backtest)
+
+download_parser = sub_parsers.add_parser("download",
+                                         help="download price data")
+# TODO: add timeframe argument
+# TODO: add pair argument ?
+download_parser.set_defaults(func=hypnox.exchange.download)
 
 replay_parser = sub_parsers.add_parser(
     "replay", help="use a trained model to replay a database")
@@ -43,10 +46,6 @@ replay_parser.add_argument("-u",
 replay_parser.add_argument("-m",
                            "--model",
                            help="name of the model to use",
-                           required=True)
-replay_parser.add_argument("-t",
-                           "--table",
-                           help="name of the table to update",
                            required=True)
 replay_parser.set_defaults(func=hypnox.db.replay)
 
