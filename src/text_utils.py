@@ -1,6 +1,7 @@
-import nltk
 import re
 import string
+
+import nltk
 
 try:
     nltk.data.find("corpora/stopwords.zip")
