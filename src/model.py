@@ -1,81 +1,12 @@
 import logging
-import numpy
-import os
+import sys
+
 import pandas
 import sklearn
-import src as hypnox
-import sys
 import tensorflow
 import transformers
 
-
-def predict(args):
-    # check if input file exists
-    if not os.path.exists(args.input):
-        logging.error(args.input + " not found")
-        sys.exit(1)
-
-    # load model config
-    model_config = hypnox.config.ModelConfig(args.model)
-    model_config.check_model()
-
-    # load transformer
-    bert = transformers.TFAutoModel.from_pretrained(
-        model_config.yaml["bert"],
-        num_labels=model_config.yaml["num_labels"],
-        from_pt=True)
-    tokenizer = transformers.AutoTokenizer.from_pretrained(
-        model_config.yaml["bert"])
-    labels = {0: 0, 2: -1, 1: 1}
-
-    # load model
-    model = tensorflow.keras.models.load_model(
-        model_config.model_path, custom_objects={"TFBertModel": bert})
-
-    # load data
-    df = pandas.read_csv(args.input,
-                         lineterminator="\n",
-                         encoding="utf-8",
-                         sep="\t")
-
-    # preprocess model input
-    df["clean_tweet"] = df["tweet"].apply(hypnox.text_utils.standardize)
-    df = df.dropna()
-
-    # compute predictions
-    inputs = tokenizer(df["clean_tweet"].values.tolist(),
-                       truncation=True,
-                       padding="max_length",
-                       max_length=model_config.yaml["max_length"],
-                       return_tensors="tf")
-    prob = model.predict(
-        {
-            "input_ids": inputs["input_ids"],
-            "attention_mask": inputs["attention_mask"]
-        },
-        verbose=1)
-
-    # check model class
-    if model_config.yaml["class"] == "polarity":
-        df["polarity"] = [
-            labels[numpy.argmax(x)] * x[numpy.argmax(x)] for x in prob
-        ]
-        df["polarity"] = df["polarity"].apply("{:.8f}".format)
-    elif model_config.yaml["class"] == "intensity":
-        df["intensity"] = [x[1] for x in prob]
-        df["intensity"] = df["intensity"].apply("{:.8f}".format)
-    else:
-        logging.error(
-            "could not parse model config file (model class is missing)")
-        sys.exit(1)
-
-    # drop aux. column
-    df = df.drop("clean_tweet", axis=1)
-
-    # output data
-    output = "data/predict/" + args.model + ".tsv"
-    df.to_csv(output, index=False, sep="\t")
-    logging.info("saved output data to " + output)
+import src as hypnox
 
 
 def train(args):
@@ -163,20 +94,20 @@ def train(args):
     # build model
     input_ids = tensorflow.keras.layers.Input(
         shape=(model_config.yaml["max_length"], ),
-        name='input_ids',
-        dtype='int32')
+        name="input_ids",
+        dtype="int32")
     mask = tensorflow.keras.layers.Input(
         shape=(model_config.yaml["max_length"], ),
-        name='attention_mask',
-        dtype='int32')
+        name="attention_mask",
+        dtype="int32")
     embeddings = bert(input_ids, attention_mask=mask)[0]
     X = tensorflow.keras.layers.GlobalMaxPool1D()(embeddings)
     X = tensorflow.keras.layers.BatchNormalization()(X)
-    X = tensorflow.keras.layers.Dense(156, activation='relu')(X)
+    X = tensorflow.keras.layers.Dense(156, activation="relu")(X)
     X = tensorflow.keras.layers.Dropout(0.2)(X)
     y = tensorflow.keras.layers.Dense(model_config.yaml["num_labels"],
-                                      activation='softmax',
-                                      name='outputs')(X)
+                                      activation="softmax",
+                                      name="outputs")(X)
     model = tensorflow.keras.Model(inputs=[input_ids, mask], outputs=y)
     model.layers[2].trainable = False
 
@@ -192,7 +123,7 @@ def train(args):
 
     # train and evaluate model
     earlystop = tensorflow.keras.callbacks.EarlyStopping(
-        monitor=model_config.yaml["val_loss"],
+        monitor=model_config.yaml["monitor"],
         patience=model_config.yaml["patience"],
         min_delta=model_config.yaml["min_delta"],
         verbose=1,
