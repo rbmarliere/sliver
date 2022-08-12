@@ -1,21 +1,18 @@
 import json
 import logging
 import os
-import sys
-import yaml
 import shutil
+import sys
 
+import yaml
 
-class Config():
-
-    def __init__(self):
-        try:
-            path = os.path.dirname(os.path.abspath(__file__))
-            env_path = os.path.abspath(path + "/../etc/config.json")
-            self.config = json.load(open(env_path))
-        except OSError:
-            logging.error(env_path + " not found")
-            sys.exit(1)
+try:
+    config_path = os.path.abspath(
+        os.path.dirname(os.path.abspath(__file__)) + "/../etc/config.json")
+    config = json.load(open(config_path))
+except OSError:
+    logging.error(config_path + " not found")
+    sys.exit(1)
 
 
 class ModelConfig():
