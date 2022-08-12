@@ -19,7 +19,25 @@ class BaseModel(peewee.Model):
         database = connection
 
 
+# TODO: Order model
+
+
+class Position(BaseModel):
+    market = peewee.TextField(null=False)
+    size = peewee.DecimalField(decimal_places=2, auto_round=True)
+    amount = peewee.DecimalField(decimal_places=2, auto_round=True)
+    entry_time = peewee.DateTimeField()
+    entry_price = peewee.DecimalField(decimal_places=2, auto_round=True)
+    exit_time = peewee.DateTimeField()
+    exit_price = peewee.DecimalField(decimal_places=2, auto_round=True)
+    pnl = peewee.DecimalField(decimal_places=2, auto_round=True)
+
+    class Meta:
+        table_name = "positions"
+
+
 class Price(BaseModel):
+    # TODO: prices as integers (e.g. float_price * 10)
     time = peewee.DateTimeField(unique=True)
     open = peewee.DecimalField(decimal_places=2, auto_round=True)
     high = peewee.DecimalField(decimal_places=2, auto_round=True)
