@@ -6,7 +6,7 @@ sys.path.insert(0, ".")
 
 import src as hypnox  # noqa: E402
 
-last_training_file = "data/training/20220811.tsv"
+last_training_file = "lib/training/20220811.tsv"
 output_file = "training.tsv"
 
 query = hypnox.db.Tweet.select().order_by(
