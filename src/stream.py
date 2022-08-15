@@ -102,8 +102,7 @@ class Stream(tweepy.Stream):
                 "polarity": 0,
                 "model_p": ""
             })
-            with open("data/cache/" + time.strftime("%Y%m%d%H") + ".tsv",
-                      "a") as f:
+            with open("cache.tsv", "a") as f:
                 output.to_csv(f,
                               header=f.tell() == 0,
                               mode="a",

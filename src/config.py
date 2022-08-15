@@ -34,9 +34,9 @@ class ModelConfig():
                 logging.error("could not parse model config file")
                 sys.exit(1)
 
-        self.model_path = os.path.abspath(path + "/../models/" +
+        self.model_path = os.path.abspath(path + "/../lib/" +
                                           self.yaml["name"])
-        self.training_path = os.path.abspath(path + "/../data/training/" +
+        self.training_path = os.path.abspath(path + "/../lib/training/" +
                                              self.yaml["training_file"])
 
     def check_model(self):
