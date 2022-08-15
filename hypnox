@@ -27,22 +27,14 @@ backtest_parser = sub_parsers.add_parser(
 backtest_parser.add_argument("-s",
                              "--strategy",
                              help="name of the strategy to backtest")
-# TODO: require strategy
-# TODO: add timeframe argument
 backtest_parser.set_defaults(func=hypnox.strategy.backtest)
 
 download_parser = sub_parsers.add_parser("download",
                                          help="download price data")
-# TODO: add timeframe argument
-# TODO: add pair argument ?
 download_parser.set_defaults(func=hypnox.exchange.download)
 
 replay_parser = sub_parsers.add_parser(
     "replay", help="use a trained model to replay a database")
-replay_parser.add_argument("-u",
-                           "--update-only",
-                           help="replay only rows lacking",
-                           action="store_true")
 replay_parser.add_argument("-m",
                            "--model",
                            help="name of the model to use",

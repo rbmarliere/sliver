@@ -19,9 +19,6 @@ class BaseModel(peewee.Model):
         database = connection
 
 
-# TODO: Order model
-
-
 class Position(BaseModel):
     market = peewee.TextField(null=False)
     size = peewee.DecimalField(decimal_places=2, auto_round=True)
@@ -37,7 +34,6 @@ class Position(BaseModel):
 
 
 class Price(BaseModel):
-    # TODO: prices as integers (e.g. float_price * 10)
     time = peewee.DateTimeField(unique=True)
     open = peewee.DecimalField(decimal_places=2, auto_round=True)
     high = peewee.DecimalField(decimal_places=2, auto_round=True)
@@ -83,10 +79,9 @@ def replay(args):
         model_column = getattr(hypnox.db.Tweet, "model_i")
         score_column = getattr(hypnox.db.Tweet, "intensity")
 
-    query = hypnox.db.Tweet.select()
-    if args.update_only:
-        query = query.where((model_column != model_config.yaml["name"])
-                            | (model_column.is_null()))
+    query = hypnox.db.Tweet.select().where((
+        model_column != model_config.yaml["name"])
+                                           | (model_column.is_null()))
 
     tweets = []
     for tweet in query:
