@@ -1,16 +1,18 @@
-import pandas
-import src as hypnox
+import sys
 
-tweets_file = "i20220810_top.tsv"
-last_training_file = "data/training/20220810.tsv"
+import pandas
+
+sys.path.insert(0, ".")
+
+import src as hypnox  # noqa: E402
+
+last_training_file = "data/training/20220811.tsv"
 output_file = "training.tsv"
 
-# SELECT * FROM tweets ORDER BY intensity DESC LIMIT 10000
-tweets = pandas.read_csv(tweets_file,
-                         lineterminator="\n",
-                         delimiter="\t",
-                         encoding="utf-8")
-tweets["clean"] = tweets["tweet"].apply(hypnox.text_utils.standardize)
+query = hypnox.db.Tweet.select().order_by(
+    hypnox.db.Tweet.intensity.desc()).limit(10000)
+tweets = pandas.DataFrame(query.dicts())
+tweets["clean"] = tweets["text"].apply(hypnox.text_utils.standardize)
 
 # grab 200 most frequent words in the set
 words = tweets.clean.str.split(
@@ -32,17 +34,22 @@ last_training["clean"] = last_training["tweet"].apply(
     hypnox.text_utils.standardize)
 
 # check if new tweets aren't labeled already
-dup_filtered = pandas.merge(filtered,
-                            last_training,
-                            indicator=True,
-                            how="outer").query('_merge=="left_only"').drop(
-                                '_merge',
-                                axis=1).reset_index(drop=True).drop('clean',
-                                                                    axis=1)
+dup_filter = pandas.merge(filtered["clean"],
+                          last_training["clean"],
+                          indicator=True,
+                          how="outer").query('_merge=="left_only"')
+
+# format output data
+dup_filtered = filtered.loc[dup_filter.index]["text"]
+output = pandas.DataFrame({
+    "intensity": 0,
+    "polarity": 0,
+    "tweet": dup_filtered
+})
 
 # save to file
-dup_filtered.to_csv(output_file,
-                    sep="\t",
-                    line_terminator="\n",
-                    encoding="utf-8",
-                    index=False)
+output.to_csv(output_file,
+              sep="\t",
+              line_terminator="\n",
+              encoding="utf-8",
+              index=False)
