@@ -1,4 +1,5 @@
 import datetime
+import logging
 
 import pandas
 import peewee
@@ -7,9 +8,37 @@ import src as hypnox
 
 # import talib.abstract as ta
 
-min_roi = 0.05
-stop_loss = -0.025
-position_size = 1
+position_size = 1  # TODO: is this only for backtesting?
+
+SPREAD = 0.005
+NUM_ORDERS = 5
+WINDOW_SIZE = datetime.timedelta(minutes=10)
+INTENSITY_THRESHOLD = 0.2
+POLARITY_THRESHOLD = 0
+MINIMUM_ROI = 0.06
+STOP_LOSS = -0.03
+
+
+def get_indicators():
+    timegroup = peewee.fn.DATE_TRUNC("hour", hypnox.db.Tweet.time)
+    filter = hypnox.db.Tweet.text.iregexp(r"btc|bitcoin")
+
+    stddev = peewee.fn.STDDEV(hypnox.db.Tweet.intensity)
+    delta = stddev - peewee.fn.LAG(stddev).over(order_by=timegroup)
+    intensities_q = hypnox.db.Tweet.select(
+        timegroup.alias("time"), delta.alias("intensity")).where(
+            filter
+            & (hypnox.db.Tweet.model_i == "i20220811")).group_by(1)
+    indicators = pandas.DataFrame(intensities_q.dicts())
+
+    sum = peewee.fn.SUM(hypnox.db.Tweet.polarity)
+    polarities_q = hypnox.db.Tweet.select(
+        timegroup.alias("time"), sum.alias("polarity")).where(
+            filter
+            & (hypnox.db.Tweet.model_p == "p20220802")).group_by(1)
+    indicators["polarity"] = pandas.DataFrame(polarities_q.dicts())
+
+    return indicators
 
 
 def backtest(args):
@@ -77,15 +106,13 @@ def backtest(args):
 
             tmp_roi = price_delta / position.amount
 
-            if tmp_roi >= min_roi or tmp_roi <= stop_loss:
+            if tmp_roi >= MINIMUM_ROI or tmp_roi <= STOP_LOSS:
                 total_pnl += price_delta
                 position.exit_time = time
                 position.exit_price = row["open"]
                 position.pnl = price_delta
                 position.save()
                 break
-
-    print("")
 
 
 #  MOON INDICATORS
@@ -135,3 +162,41 @@ def backtest(args):
 # 	self.stoploss = self.stoploss / 2
 # print(moon.time_to_new_moon())
 # print(nm_sec)
+
+# def get_signal():
+#     indicators = get_indicators()
+#     try:
+#         curr_intensity = indicators["intensity"].iloc[-1]
+#         curr_polarity = indicators["polarity"].iloc[-1]
+#     except IndexError:
+#         logging.warning("no indicators available")
+
+#     if (curr_intensity > INTENSITY_THRESHOLD
+#             and curr_polarity > POLARITY_THRESHOLD):
+#         return "buy"
+#     elif (curr_intensity > INTENSITY_THRESHOLD
+#           and curr_polarity < POLARITY_THRESHOLD):
+#         return "sell"
+#     else:
+#         return "neutral"
+
+
+def get_signal():
+    # logging.info("received buy signal")
+    # return "buy"
+    # logging.info("received sell signal")
+    # return "sell"
+    # logging.info("received neutral signal")
+    # return "neutral"
+
+    import random
+    i = random.randint(0, 100)
+    if i > 85:
+        logging.info("received buy signal")
+        return "buy"
+    elif i < 15:
+        logging.info("received sell signal")
+        return "sell"
+    else:
+        logging.info("received neutral signal")
+        return "neutral"
