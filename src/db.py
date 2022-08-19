@@ -1,3 +1,5 @@
+import datetime
+
 import numpy
 import peewee
 import tensorflow
@@ -13,6 +15,16 @@ connection = peewee.PostgresqlDatabase(
     })
 
 
+class CurrencyField(peewee.DecimalField):
+
+    def __init__(self):
+        peewee.DecimalField.__init__(self)
+        self.auto_round = False
+        self.decimal_places = 8
+        self.default = 0
+        self.max_digits = 16
+
+
 class BaseModel(peewee.Model):
 
     class Meta:
@@ -20,26 +32,93 @@ class BaseModel(peewee.Model):
 
 
 class Position(BaseModel):
-    market = peewee.TextField(null=False)
-    size = peewee.DecimalField(decimal_places=2, auto_round=True)
-    amount = peewee.DecimalField(decimal_places=2, auto_round=True)
-    entry_time = peewee.DateTimeField()
-    entry_price = peewee.DecimalField(decimal_places=2, auto_round=True)
-    exit_time = peewee.DateTimeField()
-    exit_price = peewee.DecimalField(decimal_places=2, auto_round=True)
-    pnl = peewee.DecimalField(decimal_places=2, auto_round=True)
+    # e.g. BTC/USDT where BTC is base USDT is quote
+    symbol = peewee.TextField()
+    # time limit on each buy/sell step for DCA
+    next_window = peewee.DateTimeField(default=datetime.datetime.utcnow())
+    # maximum cost for any window
+    window_max = CurrencyField()
+    # effective cost for current window
+    window_cost = CurrencyField()
+    # can be open, opening, closing, closed
+    status = peewee.TextField()
+    # desired position size in quote
+    target_cost = CurrencyField()
+    # total effective cost paid in quote
+    entry_cost = CurrencyField()
+    # total amount in base
+    entry_amount = CurrencyField()
+    # average prices in quote
+    entry_price = CurrencyField()
+    exit_price = CurrencyField()
+    exit_amount = CurrencyField()
+    exit_cost = CurrencyField()
+    # total fees in quote
+    fee = CurrencyField()
+    # position profit or loss
+    pnl = CurrencyField()
+
+    def get_remaining_open(self):
+        return min(self.target_cost - self.entry_cost,
+                   self.window_max - self.window_cost)
+
+    def get_remaining_close(self):
+        return min(self.entry_cost - self.exit_cost,
+                   self.window_max - self.window_cost)
 
     class Meta:
         table_name = "positions"
 
 
+class Order(BaseModel):
+    # which position it belongs to
+    position = peewee.ForeignKeyField(Position)
+    # id comes from exchange api
+    exchange_order_id = peewee.IntegerField(unique=True)
+    # datetime of the order
+    time = peewee.DateTimeField()
+    # can be open, canceled, closed
+    status = peewee.TextField()
+    # can be limit, market, etc
+    type = peewee.TextField()
+    # can be buy or sell
+    side = peewee.TextField()
+    # order price in quote, if market then average
+    price = CurrencyField()
+    # total order size in base
+    amount = CurrencyField()
+    # effective order cost in quote
+    cost = CurrencyField()
+    # effective amount filled in base
+    filled = CurrencyField()
+    # effective fee paid
+    fee = CurrencyField()
+
+    class Meta:
+        table_name = "orders"
+
+    def create_from_ex_order(ex_order, position):
+        order = hypnox.db.Order(position=position,
+                                exchange_order_id=ex_order["id"],
+                                time=ex_order["datetime"],
+                                status=ex_order["status"],
+                                type=ex_order["type"],
+                                side=ex_order["side"],
+                                price=ex_order["price"],
+                                amount=ex_order["amount"],
+                                cost=ex_order["cost"],
+                                filled=ex_order["filled"],
+                                fee=ex_order["fee"])
+        order.save()
+
+
 class Price(BaseModel):
     time = peewee.DateTimeField(unique=True)
-    open = peewee.DecimalField(decimal_places=2, auto_round=True)
-    high = peewee.DecimalField(decimal_places=2, auto_round=True)
-    low = peewee.DecimalField(decimal_places=2, auto_round=True)
-    close = peewee.DecimalField(decimal_places=2, auto_round=True)
-    volume = peewee.DecimalField(decimal_places=2, auto_round=True)
+    open = CurrencyField()
+    high = CurrencyField()
+    low = CurrencyField()
+    close = CurrencyField()
+    volume = CurrencyField()
 
     class Meta:
         table_name = "btcusdt_4h"
@@ -56,6 +135,18 @@ class Tweet(BaseModel):
 
     class Meta:
         table_name = "tweets"
+
+
+def get_open_orders(symbol):
+    return Order.select().join(Position).where((Position.symbol == symbol)
+                                               & (Order.status == "open"))
+
+
+def get_active_position(symbol):
+    return Position.select().where((Position.symbol == symbol)
+                                   & ((Position.status == "open")
+                                      | (Position.status == "opening")
+                                      | (Position.status == "closing")))
 
 
 def replay(args):
