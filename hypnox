@@ -33,6 +33,10 @@ download_parser = sub_parsers.add_parser("download",
                                          help="download price data")
 download_parser.set_defaults(func=hypnox.exchange.download)
 
+refresh_parser = sub_parsers.add_parser("refresh",
+                                        help="refresh positions and orders")
+refresh_parser.set_defaults(func=hypnox.exchange.refresh)
+
 replay_parser = sub_parsers.add_parser(
     "replay", help="use a trained model to replay a database")
 replay_parser.add_argument("-m",
