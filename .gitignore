@@ -1,5 +1,5 @@
 *__pycache__*
 .venv
 .vscode
-data/predict/*
 etc/config.json
+log/*
