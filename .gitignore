@@ -3,3 +3,4 @@
 .vscode
 etc/config.json
 log/*
+lib/scripts/*.tsv
