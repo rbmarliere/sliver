@@ -14,14 +14,15 @@ logging.basicConfig(format='hypnox: %(levelname)s: %(message)s',
 import src as hypnox  # noqa: E402
 
 argp = argparse.ArgumentParser()
-argp.add_argument("-i", "--input",
+argp.add_argument("-i",
+                  "--input",
                   help="last training data file",
                   required=True)
-argp.add_argument("-n", "--num_lines",
+argp.add_argument("-n",
+                  "--num_lines",
                   help="number of tweets to fetch from top scored",
                   required=True)
 args = argp.parse_args()
-
 
 logging.info("loading input labeled data")
 try:
@@ -35,7 +36,7 @@ except FileNotFoundError:
 last_training["clean"] = last_training["tweet"].apply(
     hypnox.text_utils.standardize)
 
-logging.info("retrieving 10k highest scored tweets set")
+logging.info("retrieving highest scored tweets set")
 query = hypnox.db.Tweet.select().order_by(
     hypnox.db.Tweet.intensity.desc()).limit(args.num_lines)
 tweets = pandas.DataFrame(query.dicts())
@@ -53,16 +54,17 @@ match = pandas.concat(
 filtered = tweets.loc[match].reset_index(drop=True)
 
 logging.info("checking if new tweets aren't labeled already")
-dup_filter = pandas.merge(
-    filtered["clean"],
-    last_training["clean"].drop_duplicates(),
-    indicator=True,
-    how="outer").query('_merge=="left_only"')
+dup_filter = pandas.merge(filtered["clean"],
+                          last_training["clean"].drop_duplicates(),
+                          indicator=True,
+                          how="outer").query('_merge=="left_only"')
 dup_filtered = filtered.loc[dup_filter.index]["text"]
 
-logging.info("splitting data into 500 lines chunks")
-output_chunks = [dup_filtered.values[i:i+500]
-                 for i in range(0, len(dup_filter.values), 500)]
+logging.info("splitting data into 1000 lines chunks")
+output_chunks = [
+    dup_filtered.values[i:i + 1000]
+    for i in range(0, len(dup_filter.values), 1000)
+]
 
 logging.info("saving to file")
 date = datetime.datetime.now().strftime("%Y%m%d")
@@ -73,7 +75,7 @@ for output in output_chunks:
         "polarity": 0,
         "tweet": output
     })
-    output_df.to_csv("training_"+date+"_"+str(i)+".tsv",
+    output_df.to_csv("training_" + date + "_" + str(i) + ".tsv",
                      sep="\t",
                      line_terminator="\n",
                      encoding="utf-8",
