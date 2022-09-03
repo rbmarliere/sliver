@@ -7,6 +7,9 @@ import transformers
 
 import src as hypnox
 
+# TODO generalize to new pairs
+# TODO Price inheritance
+
 connection = peewee.PostgresqlDatabase(
     hypnox.config.config["DB_DATABASE"], **{
         "host": hypnox.config.config["DB_HOST"],
@@ -32,14 +35,14 @@ class BaseModel(peewee.Model):
 
 
 class Position(BaseModel):
-    # e.g. BTC/USDT where BTC is base USDT is quote
+    # e.g. BTCUSDT where BTC is base USDT is quote
     symbol = peewee.TextField()
     # time limit on each buy/sell step for DCA
-    next_window = peewee.DateTimeField(default=datetime.datetime.utcnow())
-    # maximum cost for any window
-    window_max = CurrencyField()
-    # effective cost for current window
-    window_cost = CurrencyField()
+    next_bucket = peewee.DateTimeField(default=datetime.datetime.utcnow())
+    # maximum cost|amount for any time period
+    bucket_max = CurrencyField()
+    # effective cost|amount for current period
+    bucket = CurrencyField()
     # can be open, opening, closing, closed
     status = peewee.TextField()
     # desired position size in quote
@@ -58,13 +61,13 @@ class Position(BaseModel):
     # position profit or loss
     pnl = CurrencyField()
 
-    def get_remaining_open(self):
+    def get_remaining_to_open(self):
         return min(self.target_cost - self.entry_cost,
-                   self.window_max - self.window_cost)
+                   self.bucket_max - self.bucket)
 
-    def get_remaining_close(self):
-        return min(self.entry_cost - self.exit_cost,
-                   self.window_max - self.window_cost)
+    def get_remaining_to_close(self):
+        return min(self.entry_amount - self.exit_amount,
+                   self.bucket_max - self.bucket)
 
     class Meta:
         table_name = "positions"
