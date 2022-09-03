@@ -8,74 +8,98 @@ import src as hypnox
 
 # import talib.abstract as ta
 
-position_size = 1  # TODO: is this only for backtesting?
 
-SPREAD = 0.005
-NUM_ORDERS = 5
-WINDOW_SIZE = datetime.timedelta(minutes=10)
-INTENSITY_THRESHOLD = 0.2
-POLARITY_THRESHOLD = 0
-MINIMUM_ROI = 0.06
-STOP_LOSS = -0.03
-
-
-def get_indicators():
+def get_indicators(strategy):
     timegroup = peewee.fn.DATE_TRUNC("hour", hypnox.db.Tweet.time)
-    filter = hypnox.db.Tweet.text.iregexp(r"btc|bitcoin")
+    filter = hypnox.db.Tweet.text.iregexp(
+        strategy["TWEET_FILTER"].encode("unicode_escape"))
 
     stddev = peewee.fn.STDDEV(hypnox.db.Tweet.intensity)
     delta = stddev - peewee.fn.LAG(stddev).over(order_by=timegroup)
     intensities_q = hypnox.db.Tweet.select(
         timegroup.alias("time"), delta.alias("intensity")).where(
             filter
-            & (hypnox.db.Tweet.model_i == "i20220811")).group_by(1)
+            & (hypnox.db.Tweet.model_i == strategy["I_MODEL"])).group_by(1)
     indicators = pandas.DataFrame(intensities_q.dicts())
+
+    # if indicators.empty:
+    #     raise Exception
 
     sum = peewee.fn.SUM(hypnox.db.Tweet.polarity)
     polarities_q = hypnox.db.Tweet.select(
         timegroup.alias("time"), sum.alias("polarity")).where(
             filter
-            & (hypnox.db.Tweet.model_p == "p20220802")).group_by(1)
-    indicators["polarity"] = pandas.DataFrame(polarities_q.dicts())
+            & (hypnox.db.Tweet.model_p == strategy["P_MODEL"])).group_by(1)
+    polarities = pandas.DataFrame(polarities_q.dicts())
 
-    return indicators
+    # if polarities.empty:
+    #     raise Exception
+
+    indicators["polarity"] = polarities
+
+    return indicators.set_index("time")
 
 
 def backtest(args):
     start = datetime.datetime(2020, 7, 1)
     end = datetime.datetime(2022, 7, 1)
 
+    strategy = hypnox.config.StrategyConfig(args.strategy).config
+    indicators = get_indicators(strategy)
+    indicators = indicators.resample("4H").ffill()
+
     prices_q = hypnox.db.Price.select().where((hypnox.db.Price.time > start)
                                               & (hypnox.db.Price.time < end))
     prices = pandas.DataFrame(prices_q.dicts()).set_index("time")
+    prices["intensity"] = indicators["intensity"]
+    # prices["polarity"] = indicators["polarity"]
+    # prices["ta-lib"] =
 
-    timegroup = peewee.fn.DATE_TRUNC("day", hypnox.db.Tweet.time)
-    filter = (hypnox.db.Tweet.time > start) \
-        & (hypnox.db.Tweet.time < end) \
-        & (hypnox.db.Tweet.text.iregexp(r"btc|bitcoin"))
+    buys = []
+    for i, p in prices.iterrows():
+        signal = get_signal(p)
+        if signal == "buy":
+            buys[i] = p
 
-    stddev = peewee.fn.STDDEV(hypnox.db.Tweet.intensity)
-    delta = stddev - peewee.fn.LAG(stddev).over(order_by=timegroup)
-    intensities_q = hypnox.db.Tweet.select(
-        timegroup.alias("time"), delta.alias("intensity")).where(
-            filter
-            & (hypnox.db.Tweet.model_i == "i20220811")).group_by(1)
-    intensities = pandas.DataFrame(intensities_q.dicts())
+    target_cost = 10000
 
-    # sum = peewee.fn.SUM(hypnox.db.Tweet.polarity)
-    # polarities_q = hypnox.db.Tweet.select(
-    #     timegroup.alias("time"), sum.alias("polarity")).where(
-    #         filter
-    #         & (hypnox.db.Tweet.model_p == "p20220802")).group_by(1)
-    # polarities = pandas.DataFrame(polarities_q.dicts())
+    # compute entries
+    positions = []
+    for i, buy in buys:
+        positions.append(
+            hypnox.db.Position(symbol="BTCUSDT",
+                               status="closed",
+                               entry_cost=target_cost,
+                               entry_amount=target_cost / buy["open"],
+                               entry_price=buy["open"],
+                               entry_time=i))
 
-    intensities = intensities.set_index("time").resample("4H").ffill()
-    # polarities = polarities.set_index("time").resample("4H").ffill()
-    prices["intensity"] = intensities["intensity"]
-    # prices["polarity"] = polarities["polarity"]
+    # compute exits
+    total_pnl = 0
+    for position in positions:
+        for time, row in prices.loc[position.entry_time:].iterrows():
+            # TODO fix arg
+            signal = get_signal(row)
+            price_delta = row["open"] - position.entry_price
+            tmp_roi = price_delta / position.amount
+            if (tmp_roi >= strategy["MINIMUM_ROI"]
+                    or tmp_roi <= strategy["STOP_LOSS"] or signal == "sell"):
+                total_pnl += price_delta
+                position.exit_time = time
+                position.exit_price = row["open"]
+                position.pnl = price_delta
+                break
 
-    buys = prices.loc[(prices["intensity"] < 0.026)]
+    logging.info("PnL: " + str(round(total_pnl, 2)))
+    logging.info("ROI: " + str(round((total_pnl / target_cost) - 1, 2)))
 
+
+def get_signal(indicators):
+    # TODO weighthing, e.g.
+    # 20% * swapperbox + 80% * hypnox_AI + 10% *
+    # traditional_TA + 10% * chain_data
+
+    # buys = prices.loc[(prices["intensity"] < 0.026)]
     # prices.loc[buy, "buy"] = 1
     # sell = (prices["intensity"] < 0.1)
     # sell = ((prices["intensity"] > 0.1) & (prices["polarity"] < 0))
@@ -85,34 +109,29 @@ def backtest(args):
     # long_avg = ta.EMA(prices, timeperiod=17)
     # prices["trend"] = False
     # prices.loc[(short_avg > long_avg), "trend"] = True
+    # TODO maybe "sell_half" or something like that?
+    # TODO chart pattern recognition ?
 
-    # compute entries
-    positions = []
-    for i, row in buys.iterrows():
-        positions.append(
-            hypnox.db.Position(market="BTC/USDT",
-                               size=position_size,
-                               amount=position_size * row["open"],
-                               entry_time=i,
-                               entry_price=row["open"]))
+    # if (curr_intensity > INTENSITY_THRESHOLD
+    #         and curr_polarity > POLARITY_THRESHOLD):
+    #     return "buy"
+    # elif (curr_intensity > INTENSITY_THRESHOLD
+    #       and curr_polarity < POLARITY_THRESHOLD):
+    #     return "sell"
+    # else:
+    #     return "neutral"
 
-    # compute exits
-    hypnox.db.Position.drop_table()
-    hypnox.db.Position.create_table()
-    total_pnl = 0
-    for position in positions:
-        for time, row in prices.loc[position.entry_time:].iterrows():
-            price_delta = row["open"] - position.entry_price
-
-            tmp_roi = price_delta / position.amount
-
-            if tmp_roi >= MINIMUM_ROI or tmp_roi <= STOP_LOSS:
-                total_pnl += price_delta
-                position.exit_time = time
-                position.exit_price = row["open"]
-                position.pnl = price_delta
-                position.save()
-                break
+    import random
+    i = random.randint(0, 100)
+    if i > 80:
+        logging.info("received buy signal")
+        return "buy"
+    elif i < 20:
+        logging.info("received sell signal")
+        return "sell"
+    else:
+        logging.info("received neutral signal")
+        return "neutral"
 
 
 #  MOON INDICATORS
@@ -152,7 +171,7 @@ def backtest(args):
 # dataframe["res2sup"] =
 # ( dataframe["resistance"] / dataframe["support"] ) * dataframe["moon_period"]
 
-#  todo: idea is a dynamic stoploss. probably not possible
+#  TODO idea is a dynamic stoploss. probably not possible
 # moon.update(datetime.datetime.now())
 # black_start = 574020
 # black_end = 298620
@@ -162,41 +181,3 @@ def backtest(args):
 # 	self.stoploss = self.stoploss / 2
 # print(moon.time_to_new_moon())
 # print(nm_sec)
-
-# def get_signal():
-#     indicators = get_indicators()
-#     try:
-#         curr_intensity = indicators["intensity"].iloc[-1]
-#         curr_polarity = indicators["polarity"].iloc[-1]
-#     except IndexError:
-#         logging.warning("no indicators available")
-
-#     if (curr_intensity > INTENSITY_THRESHOLD
-#             and curr_polarity > POLARITY_THRESHOLD):
-#         return "buy"
-#     elif (curr_intensity > INTENSITY_THRESHOLD
-#           and curr_polarity < POLARITY_THRESHOLD):
-#         return "sell"
-#     else:
-#         return "neutral"
-
-
-def get_signal():
-    # logging.info("received buy signal")
-    # return "buy"
-    # logging.info("received sell signal")
-    # return "sell"
-    # logging.info("received neutral signal")
-    # return "neutral"
-
-    import random
-    i = random.randint(0, 100)
-    if i > 85:
-        logging.info("received buy signal")
-        return "buy"
-    elif i < 15:
-        logging.info("received sell signal")
-        return "sell"
-    else:
-        logging.info("received neutral signal")
-        return "neutral"
