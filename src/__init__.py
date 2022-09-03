@@ -1,5 +1,5 @@
-from . import config, db, exchange, model, strategy, stream, text_utils
+from . import config, db, exchange, model, strategy, text_utils, twitter
 
 __all__ = [
-    "config", "db", "exchange", "model", "stream", "strategy", "text_utils"
+    "config", "db", "exchange", "model", "strategy", "text_utils", "twitter"
 ]
