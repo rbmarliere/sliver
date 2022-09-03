@@ -1,5 +1,6 @@
 import datetime
 import logging
+import re
 import time
 from decimal import Decimal as Dec
 
@@ -9,22 +10,25 @@ import peewee
 
 import src as hypnox
 
-# TODO: param. Dec(0.98)
-# TODO: catch exchange errors
-# https://docs.ccxt.com/en/latest/manual.html?#exception-hierarchy
-# TODO: catch db errors, failsafe atomic() etc
+# TODO refactor + comments
+# TODO param. Dec(0.98)
 
-exchange = ccxt.binance({
+# TODO catch ALL api errors
+# https://docs.ccxt.com/en/latest/manual.html?#exception-hierarchy
+# TODO catch db errors, failsafe atomic() etc
+
+api = ccxt.binance({
     "apiKey": hypnox.config.config["BINANCE_KEY"],
     "secret": hypnox.config.config["BINANCE_SECRET"],
 })
-exchange.set_sandbox_mode(True)
-# exchange.verbose = True
+api.set_sandbox_mode(True)
+# api.verbose = True
 
 
 def download(args):
-    sleep_time = (exchange.rateLimit / 1000) + 1
+    sleep_time = (api.rateLimit / 1000) + 1
     page_size = 500
+    page_size = "test"
     page_start = int(datetime.datetime(2011, 6, 1).timestamp() * 1000)
     timeframe = 4 * 60 * 60 * 1000  # 4h in millisecs
 
@@ -50,10 +54,10 @@ def download(args):
             logging.info("downloading from " +
                          str(datetime.datetime.fromtimestamp(page_start /
                                                              1000)))
-            page = exchange.fetch_ohlcv("BTC/USDT",
-                                        since=page_start,
-                                        timeframe="4h",
-                                        limit=page_size)
+            page = api.fetch_ohlcv("BTC/USDT",
+                                   since=page_start,
+                                   timeframe="4h",
+                                   limit=page_size)
             prices = pandas.concat(
                 [prices, pandas.DataFrame.from_records(page)])
 
@@ -93,30 +97,33 @@ def sync_orders(symbol):
     try:
         # cancel all open orders so they can't be modified from here
         logging.info("canceling all orders")
-        exchange.cancel_all_orders(symbol)
+        api.cancel_all_orders(symbol)
     except ccxt.OrderNotFound:
         logging.info("no orders to cancel")
 
     # grab internal open orders
     orders = hypnox.db.get_open_orders(symbol)
+    if len(orders) == 0:
+        return
     with hypnox.db.connection.atomic():
         for order in orders:
             # fetch each order to sync, make sure they're not open
-            logging.info("updating order " + str(order.exchange_order_id))
-            ex_order = exchange.fetch_order(order.exchange_order_id, symbol)
+            logging.info("updating " + order.side + " order " +
+                         str(order.exchange_order_id))
+            ex_order = api.fetch_order(order.exchange_order_id, symbol)
             if ex_order["status"] == "open":
                 try:
                     logging.info("order is open, canceling...")
-                    ex_order = exchange.cancel_order(order.exchange_order_id,
-                                                     symbol)
+                    ex_order = api.cancel_order(order.exchange_order_id,
+                                                symbol)
                 except ccxt.OrderNotFound:
                     logging.info("order changed, refetching...")
-                    ex_order = exchange.fetch_order(order.exchange_order_id)
+                    ex_order = api.fetch_order(order.exchange_order_id)
 
             # update order amounts
             if order.cost != ex_order["cost"]:
-                logging.info("old cost: " + str(float(order.cost)) +
-                             " new cost: " + str(ex_order["cost"]))
+                logging.info("old cost: " + str(float(round(order.cost, 2))) +
+                             " new cost: " + str(round(ex_order["cost"], 2)))
             order.status = ex_order["status"]
             order.cost = Dec(ex_order["cost"])
             order.filled = Dec(ex_order["filled"])
@@ -129,7 +136,7 @@ def sync_orders(symbol):
                                   Dec(ex_order["price"]))
                 except TypeError:
                     pass
-                position.window_cost += order.cost
+                position.bucket += order.cost
                 position.entry_cost += order.cost
                 position.entry_amount += Dec(order.filled)
                 position.fee += order.fee
@@ -137,6 +144,7 @@ def sync_orders(symbol):
                     position.entry_price = (position.entry_cost /
                                             position.entry_amount)
                 if position.entry_cost >= position.target_cost * Dec(0.98):
+                    # TODO proper inventory management
                     position.status = "open"
 
             elif order.side == "sell":
@@ -144,7 +152,7 @@ def sync_orders(symbol):
                     order.fee += Dec(ex_order["fee"]["cost"])
                 except TypeError:
                     pass
-                position.window_cost += order.cost
+                position.bucket += order.filled
                 position.exit_amount += order.filled
                 position.exit_cost += order.cost
                 position.fee += order.fee
@@ -152,24 +160,27 @@ def sync_orders(symbol):
                     position.exit_price = (position.exit_cost /
                                            position.exit_amount)
                 if position.exit_amount >= position.entry_amount * Dec(0.98):
+                    # TODO proper inventory management
                     position.status = "closed"
                     position.pnl = (position.exit_cost - position.entry_cost -
                                     position.fee)
+                    logging.info("position is now closed, PnL: " +
+                                 str(round(position.pnl, 2)))
 
             order.save()
             position.save()
 
 
-def create_buy_orders(position, last_price):
+def create_buy_orders(strategy, position, last_price):
     prices = []
-    delta = last_price * Dec(hypnox.strategy.SPREAD)
-    n_orders = hypnox.strategy.NUM_ORDERS
+    delta = last_price * Dec(strategy["SPREAD_PERCENTAGE"])
+    n_orders = strategy["NUM_ORDERS"]
 
     init_price = last_price - delta
     prices = [init_price] + [delta / n_orders] * n_orders
     prices = [round(sum(prices[:i]), 2) for i in range(1, len(prices))]
 
-    unit_cost = Dec(position.get_remaining_open() / n_orders)
+    unit_cost = Dec(position.get_remaining_to_open() / n_orders)
 
     with hypnox.db.connection.atomic():
         for price in prices:
@@ -178,9 +189,9 @@ def create_buy_orders(position, last_price):
                          str(amount) + " @ " + str(price) + " (" +
                          str(round(unit_cost, 2)) + ")")
             try:
-                ex_order = exchange.create_order(position.symbol,
-                                                 "LIMIT_MAKER", "buy", amount,
-                                                 price)
+                # TODO catch invalidquantity, if so market buy
+                ex_order = api.create_order(position.symbol, "LIMIT_MAKER",
+                                            "buy", amount, price)
             except ccxt.OrderImmediatelyFillable:
                 continue
 
@@ -193,17 +204,16 @@ def create_buy_orders(position, last_price):
             hypnox.db.Order.create_from_ex_order(ex_order, position)
 
 
-def create_sell_orders(position, last_price):
+def create_sell_orders(strategy, position, last_price):
     prices = []
-    delta = last_price * Dec(hypnox.strategy.SPREAD)
-    n_orders = hypnox.strategy.NUM_ORDERS
+    delta = last_price * Dec(strategy["SPREAD_PERCENTAGE"])
+    n_orders = strategy["NUM_ORDERS"]
 
     init_price = last_price + delta
     prices = [init_price] + [-delta / n_orders] * n_orders
     prices = [round(sum(prices[:i]), 2) for i in range(1, len(prices))]
 
-    amount = round(
-        Dec((position.entry_amount - position.exit_amount) / n_orders), 8)
+    amount = round(Dec(position.get_remaining_to_close() / n_orders), 8)
 
     with hypnox.db.connection.atomic():
         for price in prices:
@@ -211,56 +221,75 @@ def create_sell_orders(position, last_price):
                          str(amount) + " @ " + str(price) + " (" +
                          str(round(amount * price, 2)) + ")")
             try:
-                ex_order = exchange.create_order(position.symbol,
-                                                 "LIMIT_MAKER", "sell", amount,
-                                                 price)
+                # TODO catch invalidquantity, if so market sell
+                ex_order = api.create_order(position.symbol, "LIMIT_MAKER",
+                                            "sell", amount, price)
             except ccxt.OrderImmediatelyFillable:
                 continue
+            except ccxt.InvalidOrder as e:
+                logging.warning(
+                    "order is below minimum required, creating single order")
+                if re.search("MIN_NOTIONAL", e.args[0]):
+                    ex_order = api.create_order(
+                        position.symbol, "LIMIT_MAKER", "sell",
+                        position.get_remaining_to_close(), price)
+                    # prices = [price]
+                    try:
+                        ex_order["fee"] = Dec(ex_order["fee"]["cost"])
+                    except TypeError:
+                        ex_order["fee"] = 0
+                    hypnox.db.Order.create_from_ex_order(ex_order, position)
+                    break
 
             try:
                 ex_order["fee"] = Dec(ex_order["fee"]["cost"])
             except TypeError:
                 ex_order["fee"] = 0
-
             hypnox.db.Order.create_from_ex_order(ex_order, position)
 
 
 def refresh(args):
+    strategy = hypnox.config.StrategyConfig(args.strategy).config
+    indicators = hypnox.strategy.get_indicators(strategy)
+    signal = hypnox.strategy.get_signal(indicators)  # TODO fix this
+
     base = "BTC"
     quote = "USDT"
-    symbol = base + quote
+    symbol = base + "/" + quote
 
     now = datetime.datetime.utcnow()
-    next_window = now + hypnox.strategy.WINDOW_SIZE
+    next_bucket = now + datetime.timedelta(
+        minutes=strategy["BUCKET_TIMEDELTA_IN_MINUTES"])
 
-    ticker = exchange.fetch_ticker(symbol)
+    ticker = api.fetch_ticker(symbol)
     last_price = Dec(ticker["last"])
     logging.info("last price is " + str(round(last_price, 2)))
 
     sync_orders(symbol)
+    # inventory.sync_balance ? (against "strategy inventory")
+    # if insufficient funds position --> stalled status?
 
-    balance = exchange.fetch_balance()
-    logging.info("balance is: " + str(round(balance[quote]["free"], 2)) + " " +
-                 quote + " " + str("{:.8f}".format(balance[base]["free"])) +
-                 " " + base)
-
-    signal = hypnox.strategy.get_signal()
     try:
         position = hypnox.db.get_active_position(symbol).get()
+        logging.info("got position " + str(position.id))
 
-        if now > position.next_window:
-            logging.info("moving on to next window")
-            position.next_window = next_window
-            position.window_cost = 0
+        if now > position.next_bucket:
+            logging.info("moving on to next bucket")
+            position.next_bucket = next_bucket
+            position.bucket = 0
             position.save()
+        logging.info("next bucket starts at " + str(position.next_bucket))
 
         if position.entry_cost > 0:
             curr_roi = (last_price * position.entry_amount /
                         position.entry_cost) - 1
-            if (signal == "sell" or curr_roi >= hypnox.strategy.MINIMUM_ROI
-                    or curr_roi <= hypnox.strategy.STOP_LOSS):
+            if (signal == "sell" or curr_roi >= strategy["MINIMUM_ROI"]
+                    or curr_roi <= strategy["STOP_LOSS"]):
                 logging.info("roi = " + str(round(curr_roi * 100, 2)) + "%")
                 logging.info("closing position")
+                # TODO proper inventory logic
+                position.bucket_max = round(
+                    position.entry_amount / strategy["NUM_ORDERS"], 8)
                 position.status = "closing"
                 position.save()
         elif position.entry_cost == 0 and position.status == "closing":
@@ -269,34 +298,42 @@ def refresh(args):
             position.save()
 
         if position.status == "opening":
-            if (datetime.datetime.utcnow() < position.next_window
-                    and position.get_remaining_open() <= 1):
-                logging.info("window is full, skipping...")
+            logging.info("bucket cost is " + str(position.bucket))
+            logging.info("remaining to fill in bucket is " +
+                         str(position.get_remaining_to_open()))
+            if (datetime.datetime.utcnow() < position.next_bucket
+                    and position.get_remaining_to_open() <= 1):
+                # TODO remaining should consider api.minimum_quantity
+                logging.info("bucket is full, skipping...")
                 return
-
-            create_buy_orders(position, last_price)
+            create_buy_orders(strategy, position, last_price)
         elif position.status == "closing":
-            if (datetime.datetime.utcnow() < position.next_window
-                    and position.get_remaining_close() <= 1):
-                logging.info("window is full, skipping...")
+            # TODO what if its closing and receives buy signal?
+            # currently nothing happens, it will keep closing
+            logging.info("bucket amount is " + str(position.bucket))
+            logging.info("remaining to fill in bucket is " +
+                         str(position.get_remaining_to_close()))
+            if (datetime.datetime.utcnow() < position.next_bucket
+                    and position.get_remaining_to_close() <= 0.00100000):
+                # TODO remaining should consider api.minimum_quantity
+                logging.info("bucket is full, skipping...")
                 return
-
-            create_sell_orders(position, last_price)
+            create_sell_orders(strategy, position, last_price)
         else:
             logging.info("position is " + position.status +
                          ", skipping order creation...")
     except peewee.DoesNotExist:
         logging.info("no active position")
         if signal == "buy":
-            window_max = round(
-                balance[quote]["free"] / hypnox.strategy.NUM_ORDERS, 2)
+            target_cost, bucket_max = hypnox.inventory.get_inventory(strategy)
             logging.info("opening position")
+            logging.info("target cost is " + str(target_cost))
+            logging.info("remaining to fill in bucket is " + str(bucket_max))
             position = hypnox.db.Position(symbol=symbol,
-                                          next_window=next_window,
-                                          window_max=window_max,
-                                          window_cost=0,
+                                          next_bucket=next_bucket,
+                                          bucket_max=bucket_max,
+                                          bucket=0,
                                           status="opening",
-                                          target_cost=(balance[quote]["free"] *
-                                                       0.98))
+                                          target_cost=target_cost)
             position.save()
-            create_buy_orders(position, last_price)
+            create_buy_orders(strategy, position, last_price)
