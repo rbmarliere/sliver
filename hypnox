@@ -47,7 +47,7 @@ replay_parser.set_defaults(func=hypnox.db.replay)
 
 stream_parser = sub_parsers.add_parser("stream",
                                        help="stream twitter in real time")
-stream_parser.set_defaults(func=hypnox.stream.stream)
+stream_parser.set_defaults(func=hypnox.twitter.stream)
 
 train_parser = sub_parsers.add_parser("train", help="train a model")
 train_parser.add_argument("-m",
