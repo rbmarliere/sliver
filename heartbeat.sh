@@ -7,5 +7,5 @@ source $dir/.venv/bin/activate
 #./hypnox replay 
 
 date -u
-$dir/hypnox refresh
+$dir/hypnox refresh -s default
 echo ""

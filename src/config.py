@@ -15,24 +15,35 @@ except OSError:
     sys.exit(1)
 
 
+class StrategyConfig():
+
+    def __init__(self, name):
+        try:
+            strategy_path = os.path.abspath(
+                os.path.dirname(os.path.abspath(__file__)) +
+                "/../etc/strategies/" + name + ".json")
+            self.config = json.load(open(strategy_path))
+        except OSError:
+            logging.error(strategy_path + " not found")
+            sys.exit(1)
+
+
 class ModelConfig():
 
     def __init__(self, name):
         path = os.path.dirname(os.path.abspath(__file__))
         self.config_path = os.path.abspath(path + "/../etc/" + name + ".yaml")
 
-        # check if config exists
-        if not os.path.exists(self.config_path):
+        # load yaml model configuration
+        try:
+            with open(self.config_path, "r") as stream:
+                self.yaml = yaml.safe_load(stream)
+        except OSError:
             logging.error(self.config_path + " not found")
             sys.exit(1)
-
-        # load yaml model configuration
-        with open(self.config_path, "r") as stream:
-            try:
-                self.yaml = yaml.safe_load(stream)
-            except yaml.YAMLError:
-                logging.error("could not parse model config file")
-                sys.exit(1)
+        except yaml.YAMLError:
+            logging.error("could not parse model config file")
+            sys.exit(1)
 
         self.model_path = os.path.abspath(path + "/../lib/" +
                                           self.yaml["name"])

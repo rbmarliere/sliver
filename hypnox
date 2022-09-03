@@ -26,7 +26,8 @@ backtest_parser = sub_parsers.add_parser(
     "backtest", help="backtest a strategy against a timeframe")
 backtest_parser.add_argument("-s",
                              "--strategy",
-                             help="name of the strategy to backtest")
+                             help="name of the strategy to backtest",
+                             required=True)
 backtest_parser.set_defaults(func=hypnox.strategy.backtest)
 
 download_parser = sub_parsers.add_parser("download",
@@ -35,6 +36,10 @@ download_parser.set_defaults(func=hypnox.exchange.download)
 
 refresh_parser = sub_parsers.add_parser("refresh",
                                         help="refresh positions and orders")
+refresh_parser.add_argument("-s",
+                            "--strategy",
+                            help="name of the strategy to backtest",
+                            required=True)
 refresh_parser.set_defaults(func=hypnox.exchange.refresh)
 
 replay_parser = sub_parsers.add_parser(
