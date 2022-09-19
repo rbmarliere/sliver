@@ -95,12 +95,12 @@ class Stream(tweepy.Stream):
             # log to cache csv
             logging.warning("error on inserting, caching instead...")
             output = pandas.DataFrame({
-                "time": time,
-                "text": text,
-                "model_i": "",
-                "intensity": 0,
-                "polarity": 0,
-                "model_p": ""
+                "time": [time],
+                "text": [text],
+                "model_i": [""],
+                "intensity": [0],
+                "polarity": [0],
+                "model_p": [""]
             })
             with open("cache.tsv", "a") as f:
                 output.to_csv(f,
