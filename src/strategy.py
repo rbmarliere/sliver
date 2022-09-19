@@ -1,6 +1,6 @@
 import datetime
-import logging
 
+import hypnox.watchdog.log
 import pandas
 import peewee
 
@@ -14,6 +14,8 @@ def get_indicators(strategy):
     filter = hypnox.db.Tweet.text.iregexp(
         strategy["TWEET_FILTER"].encode("unicode_escape"))
 
+    # z-score = valor presente - media da amostra / stddev da amostra
+    # media do z-score (caso haja varios fatores Z)
     stddev = peewee.fn.STDDEV(hypnox.db.Tweet.intensity)
     delta = stddev - peewee.fn.LAG(stddev).over(order_by=timegroup)
     intensities_q = hypnox.db.Tweet.select(
@@ -38,6 +40,46 @@ def get_indicators(strategy):
     indicators["polarity"] = polarities
 
     return indicators.set_index("time")
+
+
+def get_signal(strategy, indicators):
+    # TODO weighthing, e.g.
+    # 20% * swapperbox + 80% * hypnox_AI + 10% *
+    # traditional_TA + 10% * chain_data
+
+    # buys = prices.loc[(prices["intensity"] < 0.026)]
+    # prices.loc[buy, "buy"] = 1
+    # sell = (prices["intensity"] < 0.1)
+    # sell = ((prices["intensity"] > 0.1) & (prices["polarity"] < 0))
+    # prices.loc[sell, "sell"] = 1
+
+    # short_avg = ta.EMA(prices, timeperiod=2)
+    # long_avg = ta.EMA(prices, timeperiod=17)
+    # prices["trend"] = False
+    # prices.loc[(short_avg > long_avg), "trend"] = True
+    # TODO maybe "sell_half" or something like that?
+    # TODO chart pattern recognition ?
+
+    # if (curr_intensity > INTENSITY_THRESHOLD
+    #         and curr_polarity > POLARITY_THRESHOLD):
+    #     return "buy"
+    # elif (curr_intensity > INTENSITY_THRESHOLD
+    #       and curr_polarity < POLARITY_THRESHOLD):
+    #     return "sell"
+    # else:
+    #     return "neutral"
+
+    import random
+    i = random.randint(0, 100)
+    if i > 80:
+        hypnox.watchdog.log.info("received buy signal")
+        return "buy"
+    elif i < 20:
+        hypnox.watchdog.log.info("received sell signal")
+        return "sell"
+    else:
+        hypnox.watchdog.log.info("received neutral signal")
+        return "neutral"
 
 
 def backtest(args):
@@ -90,48 +132,9 @@ def backtest(args):
                 position.pnl = price_delta
                 break
 
-    logging.info("PnL: " + str(round(total_pnl, 2)))
-    logging.info("ROI: " + str(round((total_pnl / target_cost) - 1, 2)))
-
-
-def get_signal(indicators):
-    # TODO weighthing, e.g.
-    # 20% * swapperbox + 80% * hypnox_AI + 10% *
-    # traditional_TA + 10% * chain_data
-
-    # buys = prices.loc[(prices["intensity"] < 0.026)]
-    # prices.loc[buy, "buy"] = 1
-    # sell = (prices["intensity"] < 0.1)
-    # sell = ((prices["intensity"] > 0.1) & (prices["polarity"] < 0))
-    # prices.loc[sell, "sell"] = 1
-
-    # short_avg = ta.EMA(prices, timeperiod=2)
-    # long_avg = ta.EMA(prices, timeperiod=17)
-    # prices["trend"] = False
-    # prices.loc[(short_avg > long_avg), "trend"] = True
-    # TODO maybe "sell_half" or something like that?
-    # TODO chart pattern recognition ?
-
-    # if (curr_intensity > INTENSITY_THRESHOLD
-    #         and curr_polarity > POLARITY_THRESHOLD):
-    #     return "buy"
-    # elif (curr_intensity > INTENSITY_THRESHOLD
-    #       and curr_polarity < POLARITY_THRESHOLD):
-    #     return "sell"
-    # else:
-    #     return "neutral"
-
-    import random
-    i = random.randint(0, 100)
-    if i > 80:
-        logging.info("received buy signal")
-        return "buy"
-    elif i < 20:
-        logging.info("received sell signal")
-        return "sell"
-    else:
-        logging.info("received neutral signal")
-        return "neutral"
+    hypnox.watchdog.log.info("PnL: " + str(round(total_pnl, 2)))
+    hypnox.watchdog.log.info("ROI: " +
+                             str(round((total_pnl / target_cost) - 1, 2)))
 
 
 #  MOON INDICATORS

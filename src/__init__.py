@@ -1,7 +1,7 @@
 from . import (config, db, exchange, inventory, model, strategy, text_utils,
-               twitter)
+               twitter, watchdog)
 
 __all__ = [
     "config", "db", "exchange", "inventory", "model", "strategy", "text_utils",
-    "twitter"
+    "twitter", "watchdog"
 ]
