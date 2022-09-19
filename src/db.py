@@ -173,6 +173,10 @@ def replay(args):
         cleaned_text = hypnox.text_utils.standardize(tweet.text)
         if cleaned_text is not None:
             tweets.append(tweet)
+    if not tweets:
+        hypnox.watchdog.log.info("no tweets to replay")
+        return 1
+
     inputs = tokenizer([tweet.text for tweet in tweets],
                        truncation=True,
                        padding="max_length",

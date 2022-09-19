@@ -1,6 +1,9 @@
 {
+    "EXCHANGE": "binance",
     "SYMBOL": "BTC/USDT",
-    "I_MODEL": "i20220902",
+    "TIMEFRAME": "4h",
+    "REFRESH_TIMEDELTA_IN_MINUTES": 0,
+    "I_MODEL": "i20220914",
     "P_MODEL": "p20220902",
     "INTENSITY_THRESHOLD": 0.2,
     "POLARITY_THRESHOLD": 0,
