@@ -7,9 +7,6 @@ import transformers
 
 import src as hypnox
 
-# TODO generalize to new pairs
-# TODO Price inheritance
-
 connection = peewee.PostgresqlDatabase(
     hypnox.config.config["DB_DATABASE"], **{
         "host": hypnox.config.config["DB_HOST"],
@@ -35,6 +32,8 @@ class BaseModel(peewee.Model):
 
 
 class Position(BaseModel):
+    # which exchange its at
+    exchange = peewee.TextField()
     # e.g. BTCUSDT where BTC is base USDT is quote
     symbol = peewee.TextField()
     # time limit on each buy/sell step for DCA
@@ -69,11 +68,10 @@ class Position(BaseModel):
         return min(self.entry_amount - self.exit_amount,
                    self.bucket_max - self.bucket)
 
-    class Meta:
-        table_name = "positions"
-
 
 class Order(BaseModel):
+    # which exchange its at
+    exchange = peewee.TextField()
     # which position it belongs to
     position = peewee.ForeignKeyField(Position)
     # id comes from exchange api
@@ -97,9 +95,6 @@ class Order(BaseModel):
     # effective fee paid
     fee = CurrencyField()
 
-    class Meta:
-        table_name = "orders"
-
     def create_from_ex_order(ex_order, position):
         order = hypnox.db.Order(position=position,
                                 exchange_order_id=ex_order["id"],
@@ -116,16 +111,15 @@ class Order(BaseModel):
 
 
 class Price(BaseModel):
-    time = peewee.DateTimeField(unique=True)
+    exchange = peewee.TextField()
+    symbol = peewee.TextField()
+    timeframe = peewee.TextField()
+    time = peewee.DateTimeField()
     open = CurrencyField()
     high = CurrencyField()
     low = CurrencyField()
     close = CurrencyField()
     volume = CurrencyField()
-
-    class Meta:
-        table_name = "btcusdt_4h"
-        primary_key = False
 
 
 class Tweet(BaseModel):
@@ -135,9 +129,6 @@ class Tweet(BaseModel):
     intensity = peewee.DecimalField(default=0)
     model_p = peewee.TextField(default="")
     polarity = peewee.DecimalField(default=0)
-
-    class Meta:
-        table_name = "tweets"
 
 
 def get_open_orders(symbol):

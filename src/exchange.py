@@ -22,21 +22,41 @@ api = ccxt.binance({
     "secret": hypnox.config.config["BINANCE_SECRET"],
 })
 api.set_sandbox_mode(True)
-# api.verbose = True
+#api.verbose = True
+
+
+def check_api():
+    print("check_api")
 
 
 def download(args):
+    symbols = [pair["symbol"] for pair in api.fetch_markets()]
+    if args.symbol not in symbols:
+        logging.error(
+            "symbol not supported by exchange! possible values are " +
+            str(symbols))
+        return 1
+    if args.timeframe not in api.timeframes:
+        logging.error(
+            "timeframe not supported by exchange! possible values are " +
+            str([*api.timeframes]))
+        return 1
+
     sleep_time = (api.rateLimit / 1000) + 1
     page_size = 500
-    page_size = "test"
+    now_in_ms = int(datetime.datetime.now().timestamp() * 1000)
     page_start = int(datetime.datetime(2011, 6, 1).timestamp() * 1000)
-    timeframe = 4 * 60 * 60 * 1000  # 4h in millisecs
+    tf_in_ms = hypnox.text_utils.get_tf_in_ms(args.timeframe)
 
     try:
-        first_entry = int(hypnox.db.Price.select().order_by(
-            hypnox.db.Price.time.asc()).get().time.timestamp() * 1000)
-        last_entry = int(hypnox.db.Price.select().order_by(
-            hypnox.db.Price.time.desc()).get().time.timestamp() * 1000)
+        filter = ((hypnox.db.Price.symbol == args.symbol) &
+                  (hypnox.db.Price.timeframe == args.timeframe))
+        asc = hypnox.db.Price.time.asc()
+        desc = hypnox.db.Price.time.desc()
+        first_entry = int(hypnox.db.Price.select().where(filter).order_by(
+            asc).get().time.timestamp() * 1000)
+        last_entry = int(hypnox.db.Price.select().where(filter).order_by(
+            desc).get().time.timestamp() * 1000)
     except peewee.DoesNotExist:
         first_entry = 0
         last_entry = 0
@@ -46,18 +66,30 @@ def download(args):
     if first_entry > page_start:
         stop_at_first = True
     elif last_entry > page_start:
-        page_start = last_entry + timeframe
+        page_start = last_entry + tf_in_ms
 
-    prices = pandas.DataFrame(columns=[0, 1, 2, 3, 4, 5])
+    prices = pandas.DataFrame(columns=[0, 1, 2, 3, 4, 5, 6, 7, 8])
     while True:
         try:
+            if page_start > now_in_ms:
+                break
+
             logging.info("downloading from " +
                          str(datetime.datetime.fromtimestamp(page_start /
                                                              1000)))
-            page = api.fetch_ohlcv("BTC/USDT",
+            page = api.fetch_ohlcv(args.symbol,
                                    since=page_start,
-                                   timeframe="4h",
+                                   timeframe=args.timeframe,
                                    limit=page_size)
+
+            begin = datetime.datetime.fromtimestamp(page[0][0] / 1000)
+            end = datetime.datetime.fromtimestamp(page[-1][0] / 1000)
+            logging.info("received data range " + str(begin) + " to " +
+                         str(end))
+
+            logging.debug("page_start: " + str(page_start))
+            logging.debug("received page: " + str(page))
+
             prices = pandas.concat(
                 [prices, pandas.DataFrame.from_records(page)])
 
@@ -66,14 +98,14 @@ def download(args):
                     if p[0] >= first_entry:
                         prices = prices[prices[0] < p[0]]
                         break
-                page_start = last_entry + timeframe
+                page_start = last_entry + tf_in_ms
                 stop_at_first = False
                 continue
 
             if len(page) < page_size:
                 break
 
-            page_start = page[-1][0] + timeframe
+            page_start = page[-1][0] + tf_in_ms
         except ccxt.RateLimitExceeded:
             logging.info("rate limit exceeded, sleeping for " +
                          str(sleep_time) + " seconds")
@@ -82,6 +114,9 @@ def download(args):
 
     prices[0] = prices[0].apply(
         lambda x: datetime.datetime.fromtimestamp(x / 1000))
+    prices[6] = args.symbol
+    prices[7] = args.timeframe
+    prices[8] = api.id
 
     with hypnox.db.connection.atomic():
         hypnox.db.Price.insert_many(
@@ -89,7 +124,9 @@ def download(args):
             fields=[
                 hypnox.db.Price.time, hypnox.db.Price.open,
                 hypnox.db.Price.high, hypnox.db.Price.low,
-                hypnox.db.Price.close, hypnox.db.Price.volume
+                hypnox.db.Price.close, hypnox.db.Price.volume,
+                hypnox.db.Price.symbol, hypnox.db.Price.timeframe,
+                hypnox.db.Price.exchange
             ]).execute()
 
 
