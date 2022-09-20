@@ -91,9 +91,8 @@ def download(args):
             # logging received range
             page_first = datetime.datetime.utcfromtimestamp(page[0][0] / 1000)
             page_last = datetime.datetime.utcfromtimestamp(page[-1][0] / 1000)
-            hypnox.watchdog.log.info("received data range " +
-                                     str(page_first) + " to " +
-                                     str(page_last))
+            hypnox.watchdog.log.info("received data range " + str(page_first) +
+                                     " to " + str(page_last))
 
             # concatenating existing pages with current page
             prices = pandas.concat(

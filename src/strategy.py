@@ -15,6 +15,7 @@ def get_indicators(strategy):
     # prices["trend"] = False
     # prices.loc[(short_avg > long_avg), "trend"] = True
     # TODO z-score?
+    # TODO lunar indicator?
 
     # grab tweets based on strategy filter
     filter = hypnox.db.Tweet.text.iregexp(
@@ -120,52 +121,3 @@ def backtest(args):
     hypnox.watchdog.log.info("PnL: " + str(round(total_pnl, 2)))
     hypnox.watchdog.log.info("ROI: " +
                              str(round((total_pnl / target_cost) - 1, 2)))
-
-
-#  MOON INDICATORS
-# moon = pylunar.MoonInfo((28,2,4.9),(86,55,0.9))
-# def time_to_full_moon(moon, date):
-# 	moon.update(date)
-# 	return moon.time_to_full_moon() * 24
-# dataframe["time_to_full_moon"] =
-# dataframe["date"].apply( lambda x: time_to_full_moon(moon, x) )
-# def time_to_new_moon(moon, date):
-# 	moon.update(date)
-# 	return moon.time_to_new_moon()
-# dataframe["time_to_new_moon"] =
-# dataframe["date"].apply( lambda x: time_to_new_moon(moon, x) )
-
-#  MOON PERIODS
-# def period(moon, date):
-# 	moon.update(date)
-# 	nm_sec = moon.time_to_new_moon()*60*60
-# 	if nm_sec - 1031220 <= 0 and nm_sec - 564020 > 0:
-# 		# green
-# 		return 1.12
-# 	if nm_sec - 564020 <= 0 and nm_sec - 298620 > 0:
-# 		# black
-# 		return 0.78
-# 	if nm_sec - 298620 <= 0 and nm_sec - 298620 + 612000 > 0:
-# 		# green
-# 		return 1.12
-# 	if nm_sec - 1819620 <= 0 and nm_sec - 1531920 >= 0:
-# 		# yellow
-# 		return 1.22
-# 	# red is remainder
-# 	return 0.93
-# dataframe["moon_period"] =
-# dataframe["date"].apply( lambda x: period(moon, x) )
-
-# dataframe["res2sup"] =
-# ( dataframe["resistance"] / dataframe["support"] ) * dataframe["moon_period"]
-
-#  TODO idea is a dynamic stoploss. probably not possible
-# moon.update(datetime.datetime.now())
-# black_start = 574020
-# black_end = 298620
-# nm_sec = moon.time_to_new_moon()*60*60
-# self.stoploss = self.STOPLOSS_DEFAULT
-# if nm_sec - black_start >= 0 and nm_sec - black_end >= 0:
-# 	self.stoploss = self.stoploss / 2
-# print(moon.time_to_new_moon())
-# print(nm_sec)

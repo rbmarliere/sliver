@@ -21,7 +21,7 @@ def get_logger(name):
     )
 
     file_handler = logging.handlers.RotatingFileHandler(log_file,
-                                               maxBytes=52,
+                                               maxBytes=52428800,
                                                backupCount=10)
     file_handler.setFormatter(formatter)
 
