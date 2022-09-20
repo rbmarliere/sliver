@@ -43,7 +43,7 @@ def download(args):
 
     sleep_time = (api.rateLimit / 1000) + 1
     page_size = 500
-    now_in_ms = int(datetime.datetime.now().timestamp() * 1000)
+    now_utc = datetime.datetime.utcnow()
     page_start = int(datetime.datetime(2011, 6, 1).timestamp() * 1000)
     tf_in_ms = hypnox.text_utils.get_tf_in_ms(args.timeframe)
 
@@ -71,21 +71,24 @@ def download(args):
     prices = pandas.DataFrame(columns=[0, 1, 2, 3, 4, 5, 6, 7, 8])
     while True:
         try:
-            if page_start > now_in_ms:
+            page_start_utc = datetime.datetime.utcfromtimestamp(page_start /
+                                                                1000)
+            if page_start_utc > now_utc:
                 break
 
-            hypnox.watchdog.log.info(
-                "downloading from " +
-                str(datetime.datetime.fromtimestamp(page_start / 1000)))
+            hypnox.watchdog.log.info("downloading from " + str(page_start_utc))
             page = api.fetch_ohlcv(args.symbol,
                                    since=page_start,
                                    timeframe=args.timeframe,
                                    limit=page_size)
 
-            begin = datetime.datetime.fromtimestamp(page[0][0] / 1000)
-            end = datetime.datetime.fromtimestamp(page[-1][0] / 1000)
-            hypnox.watchdog.log.info("received data range " + str(begin) +
-                                     " to " + str(end))
+            page_first_utc = datetime.datetime.utcfromtimestamp(page[0][0] /
+                                                                1000)
+            page_last_utc = datetime.datetime.utcfromtimestamp(page[-1][0] /
+                                                               1000)
+            hypnox.watchdog.log.info("received data range " +
+                                     str(page_first_utc) + " to " +
+                                     str(page_last_utc))
 
             hypnox.watchdog.log.debug("page_start: " + str(page_start))
             hypnox.watchdog.log.debug("received page: " + str(page))
@@ -113,7 +116,7 @@ def download(args):
             continue
 
     prices[0] = prices[0].apply(
-        lambda x: datetime.datetime.fromtimestamp(x / 1000))
+        lambda x: datetime.datetime.utcfromtimestamp(x / 1000))
     prices[6] = args.symbol
     prices[7] = args.timeframe
     prices[8] = api.id
