@@ -136,6 +136,11 @@ class Tweet(BaseModel):
     polarity = peewee.DecimalField(default=0)
 
 
+# class Inventory(BaseModel):
+#     time = peewee.DateTimeField()
+#     # balances
+
+
 def get_open_orders(symbol):
     return Order.select().join(Position).where((Position.symbol == symbol)
                                                & (Order.status == "open"))
