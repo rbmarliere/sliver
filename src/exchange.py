@@ -47,8 +47,6 @@ def download(args):
     # set needed variables
     sleep_time = (api.rateLimit / 1000) + 1
     page_size = 500
-    now = datetime.datetime.utcnow()
-    page_start = datetime.datetime(2011, 6, 1)
     timeframe = hypnox.utils.get_timeframe_delta(args.timeframe)
 
     # fetch first and last price entries from the db
@@ -61,32 +59,34 @@ def download(args):
             asc).get().time
         last_entry = hypnox.db.Price.select().where(filter).order_by(
             desc).get().time
+        page_start = last_entry
     except peewee.DoesNotExist:
-        first_entry = 0
-        last_entry = 0
+        first_entry = datetime.datetime.fromtimestamp(0)
+        last_entry = datetime.datetime.fromtimestamp(0)
+        page_start = datetime.datetime(2000, 1, 1)
         hypnox.watchdog.log.info(
             "no db entries found, downloading everything...")
 
     # conditional to see up to where to insert or begin from
     stop_at_first = False
-    if first_entry > 0 and first_entry > page_start:
+    if first_entry > page_start:
         stop_at_first = True
-    elif last_entry > 0 and last_entry > page_start:
+    elif last_entry > page_start:
         page_start = last_entry + timeframe
 
     prices = pandas.DataFrame(columns=[0, 1, 2, 3, 4, 5, 6, 7, 8])
     while True:
         try:
-            # don't let it try downloading data in the future
-            if page_start > now:
-                break
-
             # api call with relevant params
             hypnox.watchdog.log.info("downloading from " + str(page_start))
             page = api.fetch_ohlcv(args.symbol,
                                    since=int(page_start.timestamp() * 1000),
                                    timeframe=args.timeframe,
                                    limit=page_size)
+
+            # check if received any data
+            if not page:
+                break
 
             # logging received range
             page_first = datetime.datetime.utcfromtimestamp(page[0][0] / 1000)
