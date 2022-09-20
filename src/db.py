@@ -97,6 +97,7 @@ class Order(BaseModel):
 
     def create_from_ex_order(ex_order, position):
         order = hypnox.db.Order(position=position,
+                                exchange=position.exchange,
                                 exchange_order_id=ex_order["id"],
                                 time=ex_order["datetime"],
                                 status=ex_order["status"],
