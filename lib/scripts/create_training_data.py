@@ -34,13 +34,13 @@ except FileNotFoundError:
     logging.error("input file not found!")
     sys.exit(1)
 last_training["clean"] = last_training["tweet"].apply(
-    hypnox.text_utils.standardize)
+    hypnox.utils.standardize)
 
 logging.info("retrieving highest scored tweets set")
 query = hypnox.db.Tweet.select().order_by(
     hypnox.db.Tweet.intensity.desc()).limit(args.num_lines)
 tweets = pandas.DataFrame(query.dicts())
-tweets["clean"] = tweets["text"].apply(hypnox.text_utils.standardize)
+tweets["clean"] = tweets["text"].apply(hypnox.utils.standardize)
 
 logging.info("fetching 200 most frequent words in the set")
 words = tweets.clean.str.split(
