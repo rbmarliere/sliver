@@ -69,9 +69,9 @@ def download(args):
 
     # conditional to see up to where to insert or begin from
     stop_at_first = False
-    if first_entry > page_start:
+    if first_entry > 0 and first_entry > page_start:
         stop_at_first = True
-    elif last_entry > page_start:
+    elif last_entry > 0 and last_entry > page_start:
         page_start = last_entry + timeframe
 
     prices = pandas.DataFrame(columns=[0, 1, 2, 3, 4, 5, 6, 7, 8])
