@@ -1,134 +1,119 @@
-import datetime
-
-import hypnox.watchdog.log
 import pandas
-import peewee
 
 import src as hypnox
 
-# import talib.abstract as ta
-
 
 def get_indicators(strategy):
-    timegroup = peewee.fn.DATE_TRUNC("hour", hypnox.db.Tweet.time)
-    filter = hypnox.db.Tweet.text.iregexp(
-        strategy["TWEET_FILTER"].encode("unicode_escape"))
-
-    # z-score = valor presente - media da amostra / stddev da amostra
-    # media do z-score (caso haja varios fatores Z)
-    stddev = peewee.fn.STDDEV(hypnox.db.Tweet.intensity)
-    delta = stddev - peewee.fn.LAG(stddev).over(order_by=timegroup)
-    intensities_q = hypnox.db.Tweet.select(
-        timegroup.alias("time"), delta.alias("intensity")).where(
-            filter
-            & (hypnox.db.Tweet.model_i == strategy["I_MODEL"])).group_by(1)
-    indicators = pandas.DataFrame(intensities_q.dicts())
-
-    # if indicators.empty:
-    #     raise Exception
-
-    sum = peewee.fn.SUM(hypnox.db.Tweet.polarity)
-    polarities_q = hypnox.db.Tweet.select(
-        timegroup.alias("time"), sum.alias("polarity")).where(
-            filter
-            & (hypnox.db.Tweet.model_p == strategy["P_MODEL"])).group_by(1)
-    polarities = pandas.DataFrame(polarities_q.dicts())
-
-    # if polarities.empty:
-    #     raise Exception
-
-    indicators["polarity"] = polarities
-
-    return indicators.set_index("time")
-
-
-def get_signal(strategy, indicators):
+    # TODO timedelta arg?
+    # TODO sell_half signal?
     # TODO weighthing, e.g.
     # 20% * swapperbox + 80% * hypnox_AI + 10% *
     # traditional_TA + 10% * chain_data
-
-    # buys = prices.loc[(prices["intensity"] < 0.026)]
-    # prices.loc[buy, "buy"] = 1
-    # sell = (prices["intensity"] < 0.1)
-    # sell = ((prices["intensity"] > 0.1) & (prices["polarity"] < 0))
-    # prices.loc[sell, "sell"] = 1
-
+    # TODO trend-based EMA cross as weight for the signal?
     # short_avg = ta.EMA(prices, timeperiod=2)
     # long_avg = ta.EMA(prices, timeperiod=17)
     # prices["trend"] = False
     # prices.loc[(short_avg > long_avg), "trend"] = True
-    # TODO maybe "sell_half" or something like that?
-    # TODO chart pattern recognition ?
+    # TODO z-score?
 
-    # if (curr_intensity > INTENSITY_THRESHOLD
-    #         and curr_polarity > POLARITY_THRESHOLD):
-    #     return "buy"
-    # elif (curr_intensity > INTENSITY_THRESHOLD
-    #       and curr_polarity < POLARITY_THRESHOLD):
-    #     return "sell"
-    # else:
-    #     return "neutral"
+    # grab tweets based on strategy filter
+    filter = hypnox.db.Tweet.text.iregexp(
+        strategy["TWEET_FILTER"].encode("unicode_escape"))
 
-    import random
-    i = random.randint(0, 100)
-    if i > 80:
-        hypnox.watchdog.log.info("received buy signal")
-        return "buy"
-    elif i < 20:
-        hypnox.watchdog.log.info("received sell signal")
-        return "sell"
-    else:
-        hypnox.watchdog.log.info("received neutral signal")
-        return "neutral"
+    tweets = hypnox.db.Tweet.select().where(
+        filter
+        & (hypnox.db.Tweet.model_i == strategy["I_MODEL"])
+        & (hypnox.db.Tweet.model_p == strategy["P_MODEL"]))
+    tweets = pandas.DataFrame(tweets.dicts())
+
+    # check if there are tweets with given params
+    if tweets.empty:
+        hypnox.watchdog.log.error("no tweets found for models " +
+                                  strategy["I_MODEL"] + " and " +
+                                  strategy["P_MODEL"])
+        raise Exception
+
+    # sort by date
+    tweets.sort_values("time", inplace=True)
+    # aggregate tweets by timeframe
+    tweets["floor"] = tweets.time.dt.floor(strategy["TIMEFRAME"])
+    # set floor as index
+    tweets.set_index("floor", inplace=True)
+    # compute indicators from groups
+    tweets["i_median"] = tweets.groupby("floor")["intensity"].median()
+    tweets["p_score"] = tweets.groupby("floor")["polarity"].sum()
+    # remove duplicated indexes
+    tweets = tweets.loc[~tweets.index.duplicated(keep='first')]
+
+    # grab price data
+    prices = hypnox.db.Price.select().where(
+        (hypnox.db.Price.symbol == strategy["SYMBOL"])
+        & (hypnox.db.Price.timeframe == strategy["TIMEFRAME"]))
+    prices = pandas.DataFrame(prices.dicts())
+
+    # check if there is data for given params
+    if prices.empty:
+        hypnox.watchdog.log.error("no price data found for symbol " +
+                                  strategy["SYMBOL"] + " for timeframe " +
+                                  strategy["TIMEFRAME"])
+        raise Exception
+
+    # sort by strategy timeframe and set index
+    prices.sort_values("time", inplace=True)
+    prices.set_index("time", inplace=True)
+
+    # concatenate both dataframes
+    indicators = pandas.concat([tweets, prices], join='inner', axis=1)
+    # get rid of unused columns
+    indicators = indicators[[
+        "i_median", "p_score", "open", "high", "low", "close", "volume"
+    ]]
+
+    # compute signal
+    indicators["signal"] = "neutral"
+    buy_rule = ((indicators["i_median"] > strategy["INTENSITY_THRESHOLD"]) &
+                (indicators["p_score"] > strategy["POLARITY_THRESHOLD"]))
+    buys = indicators.loc[buy_rule]
+    if not buys.empty:
+        indicators.loc[buys, "signal"] = "buy"
+    sell_rule = ((indicators["i_median"] > strategy["INTENSITY_THRESHOLD"]) &
+                 (indicators["p_score"] < strategy["POLARITY_THRESHOLD"]))
+    sells = indicators.loc[sell_rule]
+    if not sells.empty:
+        indicators.loc[sells, "signal"] = "sell"
+
+    return indicators
 
 
 def backtest(args):
-    start = datetime.datetime(2020, 7, 1)
-    end = datetime.datetime(2022, 7, 1)
-
     strategy = hypnox.config.StrategyConfig(args.strategy).config
     indicators = get_indicators(strategy)
-    indicators = indicators.resample("4H").ffill()
-
-    prices_q = hypnox.db.Price.select().where((hypnox.db.Price.time > start)
-                                              & (hypnox.db.Price.time < end))
-    prices = pandas.DataFrame(prices_q.dicts()).set_index("time")
-    prices["intensity"] = indicators["intensity"]
-    # prices["polarity"] = indicators["polarity"]
-    # prices["ta-lib"] =
-
-    buys = []
-    for i, p in prices.iterrows():
-        signal = get_signal(p)
-        if signal == "buy":
-            buys[i] = p
-
     target_cost = 10000
 
     # compute entries
     positions = []
-    for i, buy in buys:
-        positions.append(
-            hypnox.db.Position(symbol="BTCUSDT",
-                               status="closed",
-                               entry_cost=target_cost,
-                               entry_amount=target_cost / buy["open"],
-                               entry_price=buy["open"],
-                               entry_time=i))
+    for idx, ind in indicators.iterrows():
+        if ind["signal"] == "buy":
+            positions.append(
+                hypnox.db.Position(symbol="BTCUSDT",
+                                   status="closed",
+                                   entry_cost=target_cost,
+                                   entry_amount=target_cost / ind["open"],
+                                   entry_price=ind["open"],
+                                   entry_time=idx))
 
     # compute exits
     total_pnl = 0
     for position in positions:
-        for time, row in prices.loc[position.entry_time:].iterrows():
-            # TODO fix arg
-            signal = get_signal(row)
-            price_delta = row["open"] - position.entry_price
+        for idx, ind in indicators.loc[position.entry_time:].iterrows():
+            price_delta = ind["open"] - position.entry_price
             tmp_roi = price_delta / position.amount
             if (tmp_roi >= strategy["MINIMUM_ROI"]
-                    or tmp_roi <= strategy["STOP_LOSS"] or signal == "sell"):
+                    or tmp_roi <= strategy["STOP_LOSS"]
+                    or ind["signal"] == "sell"):
                 total_pnl += price_delta
-                position.exit_time = time
-                position.exit_price = row["open"]
+                position.exit_time = idx
+                position.exit_price = ind["open"]
                 position.pnl = price_delta
                 break
 

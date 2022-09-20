@@ -292,26 +292,18 @@ def create_sell_orders(strategy, position, last_price):
 def refresh(args):
     strategy = hypnox.config.StrategyConfig(args.strategy).config
     indicators = hypnox.strategy.get_indicators(strategy)
-    signal = hypnox.strategy.get_signal(indicators)  # TODO fix this
-
-    base = "BTC"
-    quote = "USDT"
-    symbol = base + "/" + quote
+    signal = indicators.iloc[-1].signal
 
     now = datetime.datetime.utcnow()
     next_bucket = now + datetime.timedelta(
         minutes=strategy["BUCKET_TIMEDELTA_IN_MINUTES"])
 
-    ticker = api.fetch_ticker(symbol)
+    ticker = api.fetch_ticker(strategy["SYMBOL"])
     last_price = Dec(ticker["last"])
     hypnox.watchdog.log.info("last price is " + str(round(last_price, 2)))
 
-    sync_orders(symbol)
-    # inventory.sync_balance ? (against "strategy inventory")
-    # if insufficient funds position --> stalled status?
-
     try:
-        position = hypnox.db.get_active_position(symbol).get()
+        position = hypnox.db.get_active_position(strategy["SYMBOL"]).get()
         hypnox.watchdog.log.info("got position " + str(position.id))
 
         if now > position.next_bucket:
@@ -374,7 +366,8 @@ def refresh(args):
             hypnox.watchdog.log.info("target cost is " + str(target_cost))
             hypnox.watchdog.log.info("remaining to fill in bucket is " +
                                      str(bucket_max))
-            position = hypnox.db.Position(symbol=symbol,
+            position = hypnox.db.Position(exchange=api.id,
+                                          symbol=strategy["SYMBOL"],
                                           next_bucket=next_bucket,
                                           bucket_max=bucket_max,
                                           bucket=0,
