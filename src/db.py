@@ -122,6 +122,10 @@ class Price(BaseModel):
     close = CurrencyField()
     volume = CurrencyField()
 
+    class Meta:
+        primary_key = peewee.CompositeKey('exchange', 'symbol', 'timeframe',
+                                          'time')
+
 
 class Tweet(BaseModel):
     time = peewee.DateTimeField()

@@ -29,98 +29,108 @@ def check_api():
 
 
 def download(args):
+    # check if symbol is supported by exchange
     symbols = [pair["symbol"] for pair in api.fetch_markets()]
     if args.symbol not in symbols:
         hypnox.watchdog.log.error(
             "symbol not supported by exchange! possible values are " +
             str(symbols))
         return 1
+
+    # check if timeframe is supported by exchange
     if args.timeframe not in api.timeframes:
         hypnox.watchdog.log.error(
             "timeframe not supported by exchange! possible values are " +
             str([*api.timeframes]))
         return 1
 
+    # set needed variables
     sleep_time = (api.rateLimit / 1000) + 1
     page_size = 500
-    now_utc = datetime.datetime.utcnow()
-    page_start = int(datetime.datetime(2011, 6, 1).timestamp() * 1000)
-    tf_in_ms = hypnox.text_utils.get_tf_in_ms(args.timeframe)
+    now = datetime.datetime.utcnow()
+    page_start = datetime.datetime(2011, 6, 1)
+    timeframe = hypnox.utils.get_timeframe_delta(args.timeframe)
 
+    # fetch first and last price entries from the db
     try:
         filter = ((hypnox.db.Price.symbol == args.symbol) &
                   (hypnox.db.Price.timeframe == args.timeframe))
         asc = hypnox.db.Price.time.asc()
         desc = hypnox.db.Price.time.desc()
-        first_entry = int(hypnox.db.Price.select().where(filter).order_by(
-            asc).get().time.timestamp() * 1000)
-        last_entry = int(hypnox.db.Price.select().where(filter).order_by(
-            desc).get().time.timestamp() * 1000)
+        first_entry = hypnox.db.Price.select().where(filter).order_by(
+            asc).get().time
+        last_entry = hypnox.db.Price.select().where(filter).order_by(
+            desc).get().time
     except peewee.DoesNotExist:
         first_entry = 0
         last_entry = 0
         hypnox.watchdog.log.info(
             "no db entries found, downloading everything...")
 
+    # conditional to see up to where to insert or begin from
     stop_at_first = False
     if first_entry > page_start:
         stop_at_first = True
     elif last_entry > page_start:
-        page_start = last_entry + tf_in_ms
+        page_start = last_entry + timeframe
 
     prices = pandas.DataFrame(columns=[0, 1, 2, 3, 4, 5, 6, 7, 8])
     while True:
         try:
-            page_start_utc = datetime.datetime.utcfromtimestamp(page_start /
-                                                                1000)
-            if page_start_utc > now_utc:
+            # don't let it try downloading data in the future
+            if page_start > now:
                 break
 
-            hypnox.watchdog.log.info("downloading from " + str(page_start_utc))
+            # api call with relevant params
+            hypnox.watchdog.log.info("downloading from " + str(page_start))
             page = api.fetch_ohlcv(args.symbol,
-                                   since=page_start,
+                                   since=int(page_start.timestamp() * 1000),
                                    timeframe=args.timeframe,
                                    limit=page_size)
 
-            page_first_utc = datetime.datetime.utcfromtimestamp(page[0][0] /
-                                                                1000)
-            page_last_utc = datetime.datetime.utcfromtimestamp(page[-1][0] /
-                                                               1000)
+            # logging received range
+            page_first = datetime.datetime.utcfromtimestamp(page[0][0] / 1000)
+            page_last = datetime.datetime.utcfromtimestamp(page[-1][0] / 1000)
             hypnox.watchdog.log.info("received data range " +
-                                     str(page_first_utc) + " to " +
-                                     str(page_last_utc))
+                                     str(page_first) + " to " +
+                                     str(page_last))
 
-            hypnox.watchdog.log.debug("page_start: " + str(page_start))
-            hypnox.watchdog.log.debug("received page: " + str(page))
-
+            # concatenating existing pages with current page
             prices = pandas.concat(
                 [prices, pandas.DataFrame.from_records(page)])
 
-            if stop_at_first and page[-1][0] > first_entry:
+            # only store up until last stored entry
+            if stop_at_first and page_last > first_entry:
                 for p in page:
-                    if p[0] >= first_entry:
+                    curr = datetime.datetime.utcfromtimestamp(p[0] / 1000)
+                    if curr >= first_entry:
                         prices = prices[prices[0] < p[0]]
                         break
-                page_start = last_entry + tf_in_ms
+                page_start = last_entry + timeframe
                 stop_at_first = False
                 continue
 
+            # break if received page is less than max size
             if len(page) < page_size:
                 break
 
-            page_start = page[-1][0] + tf_in_ms
+            # increment the counter
+            page_start = page_last + timeframe
+
         except ccxt.RateLimitExceeded:
             hypnox.watchdog.log.info("rate limit exceeded, sleeping for " +
                                      str(sleep_time) + " seconds")
             time.sleep(sleep_time)
             continue
 
+    # transform data for the database
     prices[0] = prices[0].apply(
         lambda x: datetime.datetime.utcfromtimestamp(x / 1000))
     prices[6] = args.symbol
     prices[7] = args.timeframe
     prices[8] = api.id
 
+    # insert into the database
     with hypnox.db.connection.atomic():
         hypnox.db.Price.insert_many(
             prices.values.tolist(),
