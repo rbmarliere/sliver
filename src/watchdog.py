@@ -21,8 +21,8 @@ def get_logger(name):
     )
 
     file_handler = logging.handlers.RotatingFileHandler(log_file,
-                                               maxBytes=52428800,
-                                               backupCount=10)
+                                                        maxBytes=52428800,
+                                                        backupCount=10)
     file_handler.setFormatter(formatter)
 
     stream_handler = logging.StreamHandler()
@@ -54,9 +54,11 @@ def watch(args):
     log = get_logger("watchdog")
     log_file = get_log_file("watchdog")
 
+    hypnox.telegram.notify("watchdog init")
     log.info("watchdog init")
     while (True):
         try:
+            raise Exception("exception test!")
             sleep_in_secs = strategy["REFRESH_TIMEDELTA_IN_MINUTES"] * 60
             log.info("sleeping for " + str(sleep_in_secs) + " seconds...")
             time.sleep(sleep_in_secs)
@@ -91,11 +93,12 @@ def watch(args):
             check_log(log_file)
 
         except Exception as e:
-            # hypnox.telegram.notify()
+            hypnox.telegram.notify("got exception: " + str(e))
             log.exception(e, exc_info=True)
             break
         except KeyboardInterrupt:
             log.info("got keyboard interrupt")
             break
 
+    hypnox.telegram.notify("shutting down...")
     log.info("shutting down...")
