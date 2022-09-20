@@ -72,16 +72,14 @@ def get_indicators(strategy):
 
     # compute signal
     indicators["signal"] = "neutral"
-    buy_rule = ((indicators["i_median"] > strategy["INTENSITY_THRESHOLD"]) &
-                (indicators["p_score"] > strategy["POLARITY_THRESHOLD"]))
-    buys = indicators.loc[buy_rule]
-    if not buys.empty:
-        indicators.loc[buys, "signal"] = "buy"
-    sell_rule = ((indicators["i_median"] > strategy["INTENSITY_THRESHOLD"]) &
-                 (indicators["p_score"] < strategy["POLARITY_THRESHOLD"]))
-    sells = indicators.loc[sell_rule]
-    if not sells.empty:
-        indicators.loc[sells, "signal"] = "sell"
+    buy_rule = (indicators["i_median"] > strategy["INTENSITY_THRESHOLD"])  # &
+    #(indicators["p_score"] > strategy["POLARITY_THRESHOLD"]))
+    indicators.loc[buy_rule, "signal"] = "buy"
+    sell_rule = (indicators["i_median"] < strategy["INTENSITY_THRESHOLD"])  #&
+    #(indicators["p_score"] < strategy["POLARITY_THRESHOLD"]))
+    indicators.loc[sell_rule, "signal"] = "sell"
+
+    indicators.to_csv("log/backtest.tsv", sep="\t")
 
     return indicators
 
@@ -91,15 +89,26 @@ def backtest(args):
     indicators = get_indicators(strategy)
     target_cost = 10000
 
+    # TODO fees
+
+    hypnox.watchdog.log.info("computing positions from " +
+                             str(indicators.index[0]) + " until " +
+                             str(indicators.index[-1]))
+
     # compute entries
     positions = []
     for idx, ind in indicators.iterrows():
         if ind["signal"] == "buy":
+            entry_amount = target_cost / ind["open"]
+
+            hypnox.watchdog.log.info(
+                str(entry_amount) + " @ " + str(ind["open"]) + " = " +
+                str(target_cost))
+
             positions.append(
-                hypnox.db.Position(symbol="BTCUSDT",
-                                   status="closed",
+                hypnox.db.Position(status="closed",
                                    entry_cost=target_cost,
-                                   entry_amount=target_cost / ind["open"],
+                                   entry_amount=entry_amount,
                                    entry_price=ind["open"],
                                    entry_time=idx))
 
@@ -108,16 +117,36 @@ def backtest(args):
     for position in positions:
         for idx, ind in indicators.loc[position.entry_time:].iterrows():
             price_delta = ind["open"] - position.entry_price
-            tmp_roi = price_delta / position.amount
+            tmp_roi = price_delta / position.entry_amount
+
             if (tmp_roi >= strategy["MINIMUM_ROI"]
                     or tmp_roi <= strategy["STOP_LOSS"]
                     or ind["signal"] == "sell"):
+
                 total_pnl += price_delta
                 position.exit_time = idx
                 position.exit_price = ind["open"]
                 position.pnl = price_delta
                 break
 
-    hypnox.watchdog.log.info("PnL: " + str(round(total_pnl, 2)))
-    hypnox.watchdog.log.info("ROI: " +
-                             str(round((total_pnl / target_cost) - 1, 2)))
+    if not positions:
+        hypnox.watchdog.log.info("no positions entered")
+        return
+
+    hypnox.watchdog.log.info("initial balance: " + str(target_cost))
+    hypnox.watchdog.log.info("buy and hold amount at first position: " +
+                             str(positions[0].entry_amount))
+    hypnox.watchdog.log.info("buy and hold value at last position: " +
+                             str(positions[-1].entry_price *
+                                 positions[0].entry_amount))
+    hypnox.watchdog.log.info("number of days: " +
+                             str(positions[-1].entry_time -
+                                 positions[0].entry_time))
+    hypnox.watchdog.log.info("number of trades: " + str(len(positions)))
+    hypnox.watchdog.log.info("pnl: " + str(round(total_pnl, 2)))
+    hypnox.watchdog.log.info(
+        "roi: " + str(round(((total_pnl / target_cost) - 1) * 100, 2)) + "%")
+    hypnox.watchdog.log.info("roi vs buy and hold: " + str(
+        round(((total_pnl /
+                (positions[-1].entry_price * positions[0].entry_amount)) - 1) *
+              100, 2)) + "%")
