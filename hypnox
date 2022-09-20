@@ -33,9 +33,6 @@ download_parser.add_argument("-s",
                              "--symbol",
                              help="symbol to download from e.g. BTCUSDT",
                              required=True)
-download_parser.add_argument("--since",
-                             help="start date to download from e.g. 20110601",
-                             required=True)
 download_parser.add_argument("-t",
                              "--timeframe",
                              help="e.g. 15m, 1h, 4h, 12h, 1d, 3d, 1w, 1M",
