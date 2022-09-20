@@ -81,7 +81,6 @@ def get_timeframe_delta(timeframe):
         "1d": 1 * 24 * 60 * 60,
         "3d": 3 * 24 * 60 * 60,
         "1w": 7 * 24 * 60 * 60,
-        "1M": 30 * 24 * 60 * 60  # 30 or ...? depends on month?
     }[timeframe]
 
-    return datetime.timedelta(minutes=timeframe_in_seconds)
+    return datetime.timedelta(seconds=timeframe_in_seconds)
