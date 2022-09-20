@@ -94,7 +94,8 @@ class Stream(tweepy.Stream):
             hypnox.db.Tweet(time=time, text=text).save()
         except Exception as e:
             # log to cache csv
-            hypnox.watchdog.stream_log.error("error on inserting, caching instead...")
+            hypnox.watchdog.stream_log.error(
+                "error on inserting, caching instead...")
             hypnox.watchdog.stream_log.exception(e, exc_info=True)
             output = pandas.DataFrame({
                 "time": [time],
