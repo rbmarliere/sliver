@@ -1,5 +1,4 @@
 import datetime
-import logging
 import os
 import re
 import ssl
@@ -63,6 +62,9 @@ TRACK_USERS = [
     "walter_wyckoff", "xxstevelee"
 ]
 
+cache_file = os.path.abspath(
+    os.path.dirname(os.path.abspath(__file__)) + "/../log/cache.tsv")
+
 
 class Stream(tweepy.Stream):
 
@@ -87,13 +89,13 @@ class Stream(tweepy.Stream):
         time = datetime.datetime.strptime(status._json["created_at"],
                                           "%a %b %d %H:%M:%S %z %Y")
         # log to stdin
-        logging.info("---")
-        logging.info(text)
+        hypnox.watchdog.stream_log.info("---")
+        hypnox.watchdog.stream_log.info(text)
         try:
             hypnox.db.Tweet(time=time, text=text).save()
         except Exception:
             # log to cache csv
-            logging.warning("error on inserting, caching instead...")
+            hypnox.watchdog.stream_log.error("error on inserting, caching instead...")
             output = pandas.DataFrame({
                 "time": [time],
                 "text": [text],
@@ -102,7 +104,7 @@ class Stream(tweepy.Stream):
                 "polarity": [0],
                 "model_p": [""]
             })
-            with open("cache.tsv", "a") as f:
+            with open(cache_file, "a") as f:
                 output.to_csv(f,
                               header=f.tell() == 0,
                               mode="a",
@@ -112,30 +114,30 @@ class Stream(tweepy.Stream):
 
 def save_uids(users, api):
     # save the ids of the users to track to disk
-    logging.info("loading user ids")
+    hypnox.watchdog.stream_log.info("loading user ids")
     path = os.path.dirname(os.path.abspath(__file__)) + "/../etc/user_ids.txt"
     uids_file = open(path, "a")
     uids = []
     for user in users:
         # retrieve user id by name from twitter api
-        logging.info("fetching user %s id" % user)
+        hypnox.watchdog.stream_log.info("fetching user %s id" % user)
         try:
             uid = str(api.get_user(screen_name=user.strip()).id)
             # save found uids to a file so it does not consume api each run
             print(uid, file=uids_file)
             uids.append(uid)
         except tweepy.errors.TweepyException:
-            logging.error("user " + user + " not found")
+            hypnox.watchdog.stream_log.error("user " + user + " not found")
     return uids
 
 
 def stream(args):
-    logging.info("loading twitter API keys")
+    hypnox.watchdog.stream_log.info("loading twitter API keys")
     if hypnox.config.config["CONSUMER_KEY"] == "" or hypnox.config.config[
             "CONSUMER_SECRET"] == "" or hypnox.config.config[
                 "ACCESS_KEY"] == "" or hypnox.config.config[
                     "ACCESS_SECRET"] == "":
-        logging.error("empty keys in config!")
+        hypnox.watchdog.stream_log.error("empty keys in config!")
         return 1
     auth = tweepy.OAuthHandler(hypnox.config.config["CONSUMER_KEY"],
                                hypnox.config.config["CONSUMER_SECRET"])
@@ -143,13 +145,13 @@ def stream(args):
                           hypnox.config.config["ACCESS_SECRET"])
     api = tweepy.API(auth)
 
-    logging.info("initializing")
+    hypnox.watchdog.stream_log.info("initializing")
     stream = Stream(hypnox.config.config["CONSUMER_KEY"],
                     hypnox.config.config["CONSUMER_SECRET"],
                     hypnox.config.config["ACCESS_KEY"],
                     hypnox.config.config["ACCESS_SECRET"])
 
-    logging.info("reading users")
+    hypnox.watchdog.stream_log.info("reading users")
     try:
         path = os.path.dirname(
             os.path.abspath(__file__)) + "/../etc/user_ids.txt"
@@ -160,6 +162,7 @@ def stream(args):
     except FileNotFoundError:
         uids = save_uids(TRACK_USERS, api)
 
+    hypnox.watchdog.stream_log.info("streaming...")
     while not stream.running:
         try:
             stream.filter(languages=["en"], follow=uids)
@@ -167,8 +170,10 @@ def stream(args):
         except (requests.exceptions.Timeout, ssl.SSLError,
                 urllib3.exceptions.ReadTimeoutError,
                 requests.exceptions.ConnectionError) as e:
-            logging.error("network error: " + e)
+            hypnox.watchdog.stream_log.error("network error: " + e)
         except Exception as e:
-            logging.error("unexpected error: " + e)
+            hypnox.watchdog.stream_log.error("unexpected error: " + e)
         except KeyboardInterrupt:
+            hypnox.watchdog.stream_log.info(
+                "got keyboard interrupt, shutting down...")
             return 1

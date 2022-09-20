@@ -1,5 +1,4 @@
 # TODO check inventory before retrying if an order fails
-# TODO Any error should notify and/or stop operation
 # TODO VaR, sharpe, TWAP/VWAP
 # TODO strategy table with pair and is_running and inventory?
 import logging
@@ -32,3 +31,7 @@ def get_inventory(strategy):
     # if bucket_max < exch_limit: --
 
     return target_cost, bucket_max
+
+def sync():
+    print("sync inventory")
+    # refresh balances
