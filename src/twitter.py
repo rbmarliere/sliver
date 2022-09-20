@@ -89,13 +89,13 @@ class Stream(tweepy.Stream):
         time = datetime.datetime.strptime(status._json["created_at"],
                                           "%a %b %d %H:%M:%S %z %Y")
         # log to stdin
-        hypnox.watchdog.stream_log.info("---")
         hypnox.watchdog.stream_log.info(text)
         try:
             hypnox.db.Tweet(time=time, text=text).save()
-        except Exception:
+        except Exception as e:
             # log to cache csv
             hypnox.watchdog.stream_log.error("error on inserting, caching instead...")
+            hypnox.watchdog.stream_log.exception(e, exc_info=True)
             output = pandas.DataFrame({
                 "time": [time],
                 "text": [text],
