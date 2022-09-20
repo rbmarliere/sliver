@@ -1,3 +1,4 @@
+import datetime
 import re
 import string
 
@@ -64,21 +65,23 @@ def standardize(text):
         return None
 
 
-def get_tf_in_ms(timeframe):
-    return {
-        "1m": 1 * 60 * 1000,
-        "3m": 3 * 60 * 1000,
-        "5m": 5 * 60 * 1000,
-        "15m": 15 * 60 * 1000,
-        "30m": 30 * 60 * 1000,
-        "1h": 1 * 60 * 60 * 1000,
-        "2h": 2 * 60 * 60 * 1000,
-        "4h": 4 * 60 * 60 * 1000,
-        "6h": 6 * 60 * 60 * 1000,
-        "8h": 8 * 60 * 60 * 1000,
-        "12h": 12 * 60 * 60 * 1000,
-        "1d": 1 * 24 * 60 * 60 * 1000,
-        "3d": 3 * 24 * 60 * 60 * 1000,
-        "1w": 7 * 24 * 60 * 60 * 1000,
-        "1M": 30 * 24 * 60 * 60 * 1000  # 30 or ...? depends on month?
+def get_timeframe_delta(timeframe):
+    timeframe_in_seconds = {
+        "1m": 1 * 60,
+        "3m": 3 * 60,
+        "5m": 5 * 60,
+        "15m": 15 * 60,
+        "30m": 30 * 60,
+        "1h": 1 * 60 * 60,
+        "2h": 2 * 60 * 60,
+        "4h": 4 * 60 * 60,
+        "6h": 6 * 60 * 60,
+        "8h": 8 * 60 * 60,
+        "12h": 12 * 60 * 60,
+        "1d": 1 * 24 * 60 * 60,
+        "3d": 3 * 24 * 60 * 60,
+        "1w": 7 * 24 * 60 * 60,
+        "1M": 30 * 24 * 60 * 60  # 30 or ...? depends on month?
     }[timeframe]
+
+    return datetime.timedelta(minutes=timeframe_in_seconds)

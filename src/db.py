@@ -171,7 +171,7 @@ def replay(args):
 
     tweets = []
     for tweet in query:
-        cleaned_text = hypnox.text_utils.standardize(tweet.text)
+        cleaned_text = hypnox.utils.standardize(tweet.text)
         if cleaned_text is not None:
             tweets.append(tweet)
     if not tweets:
