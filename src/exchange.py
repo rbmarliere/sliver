@@ -20,7 +20,7 @@ api = ccxt.binance({
     "apiKey": hypnox.config.config["BINANCE_KEY"],
     "secret": hypnox.config.config["BINANCE_SECRET"],
 })
-# api.set_sandbox_mode(True)
+api.set_sandbox_mode(True)
 # api.verbose = True
 
 
