@@ -58,7 +58,6 @@ def watch(args):
     log.info("watchdog init")
     while (True):
         try:
-            raise Exception("exception test!")
             sleep_in_secs = strategy["REFRESH_TIMEDELTA_IN_MINUTES"] * 60
             log.info("sleeping for " + str(sleep_in_secs) + " seconds...")
             time.sleep(sleep_in_secs)
