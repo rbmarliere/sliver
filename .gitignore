@@ -1,6 +1,5 @@
 *__pycache__*
 .venv
-.vscode
 etc/config.json
 log/*
 lib/scripts/*.tsv
