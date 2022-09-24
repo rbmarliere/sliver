@@ -38,9 +38,13 @@ def get_logger(name):
 
 log = get_logger("hypnox")
 stream_log = get_logger("stream")
+scripts_log = get_logger("scripts")
 
 
-def check_log(log_file):
+def check_log(log_file, ignore):
+    if ignore:
+        return
+
     with open(log_file, "r") as f:
         match = re.findall("ERROR|CRITICAL|Exception", f.read())
         if match:
@@ -58,43 +62,47 @@ def watch(args):
     log.info("watchdog init")
     while (True):
         try:
-            sleep_in_secs = strategy["REFRESH_TIMEDELTA_IN_MINUTES"] * 60
-            log.info("sleeping for " + str(sleep_in_secs) + " seconds...")
-            time.sleep(sleep_in_secs)
+            market = hypnox.db.get_market(hypnox.exchange.api.id,
+                                          strategy["SYMBOL"])
 
             hypnox.exchange.check_api()  # latency etc
-            check_log(log_file)
+            check_log(log_file, args.ignore_log)
 
-            hypnox.exchange.sync_orders(strategy["SYMBOL"])
+            hypnox.exchange.sync_orders(market)
             # inventory.sync_balance ? (against "strategy inventory")
             # if insufficient funds position --> stalled status?
-            check_log(log_file)
+            check_log(log_file, args.ignore_log)
 
             hypnox.inventory.sync()
             # check trades, pnl, balances, risk
-            check_log(log_file)
+            check_log(log_file, args.ignore_log)
 
             args.since = "20220101"
             args.symbol = strategy["SYMBOL"]
             args.timeframe = strategy["TIMEFRAME"]
             hypnox.exchange.download(args)
-            check_log(log_file)
+            check_log(log_file, args.ignore_log)
 
-            args.model = strategy["I_MODEL"]
-            hypnox.db.replay(args)
-            check_log(log_file)
+            # args.model = strategy["I_MODEL"]
+            # hypnox.db.replay(args)
+            # check_log(log_file, args.ignore_log)
 
             # args.model = strategy["P_MODEL"]
             # hypnox.db.replay(args)
-            # check_log(log_file)
+            # check_log(log_file, args.ignore_log)
 
             hypnox.exchange.refresh(args)
-            check_log(log_file)
+            check_log(log_file, args.ignore_log)
+
+            sleep_in_secs = strategy["REFRESH_TIMEDELTA_IN_MINUTES"] * 60
+            log.info("sleeping for " + str(sleep_in_secs) + " seconds...")
+            time.sleep(sleep_in_secs)
 
         except Exception as e:
             hypnox.telegram.notify("got exception: " + str(e))
             log.exception(e, exc_info=True)
             break
+
         except KeyboardInterrupt:
             log.info("got keyboard interrupt")
             break
