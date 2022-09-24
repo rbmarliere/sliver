@@ -15,50 +15,78 @@ connection = peewee.PostgresqlDatabase(
     })
 
 
-class CurrencyField(peewee.DecimalField):
-
-    def __init__(self):
-        peewee.DecimalField.__init__(self)
-        self.auto_round = False
-        self.decimal_places = 8
-        self.default = 0
-        self.max_digits = 16
-
-
 class BaseModel(peewee.Model):
 
     class Meta:
         database = connection
 
 
-class Position(BaseModel):
-    # which exchange its at
+class Market(BaseModel):
     exchange = peewee.TextField()
-    # e.g. BTCUSDT where BTC is base USDT is quote
     symbol = peewee.TextField()
+    base = peewee.TextField()
+    quote = peewee.TextField()
+    base_precision = peewee.IntegerField()
+    quote_precision = peewee.IntegerField()
+    cost_min = peewee.BigIntegerField()
+
+    class Meta:
+        constraints = [peewee.SQL("UNIQUE (exchange, symbol)")]
+
+    def bformat(self, value):
+        return round(value / 10**self.base_precision, self.base_precision)
+
+    def btransform(self, value):
+        return int(value * 10**self.base_precision)
+
+    def qformat(self, value):
+        return round(value / 10**self.quote_precision, self.base_precision)
+
+    def qtransform(self, value):
+        return int(value * 10**self.quote_precision)
+
+    def get_open_orders(self):
+        query = Order.select().join(Position).join(Market).where(
+            (Market.exchange == self.exchange) & (Market.symbol == self.symbol)
+            & (Order.status == "open"))
+        return [order for order in query]
+
+    def get_active_position(self):
+        return Position.select().join(Market).where(
+            (Market.exchange == self.exchange) & (Market.symbol == self.symbol)
+            & ((Position.status == "open")
+               | (Position.status == "opening")
+               | (Position.status == "closing"))).get_or_none()
+
+
+class Position(BaseModel):
+    market = peewee.ForeignKeyField(Market)
     # time limit on each buy/sell step for DCA
     next_bucket = peewee.DateTimeField(default=datetime.datetime.utcnow())
     # maximum cost|amount for any time period
-    bucket_max = CurrencyField()
+    bucket_max = peewee.BigIntegerField()
     # effective cost|amount for current period
-    bucket = CurrencyField()
+    bucket = peewee.BigIntegerField(default=0)
     # can be open, opening, closing, closed
     status = peewee.TextField()
     # desired position size in quote
-    target_cost = CurrencyField()
+    target_cost = peewee.BigIntegerField()
     # total effective cost paid in quote
-    entry_cost = CurrencyField()
+    entry_cost = peewee.BigIntegerField(default=0)
     # total amount in base
-    entry_amount = CurrencyField()
+    entry_amount = peewee.BigIntegerField(default=0)
     # average prices in quote
-    entry_price = CurrencyField()
-    exit_price = CurrencyField()
-    exit_amount = CurrencyField()
-    exit_cost = CurrencyField()
+    entry_price = peewee.BigIntegerField(default=0)
+    exit_price = peewee.BigIntegerField(default=0)
+    exit_amount = peewee.BigIntegerField(default=0)
+    exit_cost = peewee.BigIntegerField(default=0)
     # total fees in quote
-    fee = CurrencyField()
+    fee = peewee.BigIntegerField(default=0)
     # position profit or loss
-    pnl = CurrencyField()
+    pnl = peewee.BigIntegerField(default=0)
+
+    def is_open(self):
+        return self.status != "closing" and self.status != "closed"
 
     def get_remaining_to_open(self):
         return min(self.target_cost - self.entry_cost,
@@ -70,8 +98,6 @@ class Position(BaseModel):
 
 
 class Order(BaseModel):
-    # which exchange its at
-    exchange = peewee.TextField()
     # which position it belongs to
     position = peewee.ForeignKeyField(Position)
     # id comes from exchange api
@@ -85,46 +111,58 @@ class Order(BaseModel):
     # can be buy or sell
     side = peewee.TextField()
     # order price in quote, if market then average
-    price = CurrencyField()
+    price = peewee.BigIntegerField()
     # total order size in base
-    amount = CurrencyField()
+    amount = peewee.BigIntegerField()
     # effective order cost in quote
-    cost = CurrencyField()
+    cost = peewee.BigIntegerField()
     # effective amount filled in base
-    filled = CurrencyField()
+    filled = peewee.BigIntegerField()
     # effective fee paid
-    fee = CurrencyField()
+    fee = peewee.BigIntegerField()
 
     def create_from_ex_order(ex_order, position):
+        # transform values to db entry standard
+        price = position.market.qtransform(ex_order["price"])
+        amount = position.market.qtransform(ex_order["amount"])
+        cost = position.market.qtransform(ex_order["cost"])
+        filled = position.market.qtransform(ex_order["filled"])
+
+        # check for fees
+        if ex_order["fee"] is None:
+            fee = 0
+        else:
+            fee = position.market.qtransform(ex_order["fee"]["cost"])
+
+        # create model and save
         order = hypnox.db.Order(position=position,
-                                exchange=position.exchange,
                                 exchange_order_id=ex_order["id"],
                                 time=ex_order["datetime"],
                                 status=ex_order["status"],
                                 type=ex_order["type"],
                                 side=ex_order["side"],
-                                price=ex_order["price"],
-                                amount=ex_order["amount"],
-                                cost=ex_order["cost"],
-                                filled=ex_order["filled"],
-                                fee=ex_order["fee"])
+                                price=price,
+                                amount=amount,
+                                cost=cost,
+                                filled=filled,
+                                fee=fee)
+
         order.save()
 
 
 class Price(BaseModel):
-    exchange = peewee.TextField()
+    market = peewee.ForeignKeyField(Market)
     symbol = peewee.TextField()
     timeframe = peewee.TextField()
     time = peewee.DateTimeField()
-    open = CurrencyField()
-    high = CurrencyField()
-    low = CurrencyField()
-    close = CurrencyField()
-    volume = CurrencyField()
+    open = peewee.BigIntegerField()
+    high = peewee.BigIntegerField()
+    low = peewee.BigIntegerField()
+    close = peewee.BigIntegerField()
+    volume = peewee.BigIntegerField()
 
     class Meta:
-        primary_key = peewee.CompositeKey('exchange', 'symbol', 'timeframe',
-                                          'time')
+        primary_key = peewee.CompositeKey("timeframe", "time")
 
 
 class Tweet(BaseModel):
@@ -141,16 +179,9 @@ class Tweet(BaseModel):
 #     # balances
 
 
-def get_open_orders(symbol):
-    return Order.select().join(Position).where((Position.symbol == symbol)
-                                               & (Order.status == "open"))
-
-
-def get_active_position(symbol):
-    return Position.select().where((Position.symbol == symbol)
-                                   & ((Position.status == "open")
-                                      | (Position.status == "opening")
-                                      | (Position.status == "closing")))
+def get_market(exchange, symbol):
+    return Market.select().where((Market.exchange == exchange)
+                                 & (Market.symbol == symbol)).get_or_none()
 
 
 def replay(args):

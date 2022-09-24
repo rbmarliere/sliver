@@ -3,6 +3,20 @@ import pandas
 import src as hypnox
 
 
+def get_rsignal():
+    import random
+    i = random.randint(0, 100)
+    if i > 70:
+        hypnox.watchdog.log.info("received buy signal")
+        return "buy"
+    elif i < 30:
+        hypnox.watchdog.log.info("received sell signal")
+        return "sell"
+    else:
+        hypnox.watchdog.log.info("received neutral signal")
+        return "neutral"
+
+
 def get_indicators(strategy):
     # TODO timedelta arg?
     # TODO sell_half signal?
