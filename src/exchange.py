@@ -63,7 +63,7 @@ def download(args):
 
     # fetch first and last price entries from the db
     try:
-        filter = ((hypnox.db.Price.symbol == args.symbol) &
+        filter = ((hypnox.db.Price.market == market) &
                   (hypnox.db.Price.timeframe == args.timeframe))
         asc = hypnox.db.Price.time.asc()
         desc = hypnox.db.Price.time.desc()
@@ -79,6 +79,12 @@ def download(args):
         hypnox.watchdog.log.info(
             "no db entries found, downloading everything...")
 
+    # return if last entry is last possible result
+    if page_start == last_entry:
+        hypnox.watchdog.log.info(
+            "price data is already up to date, skipping...")
+        return
+
     # conditional to see up to where to insert or begin from
     stop_at_first = False
     if first_entry > page_start:
@@ -86,7 +92,7 @@ def download(args):
     elif last_entry > page_start:
         page_start = last_entry + timeframe
 
-    prices = pandas.DataFrame(columns=[0, 1, 2, 3, 4, 5, 6, 7, 8])
+    prices = pandas.DataFrame(columns=[0, 1, 2, 3, 4, 5, 6, 7])
     while True:
         try:
             # api call with relevant params
@@ -137,10 +143,11 @@ def download(args):
     # transform data for the database
     prices[0] = prices[0].apply(
         lambda x: datetime.datetime.utcfromtimestamp(x / 1000))
-    # TODO prices.transform()
-    prices[6] = args.symbol
-    prices[7] = args.timeframe
-    prices[8] = market.id
+    prices[[1, 2, 3, 4]] = prices[[1, 2, 3,
+                                   4]].applymap(lambda x: market.qtransform(x))
+    prices[5] = prices[5].apply(lambda x: market.btransform(x))
+    prices[6] = args.timeframe
+    prices[7] = market.id
 
     # insert into the database
     with hypnox.db.connection.atomic():
@@ -150,8 +157,7 @@ def download(args):
                 hypnox.db.Price.time, hypnox.db.Price.open,
                 hypnox.db.Price.high, hypnox.db.Price.low,
                 hypnox.db.Price.close, hypnox.db.Price.volume,
-                hypnox.db.Price.symbol, hypnox.db.Price.timeframe,
-                hypnox.db.Price.market
+                hypnox.db.Price.timeframe, hypnox.db.Price.market
             ]).execute()
 
 
@@ -208,10 +214,6 @@ def sync_orders(market):
                 if position.entry_amount > 0:
                     position.entry_price = market.qtransform(
                         (position.entry_cost / position.entry_amount))
-
-                # position finishes opening when it reaches target
-                if position.entry_cost == position.target_cost:
-                    position.status = "open"
 
             elif order.side == "sell":
                 position.bucket += order.filled
@@ -394,15 +396,18 @@ def refresh(args):
     # get current position for given market
     position = market.get_active_position()
 
+    if position is None:
+        hypnox.watchdog.log.info("no active position")
+
     # if no position is found, create one if apt
     if position is None and signal == "buy":
-        hypnox.watchdog.log.info("no active position")
 
         target_cost = hypnox.inventory.get_target_cost(market)
         bucket_max = int(target_cost / strategy["NUM_ORDERS"])
 
         hypnox.watchdog.log.info("opening position")
-        hypnox.watchdog.log.info("target cost is " + str(target_cost))
+        hypnox.watchdog.log.info("target cost is " +
+                                 str(position.market.qformat(target_cost)))
 
         position = hypnox.db.Position(market=market,
                                       next_bucket=next_bucket,
@@ -419,8 +424,8 @@ def refresh(args):
     if position is None:
         return
 
-    hypnox.watchdog.log.info("got position " + str(position.id) +
-                             " for market " + market.symbol)
+    hypnox.watchdog.log.info("got '" + position.status + "' position " +
+                             str(position.id) + " for market " + market.symbol)
 
     # check if current bucket needs to be reset
     if now > position.next_bucket:
@@ -463,6 +468,12 @@ def refresh(args):
                         position.fee)
         hypnox.watchdog.log.info("position is now closed, pnl: " +
                                  str(market.qformat(position.pnl)))
+
+    # position finishes opening when it reaches target
+    cost_diff = position.target_cost - position.entry_cost
+    if cost_diff < position.market.cost_min:
+        position.status = "open"
+        hypnox.watchdog.log.info("position is now open")
 
     # create buy orders for an opening position
     if position.status == "opening":
