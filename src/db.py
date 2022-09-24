@@ -152,7 +152,6 @@ class Order(BaseModel):
 
 class Price(BaseModel):
     market = peewee.ForeignKeyField(Market)
-    symbol = peewee.TextField()
     timeframe = peewee.TextField()
     time = peewee.DateTimeField()
     open = peewee.BigIntegerField()
@@ -162,7 +161,7 @@ class Price(BaseModel):
     volume = peewee.BigIntegerField()
 
     class Meta:
-        primary_key = peewee.CompositeKey("timeframe", "time")
+        constraints = [peewee.SQL("UNIQUE (market_id, timeframe, time)")]
 
 
 class Tweet(BaseModel):
