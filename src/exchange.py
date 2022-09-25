@@ -280,7 +280,7 @@ def create_buy_orders(position, last_price, num_orders, spread_pct):
     # send a single order if the unitary cost is lower than market minimum
     if unit_cost < market.cost_min:
         hypnox.watchdog.log.warning(
-            "unitary cost is less than exchange minimum,"
+            "unitary cost is less than exchange minimum, "
             "creating single order")
 
         remaining_amount = int(market.qtransform(remaining) / prices[-1])
