@@ -93,6 +93,8 @@ class Stream(tweepy.Stream):
         try:
             hypnox.db.Tweet(time=time, text=text).save()
         except Exception as e:
+            # notify telegram
+            hypnox.telegram.notify("stream error!")
             # log to cache csv
             hypnox.watchdog.stream_log.error(
                 "error on inserting, caching instead...")
