@@ -45,6 +45,18 @@ class Market(BaseModel):
     def qtransform(self, value):
         return int(value * 10**self.quote_precision)
 
+    def bprint(self, value, format_value=True):
+        if format_value:
+            value = self.bformat(value)
+        prec = str(self.base_precision)
+        return str("{:." + prec + "f} ").format(value) + self.base
+
+    def qprint(self, value, format_value=True):
+        if format_value:
+            value = self.qformat(value)
+        prec = str(self.quote_precision)
+        return str("{:." + prec + "f} ").format(value) + self.quote
+
     def get_open_orders(self):
         query = Order.select().join(Position).join(Market).where(
             (Market.exchange == self.exchange) & (Market.symbol == self.symbol)

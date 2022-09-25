@@ -17,7 +17,7 @@ def get_rsignal():
         return "neutral"
 
 
-def get_indicators(strategy):
+def get_indicators(market, strategy):
     # TODO timedelta arg?
     # TODO sell_half signal?
     # TODO weighthing, e.g.
@@ -62,7 +62,7 @@ def get_indicators(strategy):
 
     # grab price data
     prices = hypnox.db.Price.select().where(
-        (hypnox.db.Price.symbol == strategy["SYMBOL"])
+        (hypnox.db.Price.market == market)
         & (hypnox.db.Price.timeframe == strategy["TIMEFRAME"]))
     prices = pandas.DataFrame(prices.dicts())
 
@@ -99,8 +99,17 @@ def get_indicators(strategy):
 
 
 def backtest(args):
+    # TODO charts
+
     strategy = hypnox.config.StrategyConfig(args.strategy).config
-    indicators = get_indicators(strategy)
+
+    # check if symbol is supported by hypnox
+    market = hypnox.db.get_market(hypnox.exchange.api.id, strategy["SYMBOL"])
+    if market is None:
+        hypnox.watchdog.log.error("can't find market " + strategy["SYMBOL"])
+        return 1
+
+    indicators = get_indicators(market, strategy)
     target_cost = 10000
 
     # TODO fees
@@ -116,8 +125,9 @@ def backtest(args):
             entry_amount = target_cost / ind["open"]
 
             hypnox.watchdog.log.info(
-                str(entry_amount) + " @ " + str(ind["open"]) + " = " +
-                str(target_cost))
+                market.bprint(entry_amount) + " @ " +
+                market.qprint(ind["open"]) + " = " +
+                market.qprint(target_cost))
 
             positions.append(
                 hypnox.db.Position(status="closed",
@@ -147,17 +157,17 @@ def backtest(args):
         hypnox.watchdog.log.info("no positions entered")
         return
 
-    hypnox.watchdog.log.info("initial balance: " + str(target_cost))
+    hypnox.watchdog.log.info("initial balance: " + market.qprint(target_cost))
     hypnox.watchdog.log.info("buy and hold amount at first position: " +
-                             str(positions[0].entry_amount))
+                             market.bprint(positions[0].entry_amount))
     hypnox.watchdog.log.info("buy and hold value at last position: " +
-                             str(positions[-1].entry_price *
-                                 positions[0].entry_amount))
+                             market.qprint(positions[-1].entry_price *
+                                           positions[0].entry_amount))
     hypnox.watchdog.log.info("number of days: " +
                              str(positions[-1].entry_time -
                                  positions[0].entry_time))
     hypnox.watchdog.log.info("number of trades: " + str(len(positions)))
-    hypnox.watchdog.log.info("pnl: " + str(round(total_pnl, 2)))
+    hypnox.watchdog.log.info("pnl: " + market.qprint(total_pnl))
     hypnox.watchdog.log.info(
         "roi: " + str(round(((total_pnl / target_cost) - 1) * 100, 2)) + "%")
     hypnox.watchdog.log.info("roi vs buy and hold: " + str(
