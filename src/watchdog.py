@@ -16,9 +16,8 @@ def get_log_file(name):
 def get_logger(name):
     log_file = get_log_file(name)
 
-    formatter = logging.Formatter(
-        "%(asctime)s %(levelname)s -- %(message)s :: %(filename)s@%(funcName)s"
-    )
+    formatter = logging.Formatter("%(asctime)s %(levelname)s -- %(message)s ::"
+                                  "%(filename)s@%(funcName)s line %(lineno)d")
 
     file_handler = logging.handlers.RotatingFileHandler(log_file,
                                                         maxBytes=52428800,
