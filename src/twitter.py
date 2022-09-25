@@ -148,6 +148,7 @@ def stream(args):
                           hypnox.config.config["ACCESS_SECRET"])
     api = tweepy.API(auth)
 
+    hypnox.telegram.notify("initializing twitter stream...")
     hypnox.watchdog.stream_log.info("initializing")
     stream = Stream(hypnox.config.config["CONSUMER_KEY"],
                     hypnox.config.config["CONSUMER_SECRET"],
