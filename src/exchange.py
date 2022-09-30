@@ -378,7 +378,6 @@ def create_sell_orders(position, last_price, num_orders, spread_pct):
 
 
 def refresh(args):
-    __import__('pudb').set_trace() 
     strategy = hypnox.config.StrategyConfig(args.strategy).config
 
     market = hypnox.db.get_market(api.id, strategy["SYMBOL"])

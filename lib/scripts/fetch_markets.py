@@ -12,19 +12,27 @@ if not table_exists:
 
 hypnox.watchdog.scripts_log.info("fetching all markets from exchange api...")
 
-markets = hypnox.exchange.api.fetch_markets()
+ex_markets = hypnox.exchange.api.fetch_markets()
 
-for m in markets:
-    model = hypnox.db.Market(exchange=hypnox.exchange.api.id,
-                             symbol=m["symbol"],
-                             base=m["base"],
-                             quote=m["quote"],
-                             base_precision=m["precision"]["base"],
-                             quote_precision=m["precision"]["quote"])
+for ex_market in ex_markets:
+    market = hypnox.db.Market(
+        exchange=hypnox.exchange.api.id,
+        symbol=ex_market["symbol"],
+        base=ex_market["base"],
+        quote=ex_market["quote"],
+        amount_precision=ex_market["precision"]["amount"],
+        base_precision=ex_market["precision"]["base"],
+        price_precision=ex_market["precision"]["price"],
+        quote_precision=ex_market["precision"]["quote"])
 
-    model.cost_min = int(m["limits"]["cost"]["min"] *
-                         10**model.quote_precision)
+    amount_min = ex_market["limits"]["amount"]["min"]
+    cost_min = ex_market["limits"]["cost"]["min"]
+    price_min = ex_market["limits"]["price"]["min"]
 
-    model.save(force_insert=table_exists)
+    market.amount_min = market.btransform(amount_min)
+    market.cost_min = market.qtransform(cost_min)
+    market.price_min = market.qtransform(price_min)
 
-    hypnox.watchdog.scripts_log.info("saved market " + model.symbol)
+    market.save(force_insert=table_exists)
+
+    hypnox.watchdog.scripts_log.info("saved market " + market.symbol)
