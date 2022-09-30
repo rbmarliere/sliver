@@ -1,6 +1,5 @@
 import datetime
 
-import numpy
 import peewee
 import tensorflow
 import transformers
@@ -189,6 +188,8 @@ class Tweet(BaseModel):
 #     time = peewee.DateTimeField()
 #     # balances
 
+# class Strategy(BaseModel):
+
 
 def get_market(exchange, symbol):
     return Market.select().where((Market.exchange == exchange)
@@ -240,6 +241,7 @@ def replay(args):
             "input_ids": inputs["input_ids"],
             "attention_mask": inputs["attention_mask"]
         },
+        batch_size=128,
         verbose=1)
 
     if model_config.yaml["class"] == "polarity":
@@ -247,7 +249,7 @@ def replay(args):
         i = 0
         for tweet in tweets:
             tweet.model_p = model_config.yaml["name"]
-            max = numpy.argmax(prob[i]).item()
+            max = prob[i].argmax()
             tweet.polarity = labels[max] * prob[i][max]
             i += 1
     elif model_config.yaml["class"] == "intensity":
@@ -260,4 +262,4 @@ def replay(args):
     with hypnox.db.connection.atomic():
         hypnox.db.Tweet.bulk_update(tweets,
                                     fields=[model_column, score_column],
-                                    batch_size=1024)
+                                    batch_size=128)
