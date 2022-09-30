@@ -25,9 +25,13 @@ class Market(BaseModel):
     symbol = peewee.TextField()
     base = peewee.TextField()
     quote = peewee.TextField()
+    amount_precision = peewee.IntegerField()
     base_precision = peewee.IntegerField()
+    price_precision = peewee.IntegerField()
     quote_precision = peewee.IntegerField()
+    amount_min = peewee.BigIntegerField()
     cost_min = peewee.BigIntegerField()
+    price_min = peewee.BigIntegerField()
 
     class Meta:
         constraints = [peewee.SQL("UNIQUE (exchange, symbol)")]
