@@ -14,3 +14,7 @@ def get_target_cost(market):
 def sync():
     hypnox.watchdog.log.info("sync_inventory")
     # refresh balances
+
+
+def report():
+    hypnox.watchdog.log.info("report pnl over a period")
