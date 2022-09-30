@@ -45,15 +45,10 @@ def train(args):
     tokenizer = transformers.AutoTokenizer.from_pretrained(
         model_config.yaml["bert"])
 
-    # split training data into training, testing and validating sets
-    train_df, test_df, = sklearn.model_selection.train_test_split(
+    # split training data into training and validation sets
+    train_df, val_df, = sklearn.model_selection.train_test_split(
         raw_df,
         stratify=raw_df[model_config.yaml["class"]],
-        test_size=model_config.yaml["test_size"],
-        random_state=93)
-    train_df, val_df = sklearn.model_selection.train_test_split(
-        train_df,
-        stratify=train_df[model_config.yaml["class"]],
         test_size=model_config.yaml["test_size"],
         random_state=93)
 
@@ -72,13 +67,6 @@ def train(args):
                   max_length=model_config.yaml["max_length"],
                   return_tensors="tf",
                   return_token_type_ids=False))
-    test_tok = dict(
-        tokenizer(test_df["tweet"].values.tolist(),
-                  truncation=True,
-                  padding="max_length",
-                  max_length=model_config.yaml["max_length"],
-                  return_tensors="tf",
-                  return_token_type_ids=False))
 
     # build tensorflow datasets
     train_ds = tensorflow.data.Dataset.from_tensor_slices(
@@ -86,9 +74,6 @@ def train(args):
             model_config.yaml["batch_size"])
     val_ds = tensorflow.data.Dataset.from_tensor_slices(
         (val_tok, val_df[model_config.yaml["class"]])).batch(
-            model_config.yaml["batch_size"])
-    test_ds = tensorflow.data.Dataset.from_tensor_slices(
-        (test_tok, test_df[model_config.yaml["class"]])).batch(
             model_config.yaml["batch_size"])
 
     # build model
@@ -118,7 +103,7 @@ def train(args):
         learning_rate=model_config.yaml["learning_rate"])
 
     # compile model
-    model.compile(loss=loss, optimizer=optimizer, metrics=metrics)
+    model.compile(loss=loss, optimizer=optimizer, metrics=[metrics])
     model.summary()
 
     # train and evaluate model
@@ -136,7 +121,6 @@ def train(args):
               epochs=model_config.yaml["epochs"],
               callbacks=[earlystop, tensorboard],
               batch_size=model_config.yaml["batch_size"])
-    model.evaluate(test_ds, callbacks=[tensorboard])
 
     # save model
     model.save(model_config.model_path)
