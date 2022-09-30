@@ -3,3 +3,4 @@
 etc/config.json
 log/*
 lib/scripts/*.tsv
+lib/models/*
