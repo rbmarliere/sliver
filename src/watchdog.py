@@ -1,20 +1,17 @@
 import logging
 import logging.handlers
 import os
-import re
 import time
+
+import ccxt
 
 import src as hypnox
 
 
-def get_log_file(name):
-    return os.path.abspath(
+def get_logger(name):
+    log_file = os.path.abspath(
         os.path.dirname(os.path.abspath(__file__)) + "/../log/" + name +
         ".log")
-
-
-def get_logger(name):
-    log_file = get_log_file(name)
 
     formatter = logging.Formatter(
         "%(asctime)s %(levelname)s -- %(message)s :: "
@@ -42,22 +39,11 @@ stream_log = get_logger("stream")
 scripts_log = get_logger("scripts")
 
 
-def check_log(log_file, ignore):
-    if ignore:
-        return
-
-    with open(log_file, "r") as f:
-        match = re.findall("ERROR|CRITICAL|Exception", f.read())
-        if match:
-            raise Exception("found error in log " + log_file)
-
-
 def watch(args):
     strategy = hypnox.config.StrategyConfig(args.strategy).config
 
     global log
     log = get_logger("watchdog")
-    log_file = get_log_file("watchdog")
 
     hypnox.telegram.notify("watchdog init")
     log.info("watchdog init")
@@ -67,45 +53,43 @@ def watch(args):
                                           strategy["SYMBOL"])
 
             hypnox.exchange.check_api()  # latency etc
-            check_log(log_file, args.ignore_log)
 
+            # cancel all orders outside sync_orders ?
             hypnox.exchange.sync_orders(market)
             # inventory.sync_balance ? (against "strategy inventory")
             # if insufficient funds position --> stalled status?
-            check_log(log_file, args.ignore_log)
 
             hypnox.inventory.sync()
             # check trades, pnl, balances, risk
-            check_log(log_file, args.ignore_log)
 
-            args.since = "20220101"
             args.symbol = strategy["SYMBOL"]
             args.timeframe = strategy["TIMEFRAME"]
             hypnox.exchange.download(args)
-            check_log(log_file, args.ignore_log)
 
             # args.model = strategy["I_MODEL"]
             # hypnox.db.replay(args)
-            # check_log(log_file, args.ignore_log)
 
             # args.model = strategy["P_MODEL"]
             # hypnox.db.replay(args)
-            # check_log(log_file, args.ignore_log)
 
             hypnox.exchange.refresh(args)
-            check_log(log_file, args.ignore_log)
 
             sleep_in_secs = strategy["REFRESH_TIMEDELTA_IN_MINUTES"] * 60
             log.info("sleeping for " + str(sleep_in_secs) + " seconds...")
             time.sleep(sleep_in_secs)
 
-        except Exception as e:
-            hypnox.telegram.notify("got exception: " + str(e))
-            log.exception(e, exc_info=True)
-            break
+        except ccxt.NetworkError:
+            log.warning("exchange api is unreachable! "
+                        "sleeping 60 seconds before trying again...")
+            time.sleep(60)
 
         except KeyboardInterrupt:
             log.info("got keyboard interrupt")
+            break
+
+        except Exception as e:
+            hypnox.telegram.notify("got exception: " + str(e))
+            log.exception(e, exc_info=True)
             break
 
     hypnox.telegram.notify("shutting down...")
