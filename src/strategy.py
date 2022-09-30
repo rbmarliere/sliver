@@ -7,13 +7,13 @@ def get_rsignal():
     import random
     i = random.randint(0, 100)
     if i > 70:
-        hypnox.watchdog.log.info("received buy signal")
+        hypnox.watchdog.log.warning("received buy signal")
         return "buy"
     elif i < 30:
-        hypnox.watchdog.log.info("received sell signal")
+        hypnox.watchdog.log.warning("received sell signal")
         return "sell"
     else:
-        hypnox.watchdog.log.info("received neutral signal")
+        hypnox.watchdog.log.warning("received neutral signal")
         return "neutral"
 
 
@@ -28,7 +28,7 @@ def get_indicators(market, strategy):
     # long_avg = ta.EMA(prices, timeperiod=17)
     # prices["trend"] = False
     # prices.loc[(short_avg > long_avg), "trend"] = True
-    # TODO z-score?
+    # TODO z-score? (x-avg)/stddev
     # TODO lunar indicator?
 
     # grab tweets based on strategy filter
