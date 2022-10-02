@@ -64,8 +64,6 @@ watch_parser.add_argument("-s",
                           "--strategy",
                           help="name of the strategy to use",
                           required=True)
-
-watch_parser.add_argument("--ignore-log", action="store_true")
 watch_parser.set_defaults(func=hypnox.watchdog.watch)
 
 args = argp.parse_args()
