@@ -7,8 +7,9 @@ import src as hypnox
 
 def get_target_cost(market):
     balance = hypnox.exchange.api.fetch_balance()
-    quote_bal = balance[market.quote]["free"] / 10
-    return market.qtransform(quote_bal)
+    balance = market.qtransform(balance[market.quote]["free"])
+    target_cost = market.qdiv(balance, 10)
+    return target_cost
 
 
 def sync():

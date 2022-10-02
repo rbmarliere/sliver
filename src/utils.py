@@ -84,3 +84,13 @@ def get_timeframe_delta(timeframe):
     }[timeframe]
 
     return datetime.timedelta(seconds=timeframe_in_seconds)
+
+
+def truncate(f, n):
+    '''Truncates/pads a float f to n decimal places without rounding'''
+    # https://stackoverflow.com/questions/783897/how-to-truncate-float-values
+    s = '{}'.format(f)
+    if 'e' in s or 'E' in s:
+        return float('{0:.{1}f}'.format(f, n))
+    i, p, d = s.partition('.')
+    return float('.'.join([i, (d + '0' * n)[:n]]))
