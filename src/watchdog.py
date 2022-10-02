@@ -52,7 +52,7 @@ def watch(args):
             market = hypnox.db.get_market(hypnox.exchange.api.id,
                                           strategy["SYMBOL"])
 
-            hypnox.exchange.check_api()  # latency etc
+            hypnox.exchange.check_api()
 
             # cancel all orders outside sync_orders ?
             hypnox.exchange.sync_orders(market)

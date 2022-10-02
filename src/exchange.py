@@ -7,10 +7,6 @@ import peewee
 
 import src as hypnox
 
-# TODO catch ALL api errors
-# https://docs.ccxt.com/en/latest/manual.html?#exception-hierarchy
-# TODO catch db errors, failsafe atomic() etc
-
 api = ccxt.binance({
     "apiKey": hypnox.config.config["BINANCE_KEY"],
     "secret": hypnox.config.config["BINANCE_SECRET"],
@@ -191,10 +187,8 @@ def sync_orders(market):
             filled = market.btransform(ex_order["filled"])
             price = market.qtransform(ex_order["price"])
 
-            hypnox.watchdog.log.info("amount: " + market.bprint(amount))
             hypnox.watchdog.log.info("cost: " + market.qprint(cost))
             hypnox.watchdog.log.info("filled: " + market.bprint(filled))
-            hypnox.watchdog.log.info("price: " + market.qprint(price))
 
             # update order info
             order.status = ex_order["status"]
@@ -239,27 +233,36 @@ def sync_orders(market):
 
 
 def create_order(side, position, amount, price):
-    try:
-        hypnox.watchdog.log.info("inserting new order...")
+    market = position.market
 
-        ex_order = api.create_order(position.market.symbol, "LIMIT_MAKER",
-                                    side, amount, price)
+    hypnox.watchdog.log.info("inserting new " + side + " order: " +
+                             market.bprint(amount) + " @ " +
+                             market.qprint(price))
+
+    try:
+        assert amount >= market.amount_min
+        assert price >= market.price_min
+        assert amount * price >= market.cost_min
+
+        amount = market.bformat(amount)
+        price = market.qformat(price)
+
+        ex_order = api.create_order(market.symbol, "LIMIT_MAKER", side, amount,
+                                    price)
 
         hypnox.watchdog.log.info("created new " + side + " order: ")
         hypnox.watchdog.log.info(
-            position.market.symbol + " " +
-            position.market.bprint(ex_order["amount"], False) + " @ " +
-            position.market.qprint(ex_order["price"], False) + " (" +
-            position.market.qprint(ex_order["amount"] *
-                                   ex_order["price"], False) + ")")
+            market.symbol + " " + market.bprint(ex_order["amount"], False) +
+            " @ " + market.qprint(ex_order["price"], False) + " (" +
+            market.qprint(ex_order["amount"] * ex_order["price"], False) + ")")
 
     except ccxt.OrderImmediatelyFillable:
         hypnox.watchdog.log.warning(
             "order would be immediately fillable, skipping...")
         return
-    except ccxt.InvalidOrder:
+    except (ccxt.InvalidOrder, AssertionError):
         hypnox.watchdog.log.warning(
-            "order cost is less than exchange minimum, skipping...")
+            "order values are smaller than exchange minimum, skipping...")
         return
 
     hypnox.db.Order.create_from_ex_order(ex_order, position)
@@ -276,43 +279,52 @@ def create_buy_orders(position, last_price, num_orders, spread_pct):
     hypnox.watchdog.log.info("remaining to fill in bucket is " +
                              market.qprint(remaining))
 
+    # compute price delta based on given spread
+    delta = market.qdiv(last_price * spread_pct, 100)
+    init_price = last_price - delta
+
+    # compute cost for each order given a number of orders to create
+    unit_cost = market.qdiv(remaining, num_orders)
+    hypnox.watchdog.log.info("unit cost is " + market.qprint(unit_cost))
+
+    # compute prices for each order
+    unit_spread = market.qdiv(delta, num_orders)
+    spreads = [init_price] + [unit_spread] * num_orders
+    prices = [sum(spreads[:i]) for i in range(1, len(spreads))]
+
     # check if current bucket is filled
     if (datetime.datetime.utcnow() < position.next_bucket
             and remaining < market.cost_min):
         hypnox.watchdog.log.info("bucket is full, skipping...")
         return
 
-    # compute price delta based on given spread
-    delta = int(last_price * spread_pct)
-    init_price = last_price - delta
-
-    # compute cost for each order given a number of orders to create
-    unit_cost = remaining / num_orders
-    hypnox.watchdog.log.info("unit cost is " + market.qprint(unit_cost))
-
-    # compute prices for each order
-    spreads = [init_price] + [int(delta / num_orders)] * num_orders
-    prices = [sum(spreads[:i]) for i in range(1, len(spreads))]
-
-    # send a single order if the unitary cost is lower than market minimum
+    # send a single order if cost of each order is lower than market minimum
     if unit_cost < market.cost_min:
         hypnox.watchdog.log.warning(
             "unitary cost is less than exchange minimum, "
             "creating single order")
 
-        remaining_amount = int(market.qtransform(remaining) / prices[-1])
-        remaining_in_decimal = market.bformat(remaining_amount)
-        price = market.qformat(prices[-1])
-
-        create_order("buy", position, remaining_in_decimal, price)
+        # get average price for single order
+        avg_price = market.qdiv(sum(prices), len(prices))
+        remaining_amount = market.bdiv(remaining, avg_price)
+        create_order("buy", position, remaining_amount, avg_price)
         return
 
+    # avoid rounding errors
+    cost_remainder = remaining - sum([unit_cost] * num_orders)
+    if cost_remainder != 0:
+        hypnox.watchdog.log.warning("bucket remainder: " +
+                                    market.qprint(cost_remainder))
+
+    # creates bucket orders if reached here, which normally it will
     with hypnox.db.connection.atomic():
         for price in prices:
-            amount = int(market.qtransform(unit_cost) / price)
-            amount_in_decimal = market.bformat(amount)
-            price_in_decimal = position.market.qformat(price)
-            create_order("buy", position, amount_in_decimal, price_in_decimal)
+            amount = market.bdiv(unit_cost, price)
+
+            if price == prices[-1]:
+                amount += market.bdiv(cost_remainder, price)
+
+            create_order("buy", position, amount, price)
 
 
 def create_sell_orders(position, last_price, num_orders, spread_pct):
@@ -320,33 +332,33 @@ def create_sell_orders(position, last_price, num_orders, spread_pct):
 
     # remaining is an amount
     remaining = position.get_remaining_to_close()
+    remaining_to_fill = position.get_remaining_to_fill()
+    remaining_to_exit = position.get_remaining_to_exit()
 
     hypnox.watchdog.log.info("bucket amount is " +
                              market.bprint(position.bucket))
+    hypnox.watchdog.log.info("remaining is " + market.bprint(remaining))
     hypnox.watchdog.log.info("remaining to fill in bucket is " +
-                             market.bprint(remaining))
+                             market.bprint(remaining_to_fill))
+    hypnox.watchdog.log.info("remaining to exit position is " +
+                             market.bprint(remaining_to_exit))
 
     # compute price delta based on given spread
-    delta = int(last_price * spread_pct)
+    delta = market.qdiv(last_price * spread_pct, 100)
     init_price = last_price + delta
 
     # compute amount for each order given a number of orders to create
-    unit_amount = int(remaining / num_orders)
+    unit_amount = market.bdiv(remaining, num_orders)
     hypnox.watchdog.log.info("unit amount is " + market.bprint(unit_amount))
-    amount_in_decimal = market.bformat(unit_amount)
 
     # compute prices for each order
-    spreads = [init_price] + [int(-delta / num_orders)] * num_orders
+    unit_spread = market.qdiv(-delta, num_orders)
+    spreads = [init_price] + [unit_spread] * num_orders
     prices = [sum(spreads[:i]) for i in range(1, len(spreads))]
 
     # compute costs
+    amount_in_decimal = market.bformat(unit_amount)
     costs = [int(amount_in_decimal * p) for p in prices]
-
-    # avoid rounding errors when closing a position
-    unit_amount_remainder = remaining % num_orders
-    if unit_amount_remainder > 0:
-        hypnox.watchdog.log.info("unit amount remainder: " +
-                                 market.bprint(unit_amount_remainder))
 
     # check if current bucket is filled
     if (datetime.datetime.utcnow() < position.next_bucket
@@ -354,27 +366,30 @@ def create_sell_orders(position, last_price, num_orders, spread_pct):
         hypnox.watchdog.log.info("bucket is full, skipping...")
         return
 
-    # send a single order if
-    #  - any of the costs is lower than market minimum
-    #  - OR amount remaining is less than 5% of position size
-    if (any(cost < market.cost_min for cost in costs)
-            or remaining < position.entry_amount * 0.05):
-        hypnox.watchdog.log.warning("creating single order")
+    # get average price for single order
+    avg_price = market.qdiv(sum(prices), len(prices))
 
-        remaining_in_decimal = market.bformat(remaining)
-        price_in_decimal = market.qformat(prices[-1])
-
-        create_order("sell", position, remaining_in_decimal, price_in_decimal)
+    # send a single order if any of the costs is lower than market minimum
+    if any(cost < market.cost_min for cost in costs):
+        hypnox.watchdog.log.warning(
+            "unitary cost is less than exchange minimum, "
+            "creating single order")
+        create_order("sell", position, remaining, avg_price)
         return
 
+    # avoid bucket rounding errors
+    amount_remainder = remaining - sum([unit_amount] * num_orders)
+    if amount_remainder != 0:
+        hypnox.watchdog.log.warning("bucket remainder: " +
+                                    market.bprint(amount_remainder))
+
+    # creates bucket orders if reached here, which normally it will
     with hypnox.db.connection.atomic():
         for price in prices:
             if price == prices[-1]:
-                amount_in_decimal += market.bformat(unit_amount_remainder)
+                unit_amount += amount_remainder
 
-            price_in_decimal = market.qformat(price)
-
-            create_order("sell", position, amount_in_decimal, price_in_decimal)
+            create_order("sell", position, unit_amount, price)
 
 
 def refresh(args):
@@ -410,7 +425,7 @@ def refresh(args):
     if position is None and signal == "buy":
 
         target_cost = hypnox.inventory.get_target_cost(market)
-        bucket_max = int(target_cost / strategy["NUM_ORDERS"])
+        bucket_max = market.qdiv(target_cost, strategy["NUM_ORDERS"])
 
         position = hypnox.db.Position(market=market,
                                       next_bucket=next_bucket,
@@ -424,7 +439,7 @@ def refresh(args):
                                  market.qprint(target_cost))
 
         create_buy_orders(position, last_price, strategy["NUM_ORDERS"],
-                          strategy["SPREAD_PERCENTAGE"])
+                          strategy["SPREAD_PCT"])
         return
 
     # return if no active position
@@ -445,19 +460,21 @@ def refresh(args):
 
     # if entry_cost is non-zero, check if position has to be closed
     if position.entry_cost > 0 and position.is_open():
-        roi = (last_price / position.entry_price) - 1
-        roi_pct = round(roi * 100, 2)
-        hypnox.watchdog.log.info("roi = " + str(roi_pct) + "%")
+        roi = round(((last_price / position.entry_price) - 1) * 100, 2)
+        hypnox.watchdog.log.info("roi = " + str(roi) + "%")
+        hypnox.watchdog.log.info("minimum roi = " +
+                                 str(strategy["MIN_ROI_PCT"]) + "%")
+        hypnox.watchdog.log.info("stop loss = " +
+                                 str(strategy["STOP_LOSS_PCT"]) + "%")
 
-        if (signal == "sell" or roi >= strategy["MINIMUM_ROI"]
-                or roi <= strategy["STOP_LOSS"]):
+        if (signal == "sell" or roi >= strategy["MIN_ROI_PCT"]
+                or roi <= strategy["STOP_LOSS_PCT"]):
             hypnox.watchdog.log.info("closing position")
 
             # when selling, bucket_max becomes an amount instead of cost
-            position.bucket_max = (position.entry_amount /
-                                   strategy["NUM_ORDERS"])
+            position.bucket_max = market.bdiv(position.entry_amount,
+                                              strategy["NUM_ORDERS"])
             position.bucket = 0
-
             position.status = "closing"
 
     # close position if entry_cost is zero while closing it
@@ -485,12 +502,12 @@ def refresh(args):
     # create buy orders for an opening position
     if position.status == "opening":
         create_buy_orders(position, last_price, strategy["NUM_ORDERS"],
-                          strategy["SPREAD_PERCENTAGE"])
+                          strategy["SPREAD_PCT"])
 
     # create sell orders for a closing position or close
     elif position.status == "closing":
         create_sell_orders(position, last_price, strategy["NUM_ORDERS"],
-                           strategy["SPREAD_PERCENTAGE"])
+                           strategy["SPREAD_PCT"])
 
     else:
         hypnox.watchdog.log.info("position is " + position.status +

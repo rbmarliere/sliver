@@ -1,4 +1,5 @@
 import datetime
+import decimal
 
 import peewee
 import tensorflow
@@ -25,6 +26,7 @@ class Market(BaseModel):
     symbol = peewee.TextField()
     base = peewee.TextField()
     quote = peewee.TextField()
+    precision_mode = peewee.TextField()  # TODO ccxt.base.decimal_to_precision
     amount_precision = peewee.IntegerField()
     base_precision = peewee.IntegerField()
     price_precision = peewee.IntegerField()
@@ -36,28 +38,62 @@ class Market(BaseModel):
     class Meta:
         constraints = [peewee.SQL("UNIQUE (exchange, symbol)")]
 
-    def bformat(self, value):
-        return round(value / 10**self.base_precision, self.base_precision)
+    def bdiv(self, num, den):
+        decimal.getcontext().prec = self.base_precision
+        div = decimal.Decimal(str(num)) / decimal.Decimal(str(den))
 
-    def btransform(self, value):
-        return int(value * 10**self.base_precision)
+        if abs(num) > abs(den):
+            div = int(div)
+        else:
+            div = self.btransform(div)
+
+        div = hypnox.utils.truncate(self.bformat(div), self.amount_precision)
+
+        return self.btransform(div)
+
+    def qdiv(self, num, den):
+        decimal.getcontext().prec = self.quote_precision
+        div = decimal.Decimal(str(num)) / decimal.Decimal(str(den))
+
+        if abs(num) > abs(den):
+            div = int(div)
+        else:
+            div = self.btransform(div)
+
+        div = hypnox.utils.truncate(self.qformat(div), self.price_precision)
+
+        return self.qtransform(div)
+
+    def bformat(self, value):
+        decimal.getcontext().prec = self.base_precision
+        value = decimal.Decimal(str(value)) / 10**self.base_precision
+        return hypnox.utils.truncate(value, self.base_precision)
 
     def qformat(self, value):
-        return round(value / 10**self.quote_precision, self.base_precision)
+        decimal.getcontext().prec = self.quote_precision
+        value = decimal.Decimal(str(value)) / 10**self.quote_precision
+        return hypnox.utils.truncate(value, self.quote_precision)
+
+    def btransform(self, value):
+        decimal.getcontext().prec = self.base_precision
+        value = decimal.Decimal(str(value)) * 10**self.base_precision
+        return int(value)
 
     def qtransform(self, value):
-        return int(value * 10**self.quote_precision)
+        decimal.getcontext().prec = self.base_precision
+        value = decimal.Decimal(str(value)) * 10**self.quote_precision
+        return int(value)
 
     def bprint(self, value, format_value=True):
         if format_value:
             value = self.bformat(value)
-        prec = str(self.base_precision)
+        prec = str(self.amount_precision)
         return str("{:." + prec + "f} ").format(value) + self.base
 
     def qprint(self, value, format_value=True):
         if format_value:
             value = self.qformat(value)
-        prec = str(self.quote_precision)
+        prec = str(self.price_precision)
         return str("{:." + prec + "f} ").format(value) + self.quote
 
     def get_open_orders(self):
@@ -103,13 +139,25 @@ class Position(BaseModel):
     def is_open(self):
         return self.status != "closing" and self.status != "closed"
 
+    def get_remaining_to_fill(self):
+        return self.bucket_max - self.bucket
+
+    def get_remaining_to_exit(self):
+        return self.entry_amount - self.exit_amount
+
     def get_remaining_to_open(self):
         return min(self.target_cost - self.entry_cost,
                    self.bucket_max - self.bucket)
 
     def get_remaining_to_close(self):
-        return min(self.entry_amount - self.exit_amount,
-                   self.bucket_max - self.bucket)
+        to_fill = self.get_remaining_to_fill()
+        to_exit = self.get_remaining_to_exit()
+
+        # avoid rounding errors
+        if to_exit < to_fill * 1.01:
+            return to_exit
+        else:
+            return to_fill
 
 
 class Order(BaseModel):
@@ -161,7 +209,6 @@ class Order(BaseModel):
                                 cost=cost,
                                 filled=filled,
                                 fee=fee)
-
         order.save()
 
 

@@ -143,8 +143,8 @@ def backtest(args):
             price_delta = ind["open"] - position.entry_price
             tmp_roi = price_delta / position.entry_amount
 
-            if (tmp_roi >= strategy["MINIMUM_ROI"]
-                    or tmp_roi <= strategy["STOP_LOSS"]
+            if (tmp_roi >= strategy["MIN_ROI_PCT"]
+                    or tmp_roi <= strategy["STOP_LOSS_PCT"]
                     or ind["signal"] == "sell"):
 
                 total_pnl += price_delta

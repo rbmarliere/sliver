@@ -12,6 +12,8 @@ if not table_exists:
 
 hypnox.watchdog.scripts_log.info("fetching all markets from exchange api...")
 
+precision_mode = hypnox.exchange.api.precisionMode
+
 ex_markets = hypnox.exchange.api.fetch_markets()
 
 for ex_market in ex_markets:
@@ -20,6 +22,7 @@ for ex_market in ex_markets:
         symbol=ex_market["symbol"],
         base=ex_market["base"],
         quote=ex_market["quote"],
+        precision_mode=precision_mode,
         amount_precision=ex_market["precision"]["amount"],
         base_precision=ex_market["precision"]["base"],
         price_precision=ex_market["precision"]["price"],
