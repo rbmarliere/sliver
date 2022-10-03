@@ -2,6 +2,7 @@
 
 import argparse
 import datetime
+import os
 import sys
 
 import pandas
@@ -22,14 +23,14 @@ argp.add_argument("-n",
 args = argp.parse_args()
 
 hypnox.watchdog.scripts_log.info("loading input labeled data")
-try:
-    last_training = pandas.read_csv(args.input,
-                                    lineterminator="\n",
-                                    delimiter="\t",
-                                    encoding="utf-8")
-except FileNotFoundError:
-    hypnox.watchdog.scripts_log.error("input file not found!")
-    sys.exit(1)
+
+assert os.path.exists(args.input)
+
+last_training = pandas.read_csv(args.input,
+                                lineterminator="\n",
+                                delimiter="\t",
+                                encoding="utf-8")
+
 last_training["clean"] = last_training["tweet"].apply(hypnox.utils.standardize)
 
 hypnox.watchdog.scripts_log.info("retrieving highest scored tweets set")
