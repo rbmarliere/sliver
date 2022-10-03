@@ -360,14 +360,21 @@ def create_sell_orders(position, last_price, num_orders, spread_pct):
     amount_in_decimal = market.bformat(unit_amount)
     costs = [int(amount_in_decimal * p) for p in prices]
 
+    # get average price for single order
+    avg_price = market.qdiv(sum(prices), len(prices))
+
     # check if current bucket is filled
     if (datetime.datetime.utcnow() < position.next_bucket
             and sum(costs) < market.cost_min):
+
+        # if bucket is empty and cost is below minimum, position is stalled
+        if position.bucket == 0:
+            hypnox.watchdog.log.warning("position is stalled, exiting...")
+            create_order("sell", position, remaining_to_exit, avg_price)
+            return
+
         hypnox.watchdog.log.info("bucket is full, skipping...")
         return
-
-    # get average price for single order
-    avg_price = market.qdiv(sum(prices), len(prices))
 
     # send a single order if any of the costs is lower than market minimum
     if any(cost < market.cost_min for cost in costs):
