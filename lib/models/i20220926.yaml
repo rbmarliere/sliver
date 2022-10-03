@@ -1,7 +1,5 @@
 ---
-name: "i20220926"
 class: "intensity"
-training_file: "20220926.tsv"
 bert: "yiyanghkust/finbert-pretrain"
 num_labels: 2
 test_size: 0.178
@@ -12,4 +10,3 @@ learning_rate: 0.0000015
 min_delta: 0.005
 patience: 3
 monitor: "val_loss"
-rmk: >

@@ -15,10 +15,8 @@ import src as hypnox  # noqa: E402
 model_name = "i20220926"
 config = hypnox.utils.load_yaml("/../lib/models/" + model_name + ".yaml")
 
-# check if model exists and asks for confirmation
-if os.path.exists(model_name):
-    print("directory " + model_name + " is not empty!")
-    sys.exit(1)
+# check if model exists
+assert not os.path.exists(model_name)
 
 # load training data
 raw_df = pandas.read_csv("training.tsv",
@@ -27,9 +25,7 @@ raw_df = pandas.read_csv("training.tsv",
                          sep="\t")
 
 # check training data
-if "tweet" and "intensity" and "polarity" not in raw_df.columns:
-    print("malformed training data")
-    sys.exit(1)
+assert "tweet" and "intensity" and "polarity" in raw_df.columns
 
 # drop duplicates
 raw_df = raw_df.drop_duplicates(subset="tweet", keep="last")

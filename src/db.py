@@ -272,7 +272,7 @@ def replay(args):
         score_column = getattr(hypnox.db.Tweet, "intensity")
 
     query = hypnox.db.Tweet.select().where((
-        model_column != model_config.yaml["name"])
+        model_column != args.model)
                                            | (model_column.is_null()))
 
     tweets = []
@@ -302,14 +302,14 @@ def replay(args):
         labels = {0: 0, 2: -1, 1: 1}
         i = 0
         for tweet in tweets:
-            tweet.model_p = model_config.yaml["name"]
+            tweet.model_p = args.model
             max = prob[i].argmax()
             tweet.polarity = labels[max] * prob[i][max]
             i += 1
     elif model_config.yaml["class"] == "intensity":
         i = 0
         for tweet in tweets:
-            tweet.model_i = model_config.yaml["name"]
+            tweet.model_i = args.model
             tweet.intensity = prob[i][1].item()
             i += 1
 
