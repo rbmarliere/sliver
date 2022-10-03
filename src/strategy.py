@@ -101,7 +101,8 @@ def get_indicators(market, strategy):
 def backtest(args):
     # TODO charts
 
-    strategy = hypnox.config.StrategyConfig(args.strategy).config
+    strategy = hypnox.utils.load_json("/../etc/strategies/" + args.strategy +
+                                      ".json")
 
     # check if symbol is supported by hypnox
     market = hypnox.db.get_market(hypnox.exchange.api.id, strategy["SYMBOL"])
