@@ -1,6 +1,6 @@
 *__pycache__*
 .venv
-etc/config.json
+config.json
 log/*
 lib/scripts/*.tsv
 lib/models/*
