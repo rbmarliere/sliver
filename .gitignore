@@ -4,3 +4,6 @@ etc/config.json
 log/*
 lib/scripts/*.tsv
 lib/models/*
+!lib/models/*.yaml
+!lib/models/*.py
+!lib/models/*.tsv

@@ -1,8 +1,11 @@
 import datetime
+import json as jsondep
+import os
 import re
 import string
 
 import nltk
+import yaml
 
 try:
     nltk.data.find("corpora/stopwords.zip")
@@ -94,3 +97,22 @@ def truncate(f, n):
         return float('{0:.{1}f}'.format(f, n))
     i, p, d = s.partition('.')
     return float('.'.join([i, (d + '0' * n)[:n]]))
+
+
+def get_abs_path(relative_path):
+    abs_path = os.path.abspath(
+        os.path.dirname(os.path.abspath(__file__)) + relative_path)
+    return abs_path
+
+
+def load_json(relative_path):
+    config_file = get_abs_path(relative_path)
+    assert os.path.exists(config_file)
+    return jsondep.load(open(config_file))
+
+
+def load_yaml(relative_path):
+    config_file = get_abs_path(relative_path)
+    assert os.path.exists(config_file)
+    with open(config_file, "r") as stream:
+        return yaml.safe_load(stream)

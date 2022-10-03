@@ -1,5 +1,6 @@
 import datetime
 import decimal
+import os
 
 import peewee
 import tensorflow
@@ -8,10 +9,10 @@ import transformers
 import src as hypnox
 
 connection = peewee.PostgresqlDatabase(
-    hypnox.config.config["DB_DATABASE"], **{
-        "host": hypnox.config.config["DB_HOST"],
-        "user": hypnox.config.config["DB_USER"],
-        "password": hypnox.config.config["DB_PASSWORD"]
+    hypnox.config["DB_DATABASE"], **{
+        "host": hypnox.config["DB_HOST"],
+        "user": hypnox.config["DB_USER"],
+        "password": hypnox.config["DB_PASSWORD"]
     })
 
 
@@ -248,8 +249,10 @@ def get_market(exchange, symbol):
 
 
 def replay(args):
-    model_config = hypnox.config.ModelConfig(args.model)
-    model_config.check_model()
+    model_config = hypnox.utils.load_yaml("/../lib/models/" + args.model +
+                                          ".yaml")
+    model_path = hypnox.utils.get_abs_path("/../lib/models/" + args.model)
+    assert os.path.exists(model_path)
 
     bert = transformers.TFAutoModel.from_pretrained(
         model_config.yaml["bert"],

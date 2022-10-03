@@ -51,13 +51,6 @@ stream_parser = sub_parsers.add_parser("stream",
                                        help="stream twitter in real time")
 stream_parser.set_defaults(func=hypnox.twitter.stream)
 
-train_parser = sub_parsers.add_parser("train", help="train a model")
-train_parser.add_argument("-m",
-                          "--model",
-                          help="name of the model to save",
-                          required=True)
-train_parser.set_defaults(func=hypnox.model.train)
-
 watch_parser = sub_parsers.add_parser("watch",
                                       help="watch the market in real time")
 watch_parser.add_argument("-s",
