@@ -153,8 +153,8 @@ class Position(BaseModel):
         to_fill = self.get_remaining_to_fill()
         to_exit = self.get_remaining_to_exit()
 
-        # avoid rounding errors
-        if to_exit < to_fill * 1.01:
+        # avoid rounding errors by exiting early
+        if to_exit < to_fill * 1.2:
             return to_exit
         else:
             return to_fill
