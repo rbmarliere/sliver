@@ -1,0 +1,19 @@
+{
+    "EXCHANGE": "binance",
+    "SYMBOL": "BTC/USDT",
+    "BASE": "BTC",
+    "QUOTE": "USDT",
+    "TIMEFRAME": "4h",
+    "REFRESH_TIMEDELTA_IN_MINUTES": 0.5,
+    "I_MODEL": "i20220926",
+    "P_MODEL": "",
+    "INTENSITY_THRESHOLD": 0.0001,
+    "POLARITY_THRESHOLD": 0,
+    "TWEET_FILTER": "btc|bitcoin",
+    "NUM_ORDERS": 7,
+    "BUCKET_TIMEDELTA_IN_MINUTES": 1,
+    "SPREAD_PCT": 0.01,
+    "MIN_ROI_PCT": 0.5,
+    "STOP_LOSS_PCT": -3,
+    "BACKTEST_FEE_PCT": 0.1
+}
