@@ -8,8 +8,8 @@ import peewee
 import src as hypnox
 
 api = ccxt.binance({
-    "apiKey": hypnox.config.config["BINANCE_KEY"],
-    "secret": hypnox.config.config["BINANCE_SECRET"],
+    "apiKey": hypnox.config["BINANCE_KEY"],
+    "secret": hypnox.config["BINANCE_SECRET"],
 })
 api.set_sandbox_mode(True)
 # api.verbose = True
@@ -400,7 +400,8 @@ def create_sell_orders(position, last_price, num_orders, spread_pct):
 
 
 def refresh(args):
-    strategy = hypnox.config.StrategyConfig(args.strategy).config
+    strategy = hypnox.utils.load_json("/../etc/strategies/" + args.strategy +
+                                      ".json")
 
     market = hypnox.db.get_market(api.id, strategy["SYMBOL"])
     if market is None:

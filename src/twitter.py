@@ -136,24 +136,24 @@ def save_uids(users, api):
 
 def stream(args):
     hypnox.watchdog.stream_log.info("loading twitter API keys")
-    if hypnox.config.config["CONSUMER_KEY"] == "" or hypnox.config.config[
-            "CONSUMER_SECRET"] == "" or hypnox.config.config[
-                "ACCESS_KEY"] == "" or hypnox.config.config[
+    if hypnox.config["CONSUMER_KEY"] == "" or hypnox.config[
+            "CONSUMER_SECRET"] == "" or hypnox.config[
+                "ACCESS_KEY"] == "" or hypnox.config[
                     "ACCESS_SECRET"] == "":
         hypnox.watchdog.stream_log.error("empty keys in config!")
         return 1
-    auth = tweepy.OAuthHandler(hypnox.config.config["CONSUMER_KEY"],
-                               hypnox.config.config["CONSUMER_SECRET"])
-    auth.set_access_token(hypnox.config.config["ACCESS_KEY"],
-                          hypnox.config.config["ACCESS_SECRET"])
+    auth = tweepy.OAuthHandler(hypnox.config["CONSUMER_KEY"],
+                               hypnox.config["CONSUMER_SECRET"])
+    auth.set_access_token(hypnox.config["ACCESS_KEY"],
+                          hypnox.config["ACCESS_SECRET"])
     api = tweepy.API(auth)
 
     hypnox.telegram.notify("initializing twitter stream...")
     hypnox.watchdog.stream_log.info("initializing")
-    stream = Stream(hypnox.config.config["CONSUMER_KEY"],
-                    hypnox.config.config["CONSUMER_SECRET"],
-                    hypnox.config.config["ACCESS_KEY"],
-                    hypnox.config.config["ACCESS_SECRET"])
+    stream = Stream(hypnox.config["CONSUMER_KEY"],
+                    hypnox.config["CONSUMER_SECRET"],
+                    hypnox.config["ACCESS_KEY"],
+                    hypnox.config["ACCESS_SECRET"])
 
     hypnox.watchdog.stream_log.info("reading users")
     try:

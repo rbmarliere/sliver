@@ -40,7 +40,8 @@ scripts_log = get_logger("scripts")
 
 
 def watch(args):
-    strategy = hypnox.config.StrategyConfig(args.strategy).config
+    strategy = hypnox.utils.load_json("/../etc/strategies/" + args.strategy +
+                                      ".json")
 
     global log
     log = get_logger("watchdog")
