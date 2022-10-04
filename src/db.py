@@ -150,16 +150,6 @@ class Position(BaseModel):
         return min(self.target_cost - self.entry_cost,
                    self.bucket_max - self.bucket)
 
-    def get_remaining_to_close(self):
-        to_fill = self.get_remaining_to_fill()
-        to_exit = self.get_remaining_to_exit()
-
-        # avoid rounding errors by exiting early
-        if to_exit < to_fill * 1.2:
-            return to_exit
-        else:
-            return to_fill
-
 
 class Order(BaseModel):
     # which position it belongs to
