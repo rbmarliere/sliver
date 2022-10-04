@@ -331,13 +331,11 @@ def create_sell_orders(position, last_price, num_orders, spread_pct):
     market = position.market
 
     # remaining is an amount
-    remaining = position.get_remaining_to_close()
     remaining_to_fill = position.get_remaining_to_fill()
     remaining_to_exit = position.get_remaining_to_exit()
 
     hypnox.watchdog.log.info("bucket amount is " +
                              market.bprint(position.bucket))
-    hypnox.watchdog.log.info("remaining is " + market.bprint(remaining))
     hypnox.watchdog.log.info("remaining to fill in bucket is " +
                              market.bprint(remaining_to_fill))
     hypnox.watchdog.log.info("remaining to exit position is " +
@@ -347,14 +345,23 @@ def create_sell_orders(position, last_price, num_orders, spread_pct):
     delta = market.qdiv(last_price * spread_pct, 100)
     init_price = last_price + delta
 
-    # compute amount for each order given a number of orders to create
-    unit_amount = market.bdiv(remaining, num_orders)
-    hypnox.watchdog.log.info("unit amount is " + market.bprint(unit_amount))
-
     # compute prices for each order
     unit_spread = market.qdiv(-delta, num_orders)
     spreads = [init_price] + [unit_spread] * num_orders
     prices = [sum(spreads[:i]) for i in range(1, len(spreads))]
+
+    # avoid position rounding errors by exiting early
+    remaining = min(remaining_to_fill, remaining_to_exit)
+    position_remainder = market.qformat(remaining_to_exit - remaining_to_fill)
+    if (position_remainder > 0
+            and position_remainder * prices[-1] <= market.cost_min):
+        hypnox.watchdog.log.warning("position remainder: " +
+                                    market.bprint(position_remainder, False))
+        remaining = remaining_to_exit
+
+    # compute amount for each order given a number of orders to create
+    unit_amount = market.bdiv(remaining, num_orders)
+    hypnox.watchdog.log.info("unit amount is " + market.bprint(unit_amount))
 
     # compute costs
     amount_in_decimal = market.bformat(unit_amount)
@@ -385,22 +392,22 @@ def create_sell_orders(position, last_price, num_orders, spread_pct):
         return
 
     # avoid bucket rounding errors
-    amount_remainder = remaining - sum([unit_amount] * num_orders)
-    if amount_remainder != 0:
+    bucket_remainder = remaining - sum([unit_amount] * num_orders)
+    if bucket_remainder != 0:
         hypnox.watchdog.log.warning("bucket remainder: " +
-                                    market.bprint(amount_remainder))
+                                    market.bprint(bucket_remainder))
 
     # creates bucket orders if reached here, which normally it will
     with hypnox.db.connection.atomic():
         for price in prices:
             if price == prices[-1]:
-                unit_amount += amount_remainder
+                unit_amount += bucket_remainder
 
             create_order("sell", position, unit_amount, price)
 
 
 def refresh(args):
-    strategy = hypnox.utils.load_json("/../etc/strategies/" + args.strategy +
+    strategy = hypnox.utils.load_json("/../strategies/" + args.strategy +
                                       ".json")
 
     market = hypnox.db.get_market(api.id, strategy["SYMBOL"])
@@ -484,6 +491,8 @@ def refresh(args):
                                               strategy["NUM_ORDERS"])
             position.bucket = 0
             position.status = "closing"
+
+    # TODO if is_closing() && signal == buy: buyback
 
     # close position if entry_cost is zero while closing it
     elif position.entry_cost == 0 and position.status == "closing":
