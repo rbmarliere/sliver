@@ -1,8 +1,18 @@
 # TODO check inventory before retrying if an order fails
-# TODO VaR, sharpe, TWAP/VWAP
-# TODO strategy table with pair and is_running and inventory?
 
-import src as hypnox
+# --METRICS:
+# VaR,
+# sharpe,
+# TWAP/VWAP,
+# cagr,
+# sortino,
+# cumulative return,
+# profit factor,
+# max drawdown,
+# payoff ratio,
+# win days
+
+import hypnox
 
 
 def get_target_cost(market):
@@ -12,7 +22,7 @@ def get_target_cost(market):
     return target_cost
 
 
-def sync():
+def sync_balances(user: hypnox.db.User, market: hypnox.db.Market):
     hypnox.watchdog.log.info("sync_inventory")
     # refresh balances
 

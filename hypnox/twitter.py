@@ -8,7 +8,7 @@ import requests
 import tweepy
 import urllib3
 
-import src as hypnox
+import hypnox
 
 TRACK_USERS = [
     "22loops", "Amdtrades", "Ameba_NM", "Anbessa100", "AnondranCrypto",
@@ -62,8 +62,7 @@ TRACK_USERS = [
     "walter_wyckoff", "xxstevelee"
 ]
 
-cache_file = os.path.abspath(
-    os.path.dirname(os.path.abspath(__file__)) + "/../log/cache.tsv")
+cache_file = hypnox.utils.get_abs_path("/../log/cache.tsv")
 
 
 class Stream(tweepy.Stream):
@@ -138,8 +137,7 @@ def stream(args):
     hypnox.watchdog.stream_log.info("loading twitter API keys")
     if hypnox.config["CONSUMER_KEY"] == "" or hypnox.config[
             "CONSUMER_SECRET"] == "" or hypnox.config[
-                "ACCESS_KEY"] == "" or hypnox.config[
-                    "ACCESS_SECRET"] == "":
+                "ACCESS_KEY"] == "" or hypnox.config["ACCESS_SECRET"] == "":
         hypnox.watchdog.stream_log.error("empty keys in config!")
         return 1
     auth = tweepy.OAuthHandler(hypnox.config["CONSUMER_KEY"],

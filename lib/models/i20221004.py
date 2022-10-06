@@ -9,7 +9,7 @@ import transformers
 import hypnox
 
 # load model config
-model_name = "i20220926"
+model_name = "i20221004"
 config = hypnox.utils.load_yaml("/../lib/models/" + model_name + ".yaml")
 
 # check if model exists
@@ -79,8 +79,8 @@ mask = tensorflow.keras.layers.Input(shape=(config["max_length"], ),
 embeddings = bert(input_ids, attention_mask=mask)[0]
 X = tensorflow.keras.layers.GlobalMaxPool1D()(embeddings)
 X = tensorflow.keras.layers.BatchNormalization()(X)
-X = tensorflow.keras.layers.Dense(156, activation="relu")(X)
-X = tensorflow.keras.layers.Dropout(0.2)(X)
+X = tensorflow.keras.layers.Dense(128, activation="relu")(X)
+X = tensorflow.keras.layers.Dropout(0.1)(X)
 y = tensorflow.keras.layers.Dense(config["num_labels"],
                                   activation="softmax",
                                   name="outputs")(X)
