@@ -238,10 +238,10 @@ def create_order(side: hypnox.enum.OrderSide, position: hypnox.db.Position,
         ex_order = api.create_order(market.symbol, "LIMIT_MAKER", side.value,
                                     amount, price)
 
+        hypnox.watchdog.log.info("created new " + side.value + " order:")
         hypnox.watchdog.log.info(
-            "created new " + side.value + " order:   " + market.symbol + " " +
-            market.bprint(ex_order["amount"], False) + " @ " +
-            market.qprint(ex_order["price"], False) + " (" +
+            market.symbol + " " + market.bprint(ex_order["amount"], False) +
+            " @ " + market.qprint(ex_order["price"], False) + " (" +
             market.qprint(ex_order["amount"] * ex_order["price"], False) + ")")
 
     except ccxt.OrderImmediatelyFillable:
