@@ -49,8 +49,8 @@ class Exchange(BaseModel):
         constraints = [peewee.SQL("UNIQUE (name)")]
 
     def get_market_by_symbol(self, symbol):
-        return Market.select().where((Market.exchange == self) &
-                                     (Market.symbol == symbol)).get()
+        return Market.select().where((Market.exchange == self)
+                                     & (Market.symbol == symbol)).get()
 
 
 class User(BaseModel):
@@ -181,7 +181,8 @@ class Strategy(BaseModel):
 
     def get_active_users(self):
         return User.select().join(UserStrategy).join(Strategy).where(
-            (Strategy.id == self.id) & (Strategy.market == self.market))
+            (Strategy.id == self.id) & (Strategy.market == self.market)
+            & (UserStrategy.active))
 
 
 def get_active_strategies():
