@@ -3,8 +3,8 @@
 .venv
 etc/config.json
 log/*
-lib/scripts/*.tsv
-lib/models/*
+scripts/*.tsv
+models/*
 !lib/models/*.yaml
 !lib/models/*.py
 !lib/models/*.tsv
