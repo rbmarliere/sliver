@@ -1,5 +1,6 @@
-import src as hypnox
 import telegram
+
+import hypnox
 
 
 def notify(message):

@@ -2,7 +2,7 @@
 
 import argparse
 
-import src as hypnox
+import hypnox
 
 description = """
               _        _
@@ -20,24 +20,8 @@ sub_parsers = argp.add_subparsers(title="commands",
                                   required=True)
 
 backtest_parser = sub_parsers.add_parser(
-    "backtest", help="backtest a strategy against a timeframe")
-backtest_parser.add_argument("-s",
-                             "--strategy",
-                             help="name of the strategy to backtest",
-                             required=True)
+    "backtest", help="backtest active strategies")
 backtest_parser.set_defaults(func=hypnox.strategy.backtest)
-
-download_parser = sub_parsers.add_parser("download",
-                                         help="download price data")
-download_parser.add_argument("-s",
-                             "--symbol",
-                             help="symbol to download from e.g. BTC/USDT",
-                             required=True)
-download_parser.add_argument("-t",
-                             "--timeframe",
-                             help="e.g. 15m, 1h, 4h, 12h, 1d, 3d, 1w",
-                             required=True)
-download_parser.set_defaults(func=hypnox.exchange.download)
 
 replay_parser = sub_parsers.add_parser(
     "replay", help="use a trained model to replay a database")
@@ -53,10 +37,6 @@ stream_parser.set_defaults(func=hypnox.twitter.stream)
 
 watch_parser = sub_parsers.add_parser("watch",
                                       help="watch the market in real time")
-watch_parser.add_argument("-s",
-                          "--strategy",
-                          help="name of the strategy to use",
-                          required=True)
 watch_parser.set_defaults(func=hypnox.watchdog.watch)
 
 args = argp.parse_args()

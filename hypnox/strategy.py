@@ -1,6 +1,6 @@
 import pandas
 
-import src as hypnox
+import hypnox
 
 
 def get_rsignal():
@@ -17,7 +17,7 @@ def get_rsignal():
         return "neutral"
 
 
-def get_indicators(market, strategy):
+def get_indicators(strategy):
     # TODO timedelta arg?
     # TODO sell_half signal?
     # TODO weighthing, e.g.
@@ -33,25 +33,22 @@ def get_indicators(market, strategy):
 
     # grab tweets based on strategy filter
     filter = hypnox.db.Tweet.text.iregexp(
-        strategy["TWEET_FILTER"].encode("unicode_escape"))
+        strategy.tweet_filter.encode("unicode_escape"))
 
-    tweets = hypnox.db.Tweet.select().where(
-        filter
-        & (hypnox.db.Tweet.model_i == strategy["I_MODEL"])
-        & (hypnox.db.Tweet.model_p == strategy["P_MODEL"]))
+    tweets = hypnox.db.Tweet.select().where(filter)
     tweets = pandas.DataFrame(tweets.dicts())
 
     # check if there are tweets with given params
     if tweets.empty:
-        hypnox.watchdog.log.error("no tweets found for models " +
-                                  strategy["I_MODEL"] + " and " +
-                                  strategy["P_MODEL"])
+        hypnox.watchdog.log.error("no tweets found")
+        # TODO
+        # for models " + strategy["I_MODEL"] + " and " + strategy["P_MODEL"])
         raise Exception
 
     # sort by date
     tweets.sort_values("time", inplace=True)
     # aggregate tweets by timeframe
-    tweets["floor"] = tweets.time.dt.floor(strategy["TIMEFRAME"])
+    tweets["floor"] = tweets.time.dt.floor(strategy.timeframe)
     # set floor as index
     tweets.set_index("floor", inplace=True)
     # compute indicators from groups
@@ -62,15 +59,15 @@ def get_indicators(market, strategy):
 
     # grab price data
     prices = hypnox.db.Price.select().where(
-        (hypnox.db.Price.market == market)
-        & (hypnox.db.Price.timeframe == strategy["TIMEFRAME"]))
+        (hypnox.db.Price.market == strategy.market)
+        & (hypnox.db.Price.timeframe == strategy.timeframe))
     prices = pandas.DataFrame(prices.dicts())
 
     # check if there is data for given params
     if prices.empty:
         hypnox.watchdog.log.error("no price data found for symbol " +
-                                  strategy["SYMBOL"] + " for timeframe " +
-                                  strategy["TIMEFRAME"])
+                                  strategy.market.symbol + " for timeframe " +
+                                  strategy.timeframe)
         raise Exception
 
     # sort by strategy timeframe and set index
@@ -86,10 +83,10 @@ def get_indicators(market, strategy):
 
     # compute signal
     indicators["signal"] = "neutral"
-    buy_rule = (indicators["i_median"] > strategy["INTENSITY_THRESHOLD"])  # &
+    buy_rule = (indicators["i_median"] > strategy.i_threshold)  # &
     #(indicators["p_score"] > strategy["POLARITY_THRESHOLD"]))
     indicators.loc[buy_rule, "signal"] = "buy"
-    sell_rule = (indicators["i_median"] < strategy["INTENSITY_THRESHOLD"])  #&
+    sell_rule = (indicators["i_median"] < strategy.i_threshold)  #&
     #(indicators["p_score"] < strategy["POLARITY_THRESHOLD"]))
     indicators.loc[sell_rule, "signal"] = "sell"
 
@@ -101,8 +98,8 @@ def get_indicators(market, strategy):
 def backtest(args):
     # TODO charts
 
-    strategy = hypnox.utils.load_json("/../etc/strategies/" + args.strategy +
-                                      ".json")
+    # TODO param. strategy
+    strategy = hypnox.db.Strategy.get()
 
     # check if symbol is supported by hypnox
     market = hypnox.db.get_market(hypnox.exchange.api.id, strategy["SYMBOL"])

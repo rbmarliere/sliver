@@ -5,14 +5,30 @@ import os
 import peewee
 import tensorflow
 import transformers
+from ccxt.base.decimal_to_precision import DECIMAL_PLACES, NO_PADDING, TRUNCATE
 
-import src as hypnox
+import hypnox
+
+# rounding modes:
+# TRUNCATE,
+# ROUND,
+# ROUND_UP,
+# ROUND_DOWN,
+
+# precision modes:
+# DECIMAL_PLACES,
+# SIGNIFICANT_DIGITS,
+# TICK_SIZE,
+
+# padding modes:
+# NO_PADDING,
+# PAD_WITH_ZERO,
 
 connection = peewee.PostgresqlDatabase(
-    hypnox.config["DB_DATABASE"], **{
-        "host": hypnox.config["DB_HOST"],
-        "user": hypnox.config["DB_USER"],
-        "password": hypnox.config["DB_PASSWORD"]
+    hypnox.config["HYPNOX_DB_NAME"], **{
+        "host": hypnox.config["HYPNOX_DB_HOST"],
+        "user": hypnox.config["HYPNOX_DB_USER"],
+        "password": hypnox.config["HYPNOX_DB_PASSWORD"]
     })
 
 
@@ -22,12 +38,57 @@ class BaseModel(peewee.Model):
         database = connection
 
 
+class Exchange(BaseModel):
+    name = peewee.TextField()
+    rate_limit = peewee.IntegerField(default=1200)
+    rounding_mode = peewee.IntegerField(default=TRUNCATE)
+    precision_mode = peewee.IntegerField(default=DECIMAL_PLACES)
+    padding_mode = peewee.IntegerField(default=NO_PADDING)
+
+    class Meta:
+        constraints = [peewee.SQL("UNIQUE (name)")]
+
+    def get_market_by_symbol(self, symbol):
+        return Market.select().where((Market.exchange == self) &
+                                     (Market.symbol == symbol)).get()
+
+
+class User(BaseModel):
+    name = peewee.TextField()
+    telegram = peewee.TextField(null=True)
+
+    class Meta:
+        constraints = [peewee.SQL("UNIQUE (name)")]
+
+    def get_credential_by_exchange(self, exchange: Exchange):
+        return Credential.select().where((Credential.user_id == self.id) & (
+            Credential.exchange == exchange)).get()
+
+    # def get_balance_by_asset():
+
+
+class Credential(BaseModel):
+    user = peewee.ForeignKeyField(User)
+    exchange = peewee.ForeignKeyField(Exchange)
+    api_key = peewee.TextField()
+    api_secret = peewee.TextField()
+
+    class Meta:
+        constraints = [peewee.SQL("UNIQUE (user_id, exchange_id)")]
+
+
+class Asset(BaseModel):
+    ticker = peewee.TextField()
+
+    class Meta:
+        constraints = [peewee.SQL("UNIQUE (ticker)")]
+
+
 class Market(BaseModel):
-    exchange = peewee.TextField()
-    symbol = peewee.TextField()
+    exchange = peewee.ForeignKeyField(Exchange)
     base = peewee.TextField()
     quote = peewee.TextField()
-    precision_mode = peewee.TextField()  # TODO ccxt.base.decimal_to_precision
+    symbol = peewee.TextField()
     amount_precision = peewee.IntegerField()
     base_precision = peewee.IntegerField()
     price_precision = peewee.IntegerField()
@@ -37,7 +98,7 @@ class Market(BaseModel):
     price_min = peewee.BigIntegerField()
 
     class Meta:
-        constraints = [peewee.SQL("UNIQUE (exchange, symbol)")]
+        constraints = [peewee.SQL("UNIQUE (exchange_id, symbol)")]
 
     def bdiv(self, num, den):
         decimal.getcontext().prec = self.base_precision
@@ -97,22 +158,61 @@ class Market(BaseModel):
         prec = str(self.price_precision)
         return str("{:." + prec + "f} ").format(value) + self.quote
 
-    def get_open_orders(self):
-        query = Order.select().join(Position).join(Market).where(
-            (Market.exchange == self.exchange) & (Market.symbol == self.symbol)
-            & (Order.status == "open"))
-        return [order for order in query]
+
+class Strategy(BaseModel):
+    market = peewee.ForeignKeyField(Market)
+    active = peewee.BooleanField(default=False)
+    # description = peewee.TextField()
+    timeframe = peewee.TextField(default="1d")
+    signal = peewee.TextField(default=hypnox.enum.Signal.NEUTRAL)
+    refresh_interval = peewee.IntegerField(default=1)  # 1 minute
+    next_refresh = peewee.DateTimeField(default=datetime.datetime.utcnow())
+    i_threshold = peewee.DecimalField(default=0)
+    p_threshold = peewee.DecimalField(default=0)
+    tweet_filter = peewee.TextField(default="")
+    num_orders = peewee.IntegerField(default=1)
+    bucket_interval = peewee.IntegerField(default=60)  # 1 hour
+    spread = peewee.DecimalField(default=1)  # 1%
+    min_roi = peewee.DecimalField(default=5)  # 5%
+    stop_loss = peewee.DecimalField(default=3)  # -3%
+
+    class Meta:
+        constraints = [peewee.SQL("UNIQUE (market_id, active, timeframe)")]
+
+    def get_active_users(self):
+        return User.select().join(UserStrategy).join(Strategy).where(
+            (Strategy.id == self.id) & (Strategy.market == self.market))
+
+
+def get_active_strategies():
+    return Strategy.select().where(Strategy.active).order_by(
+        Strategy.next_refresh)
+
+
+def get_pending_strategies():
+    now = datetime.datetime.utcnow()
+    return get_active_strategies().where((now > Strategy.next_refresh))
+
+
+class UserStrategy(BaseModel):
+    user = peewee.ForeignKeyField(User)
+    strategy = peewee.ForeignKeyField(Strategy)
+    active = peewee.BooleanField(default=False)
+
+    class Meta:
+        constraints = [peewee.SQL("UNIQUE (user_id, strategy_id)")]
 
     def get_active_position(self):
-        return Position.select().join(Market).where(
-            (Market.exchange == self.exchange) & (Market.symbol == self.symbol)
-            & ((Position.status == "open")
-               | (Position.status == "opening")
-               | (Position.status == "closing"))).get_or_none()
+        return Position.select().join(UserStrategy).join(Strategy).join(
+            Market).where((UserStrategy.user_id == self.user_id)
+                          & (UserStrategy.strategy_id == self.strategy_id)
+                          & ((Position.status == "open")
+                             | (Position.status == "opening")
+                             | (Position.status == "closing"))).get()
 
 
 class Position(BaseModel):
-    market = peewee.ForeignKeyField(Market)
+    user_strategy = peewee.ForeignKeyField(UserStrategy)
     # time limit on each buy/sell step for DCA
     next_bucket = peewee.DateTimeField(default=datetime.datetime.utcnow())
     # maximum cost|amount for any time period
@@ -136,6 +236,11 @@ class Position(BaseModel):
     fee = peewee.BigIntegerField(default=0)
     # position profit or loss
     pnl = peewee.BigIntegerField(default=0)
+
+    def get_open_orders(self):
+        query = Order.select().join(Position).where((Position.id == self.id)
+                                                    & (Order.status == "open"))
+        return [order for order in query]
 
     def is_open(self):
         return self.status != "closing" and self.status != "closed"
@@ -176,17 +281,19 @@ class Order(BaseModel):
     fee = peewee.BigIntegerField()
 
     def create_from_ex_order(ex_order, position):
+        market = position.user_strategy.strategy.market
+
         # transform values to db entry standard
-        price = position.market.qtransform(ex_order["price"])
-        amount = position.market.qtransform(ex_order["amount"])
-        cost = position.market.qtransform(ex_order["cost"])
-        filled = position.market.qtransform(ex_order["filled"])
+        price = market.qtransform(ex_order["price"])
+        amount = market.qtransform(ex_order["amount"])
+        cost = market.qtransform(ex_order["cost"])
+        filled = market.qtransform(ex_order["filled"])
 
         # check for fees
         if ex_order["fee"] is None:
             fee = 0
         else:
-            fee = position.market.qtransform(ex_order["fee"]["cost"])
+            fee = market.qtransform(ex_order["fee"]["cost"])
 
         # create model and save
         order = hypnox.db.Order(position=position,
@@ -226,16 +333,10 @@ class Tweet(BaseModel):
     polarity = peewee.DecimalField(default=0)
 
 
-# class Inventory(BaseModel):
-#     time = peewee.DateTimeField()
-#     # balances
-
-# class Strategy(BaseModel):
-
-
-def get_market(exchange, symbol):
-    return Market.select().where((Market.exchange == exchange)
-                                 & (Market.symbol == symbol)).get_or_none()
+class Inventory(BaseModel):
+    user = peewee.ForeignKeyField(User)
+    time = peewee.DateTimeField()
+    # balances
 
 
 def replay(args):
@@ -245,24 +346,23 @@ def replay(args):
     assert os.path.exists(model_path)
 
     bert = transformers.TFAutoModel.from_pretrained(
-        model_config.yaml["bert"],
-        num_labels=model_config.yaml["num_labels"],
+        model_config["bert"],
+        num_labels=model_config["num_labels"],
         from_pt=True)
     tokenizer = transformers.AutoTokenizer.from_pretrained(
-        model_config.yaml["bert"])
+        model_config["bert"])
 
     model = tensorflow.keras.models.load_model(
-        model_config.model_path, custom_objects={"TFBertModel": bert})
+        model_path, custom_objects={"TFBertModel": bert})
 
-    if model_config.yaml["class"] == "polarity":
+    if model_config["class"] == "polarity":
         model_column = getattr(hypnox.db.Tweet, "model_p")
         score_column = getattr(hypnox.db.Tweet, "polarity")
-    elif model_config.yaml["class"] == "intensity":
+    elif model_config["class"] == "intensity":
         model_column = getattr(hypnox.db.Tweet, "model_i")
         score_column = getattr(hypnox.db.Tweet, "intensity")
 
-    query = hypnox.db.Tweet.select().where((
-        model_column != args.model)
+    query = hypnox.db.Tweet.select().where((model_column != args.model)
                                            | (model_column.is_null()))
 
     tweets = []
@@ -277,7 +377,7 @@ def replay(args):
     inputs = tokenizer([tweet.text for tweet in tweets],
                        truncation=True,
                        padding="max_length",
-                       max_length=model_config.yaml["max_length"],
+                       max_length=model_config["max_length"],
                        return_tensors="tf")
 
     prob = model.predict(
@@ -288,7 +388,7 @@ def replay(args):
         batch_size=128,
         verbose=1)
 
-    if model_config.yaml["class"] == "polarity":
+    if model_config["class"] == "polarity":
         labels = {0: 0, 2: -1, 1: 1}
         i = 0
         for tweet in tweets:
@@ -296,7 +396,7 @@ def replay(args):
             max = prob[i].argmax()
             tweet.polarity = labels[max] * prob[i][max]
             i += 1
-    elif model_config.yaml["class"] == "intensity":
+    elif model_config["class"] == "intensity":
         i = 0
         for tweet in tweets:
             tweet.model_i = args.model

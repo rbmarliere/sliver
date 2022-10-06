@@ -69,7 +69,7 @@ def standardize(text):
 
 
 def get_timeframe_delta(timeframe):
-    timeframe_in_seconds = {
+    timeframes = {
         "1m": 1 * 60,
         "3m": 3 * 60,
         "5m": 5 * 60,
@@ -84,9 +84,11 @@ def get_timeframe_delta(timeframe):
         "1d": 1 * 24 * 60 * 60,
         "3d": 3 * 24 * 60 * 60,
         "1w": 7 * 24 * 60 * 60,
-    }[timeframe]
+    }
 
-    return datetime.timedelta(seconds=timeframe_in_seconds)
+    assert timeframe in timeframes, "timeframe not supported"
+
+    return datetime.timedelta(seconds=timeframes[timeframe])
 
 
 def truncate(f, n):

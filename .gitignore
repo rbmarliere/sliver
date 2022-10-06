@@ -1,6 +1,7 @@
 *__pycache__*
+*egg-info
 .venv
-config.json
+etc/config.json
 log/*
 lib/scripts/*.tsv
 lib/models/*
