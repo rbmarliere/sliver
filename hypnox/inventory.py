@@ -80,7 +80,7 @@ def get_target_cost(user_strat: hypnox.db.UserStrategy):
     hypnox.watchdog.log.info("max risk is " + str(max_risk))
 
     cash_liquid = inventory["USDT"]["total"] - inventory["positions_reserved"]
-    available = cash_liquid * float(user.cash_reserve)
+    available = cash_liquid * (1-float(user.cash_reserve))
     hypnox.watchdog.log.info("available cash is " + str(available))
 
     target_cost = min(max_risk, available * float(user.target_factor))

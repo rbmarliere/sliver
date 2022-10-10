@@ -113,7 +113,7 @@ def watch(args):
                         position = u_strat.get_active_position_or_none()
 
                         if position:
-                            hypnox.exchange.sync_orders(position)
+                            position = hypnox.exchange.sync_orders(position)
 
                         # sync user's balances across all exchanges
                         hypnox.inventory.sync_balances(u_strat.user)
@@ -130,19 +130,21 @@ def watch(args):
                                 t_cost = hypnox.inventory.get_target_cost(
                                     u_strat)
 
-                                position = hypnox.db.Position.open(
-                                    u_strat, t_cost)
+                                if t_cost > 0:
+                                    position = hypnox.db.Position.open(
+                                        u_strat, t_cost)
 
-                                hypnox.telegram.notify(
-                                    "opened position for user " +
-                                    u_strat.user.name + " under strategy " +
-                                    str(u_strat.strategy.id) + " (" +
-                                    u_strat.strategy.description +
-                                    ") in market " +
-                                    u_strat.strategy.market.get_symbol() +
-                                    " with target cost " +
-                                    u_strat.strategy.market.quote.print(t_cost)
-                                )
+                                    hypnox.telegram.notify(
+                                        "opened position for user " +
+                                        u_strat.user.name +
+                                        " under strategy " +
+                                        str(u_strat.strategy.id) + " (" +
+                                        u_strat.strategy.description +
+                                        ") in market " +
+                                        u_strat.strategy.market.get_symbol() +
+                                        " with target cost " +
+                                        u_strat.strategy.market.quote.print(
+                                            t_cost))
 
                         if position:
                             hypnox.exchange.refresh(position, strategy.signal,

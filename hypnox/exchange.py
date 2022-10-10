@@ -231,6 +231,8 @@ def sync_orders(position: hypnox.db.Position):
             order.save()
             position.save()
 
+    return position
+
 
 def create_order(side: str, position: hypnox.db.Position, amount: int,
                  price: int):
