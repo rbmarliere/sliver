@@ -176,7 +176,7 @@ class Strategy(BaseModel):
     market = peewee.ForeignKeyField(Market)
     active = peewee.BooleanField(default=False)
     description = peewee.TextField()
-    mode = peewee.TextField()
+    mode = peewee.TextField(default="auto")
     timeframe = peewee.TextField(default="1d")
     signal = peewee.TextField(default="neutral")
     refresh_interval = peewee.IntegerField(default=1)  # 1 minute

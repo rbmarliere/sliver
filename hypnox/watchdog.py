@@ -139,7 +139,10 @@ def watch(args):
                                     u_strat.strategy.id + " (" +
                                     u_strat.strategy.description +
                                     ") in market " +
-                                    u_strat.strategy.market.get_symbol())
+                                    u_strat.strategy.market.get_symbol() +
+                                    " with target cost " +
+                                    u_strat.strategy.market.quote.print(t_cost)
+                                )
 
                         if position:
                             hypnox.exchange.refresh(position, strategy.signal,
