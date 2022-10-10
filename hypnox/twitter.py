@@ -62,7 +62,7 @@ TRACK_USERS = [
     "walter_wyckoff", "xxstevelee"
 ]
 
-cache_file = hypnox.utils.get_abs_path("/../log/cache.tsv")
+cache_file = hypnox.config["HYPNOX_LOGS_DIR"] + "/cache.tsv"
 
 
 class Stream(tweepy.Stream):
