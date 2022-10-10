@@ -115,6 +115,9 @@ def sync_balances(user: hypnox.db.User):
 
         # for each exchange asset, update internal user balance
         for ticker in ex_bal["free"]:
+            if ex_bal["total"][ticker] == 0:
+                continue
+
             asset, new = hypnox.db.Asset.get_or_create(ticker=ticker.upper())
             if new:
                 hypnox.watchdog.log.info("saved new asset " + asset.ticker)
