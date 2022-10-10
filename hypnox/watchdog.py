@@ -54,7 +54,7 @@ def watch(args):
 
             # kill switch if no active strategies
             first_active_strat = hypnox.db.get_active_strategies().first()
-            assert first_active_strat is not None
+            assert first_active_strat
 
             strategies = [s for s in hypnox.db.get_pending_strategies()]
 
@@ -69,6 +69,7 @@ def watch(args):
                              " for strategy " + str(first_active_strat.id))
                     log.info("sleeping for " + str(delta) + " seconds")
                     time.sleep(delta)
+                    continue
 
             # refresh each strategy
             for strategy in strategies:
@@ -76,69 +77,95 @@ def watch(args):
                 if datetime.datetime.utcnow() < strategy.next_refresh:
                     continue
 
+                symbol = strategy.market.get_symbol()
+
                 log.info("==============================================")
                 log.info("refreshing strategy " + str(strategy.id))
-                log.info("market is " + strategy.market.symbol)
+                log.info("market is " + symbol)
                 log.info("timeframe is " + strategy.timeframe)
 
-                for user in strategy.get_active_users():
-                    user_strat = user.userstrategy_set.get()
+                hypnox.strategy.refresh(strategy)
 
-                    log.info("refreshing " + user.name + "'s strategy " +
-                             str(user_strat.id))
+                users = [u for u in strategy.get_active_users()]
+                i = 0
 
-                    credential = user.get_credential_by_exchange(
-                        strategy.market.exchange)
-                    hypnox.exchange.set_api(credential)
+                while True:
+                    try:
+                        u_strat = users[i]
 
-                    # check if exchange is alive
-                    latency = hypnox.exchange.get_latency()
-                    if latency > 1300:
-                        raise ccxt.NetworkError
+                        log.info(
+                            "..............................................")
+                        log.info("refreshing " + u_strat.user.name +
+                                 "'s strategy " + str(u_strat.id))
 
-                    hypnox.exchange.download(strategy.market,
-                                             strategy.timeframe)
+                        # set api to current exchange
+                        credential = u_strat.user.get_credential_by_exchange(
+                            strategy.market.base.exchange)
+                        hypnox.exchange.set_api(credential)
 
-                    # get current position for given user_strategy
-                    position = user_strat.get_active_position()
+                        p = hypnox.exchange.api.fetch_ticker(symbol)
+                        last_price = strategy.market.quote.transform(p["last"])
+                        hypnox.watchdog.log.info("last " + symbol +
+                                                 " price is $" +
+                                                 str(p["last"]))
 
-                    hypnox.exchange.sync_orders(position)
+                        # get active position for current user_strategy
+                        position = u_strat.get_active_position_or_none()
 
-                    hypnox.inventory.sync_balances(user, strategy.market)
+                        if position:
+                            hypnox.exchange.sync_orders(position)
 
-                    # inventory.sync_balance ? (against "strategy inventory")
-                    # if insufficient funds position --> stalled status?
-                    # hypnox.inventory.sync()
-                    # check trades, pnl, balances, risk
+                        # sync user's balances across all exchanges
+                        hypnox.inventory.sync_balances(u_strat.user)
 
-                    hypnox.exchange.refresh(user_strat)
+                        # download historical price ohlcv data
+                        hypnox.exchange.download(strategy.market,
+                                                 strategy.timeframe)
 
-                    # update current strategy next refresh time
-                    strategy.next_refresh = (
-                        datetime.datetime.utcnow() +
-                        datetime.timedelta(minutes=strategy.refresh_interval))
-                    strategy.save()
+                        if position is None:
+                            hypnox.watchdog.log.info("no active position")
 
-        except ccxt.RateLimitExceeded:
-            sleep_time = strategy.market.exchange.rate_limit
-            log.info("rate limit exceeded, sleeping for " + str(sleep_time) +
-                     " seconds")
-            time.sleep(sleep_time)
+                            # create position if apt
+                            if strategy.signal == "buy":
+                                t_cost = hypnox.inventory.get_target_cost(
+                                    u_strat)
 
-        except ccxt.AuthenticationError:
-            log.error("authentication error, disabling user's strategy")
-            user_strat.active = False
-            user_strat.save()
+                                position = hypnox.db.Position.open(
+                                    u_strat, t_cost)
 
-        except ccxt.InsufficientFunds:
-            log.error("insufficient funds, disabling user's strategy")
-            user_strat.active = False
-            user_strat.save()
+                        if position:
+                            hypnox.exchange.refresh(position, strategy.signal,
+                                                    last_price)
 
-        except ccxt.NetworkError:
-            log.warning("exchange api error, "
-                        "sleeping 60 seconds before trying again...")
-            time.sleep(60)
+                        i += 1
+
+                    except IndexError:
+                        break
+
+                    except ccxt.AuthenticationError:
+                        log.error(
+                            "authentication error, disabling user's strategy")
+                        u_strat.active = False
+                        u_strat.save()
+                        i += 1
+
+                    except ccxt.InsufficientFunds:
+                        log.error(
+                            "insufficient funds, disabling user's strategy")
+                        u_strat.active = False
+                        u_strat.save()
+                        i += 1
+
+                    except ccxt.RateLimitExceeded:
+                        sleep_time = strategy.market.base.exchange.rate_limit
+                        log.info("rate limit exceeded, sleeping for " +
+                                 str(sleep_time) + " seconds")
+                        time.sleep(sleep_time)
+
+                    except ccxt.NetworkError:
+                        log.info("exchange api error, "
+                                 "sleeping 60 seconds before trying again...")
+                        time.sleep(60)
 
         except peewee.OperationalError:
             log.error("can't connect to database!")
@@ -155,4 +182,4 @@ def watch(args):
             break
 
     hypnox.telegram.notify("shutting down...")
-    log.warning("shutting down...")
+    log.info("shutting down...")

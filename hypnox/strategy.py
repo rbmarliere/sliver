@@ -1,3 +1,5 @@
+import datetime
+
 import pandas
 
 import hypnox
@@ -7,13 +9,13 @@ def get_rsignal():
     import random
     i = random.randint(0, 100)
     if i > 70:
-        hypnox.watchdog.log.warning("received buy signal")
+        hypnox.watchdog.log.info("received buy signal")
         return "buy"
     elif i < 30:
-        hypnox.watchdog.log.warning("received sell signal")
+        hypnox.watchdog.log.info("received sell signal")
         return "sell"
     else:
-        hypnox.watchdog.log.warning("received neutral signal")
+        hypnox.watchdog.log.info("received neutral signal")
         return "neutral"
 
 
@@ -66,8 +68,8 @@ def get_indicators(strategy):
     # check if there is data for given params
     if prices.empty:
         hypnox.watchdog.log.error("no price data found for symbol " +
-                                  strategy.market.symbol + " for timeframe " +
-                                  strategy.timeframe)
+                                  strategy.market.get_symbol() +
+                                  " for timeframe " + strategy.timeframe)
         raise Exception
 
     # sort by strategy timeframe and set index
@@ -123,9 +125,9 @@ def backtest(args):
             entry_amount = target_cost / ind["open"]
 
             hypnox.watchdog.log.info(
-                market.bprint(entry_amount) + " @ " +
-                market.qprint(ind["open"]) + " = " +
-                market.qprint(target_cost))
+                market.base.print(entry_amount) + " @ " +
+                market.quote.print(ind["open"]) + " = " +
+                market.quote.print(target_cost))
 
             positions.append(
                 hypnox.db.Position(status="closed",
@@ -155,20 +157,38 @@ def backtest(args):
         hypnox.watchdog.log.info("no positions entered")
         return
 
-    hypnox.watchdog.log.info("initial balance: " + market.qprint(target_cost))
+    hypnox.watchdog.log.info("initial balance: " +
+                             market.quote.print(target_cost))
     hypnox.watchdog.log.info("buy and hold amount at first position: " +
-                             market.bprint(positions[0].entry_amount))
+                             market.base.print(positions[0].entry_amount))
     hypnox.watchdog.log.info("buy and hold value at last position: " +
-                             market.qprint(positions[-1].entry_price *
-                                           positions[0].entry_amount))
+                             market.quote.print(positions[-1].entry_price *
+                                                positions[0].entry_amount))
     hypnox.watchdog.log.info("number of days: " +
                              str(positions[-1].entry_time -
                                  positions[0].entry_time))
     hypnox.watchdog.log.info("number of trades: " + str(len(positions)))
-    hypnox.watchdog.log.info("pnl: " + market.qprint(total_pnl))
+    hypnox.watchdog.log.info("pnl: " + market.quote.print(total_pnl))
     hypnox.watchdog.log.info(
         "roi: " + str(round(((total_pnl / target_cost) - 1) * 100, 2)) + "%")
     hypnox.watchdog.log.info("roi vs buy and hold: " + str(
         round(((total_pnl /
                 (positions[-1].entry_price * positions[0].entry_amount)) - 1) *
               100, 2)) + "%")
+
+
+def refresh(strategy: hypnox.db.Strategy):
+    # ideas:
+    # - reset num_orders, spread and refresh_interval dynamically
+    # - base decision over price data and inventory (amount opened, risk, etc)
+
+    # update current strategy next refresh time
+    strategy.next_refresh = (
+        datetime.datetime.utcnow() +
+        datetime.timedelta(minutes=strategy.refresh_interval))
+
+    # compute signal for automatic strategies
+    if strategy.mode == "auto":
+        strategy.signal = get_rsignal()
+
+    strategy.save()
