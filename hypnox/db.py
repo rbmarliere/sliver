@@ -370,9 +370,8 @@ class Tweet(BaseModel):
 
 
 def replay(args):
-    model_config = hypnox.utils.load_yaml("/../lib/models/" + args.model +
-                                          ".yaml")
-    model_path = hypnox.utils.get_abs_path("/../lib/models/" + args.model)
+    model_config = hypnox.utils.load_yaml(args.model)
+    model_path = hypnox.config["HYPNOX_MODELS_DIR"] + "/" + args.model
     assert os.path.exists(model_path)
 
     bert = transformers.TFAutoModel.from_pretrained(

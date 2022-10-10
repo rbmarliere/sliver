@@ -10,7 +10,7 @@ import hypnox
 
 # load model config
 model_name = "i20220926"
-config = hypnox.utils.load_yaml(model_name + ".yaml")
+config = hypnox.utils.load_yaml(model_name)
 
 # check if model exists
 assert not os.path.exists(model_name)
