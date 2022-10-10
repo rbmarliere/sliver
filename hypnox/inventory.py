@@ -69,19 +69,21 @@ def get_inventory(user: hypnox.db.User):
 
 
 def get_target_cost(user_strat: hypnox.db.UserStrategy):
-    inventory = get_inventory(user_strat.user)
+    user = user_strat.user
+
+    inventory = get_inventory(user)
 
     net_liquid = inventory["total_value"] - inventory["positions_value"]
     hypnox.watchdog.log.info("net liquid is " + str(net_liquid))
 
-    max_risk = net_liquid * user_strat.user.max_risk
+    max_risk = net_liquid * float(user.max_risk)
     hypnox.watchdog.log.info("max risk is " + str(max_risk))
 
     cash_liquid = inventory["USDT"]["total"] - inventory["positions_reserved"]
-    available = cash_liquid * user_strat.user.cash_reserve
+    available = cash_liquid * float(user.cash_reserve)
     hypnox.watchdog.log.info("available cash is " + str(available))
 
-    target_cost = min(max_risk, available * user_strat.user.target_factor)
+    target_cost = min(max_risk, available * float(user.target_factor))
     hypnox.watchdog.log.info("target cost is " + str(target_cost))
 
     return user_strat.strategy.market.quote.transform(target_cost)
