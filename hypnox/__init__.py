@@ -19,7 +19,6 @@ for var in config:
 config = dict(zip(config, [env[var] for var in config]))
 
 from . import (
-    enum,
     utils,
     db,
     exchange,
@@ -30,7 +29,6 @@ from . import (
     watchdog)
 
 __all__ = [
-    "enum",
     "utils",
     "db",
     "exchange",
