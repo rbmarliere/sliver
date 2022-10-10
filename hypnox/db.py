@@ -101,13 +101,13 @@ class Credential(BaseModel):
 class ExchangeAsset(BaseModel):
     exchange = peewee.ForeignKeyField(Exchange)
     asset = peewee.ForeignKeyField(Asset)
-    precision = peewee.IntegerField(default=0)
+    precision = peewee.IntegerField(default=1)
 
     def div(self, num, den, trunc_precision=None):
         if trunc_precision is None:
             trunc_precision = self.precision
 
-        decimal.getcontext().prec = self.precision
+        decimal.getcontext().prec = self.precision if self.precision > 0 else 1
         div = decimal.Decimal(str(num)) / decimal.Decimal(str(den))
 
         if abs(num) > abs(den):
@@ -120,12 +120,12 @@ class ExchangeAsset(BaseModel):
         return self.transform(div)
 
     def format(self, value):
-        decimal.getcontext().prec = self.precision
+        decimal.getcontext().prec = self.precision if self.precision > 0 else 1
         value = decimal.Decimal(str(value)) / 10**self.precision
         return hypnox.utils.truncate(value, self.precision)
 
     def transform(self, value):
-        decimal.getcontext().prec = self.precision
+        decimal.getcontext().prec = self.precision if self.precision > 0 else 1
         value = decimal.Decimal(str(value)) * 10**self.precision
         return int(value)
 
