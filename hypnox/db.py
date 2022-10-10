@@ -296,7 +296,7 @@ class Order(BaseModel):
     # which position it belongs to
     position = peewee.ForeignKeyField(Position)
     # id comes from exchange api
-    exchange_order_id = peewee.IntegerField(unique=True)
+    exchange_order_id = peewee.TextField()
     # datetime of the order
     time = peewee.DateTimeField()
     # can be open, canceled, closed
