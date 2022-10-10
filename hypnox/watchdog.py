@@ -136,7 +136,7 @@ def watch(args):
                                 hypnox.telegram.notify(
                                     "opened position for user " +
                                     u_strat.user.name + " under strategy " +
-                                    u_strat.strategy.id + " (" +
+                                    str(u_strat.strategy.id) + " (" +
                                     u_strat.strategy.description +
                                     ") in market " +
                                     u_strat.strategy.market.get_symbol() +
