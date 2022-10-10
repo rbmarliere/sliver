@@ -2,9 +2,8 @@
 *egg-info
 .venv
 etc/config.json
-log/*
+log/
 scripts/*.tsv
 models/*
 !models/*.yaml
 !models/*.py
-!models/*.tsv

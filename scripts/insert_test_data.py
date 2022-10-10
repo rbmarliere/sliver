@@ -1,42 +1,8 @@
 #!/usr/bin/env python3
 
+from fetch_markets import fetch_markets
+
 import hypnox
-
-
-def fetch_markets(cred: hypnox.db.Credential):
-    table_exists = hypnox.db.Market.table_exists()
-    if not table_exists:
-        hypnox.db.Market.create_table()
-
-    hypnox.watchdog.script_log.info(
-        "fetching all markets from exchange api...")
-
-    hypnox.exchange.set_api(cred)
-    ex_markets = hypnox.exchange.api.fetch_markets()
-
-    for ex_market in ex_markets:
-        market = hypnox.db.Market(
-            exchange=cred.exchange,
-            symbol=ex_market["symbol"],
-            base=ex_market["base"],
-            quote=ex_market["quote"],
-            amount_precision=ex_market["precision"]["amount"],
-            base_precision=ex_market["precision"]["base"],
-            price_precision=ex_market["precision"]["price"],
-            quote_precision=ex_market["precision"]["quote"])
-
-        amount_min = ex_market["limits"]["amount"]["min"]
-        cost_min = ex_market["limits"]["cost"]["min"]
-        price_min = ex_market["limits"]["price"]["min"]
-
-        market.amount_min = market.btransform(amount_min)
-        market.cost_min = market.qtransform(cost_min)
-        market.price_min = market.qtransform(price_min)
-
-        market.save(force_insert=table_exists)
-
-        hypnox.watchdog.script_log.info("saved market " + market.symbol)
-
 
 if __name__ == "__main__":
     with hypnox.db.connection.atomic():
@@ -63,12 +29,18 @@ if __name__ == "__main__":
                                      api_secret=s)
         cred2.save()
 
-        fetch_markets(cred1)
+        hypnox.exchange.set_api(cred1)
+        fetch_markets(binance)
 
-        btcusdt = binance.get_market_by_symbol("BTC/USDT")
-        assert btcusdt
-        ethusdt = binance.get_market_by_symbol("ETH/USDT")
-        assert ethusdt
+        btc = hypnox.db.ExchangeAsset.get(
+            exchange=binance, asset=hypnox.db.Asset.get(ticker="BTC"))
+        eth = hypnox.db.ExchangeAsset.get(
+            exchange=binance, asset=hypnox.db.Asset.get(ticker="ETH"))
+        usdt = hypnox.db.ExchangeAsset.get(
+            exchange=binance, asset=hypnox.db.Asset.get(ticker="USDT"))
+
+        btcusdt = hypnox.db.Market.get(base=btc, quote=usdt)
+        ethusdt = hypnox.db.Market.get(base=eth, quote=usdt)
 
         strat1 = hypnox.db.Strategy(market=btcusdt,
                                     active=True,
