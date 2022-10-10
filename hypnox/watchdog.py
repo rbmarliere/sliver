@@ -10,7 +10,7 @@ import hypnox
 
 
 def get_logger(name, suppress_output=False):
-    log_file = hypnox.utils.get_abs_path("/../log/" + name + ".log")
+    log_file = hypnox.config["HYPNOX_LOGS_DIR"] + "/" + name + ".log"
 
     formatter = logging.Formatter(
         "%(asctime)s %(levelname)s -- %(message)s :: "
@@ -132,6 +132,14 @@ def watch(args):
 
                                 position = hypnox.db.Position.open(
                                     u_strat, t_cost)
+
+                                hypnox.telegram.notify(
+                                    "opened position for user " +
+                                    u_strat.user.name + " under strategy " +
+                                    u_strat.strategy.id + " (" +
+                                    u_strat.strategy.description +
+                                    ") in market " +
+                                    u_strat.strategy.market.get_symbol())
 
                         if position:
                             hypnox.exchange.refresh(position, strategy.signal,

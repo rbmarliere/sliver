@@ -1,6 +1,9 @@
-from os import environ as env
+import sys
+import os
 
 config = [
+    "HYPNOX_LOGS_DIR",
+    "HYPNOX_MODELS_DIR",
     "HYPNOX_DB_HOST",
     "HYPNOX_DB_NAME",
     "HYPNOX_DB_USER",
@@ -13,10 +16,23 @@ config = [
     "HYPNOX_TELEGRAM_CHANNEL"
 ]
 
+error = False
 for var in config:
-    assert var in env, var + " not found in environment!"
+    if var not in os.environ:
+        print(var + " not found in environment!")
+        error = True
+if error:
+    sys.exit(1)
 
-config = dict(zip(config, [env[var] for var in config]))
+config = dict(zip(config, [os.environ[var] for var in config]))
+
+if not os.path.exists(config["HYPNOX_LOGS_DIR"]):
+    print("HYPNOX_LOGS_DIR=" + config["HYPNOX_LOGS_DIR"] + " not found!")
+    sys.exit(1)
+if not os.path.exists(config["HYPNOX_MODELS_DIR"]):
+    print("HYPNOX_MODELS_DIR=" + config["HYPNOX_MODELS_DIR"] + " not found!")
+    sys.exit(1)
+
 
 from . import (
     utils,

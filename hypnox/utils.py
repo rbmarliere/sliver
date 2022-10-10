@@ -1,11 +1,12 @@
 import datetime
-import json as jsondep
 import os
 import re
 import string
 
 import nltk
 import yaml
+
+import hypnox
 
 try:
     nltk.data.find("corpora/stopwords.zip")
@@ -101,20 +102,8 @@ def truncate(f, n):
     return float('.'.join([i, (d + '0' * n)[:n]]))
 
 
-def get_abs_path(relative_path):
-    abs_path = os.path.abspath(
-        os.path.dirname(os.path.abspath(__file__)) + relative_path)
-    return abs_path
-
-
-def load_json(relative_path):
-    config_file = get_abs_path(relative_path)
-    assert os.path.exists(config_file)
-    return jsondep.load(open(config_file))
-
-
-def load_yaml(relative_path):
-    config_file = get_abs_path(relative_path)
-    assert os.path.exists(config_file)
-    with open(config_file, "r") as stream:
+def load_yaml(model_name):
+    file = hypnox.config["HYPNOX_MODELS_DIR"] + "/" + model_name + ".yaml"
+    assert os.path.exists(file)
+    with open(file, "r") as stream:
         return yaml.safe_load(stream)
