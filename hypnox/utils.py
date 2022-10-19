@@ -1,12 +1,8 @@
 import datetime
-import os
 import re
 import string
 
 import nltk
-import yaml
-
-import hypnox
 
 try:
     nltk.data.find("corpora/stopwords.zip")
@@ -100,10 +96,3 @@ def truncate(f, n):
         return float('{0:.{1}f}'.format(f, n))
     i, p, d = s.partition('.')
     return float('.'.join([i, (d + '0' * n)[:n]]))
-
-
-def load_yaml(model_name):
-    file = hypnox.config["HYPNOX_MODELS_DIR"] + "/" + model_name + ".yaml"
-    assert os.path.exists(file)
-    with open(file, "r") as stream:
-        return yaml.safe_load(stream)

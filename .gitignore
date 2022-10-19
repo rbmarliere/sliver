@@ -4,6 +4,5 @@
 etc/config.json
 logs/
 scripts/*.tsv
+scripts/*.csv
 models/*
-!models/*.yaml
-!models/*.py
