@@ -80,13 +80,18 @@ def get_target_cost(user_strat: hypnox.db.UserStrategy):
     hypnox.watchdog.log.info("max risk is " + str(max_risk))
 
     cash_liquid = inventory["USDT"]["total"] - inventory["positions_reserved"]
-    available = cash_liquid * (1-float(user.cash_reserve))
+    available = cash_liquid * (1 - float(user.cash_reserve))
     hypnox.watchdog.log.info("available cash is " + str(available))
 
     target_cost = min(max_risk, available * float(user.target_factor))
     hypnox.watchdog.log.info("target cost is " + str(target_cost))
 
     return user_strat.strategy.market.quote.transform(target_cost)
+
+
+# def refresh_targets(user):
+#   this method will update target costs based on new risk parameters
+#   it will effectively deleverage by reducing open positions to fit new params
 
 
 def sync_balances(user: hypnox.db.User):

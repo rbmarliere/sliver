@@ -187,8 +187,9 @@ def sync_orders(position: hypnox.db.Position):
             filled = market.base.transform(ex_order["filled"])
             price = market.quote.transform(ex_order["price"])
 
-            hypnox.watchdog.log.info("cost: " + market.quote.print(cost))
-            hypnox.watchdog.log.info("filled: " + market.base.print(filled))
+            hypnox.watchdog.log.info(
+                market.base.print(filled) + " @ " + market.quote.print(price) +
+                " (" + market.quote.print(cost) + ")")
 
             # update order info
             order.status = ex_order["status"]
@@ -249,9 +250,9 @@ def create_order(side: str, position: hypnox.db.Position, amount: int,
         ex_order = api.create_order(market.get_symbol(), "LIMIT_MAKER", side,
                                     amount, price)
 
-        hypnox.watchdog.log.info("created new " + side + " order:")
+        hypnox.watchdog.log.info("created new " + side + " order " +
+                                 str(ex_order["id"]))
         hypnox.watchdog.log.info(
-            market.get_symbol() + " " +
             market.base.print(ex_order["amount"], False) + " @ " +
             market.quote.print(ex_order["price"], False) + " (" +
             market.quote.print(ex_order["amount"] * ex_order["price"], False) +
