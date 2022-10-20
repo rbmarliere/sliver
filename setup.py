@@ -3,6 +3,7 @@ import setuptools
 deps = [
     "PyYAML",
     "ccxt",
+    "emoji",
     "nltk",
     "pandas",
     "peewee",

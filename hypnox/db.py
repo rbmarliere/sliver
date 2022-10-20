@@ -1,10 +1,8 @@
 import datetime
 import decimal
-import os
 
 import peewee
 import tensorflow
-import transformers
 from ccxt.base.decimal_to_precision import DECIMAL_PLACES, NO_PADDING, TRUNCATE
 
 import hypnox

@@ -32,6 +32,19 @@ if __name__ == "__main__":
 
     model.summary()
 
+    # https://www.tensorflow.org/guide/keras/train_and_evaluate#checkpointing_models
+    checkpoint = tensorflow.keras.callbacks.ModelCheckpoint(
+        # Path where to save the model
+        # The two parameters below mean that we will overwrite
+        # the current checkpoint if and only if
+        # the `val_loss` score has improved.
+        # The saved model name will include the current epoch.
+        filepath="mymodel_{epoch}",
+        save_best_only=True,  # Only save a model if `val_loss` has improved.
+        monitor="val_loss",
+        verbose=1,
+    )
+
     earlystop = tensorflow.keras.callbacks.EarlyStopping(
         monitor=config["monitor"],
         patience=config["patience"],
@@ -49,7 +62,7 @@ if __name__ == "__main__":
               epochs=config["epochs"],
               callbacks=[earlystop, tensorboard],
               batch_size=config["batch_size"])
-
-    model.evaluate(test_ds, batch_size=config["batch_size"])
+    result = model.evaluate(test_ds, batch_size=config["batch_size"])
+    dict(zip(model.metrics_names, result))
 
     model.save(modelpath)
