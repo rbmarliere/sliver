@@ -26,7 +26,7 @@ def get_signal(strategy: hypnox.db.Strategy):
     return get_indicators(strategy)[-1]["signal"]
 
 
-def get_indicators(strategy):
+def get_indicators(strategy: hypnox.db.Strategy):
     # TODO timedelta arg?
     # TODO sell_half signal?
     # TODO weighthing, e.g.
@@ -44,8 +44,8 @@ def get_indicators(strategy):
     filter = hypnox.db.Tweet.text.iregexp(
         strategy.tweet_filter.encode("unicode_escape"))
 
-    tweets = hypnox.db.Tweet.select().where(filter)
-    tweets = pandas.DataFrame(tweets.dicts())
+    query = hypnox.db.Tweet.select().where(filter)
+    tweets = pandas.DataFrame(query.dicts())
 
     tweets.to_csv(hypnox.config["HYPNOX_LOGS_DIR"] + "/bt1_tweets.tsv",
                   sep="\t")
@@ -120,11 +120,8 @@ def get_indicators(strategy):
 
 
 def backtest(args):
-    # TODO charts, fees?
-
     strategy = hypnox.db.Strategy.get(id=args.strategy_id)
 
-    # check if symbol is supported by hypnox
     indicators = get_indicators(strategy)
     if indicators.empty:
         hypnox.watchdog.log.error("no indicator data computed")
