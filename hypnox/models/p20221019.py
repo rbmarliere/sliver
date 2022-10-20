@@ -4,17 +4,17 @@ import transformers
 config = {
     "name": "p20221014",
     "class": "polarity",
-    "bert": "finiteautomata/bertweet-base-sentiment-analysis",
+    "bert": "vinai/bertweet-base",
     "num_labels": 3,
-    "val_size": 0.15,
-    "test_size": 0.05,
-    "max_length": 180,
-    "batch_size": 64,
+    "val_size": 0.17,
+    "test_size": 0.03,
+    "max_length": 156,
+    "batch_size": 49,
     "epochs": 30,
-    "learning_rate": 0.0004,
+    "learning_rate": 0.0008,
     "patience": 5,
-    "min_delta": 0.001,
-    "monitor": "val_loss"
+    "min_delta": 0.01,
+    "monitor": "loss"
 }
 
 
@@ -33,10 +33,6 @@ def load_model(modelpath):
 
 
 def get_model():
-    # load transformer
-    bert = transformers.TFAutoModel.from_pretrained(
-        config["bert"], num_labels=config["num_labels"], from_pt=True)
-
     # build model
     input_ids = tensorflow.keras.layers.Input(shape=(config["max_length"], ),
                                               name="input_ids",
@@ -44,11 +40,11 @@ def get_model():
     mask = tensorflow.keras.layers.Input(shape=(config["max_length"], ),
                                          name="attention_mask",
                                          dtype="int32")
-    embeddings = bert(input_ids, attention_mask=mask)[0]
+    embeddings = get_bert()(input_ids, attention_mask=mask)[0]
     X = tensorflow.keras.layers.GlobalMaxPool1D()(embeddings)
     X = tensorflow.keras.layers.BatchNormalization()(X)
-    X = tensorflow.keras.layers.Dense(8, activation="relu")(X)
-    X = tensorflow.keras.layers.Dropout(0.5)(X)
+    X = tensorflow.keras.layers.Dense(42, activation="relu")(X)
+    X = tensorflow.keras.layers.Dropout(0.3)(X)
     y = tensorflow.keras.layers.Dense(config["num_labels"],
                                       activation="softmax",
                                       name="outputs")(X)
@@ -57,7 +53,7 @@ def get_model():
 
     # set up model parameters
     loss = tensorflow.keras.losses.SparseCategoricalCrossentropy()
-    optimizer = tensorflow.keras.optimizers.Adam(
+    optimizer = tensorflow.keras.optimizers.RMSprop(
         learning_rate=config["learning_rate"])
     metrics = ["accuracy"]
 
