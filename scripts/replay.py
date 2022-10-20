@@ -50,7 +50,8 @@ def replay_csv(model, filepath):
     tweets["intensity"] = tweets["intensity"].map("{:.4f}".format)
     tweets["polarity"] = tweets["polarity"].map("{:.4f}".format)
 
-    tweets.to_csv("results.csv", index=False)
+    tweets.to_csv(hypnox.config["HYPNOX_LOGS_DIR"] + "/replay_results.csv",
+                  index=False)
 
 
 def replay_db(model):

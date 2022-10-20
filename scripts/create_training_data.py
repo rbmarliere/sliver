@@ -71,7 +71,8 @@ for output in output_chunks:
         "polarity": 0,
         "tweet": output
     })
-    output_df.to_csv("training_" + date + "_" + str(i) + ".tsv",
+    output_df.to_csv(hypnox.config["HYPNOX_LOGS_DIR"] + "/training_" + date +
+                     "_" + str(i) + ".tsv",
                      sep="\t",
                      lineterminator="\n",
                      encoding="utf-8",
