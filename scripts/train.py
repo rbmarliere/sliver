@@ -21,14 +21,19 @@ if __name__ == "__main__":
     args = argp.parse_args()
 
     model = hypnox.models.get(args.model_name)
-    config = hypnox.models.get_config(args.model_name)
-    tokenizer = hypnox.models.get_tokenizer(args.model_name)
 
     modelpath = hypnox.config["HYPNOX_MODELS_DIR"] + "/" + args.model_name
 
-    train_df, val_df, test_df = preprocess(model, config, args.input_file)
-    train_ds, val_ds, test_ds = tokenize(model, config, tokenizer, train_df,
-                                         val_df, test_df)
+    train_df, val_df, test_df = preprocess(model, args.input_file)
+
+    print("training data")
+    print(train_df)
+    print("validation data")
+    print(val_df)
+    print("test data")
+    print(test_df)
+
+    train_ds, val_ds, test_ds = tokenize(model, train_df, val_df, test_df)
 
     model.summary()
 
@@ -46,9 +51,9 @@ if __name__ == "__main__":
     )
 
     earlystop = tensorflow.keras.callbacks.EarlyStopping(
-        monitor=config["monitor"],
-        patience=config["patience"],
-        min_delta=config["min_delta"],
+        monitor=model.config["monitor"],
+        patience=model.config["patience"],
+        min_delta=model.config["min_delta"],
         verbose=1,
         mode="min",
         restore_best_weights=True)
@@ -59,10 +64,10 @@ if __name__ == "__main__":
 
     model.fit(train_ds,
               validation_data=val_ds,
-              epochs=config["epochs"],
+              epochs=model.config["epochs"],
               callbacks=[earlystop, tensorboard],
-              batch_size=config["batch_size"])
-    result = model.evaluate(test_ds, batch_size=config["batch_size"])
+              batch_size=model.config["batch_size"])
+    result = model.evaluate(test_ds, batch_size=model.config["batch_size"])
     dict(zip(model.metrics_names, result))
 
     model.save(modelpath)

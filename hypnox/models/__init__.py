@@ -8,6 +8,7 @@ def get(model_name):
     model_module = importlib.import_module("hypnox.models." + model_name)
     model = model_module.get_model()
     model.config = model_module.config
+    model.tokenizer = model_module.get_tokenizer()
     return model
 
 
