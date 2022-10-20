@@ -3,6 +3,7 @@
 import argparse
 import pathlib
 
+import numpy
 import pandas
 
 import hypnox.models
@@ -26,13 +27,13 @@ def predict(model, tweets):
     if model.config["class"] == "polarity":
         tweets["model_p"] = model.config["name"]
 
-        labels = {0: 0, 2: -1, 1: 1}
-        i = 0
-        for tweet in tweets:
-            tweet.model_p = model.config["name"]
-            max = prob[i].argmax()
-            tweet.polarity = labels[max] * prob[i][max]
-            i += 1
+        indexes = prob.argmax(axis=1)
+        values = numpy.take_along_axis(prob,
+                                       numpy.expand_dims(indexes, axis=1),
+                                       axis=1).squeeze(axis=1)
+        labels = [-1 if x == 2 else x for x in indexes]
+
+        tweets["polarity"] = labels * values
 
     elif model.config["class"] == "intensity":
         tweets["model_i"] = model.config["name"]
