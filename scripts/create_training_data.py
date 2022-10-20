@@ -73,7 +73,7 @@ for output in output_chunks:
     })
     output_df.to_csv("training_" + date + "_" + str(i) + ".tsv",
                      sep="\t",
-                     line_terminator="\n",
+                     lineterminator="\n",
                      encoding="utf-8",
                      index=False)
     i += 1
