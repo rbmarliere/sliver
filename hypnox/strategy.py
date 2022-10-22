@@ -43,6 +43,7 @@ def get_indicators(strategy: hypnox.db.Strategy, prices: pandas.DataFrame):
                   sep="\t")
 
     # normalize intensities and polarities
+    # TODO what if median() instead?
     aux = tweets["intensity"].astype("float")
     tweets["i_zscore"] = (aux - aux.mean()) / aux.std()
     aux = tweets["polarity"].astype("float")
@@ -108,54 +109,65 @@ def backtest(args):
         hypnox.watchdog.log.error("no indicator data computed")
         raise Exception
 
-    target_cost = strategy.market.quote.transform(10000)
+    init_bal = balance = strategy.market.quote.transform(10000)
 
     hypnox.watchdog.log.info("computing positions from " +
-                             str(indicators.index[0]) + " until " +
-                             str(indicators.index[-1]))
+                             str(indicators["time"].iloc[0]) + " until " +
+                             str(indicators["time"].iloc[-1]))
 
-    # compute entries
+    buys = []
+    sells = []
     positions = []
+    curr_pos = None
     for idx, ind in indicators.iterrows():
         if ind["signal"] == "buy":
-            entry_amount = strategy.market.base.transform(target_cost /
-                                                          ind["open"])
+            if curr_pos is None:
+                buys.append(idx)
 
-            # hypnox.watchdog.log.info(
-            #     strategy.market.base.print(entry_amount) + " @ " +
-            #     strategy.market.quote.print(ind["open"]) + " (" +
-            #     strategy.market.quote.print(target_cost) + ") -- " +
-            #     str(ind["time"]))
+                curr_pos = hypnox.db.Position(status="closed",
+                                              entry_price=ind["open"],
+                                              entry_time=idx)
 
-            positions.append(
-                hypnox.db.Position(status="closed",
-                                   entry_cost=target_cost,
-                                   entry_amount=entry_amount,
-                                   entry_price=ind["open"],
-                                   entry_time=idx))
+        elif ind["signal"] == "sell":
+            if curr_pos is not None:
+                sells.append(idx)
 
-    # compute exits
-    total_pnl = 0
-    for position in positions:
-        for idx, ind in indicators.loc[position.entry_time:].iterrows():
-            price_delta = ind["open"] - position.entry_price
-            # tmp_roi = price_delta / position.entry_amount
+                price_delta = ind["open"] - curr_pos.entry_price
 
-            # if (tmp_roi >= strategy["MIN_ROI_PCT"]
-            #         or tmp_roi <= strategy["STOP_LOSS_PCT"]
-            if ind["signal"] == "sell":
-                total_pnl += price_delta
-                position.exit_time = idx
-                position.exit_price = ind["open"]
-                position.pnl = price_delta
-                break
+                entry_amount = strategy.market.base.transform(balance /
+                                                              ind["open"])
+
+                curr_pos.entry_cost = balance
+                curr_pos.entry_amount = entry_amount
+                curr_pos.exit_time = idx
+                curr_pos.exit_price = ind["open"]
+                curr_pos.pnl = price_delta
+
+                balance += price_delta
+
+                positions.append(curr_pos)
+
+                # hypnox.watchdog.log.info(
+                #     strategy.market.base.print(curr_pos.entry_amount) +
+                #     " @ (" +
+                #     strategy.market.quote.print(curr_pos.exit_price) +
+                #     " - " +
+                #     strategy.market.quote.print(curr_pos.entry_price) +
+                #     ") = " +
+                #     strategy.market.quote.print(curr_pos.pnl) +
+                #     " -- balance: " + strategy.market.quote.print(balance))
+
+                curr_pos = None
 
     if not positions:
         hypnox.watchdog.log.info("no positions entered")
         return
 
-    init_bal = strategy.market.quote.print(target_cost)
-    hypnox.watchdog.log.info("initial balance: " + init_bal)
+    hypnox.watchdog.log.info("initial balance: " +
+                             strategy.market.quote.print(init_bal))
+
+    hypnox.watchdog.log.info("final balance: " +
+                             strategy.market.quote.print(balance))
 
     init_bh_amount = strategy.market.base.print(positions[0].entry_amount)
     hypnox.watchdog.log.info("buy and hold amount at first position: " +
@@ -172,16 +184,16 @@ def backtest(args):
     n_trades = str(len(positions))
     hypnox.watchdog.log.info("number of trades: " + n_trades)
 
-    pnl = strategy.market.quote.print(total_pnl)
-    hypnox.watchdog.log.info("pnl: " + pnl)
+    pnl = balance - init_bal
+    hypnox.watchdog.log.info("pnl: " + strategy.market.quote.print(pnl))
 
-    roi = round(total_pnl / target_cost * 100, 2)
+    roi = round(pnl / init_bal * 100, 2)
     hypnox.watchdog.log.info("roi: " + str(roi) + "%")
 
-    roi_bh = round(((exit_bh_value / target_cost) - 1) * 100, 2)
+    roi_bh = round(((exit_bh_value / init_bal) - 1) * 100, 2)
     hypnox.watchdog.log.info("buy and hold roi: " + str(roi_bh) + "%")
 
-    roi_vs_bh = round((total_pnl / exit_bh_value) * 100, 2)
+    roi_vs_bh = round((pnl / exit_bh_value) * 100, 2)
     hypnox.watchdog.log.info("roi vs buy and hold: " + str(roi_vs_bh) + "%")
 
     indicators["open"] = indicators["open"].apply(strategy.market.quote.format)
@@ -196,8 +208,7 @@ def backtest(args):
                         cols=1,
                         shared_xaxes=True,
                         vertical_spacing=0.03,
-                        subplot_titles=("OHLC", "Volume", "i_score",
-                                        "p_score"),
+                        subplot_titles=("", "i_score", "p_score"),
                         row_width=[0.2, 0.2, 0.6])
 
     fig.add_trace(
@@ -208,14 +219,15 @@ def backtest(args):
                 close=indicators["close"],
                 showlegend=False))
 
-    indicators["buys"] = indicators["close"].where(indicators["signal"] == "buy")
+    indicators["buys"] = indicators["low"].where(indicators.index.isin(buys))
     fig.add_trace(
         go.Scatter(x=indicators["time"],
                    y=(1 - .003) * indicators["buys"],
                    mode="markers",
                    marker=dict(color="Green", size=8)))
 
-    indicators["sells"] = indicators["high"].where(indicators["signal"] == "sell")
+    indicators["sells"] = indicators["high"].where(
+        indicators.index.isin(sells))
     fig.add_trace(
         go.Scatter(x=indicators["time"],
                    y=(1 + .003) * indicators["sells"],
