@@ -7,6 +7,7 @@ deps = [
     "nltk",
     "pandas",
     "peewee",
+    "plotly",
     "psycopg2-binary",
     "python-telegram-bot",
     "scikit-learn",
