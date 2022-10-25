@@ -1,6 +1,10 @@
 import sys
 import os
 
+import dotenv
+
+dotenv.load_dotenv()
+
 config = [
     "HYPNOX_LOGS_DIR",
     "HYPNOX_MODELS_DIR",
