@@ -9,6 +9,7 @@ deps = [
     "peewee",
     "plotly",
     "psycopg2-binary",
+    "python-dotenv",
     "python-telegram-bot",
     "scikit-learn",
     "tensorflow",
