@@ -4,10 +4,10 @@ import pandas
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-import hypnox
+import core
 
 
-def refresh(strategy: hypnox.db.Strategy):
+def refresh(strategy: core.db.Strategy):
     # ideas:
     # - reset num_orders, spread and refresh_interval dynamically
     # - base decision over price data and inventory (amount opened, risk, etc)
@@ -24,23 +24,22 @@ def refresh(strategy: hypnox.db.Strategy):
     strategy.save()
 
 
-def get_signal(strategy: hypnox.db.Strategy):
+def get_signal(strategy: core.db.Strategy):
     return get_indicators(strategy)[-1]["signal"]
 
 
-def get_indicators(strategy: hypnox.db.Strategy, prices: pandas.DataFrame):
+def get_indicators(strategy: core.db.Strategy, prices: pandas.DataFrame):
     # grab tweets based on strategy regex filter
-    filter = hypnox.db.Tweet.text.iregexp(
+    filter = core.db.Tweet.text.iregexp(
         strategy.tweet_filter.encode("unicode_escape"))
-    query = hypnox.db.Tweet.select().where(filter)
+    query = core.db.Tweet.select().where(filter)
     tweets = pandas.DataFrame(query.dicts())
     # check if there are tweets with given params
     if tweets.empty:
-        hypnox.watchdog.log.error("no tweets found")
+        core.watchdog.log.error("no tweets found")
         raise Exception
     # log first stage
-    tweets.to_csv(hypnox.config["HYPNOX_LOGS_DIR"] + "/bt1_tweets.tsv",
-                  sep="\t")
+    tweets.to_csv(core.config["HYPNOX_LOGS_DIR"] + "/bt1_tweets.tsv", sep="\t")
 
     # normalize intensities and polarities
     # TODO what if median() instead?
@@ -61,15 +60,14 @@ def get_indicators(strategy: hypnox.db.Strategy, prices: pandas.DataFrame):
     # remove duplicated indexes
     tweets = tweets.loc[~tweets.index.duplicated(keep="first")]
     # log second stage
-    tweets.to_csv(hypnox.config["HYPNOX_LOGS_DIR"] + "/bt2_tweets_post.tsv",
+    tweets.to_csv(core.config["HYPNOX_LOGS_DIR"] + "/bt2_tweets_post.tsv",
                   sep="\t")
 
     # sort by strategy timeframe and set index
     prices = prices.sort_values("time")
     prices = prices.set_index("time")
     # log third stage
-    prices.to_csv(hypnox.config["HYPNOX_LOGS_DIR"] + "/bt3_prices.tsv",
-                  sep="\t")
+    prices.to_csv(core.config["HYPNOX_LOGS_DIR"] + "/bt3_prices.tsv", sep="\t")
 
     # concatenate both dataframes
     indicators = pandas.concat([tweets, prices], join="inner", axis=1)
@@ -78,7 +76,7 @@ def get_indicators(strategy: hypnox.db.Strategy, prices: pandas.DataFrame):
         "i_score", "p_score", "open", "high", "low", "close", "volume"
     ]]
     # log fourth stage
-    indicators.to_csv(hypnox.config["HYPNOX_LOGS_DIR"] +
+    indicators.to_csv(core.config["HYPNOX_LOGS_DIR"] +
                       "/bt4_indicators_pre.tsv",
                       sep="\t")
 
@@ -91,7 +89,7 @@ def get_indicators(strategy: hypnox.db.Strategy, prices: pandas.DataFrame):
                  (indicators["p_score"] < strategy.p_threshold))
     indicators.loc[sell_rule, "signal"] = "sell"
     # log final stage
-    indicators.to_csv(hypnox.config["HYPNOX_LOGS_DIR"] + "/bt5_indicators.tsv",
+    indicators.to_csv(core.config["HYPNOX_LOGS_DIR"] + "/bt5_indicators.tsv",
                       sep="\t")
 
     indicators.index.name = "time"
@@ -101,19 +99,19 @@ def get_indicators(strategy: hypnox.db.Strategy, prices: pandas.DataFrame):
 
 
 def backtest(args):
-    strategy = hypnox.db.Strategy.get(id=args.strategy_id)
+    strategy = core.db.Strategy.get(id=args.strategy_id)
 
     prices = get_prices(strategy)
     indicators = get_indicators(strategy, prices)
     if indicators.empty:
-        hypnox.watchdog.log.error("no indicator data computed")
+        core.watchdog.log.error("no indicator data computed")
         raise Exception
 
     init_bal = balance = strategy.market.quote.transform(10000)
 
-    hypnox.watchdog.log.info("computing positions from " +
-                             str(indicators["time"].iloc[0]) + " until " +
-                             str(indicators["time"].iloc[-1]))
+    core.watchdog.log.info("computing positions from " +
+                           str(indicators["time"].iloc[0]) + " until " +
+                           str(indicators["time"].iloc[-1]))
 
     buys = []
     sells = []
@@ -124,9 +122,9 @@ def backtest(args):
             if curr_pos is None:
                 buys.append(idx)
 
-                curr_pos = hypnox.db.Position(status="closed",
-                                              entry_price=ind["open"],
-                                              entry_time=idx)
+                curr_pos = core.db.Position(status="closed",
+                                            entry_price=ind["open"],
+                                            entry_time=idx)
 
         elif ind["signal"] == "sell":
             if curr_pos is not None:
@@ -147,7 +145,7 @@ def backtest(args):
 
                 positions.append(curr_pos)
 
-                # hypnox.watchdog.log.info(
+                # core.watchdog.log.info(
                 #     strategy.market.base.print(curr_pos.entry_amount) +
                 #     " @ (" +
                 #     strategy.market.quote.print(curr_pos.exit_price) +
@@ -160,41 +158,41 @@ def backtest(args):
                 curr_pos = None
 
     if not positions:
-        hypnox.watchdog.log.info("no positions entered")
+        core.watchdog.log.info("no positions entered")
         return
 
-    hypnox.watchdog.log.info("initial balance: " +
-                             strategy.market.quote.print(init_bal))
+    core.watchdog.log.info("initial balance: " +
+                           strategy.market.quote.print(init_bal))
 
-    hypnox.watchdog.log.info("final balance: " +
-                             strategy.market.quote.print(balance))
+    core.watchdog.log.info("final balance: " +
+                           strategy.market.quote.print(balance))
 
     init_bh_amount = strategy.market.base.print(positions[0].entry_amount)
-    hypnox.watchdog.log.info("buy and hold amount at first position: " +
-                             init_bh_amount)
+    core.watchdog.log.info("buy and hold amount at first position: " +
+                           init_bh_amount)
 
     exit_bh_value = positions[-1].entry_price * strategy.market.base.format(
         positions[0].entry_amount)
-    hypnox.watchdog.log.info("buy and hold value at last position: " +
-                             strategy.market.quote.print(exit_bh_value))
+    core.watchdog.log.info("buy and hold value at last position: " +
+                           strategy.market.quote.print(exit_bh_value))
 
     n_days = str(positions[-1].entry_time - positions[0].entry_time)
-    hypnox.watchdog.log.info("number of days: " + n_days)
+    core.watchdog.log.info("number of days: " + n_days)
 
     n_trades = str(len(positions))
-    hypnox.watchdog.log.info("number of trades: " + n_trades)
+    core.watchdog.log.info("number of trades: " + n_trades)
 
     pnl = balance - init_bal
-    hypnox.watchdog.log.info("pnl: " + strategy.market.quote.print(pnl))
+    core.watchdog.log.info("pnl: " + strategy.market.quote.print(pnl))
 
     roi = round(pnl / init_bal * 100, 2)
-    hypnox.watchdog.log.info("roi: " + str(roi) + "%")
+    core.watchdog.log.info("roi: " + str(roi) + "%")
 
     roi_bh = round(((exit_bh_value / init_bal) - 1) * 100, 2)
-    hypnox.watchdog.log.info("buy and hold roi: " + str(roi_bh) + "%")
+    core.watchdog.log.info("buy and hold roi: " + str(roi_bh) + "%")
 
     roi_vs_bh = round((pnl / exit_bh_value) * 100, 2)
-    hypnox.watchdog.log.info("roi vs buy and hold: " + str(roi_vs_bh) + "%")
+    core.watchdog.log.info("roi vs buy and hold: " + str(roi_vs_bh) + "%")
 
     indicators["open"] = indicators["open"].apply(strategy.market.quote.format)
     indicators["high"] = indicators["high"].apply(strategy.market.quote.format)
@@ -251,18 +249,18 @@ def backtest(args):
     fig.show()
 
 
-def get_prices(strategy: hypnox.db.Strategy):
+def get_prices(strategy: core.db.Strategy):
     # grab price data
-    prices = hypnox.db.Price.select().where(
-        (hypnox.db.Price.market == strategy.market)
-        & (hypnox.db.Price.timeframe == strategy.timeframe))
+    prices = core.db.Price.select().where(
+        (core.db.Price.market == strategy.market)
+        & (core.db.Price.timeframe == strategy.timeframe))
     prices = pandas.DataFrame(prices.dicts())
 
     # check if there is data for given market and timeframe
     if prices.empty:
-        hypnox.watchdog.log.error("no price data found for symbol " +
-                                  strategy.market.get_symbol() +
-                                  " for timeframe " + strategy.timeframe)
+        core.watchdog.log.error("no price data found for symbol " +
+                                strategy.market.get_symbol() +
+                                " for timeframe " + strategy.timeframe)
         raise Exception
 
     return prices

@@ -25,7 +25,7 @@ def preprocess(model, filepath):
     raw_df = raw_df.drop_duplicates(subset="tweet", keep="last")
 
     # preprocess training data and drop empty rows (based on output of clean)
-    # raw_df["tweet"] = raw_df["tweet"].apply(hypnox.utils.standardize)
+    # raw_df["tweet"] = raw_df["tweet"].apply(core.utils.standardize)
     # raw_df = raw_df.dropna()
 
     if model.config["class"] == "polarity":
