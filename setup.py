@@ -1,6 +1,14 @@
 import setuptools
 
-deps = [
+api_deps = [
+    "flask",
+    "flask-bcrypt",
+    "flask-jwt-extended",
+    "flask-restful",
+    "waitress"
+]
+
+core_deps = [
     "PyYAML",
     "ccxt",
     "emoji",
@@ -18,7 +26,16 @@ deps = [
     "tweepy"
 ]
 
+entry_points = {
+    "console_scripts": [
+        "serve = api:serve",
+        "stream = core.twitter:stream",
+        "watch = core.watchdog:watch"
+    ]
+}
+
 setuptools.setup(name="hypnox",
-                 version="0.01",
-                 packages=["hypnox"],
-                 install_requires=deps)
+                 version="0.02",
+                 packages=["api", "core"],
+                 entry_points=entry_points,
+                 install_requires=api_deps + core_deps)

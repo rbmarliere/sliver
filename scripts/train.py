@@ -5,8 +5,8 @@ import argparse
 import tensorflow
 from preprocess import preprocess, tokenize
 
-import hypnox
-import hypnox.models
+import core
+import core.models
 
 if __name__ == "__main__":
     argp = argparse.ArgumentParser()
@@ -20,9 +20,9 @@ if __name__ == "__main__":
                       required=True)
     args = argp.parse_args()
 
-    model = hypnox.models.get(args.model_name)
+    model = core.models.get(args.model_name)
 
-    modelpath = hypnox.config["HYPNOX_MODELS_DIR"] + "/" + args.model_name
+    modelpath = core.config["HYPNOX_MODELS_DIR"] + "/" + args.model_name
 
     train_df, val_df, test_df = preprocess(model, args.input_file)
 

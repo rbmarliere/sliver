@@ -6,11 +6,11 @@ import time
 import ccxt
 import peewee
 
-import hypnox
+import core
 
 
 def get_logger(name, suppress_output=False):
-    log_file = hypnox.config["HYPNOX_LOGS_DIR"] + "/" + name + ".log"
+    log_file = core.config["HYPNOX_LOGS_DIR"] + "/" + name + ".log"
 
     formatter = logging.Formatter(
         "%(asctime)s %(levelname)s -- %(message)s :: "
@@ -42,21 +42,21 @@ script_log = get_logger("script")
 exception_log = get_logger("exception", suppress_output=True)
 
 
-def watch(args):
+def watch():
     global log
     log = get_logger("watchdog")
 
-    hypnox.telegram.notify("watchdog init")
+    core.telegram.notify("watchdog init")
     log.info("watchdog init")
     while (True):
         try:
-            hypnox.db.connection.connect(reuse_if_open=True)
+            core.db.connection.connect(reuse_if_open=True)
 
             # kill switch if no active strategies
-            first_active_strat = hypnox.db.get_active_strategies().first()
+            first_active_strat = core.db.get_active_strategies().first()
             assert first_active_strat
 
-            strategies = [s for s in hypnox.db.get_pending_strategies()]
+            strategies = [s for s in core.db.get_pending_strategies()]
 
             # if no pending strategies, sleep until next demand
             if len(strategies) == 0:
@@ -84,7 +84,7 @@ def watch(args):
                 log.info("market is " + symbol)
                 log.info("timeframe is " + strategy.timeframe)
 
-                hypnox.strategy.refresh(strategy)
+                core.strategy.refresh(strategy)
 
                 users = [u for u in strategy.get_active_users()]
                 i = 0
@@ -101,40 +101,39 @@ def watch(args):
                         # set api to current exchange
                         credential = u_strat.user.get_credential_by_exchange(
                             strategy.market.base.exchange)
-                        hypnox.exchange.set_api(credential)
+                        core.exchange.set_api(credential)
 
-                        p = hypnox.exchange.api.fetch_ticker(symbol)
+                        p = core.exchange.api.fetch_ticker(symbol)
                         last_price = strategy.market.quote.transform(p["last"])
-                        hypnox.watchdog.log.info("last " + symbol +
-                                                 " price is $" +
-                                                 str(p["last"]))
+                        core.watchdog.log.info("last " + symbol +
+                                               " price is $" + str(p["last"]))
 
                         # get active position for current user_strategy
                         position = u_strat.get_active_position_or_none()
 
                         if position:
-                            position = hypnox.exchange.sync_orders(position)
+                            position = core.exchange.sync_orders(position)
 
                         # sync user's balances across all exchanges
-                        hypnox.inventory.sync_balances(u_strat.user)
+                        core.inventory.sync_balances(u_strat.user)
 
                         # download historical price ohlcv data
-                        hypnox.exchange.download(strategy.market,
-                                                 strategy.timeframe)
+                        core.exchange.download(strategy.market,
+                                               strategy.timeframe)
 
                         if position is None:
-                            hypnox.watchdog.log.info("no active position")
+                            core.watchdog.log.info("no active position")
 
                             # create position if apt
                             if strategy.signal == "buy":
-                                t_cost = hypnox.inventory.get_target_cost(
+                                t_cost = core.inventory.get_target_cost(
                                     u_strat)
 
                                 if t_cost > 0:
-                                    position = hypnox.db.Position.open(
+                                    position = core.db.Position.open(
                                         u_strat, t_cost)
 
-                                    hypnox.telegram.notify(
+                                    core.telegram.notify(
                                         "opened position for user " +
                                         u_strat.user.name +
                                         " under strategy " +
@@ -147,8 +146,8 @@ def watch(args):
                                             t_cost))
 
                         if position:
-                            hypnox.exchange.refresh(position, strategy.signal,
-                                                    last_price)
+                            core.exchange.refresh(position, strategy.signal,
+                                                  last_price)
 
                         i += 1
 
@@ -189,10 +188,10 @@ def watch(args):
             break
 
         except Exception as e:
-            hypnox.telegram.notify("got exception: " + str(e))
+            core.telegram.notify("got exception: " + str(e))
             log.error(e)
             exception_log.exception(e, exc_info=True)
             break
 
-    hypnox.telegram.notify("shutting down...")
+    core.telegram.notify("shutting down...")
     log.info("shutting down...")

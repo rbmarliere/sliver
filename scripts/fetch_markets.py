@@ -1,35 +1,35 @@
 #!/usr/bin/env python3
+
 import argparse
 
-import hypnox
+import core
 
 
-def fetch_markets(exchange: hypnox.db.Exchange):
-    hypnox.watchdog.script_log.info(
-        "fetching all markets from exchange api...")
+def fetch_markets(exchange: core.db.Exchange):
+    core.watchdog.script_log.info("fetching all markets from exchange api...")
 
-    ex_markets = hypnox.exchange.api.fetch_markets()
+    ex_markets = core.exchange.api.fetch_markets()
 
     for ex_market in ex_markets:
-        base, new = hypnox.db.Asset.get_or_create(ticker=ex_market["base"])
+        base, new = core.db.Asset.get_or_create(ticker=ex_market["base"])
         if new:
-            hypnox.watchdog.log.info("saved new asset " + base.ticker)
+            core.watchdog.log.info("saved new asset " + base.ticker)
 
-        quote, new = hypnox.db.Asset.get_or_create(ticker=ex_market["quote"])
+        quote, new = core.db.Asset.get_or_create(ticker=ex_market["quote"])
         if new:
-            hypnox.watchdog.log.info("saved new asset " + quote.ticker)
+            core.watchdog.log.info("saved new asset " + quote.ticker)
 
-        ex_b, new = hypnox.db.ExchangeAsset.get_or_create(asset=base,
-                                                          exchange=exchange)
+        ex_b, new = core.db.ExchangeAsset.get_or_create(asset=base,
+                                                        exchange=exchange)
         if new:
-            hypnox.watchdog.log.info("saved asset " + ex_b.asset.ticker +
-                                     " to exchange")
+            core.watchdog.log.info("saved asset " + ex_b.asset.ticker +
+                                   " to exchange")
 
-        ex_q, new = hypnox.db.ExchangeAsset.get_or_create(asset=quote,
-                                                          exchange=exchange)
+        ex_q, new = core.db.ExchangeAsset.get_or_create(asset=quote,
+                                                        exchange=exchange)
         if new:
-            hypnox.watchdog.log.info("saved asset " + ex_q.asset.ticker +
-                                     " to exchange")
+            core.watchdog.log.info("saved asset " + ex_q.asset.ticker +
+                                   " to exchange")
 
         ex_b.precision = ex_market["precision"]["base"]
         ex_b.save()
@@ -37,10 +37,9 @@ def fetch_markets(exchange: hypnox.db.Exchange):
         ex_q.precision = ex_market["precision"]["quote"]
         ex_q.save()
 
-        m, new = hypnox.db.Market.get_or_create(base=ex_b, quote=ex_q)
+        m, new = core.db.Market.get_or_create(base=ex_b, quote=ex_q)
         if new:
-            hypnox.watchdog.script_log.info("saved new market " +
-                                            m.get_symbol())
+            core.watchdog.script_log.info("saved new market " + m.get_symbol())
 
         m.amount_precision = ex_market["precision"]["amount"]
         m.price_precision = ex_market["precision"]["price"]
@@ -58,7 +57,7 @@ if __name__ == "__main__":
                       help="exchange name to fetch from",
                       required=True)
     args = argp.parse_args()
-    exchange = hypnox.db.Exchange.get(name=args.exchange_name)
+    exchange = core.db.Exchange.get(name=args.exchange_name)
     cred = exchange.credential_set.get()
-    hypnox.exchange.set_api(cred)
+    core.exchange.set_api(cred)
     fetch_markets(exchange)
