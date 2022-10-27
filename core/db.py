@@ -5,7 +5,7 @@ import peewee
 import tensorflow
 from ccxt.base.decimal_to_precision import DECIMAL_PLACES, NO_PADDING, TRUNCATE
 
-import hypnox
+import core
 
 tensorflow.get_logger().setLevel('INFO')
 
@@ -25,10 +25,10 @@ tensorflow.get_logger().setLevel('INFO')
 # PAD_WITH_ZERO,
 
 connection = peewee.PostgresqlDatabase(
-    hypnox.config["HYPNOX_DB_NAME"], **{
-        "host": hypnox.config["HYPNOX_DB_HOST"],
-        "user": hypnox.config["HYPNOX_DB_USER"],
-        "password": hypnox.config["HYPNOX_DB_PASSWORD"]
+    core.config["HYPNOX_DB_NAME"], **{
+        "host": core.config["HYPNOX_DB_HOST"],
+        "user": core.config["HYPNOX_DB_USER"],
+        "password": core.config["HYPNOX_DB_PASSWORD"]
     })
 
 
@@ -39,32 +39,26 @@ class BaseModel(peewee.Model):
 
 
 class Asset(BaseModel):
-    ticker = peewee.TextField()
-
-    class Meta:
-        constraints = [peewee.SQL("UNIQUE (ticker)")]
+    ticker = peewee.TextField(unique=True)
 
 
 class Exchange(BaseModel):
-    name = peewee.TextField()
+    name = peewee.TextField(unique=True)
     rate_limit = peewee.IntegerField(default=1200)
     rounding_mode = peewee.IntegerField(default=TRUNCATE)
     precision_mode = peewee.IntegerField(default=DECIMAL_PLACES)
     padding_mode = peewee.IntegerField(default=NO_PADDING)
 
-    class Meta:
-        constraints = [peewee.SQL("UNIQUE (name)")]
-
 
 class User(BaseModel):
     name = peewee.TextField()
+    email = peewee.TextField(unique=True)
+    password = peewee.TextField()
+    token = peewee.TextField(unique=True, null=True)
     telegram = peewee.TextField(null=True)
     max_risk = peewee.DecimalField(default=0.1)
     cash_reserve = peewee.DecimalField(default=0.25)
     target_factor = peewee.DecimalField(default=0.1)
-
-    class Meta:
-        constraints = [peewee.SQL("UNIQUE (name)")]
 
     def get_credential_by_exchange(self, exchange: Exchange):
         return Credential.select().where((Credential.user_id == self.id) & (
@@ -84,6 +78,10 @@ class User(BaseModel):
             & ((Position.status == "open")
                | (Position.status == "opening")
                | (Position.status == "closing")))
+
+    def get_strategies(self):
+        return Strategy.select().join(UserStrategy).where(
+            UserStrategy.user_id == self.id)
 
 
 class Credential(BaseModel):
@@ -113,14 +111,14 @@ class ExchangeAsset(BaseModel):
         else:
             div = self.transform(div)
 
-        div = hypnox.utils.truncate(self.format(div), trunc_precision)
+        div = core.utils.truncate(self.format(div), trunc_precision)
 
         return self.transform(div)
 
     def format(self, value):
         decimal.getcontext().prec = self.precision if self.precision > 0 else 1
         value = decimal.Decimal(str(value)) / 10**self.precision
-        return hypnox.utils.truncate(value, self.precision)
+        return core.utils.truncate(value, self.precision)
 
     def transform(self, value):
         decimal.getcontext().prec = self.precision if self.precision > 0 else 1
@@ -260,14 +258,14 @@ class Position(BaseModel):
             strategy.num_orders,
             trunc_precision=strategy.market.price_precision)
 
-        position = hypnox.db.Position(user_strategy=user_strat,
-                                      next_bucket=next_bucket,
-                                      bucket_max=bucket_max,
-                                      status="opening",
-                                      target_cost=target_cost)
+        position = core.db.Position(user_strategy=user_strat,
+                                    next_bucket=next_bucket,
+                                    bucket_max=bucket_max,
+                                    status="opening",
+                                    target_cost=target_cost)
         position.save()
 
-        hypnox.watchdog.log.info("opened position " + str(position.id))
+        core.watchdog.log.info("opened position " + str(position.id))
 
         return position
 
@@ -330,17 +328,17 @@ class Order(BaseModel):
             fee = market.quote.transform(ex_order["fee"]["cost"])
 
         # create model and save
-        order = hypnox.db.Order(position=position,
-                                exchange_order_id=ex_order["id"],
-                                time=ex_order["datetime"],
-                                status=ex_order["status"],
-                                type=ex_order["type"],
-                                side=ex_order["side"],
-                                price=price,
-                                amount=amount,
-                                cost=cost,
-                                filled=filled,
-                                fee=fee)
+        order = core.db.Order(position=position,
+                              exchange_order_id=ex_order["id"],
+                              time=ex_order["datetime"],
+                              status=ex_order["status"],
+                              type=ex_order["type"],
+                              side=ex_order["side"],
+                              price=price,
+                              amount=amount,
+                              cost=cost,
+                              filled=filled,
+                              fee=fee)
         order.save()
 
 

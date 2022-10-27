@@ -6,7 +6,7 @@ import pathlib
 import numpy
 import pandas
 
-import hypnox.models
+import core.models
 
 
 def predict(model, tweets):
@@ -50,12 +50,12 @@ def replay_csv(model, filepath):
     tweets["intensity"] = tweets["intensity"].map("{:.4f}".format)
     tweets["polarity"] = tweets["polarity"].map("{:.4f}".format)
 
-    tweets.to_csv(hypnox.config["HYPNOX_LOGS_DIR"] + "/replay_results.csv",
+    tweets.to_csv(core.config["HYPNOX_LOGS_DIR"] + "/replay_results.csv",
                   index=False)
 
 
 def replay_db(model):
-    query = hypnox.db.Tweet.select()
+    query = core.db.Tweet.select()
 
     tweets = pandas.DataFrame(query.dicts())
 
@@ -63,10 +63,10 @@ def replay_db(model):
 
     updates = []
     for i, tweet in tweets.iterrows():
-        updates.append(hypnox.db.Tweet(**tweet))
+        updates.append(core.db.Tweet(**tweet))
 
-    with hypnox.db.connection.atomic():
-        hypnox.db.Tweet.bulk_update(
+    with core.db.connection.atomic():
+        core.db.Tweet.bulk_update(
             updates,
             fields=["model_i", "intensity", "model_p", "polarity"],
             batch_size=model.config["batch_size"])
@@ -83,7 +83,7 @@ if __name__ == "__main__":
                       required=True)
     args = argp.parse_args()
 
-    model = hypnox.models.load(args.model_name)
+    model = core.models.load(args.model_name)
 
     if args.input_file:
         filepath = pathlib.Path().cwd() / args.input_file
