@@ -25,7 +25,10 @@ def refresh(strategy: core.db.Strategy):
 
 
 def get_signal(strategy: core.db.Strategy):
-    return get_indicators(strategy)[-1]["signal"]
+    prices = get_prices(strategy)
+    signal = get_indicators(strategy, prices).iloc[-1].signal
+    core.watchdog.log.info("* current strategy signal is " + signal)
+    return signal
 
 
 def get_indicators(strategy: core.db.Strategy, prices: pandas.DataFrame):
