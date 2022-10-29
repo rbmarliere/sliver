@@ -72,7 +72,8 @@
               "browserTarget": "hypnox:build:production"
             },
             "development": {
-              "browserTarget": "hypnox:build:development"
+              "browserTarget": "hypnox:build:development",
+              "proxyConfig": "src/proxy.conf.json"
             }
           },
           "defaultConfiguration": "development"
