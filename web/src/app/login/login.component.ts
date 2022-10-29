@@ -2,6 +2,8 @@ import * as moment from 'moment';
 
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
+import { Router } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
 
 import { AuthService } from '../auth.service';
 import { User } from '../user';
@@ -21,13 +23,18 @@ export class LoginComponent implements OnInit {
     localStorage.setItem('access_key', authResult.access_key);
     localStorage.setItem('expires_at', JSON.stringify(expiresAt.valueOf()));
 
-    console.log('user is now logged!');
-    console.log(authResult.access_key);
+    this.router.navigate(['positions']);
+  }
+
+  private handleError(error: HttpErrorResponse) {
+    window.alert(error.error.message);
   }
 
   constructor(
     private authService: AuthService,
-    private formBuilder: FormBuilder) { }
+    private formBuilder: FormBuilder,
+    private router: Router
+  ) { }
 
   ngOnInit(): void { }
 
@@ -37,7 +44,10 @@ export class LoginComponent implements OnInit {
     if (val.email && val.password) {
       this.authService
         .login(val.email, val.password)
-        .subscribe((res) => this.setSession(res));
+        .subscribe({
+          next: (res) => this.setSession(res),
+          error: (err) => this.handleError(err)
+        });
     }
 
   }

@@ -13,7 +13,6 @@ export class AuthService {
   private getExpiration() {
     const expiration = localStorage.getItem('expires_at')
     if (expiration === null) {
-      // TODO better error handling
       return null
     }
     const expiresAt = JSON.parse(expiration);
@@ -31,7 +30,7 @@ export class AuthService {
     localStorage.removeItem('expires_at')
   }
 
-  isLoggedIn() {
+  isAuthenticated() {
     return moment().isBefore(this.getExpiration())
   }
 
