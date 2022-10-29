@@ -1,16 +1,19 @@
 import os
 
 import flask
+import flask_cors
 import flask_jwt_extended
 import flask_restful
 import waitress
 
-from . import routes
+from . import errors, routes
 
 app = flask.Flask(__name__)
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
 
-api = flask_restful.Api(app, prefix="/v1")
+flask_cors.CORS(app)
+
+api = flask_restful.Api(app, prefix="/v1", errors=errors.dict)
 routes.init(api)
 
 jwt = flask_jwt_extended.JWTManager(app)
