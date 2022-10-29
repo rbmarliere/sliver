@@ -18,7 +18,7 @@ export class LoginComponent implements OnInit {
   form = this.formBuilder.group({ email: '', password: '' });
 
   private setSession(authResult: User) {
-    const expiresAt = moment.unix(authResult.expires_at);
+    const expiresAt = moment(authResult.expires_at, 'X');
 
     localStorage.setItem('access_key', authResult.access_key);
     localStorage.setItem('expires_at', JSON.stringify(expiresAt.valueOf()));

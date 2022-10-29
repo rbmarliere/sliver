@@ -29,12 +29,14 @@ class Auth(Resource):
         if not authorized:
             raise api.errors.Unauthorized
 
-        delta = datetime.timedelta(days=7)
-        exp_at = datetime.datetime.utcnow() + delta
+        delta = datetime.timedelta(days=1)
+        exp_at = datetime.datetime.now() + delta
         token = flask_jwt_extended.create_access_token(
             identity=str(user.id), expires_delta=delta)
 
         user.token = token
         user.save()
 
-        return {"access_key": token, "expires_at": exp_at.timestamp()}, 200
+        res = {"access_key": token, "expires_at": int(exp_at.timestamp())}
+
+        return (res, 200)
