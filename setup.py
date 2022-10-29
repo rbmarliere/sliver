@@ -2,6 +2,7 @@ import setuptools
 
 api_deps = [
     "flask",
+    "flask-cors",
     "flask-bcrypt",
     "flask-jwt-extended",
     "flask-restful",
