@@ -84,8 +84,6 @@ def watch():
                 log.info("market is " + symbol)
                 log.info("timeframe is " + strategy.timeframe)
 
-                core.strategy.refresh(strategy)
-
                 users = [u for u in strategy.get_active_users()]
                 i = 0
 
@@ -103,6 +101,13 @@ def watch():
                             strategy.market.base.exchange)
                         core.exchange.set_api(credential)
 
+                        # download historical price ohlcv data
+                        core.exchange.download(strategy.market,
+                                               strategy.timeframe)
+
+                        # refresh strategy params
+                        core.strategy.refresh(strategy)
+
                         p = core.exchange.api.fetch_ticker(symbol)
                         last_price = strategy.market.quote.transform(p["last"])
                         core.watchdog.log.info("last " + symbol +
@@ -116,10 +121,6 @@ def watch():
 
                         # sync user's balances across all exchanges
                         core.inventory.sync_balances(u_strat.user)
-
-                        # download historical price ohlcv data
-                        core.exchange.download(strategy.market,
-                                               strategy.timeframe)
 
                         if position is None:
                             core.watchdog.log.info("no active position")
@@ -178,6 +179,11 @@ def watch():
                         log.info("exchange api error, "
                                  "sleeping 60 seconds before trying again...")
                         time.sleep(60)
+
+                    except core.db.Credential.DoesNotExist:
+                        log.info("user has no credential for this exchange,"
+                                 " skipping...")
+                        break
 
         except peewee.OperationalError:
             log.error("can't connect to database!")
