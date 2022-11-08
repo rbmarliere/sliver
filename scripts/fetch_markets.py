@@ -59,5 +59,5 @@ if __name__ == "__main__":
     args = argp.parse_args()
     exchange = core.db.Exchange.get(name=args.exchange_name)
     cred = exchange.credential_set.get()
-    core.exchange.set_api(cred)
+    core.exchange.set_api(cred=cred)
     fetch_markets(exchange)
