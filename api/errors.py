@@ -8,6 +8,13 @@ class AuthenticationFailed(HTTPException):
     )
 
 
+class WrongPassword(HTTPException):
+    code = 401
+    description = (
+        "Old password does not match."
+    )
+
+
 class CredentialExists(HTTPException):
     code = 204
     description = (
