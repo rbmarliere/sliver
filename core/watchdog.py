@@ -36,15 +36,17 @@ def get_logger(name, suppress_output=False):
     return log
 
 
+def set_logger(name):
+    global log
+    log = get_logger(name)
+
+
 log = get_logger("hypnox")
-stream_log = get_logger("stream")
-script_log = get_logger("script")
 exception_log = get_logger("exception", suppress_output=True)
 
 
 def watch():
-    global log
-    log = get_logger("watchdog")
+    set_logger("watchdog")
 
     core.telegram.notify("watchdog init")
     log.info("watchdog init")
@@ -83,30 +85,38 @@ def watch():
                 log.info("refreshing strategy " + str(strategy.id))
                 log.info("market is " + symbol)
                 log.info("timeframe is " + strategy.timeframe)
+                log.info("exchange is " +
+                         str(strategy.market.base.exchange.name))
+
+                core.exchange.set_api(exchange=strategy.market.base.exchange)
+
+                # download historical price ohlcv data
+                core.exchange.download(strategy.market,
+                                       strategy.timeframe)
+
+                # refresh strategy params
+                core.strategy.refresh(strategy)
 
                 users = [u for u in strategy.get_active_users()]
-                i = 0
 
+                if len(users) == 0:
+                    log.info("no active users found, skipping...")
+                    continue
+
+                i = 0
                 while True:
                     try:
                         u_strat = users[i]
 
                         log.info(
                             "..............................................")
-                        log.info("refreshing " + u_strat.user.name +
+                        log.info("refreshing " + u_strat.user.email +
                                  "'s strategy " + str(u_strat.id))
 
                         # set api to current exchange
                         credential = u_strat.user.get_credential_by_exchange(
                             strategy.market.base.exchange)
-                        core.exchange.set_api(credential)
-
-                        # download historical price ohlcv data
-                        core.exchange.download(strategy.market,
-                                               strategy.timeframe)
-
-                        # refresh strategy params
-                        core.strategy.refresh(strategy)
+                        core.exchange.set_api(cred=credential)
 
                         p = core.exchange.api.fetch_ticker(symbol)
                         last_price = strategy.market.quote.transform(p["last"])
@@ -136,7 +146,7 @@ def watch():
 
                                     core.telegram.notify(
                                         "opened position for user " +
-                                        u_strat.user.name +
+                                        u_strat.user.email +
                                         " under strategy " +
                                         str(u_strat.strategy.id) + " (" +
                                         u_strat.strategy.description +
@@ -169,21 +179,24 @@ def watch():
                         u_strat.save()
                         i += 1
 
+                    except core.db.Credential.DoesNotExist:
+                        log.info("user has no credential for this exchange,"
+                                 " disabling user's strategy")
+                        u_strat.active = False
+                        u_strat.save()
+                        i += 1
+
                     except ccxt.RateLimitExceeded:
                         sleep_time = strategy.market.base.exchange.rate_limit
                         log.info("rate limit exceeded, sleeping for " +
                                  str(sleep_time) + " seconds")
                         time.sleep(sleep_time)
 
-                    except ccxt.NetworkError:
-                        log.info("exchange api error, "
-                                 "sleeping 60 seconds before trying again...")
-                        time.sleep(60)
-
-                    except core.db.Credential.DoesNotExist:
-                        log.info("user has no credential for this exchange,"
-                                 " skipping...")
-                        break
+        except ccxt.NetworkError:
+            # TODO num_tries -> telegram
+            log.info("exchange api error, "
+                     "sleeping 60 seconds before trying again...")
+            time.sleep(60)
 
         except peewee.OperationalError:
             log.error("can't connect to database!")
