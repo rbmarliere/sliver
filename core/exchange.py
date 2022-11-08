@@ -9,20 +9,26 @@ import peewee
 import core
 
 
-def set_api(new_cred: core.db.Credential):
-    global credential
-    if 'credential' in globals() and new_cred == credential:
-        return
-
-    credential = new_cred
+def set_api(exchange: core.db.Exchange = None,
+            cred: core.db.Credential = None):
+    if cred is None:
+        api_key = {}
+    else:
+        global credential
+        if "credential" in globals() and credential == cred:
+            return
+        credential = cred
+        api_key = {"apiKey": credential.api_key,
+                   "secret": credential.api_secret}
+        exchange = credential.exchange
 
     global api
-    exchange = getattr(ccxt, new_cred.exchange.name)
-    api = exchange({"apiKey": new_cred.api_key, "secret": new_cred.api_secret})
+    exchange = getattr(ccxt, exchange.name)
+    api = exchange(api_key)
     api.set_sandbox_mode(True)
     # api.verbose = True
 
-    # check if exchange is alive
+    # check if api is alive
     check_latency()
 
 
