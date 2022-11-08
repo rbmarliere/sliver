@@ -27,6 +27,10 @@ core_deps = [
     "tweepy"
 ]
 
+dev_deps = [
+    "debugpy"
+]
+
 entry_points = {
     "console_scripts": [
         "serve = api:serve",
