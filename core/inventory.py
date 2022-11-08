@@ -102,14 +102,16 @@ def sync_balances(user: core.db.User):
                                " to exchange")
 
     # backup current api
-    curr_cred = core.exchange.credential
+    curr_cred = None
+    if hasattr(core.exchange, "credential"):
+        curr_cred = core.exchange.credential
 
     # sync balance for each exchange the user has a key
     for cred in user.credential_set:
+        core.exchange.set_api(cred=cred)
+
         core.watchdog.log.info("fetching user balance in exchange " +
                                core.exchange.api.id)
-
-        core.exchange.set_api(cred)
 
         ex_bal = core.exchange.api.fetch_balance()
 
@@ -165,4 +167,5 @@ def sync_balances(user: core.db.User):
             u_bal.save()
 
     # restore previous api
-    core.exchange.set_api(curr_cred)
+    if curr_cred:
+        core.exchange.set_api(cred=curr_cred)

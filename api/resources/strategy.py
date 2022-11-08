@@ -3,27 +3,43 @@ from flask_restful import Resource, fields, marshal_with
 
 import core
 
-fields = {"description": fields.String}
+fields = {
+    "id": fields.Integer,
+    "subscribed": fields.Boolean,
+    "market_id": fields.Integer,
+    "active": fields.Boolean,
+    "description": fields.String,
+    "mode": fields.String,
+    "timeframe": fields.String,
+    "signal": fields.String,
+    "refresh_interval": fields.Integer,
+    "next_refresh": fields.DateTime,
+    "num_orders": fields.Integer,
+    "bucket_interval": fields.Integer,
+    "spread": fields.Float,
+    "min_roi": fields.Float,
+    "stop_loss": fields.Float,
+    "i_threshold": fields.Float,
+    "p_threshold": fields.Float,
+    "tweet_filter": fields.String
+}
 
 
 class Strategy(Resource):
-
     @marshal_with(fields)
     @jwt_required()
     def get(self):
-        uid = get_jwt_identity()
+        uid = int(get_jwt_identity())
+        user = core.db.User.get_by_id(uid)
 
-        strategies = [
-            st for st in core.db.User.get(uid).get_strategies().dicts()
-        ]
+        user_strats = [s for s in user.get_strategies()]
+        strategies = [s for s in core.db.get_active_strategies()]
+
+        for st in strategies:
+            st.subscribed = False
+
+        for st, u_st in zip(strategies, user_strats):
+            if st == u_st:
+                st.subscribed = True
 
         return strategies
-
-    def post(self):
-        pass
-
-    def put(self):
-        pass
-
-    def delete(self):
-        pass

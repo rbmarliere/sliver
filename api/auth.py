@@ -9,8 +9,8 @@ import api.errors
 import core
 
 argp = reqparse.RequestParser()
-argp.add_argument("email")
-argp.add_argument("password")
+argp.add_argument("email", type=str)
+argp.add_argument("password", type=str)
 
 
 class Auth(Resource):
@@ -21,13 +21,13 @@ class Auth(Resource):
         try:
             user = core.db.User.get(email=args.email)
         except peewee.DoesNotExist:
-            raise api.errors.Unauthorized
+            raise api.errors.AuthenticationFailed
 
         authorized = flask_bcrypt.check_password_hash(user.password,
                                                       args.password)
 
         if not authorized:
-            raise api.errors.Unauthorized
+            raise api.errors.AuthenticationFailed
 
         delta = datetime.timedelta(days=1)
         exp_at = datetime.datetime.now() + delta
@@ -37,6 +37,4 @@ class Auth(Resource):
         user.token = token
         user.save()
 
-        res = {"access_key": token, "expires_at": int(exp_at.timestamp())}
-
-        return (res, 200)
+        return {"access_key": token, "expires_at": int(exp_at.timestamp())}
