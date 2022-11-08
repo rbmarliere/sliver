@@ -2,6 +2,7 @@ import flask_bcrypt
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from flask_restful import Resource, fields, marshal_with, reqparse
 
+import api.errors
 import core
 
 fields = {
@@ -13,6 +14,7 @@ fields = {
 }
 
 argp = reqparse.RequestParser()
+argp.add_argument("old_password", type=str)
 argp.add_argument("password", type=str)
 argp.add_argument("telegram", type=str)
 argp.add_argument("max_risk", type=float)
@@ -37,8 +39,14 @@ class User(Resource):
         uid = int(get_jwt_identity())
         user = core.db.User.get_by_id(uid)
 
-        if args.password:
-            user.password = flask_bcrypt.generate_password_hash(args.password)
+        if args.password and args.old_password:
+            authorized = flask_bcrypt.check_password_hash(user.password,
+                                                          args.old_password)
+            if authorized:
+                user.password = flask_bcrypt.generate_password_hash(
+                    args.password)
+            else:
+                raise api.errors.WrongPassword
         if args.telegram:
             user.telegram = args.telegram
         if args.max_risk:
