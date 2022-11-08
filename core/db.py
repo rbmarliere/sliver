@@ -51,18 +51,16 @@ class Exchange(BaseModel):
 
 
 class User(BaseModel):
-    name = peewee.TextField()
     email = peewee.TextField(unique=True)
     password = peewee.TextField()
-    token = peewee.TextField(unique=True, null=True)
+    access_key = peewee.TextField(unique=True, null=True)
     telegram = peewee.TextField(null=True)
     max_risk = peewee.DecimalField(default=0.1)
     cash_reserve = peewee.DecimalField(default=0.25)
     target_factor = peewee.DecimalField(default=0.1)
 
     def get_credential_by_exchange(self, exchange: Exchange):
-        return Credential.select().where((Credential.user_id == self.id) & (
-            Credential.exchange == exchange)).get()
+        return self.credential_set.where(Credential.exchange == exchange).get()
 
     def get_balances_by_asset(self, asset: Asset):
         return Balance.select().join(
@@ -82,6 +80,10 @@ class User(BaseModel):
     def get_strategies(self):
         return Strategy.select().join(UserStrategy).where(
             UserStrategy.user_id == self.id)
+
+    def get_positions(self):
+        return Position.select().join(UserStrategy).where(
+            UserStrategy.user_id == self.id).order_by(Position.id)
 
 
 class Credential(BaseModel):
@@ -194,16 +196,6 @@ class Strategy(BaseModel):
             (Strategy.id == self.id) & (UserStrategy.active))
 
 
-def get_active_strategies():
-    return Strategy.select().where(Strategy.active).order_by(
-        Strategy.next_refresh)
-
-
-def get_pending_strategies():
-    now = datetime.datetime.utcnow()
-    return get_active_strategies().where((now > Strategy.next_refresh))
-
-
 class UserStrategy(BaseModel):
     user = peewee.ForeignKeyField(User)
     strategy = peewee.ForeignKeyField(Strategy)
@@ -269,9 +261,11 @@ class Position(BaseModel):
 
         return position
 
+    def get_orders(self):
+        return Order.select().join(Position)
+
     def get_open_orders(self):
-        query = Order.select().join(Position).where((Position.id == self.id)
-                                                    & (Order.status == "open"))
+        query = self.get_orders().where(Order.status == "open")
         return [order for order in query]
 
     def is_open(self):
@@ -363,3 +357,13 @@ class Tweet(BaseModel):
     intensity = peewee.DecimalField(default=0)
     model_p = peewee.TextField(default="")
     polarity = peewee.DecimalField(default=0)
+
+
+def get_active_strategies():
+    return Strategy.select().where(Strategy.active).order_by(
+        Strategy.next_refresh)
+
+
+def get_pending_strategies():
+    now = datetime.datetime.utcnow()
+    return get_active_strategies().where((now > Strategy.next_refresh))
