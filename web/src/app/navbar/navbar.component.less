@@ -1,29 +1,11 @@
-.nav {
-    position: sticky;
-    top: 0;
-    width: 100%;
-    background-color: #4e505e;
-    color: #fff;
-    display: flex;
-    padding: 0 16px;
-    align-items: center;
-    height: 56px;
-    font: 500 20px/32px Roboto, "Helvetica Neue", sans-serif;
+.unselectable {
+    -webkit-user-select: none; /* Safari */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* IE10+/Edge */
+    user-select: none; /* Standard */
+    cursor: pointer;
 }
 
-a:link {
-    color: #fff;
-    text-decoration: none;
-}
-a:visited {
-    color: #fff;
-    text-decoration: none;
-}
-a:hover {
-    color: #fff;
-    text-decoration: none;
-}
-a:active {
-    color: #fff;
-    text-decoration: none;
+.fill-remaining-space {
+    flex: 1 1 auto;
 }

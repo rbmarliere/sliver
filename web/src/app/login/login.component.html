@@ -1,16 +1,40 @@
-<form [formGroup]="form">
-  <fieldset>
-    <legend>Login</legend>
-    <div class="form-field">
-      <label>Email:</label>
-      <input name="email" formControlName="email">
-    </div>
-    <div class="form-field">
-      <label>Password:</label>
-      <input name="password" formControlName="password" type="password">
-    </div>
-  </fieldset>
-  <div class="form-buttons">
-    <button class="button button-primary" (click)="login()">Login</button>
-  </div>
-</form>
+<!-- <form [formGroup]="form"> -->
+<!--   <fieldset> -->
+<!--     <legend>Login</legend> -->
+<!--     <div class="form-field"> -->
+<!--       <label>Email:</label> -->
+<!--       <input name="email" formControlName="email"> -->
+<!--     </div> -->
+<!--     <div class="form-field"> -->
+<!--       <label>Password:</label> -->
+<!--       <input name="password" formControlName="password" type="password"> -->
+<!--     </div> -->
+<!--   </fieldset> -->
+<!--   <div class="form-buttons"> -->
+<!--     <button class="button button-primary" (click)="login()">Login</button> -->
+<!--   </div> -->
+<!-- </form> -->
+
+<div class="signin-content">
+  <mat-card>
+    <mat-card-content>
+      <form [formGroup]="form" (ngSubmit)="login()">
+        <p>Please login to continue</p>
+        <mat-form-field class="full-width-input">
+          <input matInput placeholder="email" formControlName="email" required>
+          <!-- <mat-error *ngIf="isFieldInvalid('userName')"> -->
+          <!--   Please inform your user name -->
+          <!-- </mat-error> -->
+        </mat-form-field>
+        <mat-form-field class="full-width-input">
+          <input matInput type="password" placeholder="password" formControlName="password" required>
+          <!-- <mat-error *ngIf="isFieldInvalid('userName')"> -->
+          <!--   Please inform your password -->
+          <!-- </mat-error> -->
+        </mat-form-field>
+        <button mat-raised-button color="primary">Login</button>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>
+
