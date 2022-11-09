@@ -9,7 +9,7 @@ import { AuthService } from './auth.service';
 @Injectable({
   providedIn: 'root'
 })
-export class AuthGuard implements CanActivate {
+export class LoginGuard implements CanActivate {
 
   constructor(
     private authService: AuthService,
@@ -23,8 +23,8 @@ export class AuthGuard implements CanActivate {
       .pipe(
         take(1),
         map((isAuthenticated: boolean) => {
-          if (!isAuthenticated) {
-            this.router.navigateByUrl('/login');
+          if (isAuthenticated) {
+            this.router.navigateByUrl('/');
             return false;
           }
           return true;
