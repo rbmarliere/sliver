@@ -1,12 +1,10 @@
-import * as moment from 'moment';
-
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
-import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
+import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 
 import { AuthService } from '../auth.service';
-import { User } from '../user';
+import { ErrorDialogComponent } from '../error-dialog/error-dialog.component';
 
 @Component({
   selector: 'app-login',
@@ -17,23 +15,20 @@ export class LoginComponent implements OnInit {
 
   form = this.formBuilder.group({ email: '', password: '' });
 
-  private setSession(authResult: User) {
-    const expiresAt = moment(authResult.expires_at, 'X');
-
-    localStorage.setItem('access_key', authResult.access_key);
-    localStorage.setItem('expires_at', JSON.stringify(expiresAt.valueOf()));
-
-    this.router.navigate(['positions']);
-  }
-
   private handleError(error: HttpErrorResponse) {
-    window.alert(error.error.message);
+    const dialogConfig = new MatDialogConfig;
+
+    dialogConfig.data = {
+      msg: error.error.message
+    };
+
+    this.dialog.open(ErrorDialogComponent, dialogConfig);
   }
 
   constructor(
     private authService: AuthService,
     private formBuilder: FormBuilder,
-    private router: Router
+    private dialog: MatDialog
   ) { }
 
   ngOnInit(): void { }
@@ -45,7 +40,7 @@ export class LoginComponent implements OnInit {
       this.authService
         .login(val.email, val.password)
         .subscribe({
-          next: (res) => this.setSession(res),
+          next: (res) => this.authService.setSession(res),
           error: (err) => this.handleError(err)
         });
     }
