@@ -1,12 +1,13 @@
-<mat-toolbar color="primary">
+<mat-toolbar class="navbar" color="primary">
   <span class="unselectable" routerLink="">
     <a>
     Hypnox
     </a>
   </span>
   <span class="fill-remaining-space"></span>
-  <button mat-button>Menu Option 01</button>
-  <button mat-button>Menu Option 02</button>
+  <button mat-button *ngIf="isAuthenticated" routerLink="positions">Positions</button>
+  <button mat-button *ngIf="isAuthenticated" routerLink="strategies">Strategies</button>
+  <button mat-button *ngIf="isAuthenticated" routerLink="dashboard">Dashboard</button>
   <button mat-button *ngIf="!isAuthenticated" routerLink="login">Login</button>
   <button mat-button *ngIf="isAuthenticated" (click)="logout()">Logout</button>
 </mat-toolbar>

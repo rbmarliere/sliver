@@ -1,0 +1,18 @@
+export interface Position {
+    id: number,
+    market_id: number,
+    strategy_id: number,
+    next_bucket: Date,
+    bucket_max: string,
+    bucket: string,
+    status: string,
+    target_cost: string,
+    entry_cost: string,
+    entry_amount: string,
+    entry_price: string,
+    exit_price: string,
+    exit_amount: string,
+    exit_cost: string,
+    fee: string,
+    pnl: string,
+}
