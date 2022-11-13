@@ -29,8 +29,15 @@ class CredentialDoesNotExist(HTTPException):
     )
 
 
-class PositionNotFound(HTTPException):
+class PositionDoesNotExist(HTTPException):
     code = 404
     description = (
-        "Position not found."
+        "Position does not exist."
+    )
+
+
+class StrategyDoesNotExist(HTTPException):
+    code = 404
+    description = (
+        "Strategy does not exist."
     )
