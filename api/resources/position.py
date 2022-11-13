@@ -30,4 +30,4 @@ class Position(Resource):
         uid = int(get_jwt_identity())
         user = core.db.User.get_by_id(uid)
 
-        return [p for p in user.get_positions()]
+        return [p for p in user.get_positions().dicts()]

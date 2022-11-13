@@ -78,8 +78,7 @@ class User(BaseModel):
                | (Position.status == "closing")))
 
     def get_positions(self):
-        return Position.select().join(UserStrategy).where(
-            UserStrategy.user_id == self.id).order_by(Position.id)
+        return Position.select(Position, Strategy.id.alias("strategy_id"), Market.id.alias("market_id")).join(UserStrategy).join(Strategy).join(Market).where(UserStrategy.user_id == self.id).order_by(Position.id.desc())
 
 
 class Credential(BaseModel):
