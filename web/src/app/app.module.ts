@@ -20,6 +20,9 @@ import { LoginComponent } from './login/login.component';
 import { PositionComponent } from './position/position.component';
 import { ErrorDialogComponent } from './error-dialog/error-dialog.component';
 
+import { HTTP_INTERCEPTORS } from '@angular/common/http';
+import { AuthInterceptor } from './auth.interceptor';
+
 @NgModule({
   declarations: [
     AppComponent,
@@ -43,7 +46,13 @@ import { ErrorDialogComponent } from './error-dialog/error-dialog.component';
     MatTableModule,
     MatIconModule,
   ],
-  providers: [],
+  providers: [
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: AuthInterceptor,
+      multi: true
+    }
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
