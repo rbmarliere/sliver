@@ -23,7 +23,7 @@ class Order(Resource):
     def get(self, position_id):
         uid = int(get_jwt_identity())
         try:
-            position = core.db.Position.get_by_id(position_id)  # OR NONE!
+            position = core.db.Position.get_by_id(position_id)
         except core.db.Position.DoesNotExist:
             raise api.errors.PositionDoesNotExist
 
