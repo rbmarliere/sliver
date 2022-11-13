@@ -77,10 +77,6 @@ class User(BaseModel):
                | (Position.status == "opening")
                | (Position.status == "closing")))
 
-    def get_strategies(self):
-        return Strategy.select().join(UserStrategy).where(
-            UserStrategy.user_id == self.id)
-
     def get_positions(self):
         return Position.select().join(UserStrategy).where(
             UserStrategy.user_id == self.id).order_by(Position.id)
