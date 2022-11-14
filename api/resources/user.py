@@ -33,7 +33,7 @@ class User(Resource):
 
     @marshal_with(fields)
     @jwt_required()
-    def post(self):
+    def put(self):
         args = argp.parse_args()
 
         uid = int(get_jwt_identity())
@@ -47,14 +47,11 @@ class User(Resource):
                     args.password)
             else:
                 raise api.errors.WrongPassword
-        if args.telegram:
-            user.telegram = args.telegram
-        if args.max_risk:
-            user.max_risk = args.max_risk
-        if args.cash_reserve:
-            user.cash_reserve = args.cash_reserve
-        if args.target_factor:
-            user.target_factor = args.target_factor
+
+        user.telegram = args.telegram
+        user.max_risk = args.max_risk
+        user.cash_reserve = args.cash_reserve
+        user.target_factor = args.target_factor
 
         user.save()
 
