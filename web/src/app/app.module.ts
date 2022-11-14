@@ -12,6 +12,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatTableModule } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
+import { MatSidenavModule } from '@angular/material/sidenav';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -22,6 +23,7 @@ import { ErrorDialogComponent } from './error-dialog/error-dialog.component';
 
 import { HTTP_INTERCEPTORS } from '@angular/common/http';
 import { AuthInterceptor } from './auth.interceptor';
+import { StrategyComponent } from './strategy/strategy.component';
 
 @NgModule({
   declarations: [
@@ -29,7 +31,8 @@ import { AuthInterceptor } from './auth.interceptor';
     NavbarComponent,
     LoginComponent,
     PositionComponent,
-    ErrorDialogComponent
+    ErrorDialogComponent,
+    StrategyComponent
   ],
   imports: [
     BrowserModule,
@@ -45,6 +48,7 @@ import { AuthInterceptor } from './auth.interceptor';
     MatDialogModule,
     MatTableModule,
     MatIconModule,
+    MatSidenavModule,
   ],
   providers: [
     {

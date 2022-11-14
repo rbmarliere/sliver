@@ -1,0 +1,15 @@
+<div class="main">
+  <mat-sidenav-container class="container">
+    <mat-sidenav #sidenav mode="side" opened>
+      <p *ngFor="let strategy of strategies">
+        <button mat-button (click)="selectStrategy(strategy)">
+          {{ strategy.description }}
+        </button>
+      </p>
+    </mat-sidenav>
+    <mat-sidenav-content *ngIf="selected" class="content">
+      {{ selected.id }}
+      {{ selected.description }}
+    </mat-sidenav-content>
+  </mat-sidenav-container>
+</div>
