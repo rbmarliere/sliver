@@ -13,6 +13,7 @@ import { MatDialogModule } from '@angular/material/dialog';
 import { MatTableModule } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatSliderModule } from '@angular/material/slider';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -24,6 +25,7 @@ import { ErrorDialogComponent } from './error-dialog/error-dialog.component';
 import { HTTP_INTERCEPTORS } from '@angular/common/http';
 import { AuthInterceptor } from './auth.interceptor';
 import { StrategyComponent } from './strategy/strategy.component';
+import { DashboardComponent } from './dashboard/dashboard.component';
 
 @NgModule({
   declarations: [
@@ -32,7 +34,8 @@ import { StrategyComponent } from './strategy/strategy.component';
     LoginComponent,
     PositionComponent,
     ErrorDialogComponent,
-    StrategyComponent
+    StrategyComponent,
+    DashboardComponent,
   ],
   imports: [
     BrowserModule,
@@ -49,6 +52,7 @@ import { StrategyComponent } from './strategy/strategy.component';
     MatTableModule,
     MatIconModule,
     MatSidenavModule,
+    MatSliderModule,
   ],
   providers: [
     {
