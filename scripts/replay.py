@@ -3,73 +3,21 @@
 import argparse
 import pathlib
 
-import numpy
 import pandas
 
-import core.models
-
-
-def predict(model, tweets):
-    inputs = model.tokenizer(tweets["text"].to_list(),
-                             truncation=True,
-                             padding="max_length",
-                             max_length=model.config["max_length"],
-                             return_tensors="tf")
-
-    prob = model.predict(
-        {
-            "input_ids": inputs["input_ids"],
-            "attention_mask": inputs["attention_mask"]
-        },
-        batch_size=model.config["batch_size"],
-        verbose=1)
-
-    if model.config["class"] == "polarity":
-        tweets["model_p"] = model.config["name"]
-
-        indexes = prob.argmax(axis=1)
-        values = numpy.take_along_axis(prob,
-                                       numpy.expand_dims(indexes, axis=1),
-                                       axis=1).squeeze(axis=1)
-        labels = [-1 if x == 2 else x for x in indexes]
-
-        tweets["polarity"] = labels * values
-
-    elif model.config["class"] == "intensity":
-        tweets["model_i"] = model.config["name"]
-        tweets["intensity"] = prob.flatten()
-
-    return tweets
+import core
 
 
 def replay_csv(model, filepath):
     tweets = pandas.read_csv(filepath)
 
-    tweets = predict(model, tweets)
+    tweets = core.models.predict(model, tweets)
 
     tweets["intensity"] = tweets["intensity"].map("{:.4f}".format)
     tweets["polarity"] = tweets["polarity"].map("{:.4f}".format)
 
     tweets.to_csv(core.config["HYPNOX_LOGS_DIR"] + "/replay_results.csv",
                   index=False)
-
-
-def replay_db(model):
-    query = core.db.Tweet.select()
-
-    tweets = pandas.DataFrame(query.dicts())
-
-    tweets = predict(model, tweets)
-
-    updates = []
-    for i, tweet in tweets.iterrows():
-        updates.append(core.db.Tweet(**tweet))
-
-    with core.db.connection.atomic():
-        core.db.Tweet.bulk_update(
-            updates,
-            fields=["model_i", "intensity", "model_p", "polarity"],
-            batch_size=model.config["batch_size"])
 
 
 if __name__ == "__main__":
@@ -93,4 +41,4 @@ if __name__ == "__main__":
         replay_csv(model, filepath)
 
     else:
-        replay_db(model)
+        core.models.replay(model, update_only=False)

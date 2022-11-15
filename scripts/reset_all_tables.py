@@ -4,6 +4,7 @@ import core
 
 
 def reset_tables():
+    core.db.Indicator.drop_table()
     core.db.Price.drop_table()
     core.db.Order.drop_table()
     core.db.Position.drop_table()
@@ -29,6 +30,7 @@ def reset_tables():
     core.db.Position.create_table()
     core.db.Order.create_table()
     core.db.Price.create_table()
+    core.db.Indicator.create_table()
 
 
 if __name__ == "__main__":

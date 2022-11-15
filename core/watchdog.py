@@ -50,6 +50,10 @@ def watch():
 
     core.telegram.notify("watchdog init")
     log.info("watchdog init")
+
+    model_i = core.models.load(core.models.model_i)
+    model_p = core.models.load(core.models.model_p)
+
     while (True):
         try:
             core.db.connection.connect(reuse_if_open=True)
@@ -89,6 +93,10 @@ def watch():
                          str(strategy.market.base.exchange.name))
 
                 core.exchange.set_api(exchange=strategy.market.base.exchange)
+
+                # update tweet scores
+                core.models.replay(model_i)
+                core.models.replay(model_p)
 
                 # download historical price ohlcv data
                 core.exchange.download(strategy.market,
