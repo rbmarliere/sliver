@@ -20,3 +20,7 @@ if __name__ == "__main__":
             tweet.model_p = None
             tweet.polarity = None
             tweet.save()
+
+        answer = input("Task completed. Continue?")
+        if answer.lower() in ["n", "no"]:
+            raise Exception
