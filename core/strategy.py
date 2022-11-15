@@ -19,30 +19,89 @@ def refresh(strategy: core.db.Strategy):
 
     # compute signal for automatic strategies
     if strategy.mode == "auto":
+        update_indicators(strategy)
         strategy.signal = get_signal(strategy)
 
     strategy.save()
 
 
+# def get_rsignal():
+#     import random
+#     i = random.randint(0, 100)
+#     if i > 80:
+#         return 'buy'
+#     elif i < 20:
+#         return 'sell'
+#     else:
+#         return 'neutral'
+
+
 def get_signal(strategy: core.db.Strategy):
-    prices = get_prices(strategy)
-    signal = get_indicators(strategy, prices).iloc[-1].signal
+    # signal = get_rsignal()
+    # core.watchdog.log.info("* current strategy signal is " + signal)
+    # return signal
+
+    indicator = strategy.indicator_set.order_by(
+        core.db.Indicator.id.desc()).get_or_none()
+
+    signal = indicator.signal if indicator is not None else "neutral"
+
     core.watchdog.log.info("* current strategy signal is " + signal)
+
     return signal
 
 
-def get_indicators(strategy: core.db.Strategy, prices: pandas.DataFrame):
-    # grab tweets based on strategy regex filter
-    filter = core.db.Tweet.text.iregexp(
+def update_indicators(strategy: core.db.Strategy):
+    db_indicators = [i for i in strategy.indicator_set]
+    if db_indicators:
+        since = db_indicators[-1].price.time
+    else:
+        since = None
+
+    try:
+        indicators = get_indicators(strategy, since=since)
+    except:
+        return
+
+    indicators = indicators[[
+        "price_id", "strategy_id", "signal", "i_score", "p_score"
+    ]]
+
+    core.db.Indicator.insert_many(indicators.to_dict("records")).execute()
+
+
+def get_indicators(strategy: core.db.Strategy, since=None):
+    # filter price data by time argument
+    if since is None:
+        time_filter = True
+    else:
+        time_filter = core.db.Price.time > since
+    # grab price data
+    prices = core.db.Price.select().where(
+        (core.db.Price.market == strategy.market)
+        & (core.db.Price.timeframe == strategy.timeframe)
+        & (time_filter))
+    prices = pandas.DataFrame(prices.dicts())
+    # check if there are prices available
+    if prices.empty:
+        core.watchdog.log.info(
+            "no price data found for computing signals, skipping...")
+        raise Exception
+    prices = prices.rename(columns={"id": "price_id"})
+
+    # filter tweets based on price data availability
+    time_filter = core.db.Tweet.time >= prices.iloc[0].time
+    # filter tweets based on strategy regex
+    strat_filter = core.db.Tweet.text.iregexp(
         strategy.tweet_filter.encode("unicode_escape"))
-    query = core.db.Tweet.select().where(filter)
+    # put query result in a pandas df
+    query = core.db.Tweet.select().where((strat_filter) & (time_filter))
     tweets = pandas.DataFrame(query.dicts())
     # check if there are tweets with given params
     if tweets.empty:
-        core.watchdog.log.error("no tweets found")
+        core.watchdog.log.info(
+            "no tweets found for computing signals, skipping...")
         raise Exception
-    # log first stage
-    tweets.to_csv(core.config["HYPNOX_LOGS_DIR"] + "/bt1_tweets.tsv", sep="\t")
 
     # normalize intensities and polarities
     # TODO what if median() instead?
@@ -62,28 +121,20 @@ def get_indicators(strategy: core.db.Strategy, prices: pandas.DataFrame):
     tweets["p_score"] = tweets.groupby("floor")["p_zscore"].sum()
     # remove duplicated indexes
     tweets = tweets.loc[~tweets.index.duplicated(keep="first")]
-    # log second stage
-    tweets.to_csv(core.config["HYPNOX_LOGS_DIR"] + "/bt2_tweets_post.tsv",
-                  sep="\t")
 
     # sort by strategy timeframe and set index
     prices = prices.sort_values("time")
     prices = prices.set_index("time")
-    # log third stage
-    prices.to_csv(core.config["HYPNOX_LOGS_DIR"] + "/bt3_prices.tsv", sep="\t")
 
     # concatenate both dataframes
     indicators = pandas.concat([tweets, prices], join="inner", axis=1)
     # get rid of unused columns
     indicators = indicators[[
-        "i_score", "p_score", "open", "high", "low", "close", "volume"
+        "price_id", "i_score", "p_score", "open", "high", "low", "close", "volume"
     ]]
-    # log fourth stage
-    indicators.to_csv(core.config["HYPNOX_LOGS_DIR"] +
-                      "/bt4_indicators_pre.tsv",
-                      sep="\t")
 
     # compute signals
+    indicators["strategy_id"] = strategy.id
     indicators["signal"] = "neutral"
     buy_rule = ((indicators["i_score"] > strategy.i_threshold) &
                 (indicators["p_score"] > strategy.p_threshold))
@@ -91,9 +142,6 @@ def get_indicators(strategy: core.db.Strategy, prices: pandas.DataFrame):
     sell_rule = ((indicators["i_score"] > strategy.i_threshold) &
                  (indicators["p_score"] < strategy.p_threshold))
     indicators.loc[sell_rule, "signal"] = "sell"
-    # log final stage
-    indicators.to_csv(core.config["HYPNOX_LOGS_DIR"] + "/bt5_indicators.tsv",
-                      sep="\t")
 
     indicators.index.name = "time"
     indicators.reset_index(inplace=True)
@@ -104,10 +152,9 @@ def get_indicators(strategy: core.db.Strategy, prices: pandas.DataFrame):
 def backtest(args):
     strategy = core.db.Strategy.get(id=args.strategy_id)
 
-    prices = get_prices(strategy)
-    indicators = get_indicators(strategy, prices)
+    indicators = get_indicators(strategy)
     if indicators.empty:
-        core.watchdog.log.error("no indicator data computed")
+        core.watchdog.log.info("no indicator data computed")
         raise Exception
 
     init_bal = balance = strategy.market.quote.transform(10000)
@@ -250,20 +297,3 @@ def backtest(args):
     fig.update(layout_xaxis_rangeslider_visible=False)
 
     fig.show()
-
-
-def get_prices(strategy: core.db.Strategy):
-    # grab price data
-    prices = core.db.Price.select().where(
-        (core.db.Price.market == strategy.market)
-        & (core.db.Price.timeframe == strategy.timeframe))
-    prices = pandas.DataFrame(prices.dicts())
-
-    # check if there is data for given market and timeframe
-    if prices.empty:
-        core.watchdog.log.error("no price data found for symbol " +
-                                strategy.market.get_symbol() +
-                                " for timeframe " + strategy.timeframe)
-        raise Exception
-
-    return prices
