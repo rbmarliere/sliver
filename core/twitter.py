@@ -85,19 +85,21 @@ class Stream(tweepy.Stream):
         # remove any tab character
         text = re.sub("\t", " ", text).strip()
         # format data
-        time = datetime.datetime.strptime(status._json["created_at"],
-                                          "%a %b %d %H:%M:%S %z %Y")
+        time_with_tz = datetime.datetime.strptime(status._json["created_at"],
+                                                  "%a %b %d %H:%M:%S %z %Y")
+        time = datetime.datetime.utcfromtimestamp(time_with_tz.timestamp())
+
         # log to stdin
-        core.watchdog.stream_log.info(text)
+        core.watchdog.log.info(text)
         try:
             core.db.Tweet(time=time, text=text).save()
         except Exception as e:
             # notify telegram
             core.telegram.notify("stream error!")
             # log to cache csv
-            core.watchdog.stream_log.error(
+            core.watchdog.log.error(
                 "error on inserting, caching instead...")
-            core.watchdog.stream_log.exception(e, exc_info=True)
+            core.watchdog.log.exception(e, exc_info=True)
             output = pandas.DataFrame({
                 "time": [time],
                 "text": [text],
@@ -116,30 +118,32 @@ class Stream(tweepy.Stream):
 
 def save_uids(users, api):
     # save the ids of the users to track to disk
-    core.watchdog.stream_log.info("loading user ids")
+    core.watchdog.log.info("loading user ids")
     path = core.config["HYPNOX_LOGS_DIR"] + "/user_ids.txt"
     uids_file = open(path, "a")
     uids = []
     for user in users:
         # retrieve user id by name from twitter api
-        core.watchdog.stream_log.info("fetching user %s id" % user)
+        core.watchdog.log.info("fetching user %s id" % user)
         try:
             uid = str(api.get_user(screen_name=user.strip()).id)
             # save found uids to a file so it does not consume api each run
             print(uid, file=uids_file)
             uids.append(uid)
         except tweepy.errors.TweepyException:
-            core.watchdog.stream_log.error("user " + user + " not found")
+            core.watchdog.log.error("user " + user + " not found")
     return uids
 
 
 def stream():
-    core.watchdog.stream_log.info("loading twitter API keys")
+    core.watchdog.set_logger("stream")
+
+    core.watchdog.log.info("loading twitter API keys")
     if (core.config["HYPNOX_TWITTER_CONSUMER_KEY"] == ""
             or core.config["HYPNOX_TWITTER_CONSUMER_SECRET"] == ""
             or core.config["HYPNOX_TWITTER_ACCESS_KEY"] == ""
             or core.config["HYPNOX_TWITTER_ACCESS_SECRET"] == ""):
-        core.watchdog.stream_log.error("empty keys in config!")
+        core.watchdog.log.error("empty keys in config!")
         return 1
     auth = tweepy.OAuthHandler(core.config["HYPNOX_TWITTER_CONSUMER_KEY"],
                                core.config["HYPNOX_TWITTER_CONSUMER_SECRET"])
@@ -148,13 +152,13 @@ def stream():
     api = tweepy.API(auth)
 
     core.telegram.notify("initializing twitter stream...")
-    core.watchdog.stream_log.info("initializing")
+    core.watchdog.log.info("initializing")
     stream = Stream(core.config["HYPNOX_TWITTER_CONSUMER_KEY"],
                     core.config["HYPNOX_TWITTER_CONSUMER_SECRET"],
                     core.config["HYPNOX_TWITTER_ACCESS_KEY"],
                     core.config["HYPNOX_TWITTER_ACCESS_SECRET"])
 
-    core.watchdog.stream_log.info("reading users")
+    core.watchdog.log.info("reading users")
     try:
         path = core.config["HYPNOX_LOGS_DIR"] + "/user_ids.txt"
         uids = open(path).read().splitlines()
@@ -164,7 +168,7 @@ def stream():
     except FileNotFoundError:
         uids = save_uids(TRACK_USERS, api)
 
-    core.watchdog.stream_log.info("streaming...")
+    core.watchdog.log.info("streaming...")
     while not stream.running:
         try:
             stream.filter(languages=["en"], follow=uids)
@@ -172,10 +176,10 @@ def stream():
         except (requests.exceptions.Timeout, ssl.SSLError,
                 urllib3.exceptions.ReadTimeoutError,
                 requests.exceptions.ConnectionError) as e:
-            core.watchdog.stream_log.error("network error: " + e)
+            core.watchdog.log.error("network error: " + e)
         except Exception as e:
-            core.watchdog.stream_log.error("unexpected error: " + e)
+            core.watchdog.log.error("unexpected error: " + e)
         except KeyboardInterrupt:
-            core.watchdog.stream_log.info(
+            core.watchdog.log.info(
                 "got keyboard interrupt, shutting down...")
             return 1

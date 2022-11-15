@@ -1,7 +1,12 @@
 import sys
 import os
+import time
 
 import dotenv
+
+# for ccxt requests
+os.environ["TZ"] = "Europe/London"
+time.tzset()
 
 dotenv.load_dotenv()
 
@@ -43,6 +48,7 @@ from . import (
     db,
     exchange,
     inventory,
+    models,
     strategy,
     telegram,
     twitter,
@@ -53,6 +59,7 @@ __all__ = [
     "db",
     "exchange",
     "inventory",
+    "models",
     "strategy",
     "telegram",
     "twitter",
