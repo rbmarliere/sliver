@@ -74,8 +74,8 @@ def download(market: core.db.Market, timeframe: str):
             desc).get().time
         page_start = last_entry
     except peewee.DoesNotExist:
-        first_entry = datetime.datetime.fromtimestamp(0)
-        last_entry = datetime.datetime.fromtimestamp(0)
+        first_entry = datetime.datetime.utcfromtimestamp(0)
+        last_entry = datetime.datetime.utcfromtimestamp(0)
         page_start = datetime.datetime(2000, 1, 1)
         core.watchdog.log.info(
             "no db entries found, downloading everything...")
@@ -84,7 +84,7 @@ def download(market: core.db.Market, timeframe: str):
     stop_at_first = False
     if first_entry > page_start:
         stop_at_first = True
-    elif last_entry > page_start:
+    elif last_entry >= page_start:
         page_start = last_entry + timeframe_delta
 
     # return if last entry is last possible result
