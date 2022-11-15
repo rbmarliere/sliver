@@ -8,6 +8,8 @@ import pandas
 
 import core
 
+core.watchdog.set_logger("script")
+
 argp = argparse.ArgumentParser()
 argp.add_argument("-i",
                   "--input",
@@ -19,7 +21,7 @@ argp.add_argument("-n",
                   required=True)
 args = argp.parse_args()
 
-core.watchdog.script_log.info("loading input labeled data")
+core.watchdog.log.info("loading input labeled data")
 
 assert os.path.exists(args.input)
 
@@ -30,38 +32,38 @@ last_training = pandas.read_csv(args.input,
 
 last_training["clean"] = last_training["tweet"].apply(core.utils.standardize)
 
-core.watchdog.script_log.info("retrieving highest scored tweets set")
+core.watchdog.log.info("retrieving highest scored tweets set")
 query = core.db.Tweet.select().order_by(core.db.Tweet.intensity.desc()).limit(
     args.num_lines)
 tweets = pandas.DataFrame(query.dicts())
 tweets["clean"] = tweets["text"].apply(core.utils.standardize)
 
-core.watchdog.script_log.info("fetching 200 most frequent words in the set")
+core.watchdog.log.info("fetching 200 most frequent words in the set")
 words = tweets.clean.str.split(
     expand=True).stack().value_counts().reset_index()
 list_words = words["index"].head(200).values.tolist()
 
-core.watchdog.script_log.info(
+core.watchdog.log.info(
     "filtering tweets that uses at least 3 most frequent words")
 match = pandas.concat(
     [tweets.clean.str.contains(word, regex=False) for word in list_words],
     axis=1).sum(1) > 3
 filtered = tweets.loc[match].reset_index(drop=True)
 
-core.watchdog.script_log.info("checking if new tweets aren't labeled already")
+core.watchdog.log.info("checking if new tweets aren't labeled already")
 dup_filter = pandas.merge(filtered["clean"],
                           last_training["clean"].drop_duplicates(),
                           indicator=True,
                           how="outer").query('_merge=="left_only"')
 dup_filtered = filtered.loc[dup_filter.index]["text"]
 
-core.watchdog.script_log.info("splitting data into 1000 lines chunks")
+core.watchdog.log.info("splitting data into 1000 lines chunks")
 output_chunks = [
     dup_filtered.values[i:i + 1000]
     for i in range(0, len(dup_filter.values), 1000)
 ]
 
-core.watchdog.script_log.info("saving to file")
+core.watchdog.log.info("saving to file")
 date = datetime.datetime.now().strftime("%Y%m%d")
 i = 1
 for output in output_chunks:

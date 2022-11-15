@@ -6,7 +6,7 @@ import core
 
 
 def fetch_markets(exchange: core.db.Exchange):
-    core.watchdog.script_log.info("fetching all markets from exchange api...")
+    core.watchdog.log.info("fetching all markets from exchange api...")
 
     ex_markets = core.exchange.api.fetch_markets()
 
@@ -39,7 +39,7 @@ def fetch_markets(exchange: core.db.Exchange):
 
         m, new = core.db.Market.get_or_create(base=ex_b, quote=ex_q)
         if new:
-            core.watchdog.script_log.info("saved new market " + m.get_symbol())
+            core.watchdog.log.info("saved new market " + m.get_symbol())
 
         m.amount_precision = ex_market["precision"]["amount"]
         m.price_precision = ex_market["precision"]["price"]
@@ -51,6 +51,8 @@ def fetch_markets(exchange: core.db.Exchange):
 
 
 if __name__ == "__main__":
+    core.watchdog.set_logger("scripts")
+
     argp = argparse.ArgumentParser()
     argp.add_argument("-e",
                       "--exchange_name",
