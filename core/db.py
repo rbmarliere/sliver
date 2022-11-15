@@ -345,13 +345,24 @@ class Price(BaseModel):
         constraints = [peewee.SQL("UNIQUE (market_id, timeframe, time)")]
 
 
+class Indicator(BaseModel):
+    strategy = peewee.ForeignKeyField(Strategy)
+    price = peewee.ForeignKeyField(Price)
+    signal = peewee.TextField()
+    i_score = peewee.DecimalField()
+    p_score = peewee.DecimalField()
+
+    class Meta:
+        constraints = [peewee.SQL("UNIQUE (price_id, strategy_id)")]
+
+
 class Tweet(BaseModel):
     time = peewee.DateTimeField()
-    text = peewee.TextField(null=False)
-    model_i = peewee.TextField(default="")
-    intensity = peewee.DecimalField(default=0)
-    model_p = peewee.TextField(default="")
-    polarity = peewee.DecimalField(default=0)
+    text = peewee.TextField()
+    model_i = peewee.TextField(null=True)
+    intensity = peewee.DecimalField(null=True)
+    model_p = peewee.TextField(null=True)
+    polarity = peewee.DecimalField(null=True)
 
 
 def get_active_strategies():

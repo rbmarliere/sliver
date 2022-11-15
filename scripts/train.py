@@ -6,7 +6,6 @@ import tensorflow
 from preprocess import preprocess, tokenize
 
 import core
-import core.models
 
 if __name__ == "__main__":
     argp = argparse.ArgumentParser()
