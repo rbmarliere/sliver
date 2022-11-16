@@ -76,24 +76,25 @@ def replay(model, update_only=True):
 
     query = core.db.Tweet.select().where(filter).order_by(
         core.db.Tweet.id.asc())
-    tweets = pandas.DataFrame(query.dicts())
 
-    if tweets.empty:
-        core.watchdog.log.info("no tweets to replay, skipping...")
-        return
+    core.watchdog.log.info("replaying " + str(query.count()) +
+                           " tweets, model " + model.config["name"])
 
-    core.watchdog.log.info("replaying " + str(tweets.size) +
-                           " tweets with model " + model.config["name"])
-    core.watchdog.log.info(
-        str(tweets.iloc[0].time) + " - " + str(tweets.iloc[-1].time))
+    with core.db.connection.atomic():
+        page = 0
+        while True:
+            page_q = query.paginate(page, 4096)
+            page += 1
 
-    tweets = predict(model, tweets)
+            if page_q.count() == 0:
+                core.watchdog.log.info("no tweets to replay, skipping...")
+                break
 
-    updates = []
-    for i, tweet in tweets.iterrows():
-        updates.append(core.db.Tweet(**tweet))
+            tweets = pandas.DataFrame(page_q.dicts())
+            tweets = predict(model, tweets)
 
-    core.db.Tweet.bulk_update(
-        updates,
-        fields=fields,
-        batch_size=model.config["batch_size"])
+            updates = []
+            for i, tweet in tweets.iterrows():
+                updates.append(core.db.Tweet(**tweet))
+
+            core.db.Tweet.bulk_update(updates, fields=fields)
