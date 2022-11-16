@@ -42,7 +42,6 @@ def set_logger(name):
 
 
 log = get_logger("hypnox")
-exception_log = get_logger("exception", suppress_output=True)
 
 
 def watch():
@@ -215,8 +214,9 @@ def watch():
             break
 
         except Exception as e:
-            core.telegram.notify("got exception: " + str(e))
+            core.telegram.notify("watchdog crashed!")
             log.error(e)
+            exception_log = get_logger("exception", suppress_output=True)
             exception_log.exception(e, exc_info=True)
             break
 
