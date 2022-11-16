@@ -29,7 +29,8 @@ core_deps = [
 ]
 
 dev_deps = [
-    "debugpy==1.6.3"
+    "debugpy==1.6.3",
+    "pudb==2022.1.2"
 ]
 
 entry_points = {
