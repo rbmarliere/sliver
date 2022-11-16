@@ -26,6 +26,7 @@ def load(model_name):
 
     model_module = importlib.import_module("core.models." + model_name)
     model = model_module.load_model(modelpath)
+    model.summary()
     model.config = model_module.config
     model.tokenizer = model_module.get_tokenizer()
     return model
@@ -38,19 +39,19 @@ def predict(model, tweets):
                              max_length=model.config["max_length"],
                              return_tensors="tf")
 
-    try:
-        prob = model.predict(
-            {
-                "input_ids": inputs["input_ids"],
-                "attention_mask": inputs["attention_mask"]
-            },
-            batch_size=model.config["batch_size"],
-            verbose=1)
-    except tensorflow.errors.InvalidArgumentError:
-        core.watchdog.log("error in predicting a batch, saved to logs")
-        tweets.to_csv(core.config["HYPNOX_LOGS_DIR"] + "/predict_" + str(
-            tweets.iloc[0].id) + ".tsv", sep="\t", lineterminator="\n", encoding="utf-8")
-        return
+    # try:
+    prob = model.predict(
+        {
+            "input_ids": inputs["input_ids"],
+            "attention_mask": inputs["attention_mask"]
+        },
+        batch_size=model.config["batch_size"],
+        verbose=1)
+    # except tensorflow.errors.InvalidArgumentError:
+    #     core.watchdog.log("error in predicting a batch, saved to logs")
+    #     tweets.to_csv(core.config["HYPNOX_LOGS_DIR"] + "/predict_" + str(
+    #         tweets.iloc[0].id) + ".tsv", sep="\t", lineterminator="\n", encoding="utf-8")
+    #     return
 
     if model.config["class"] == "polarity":
         tweets["model_p"] = model.config["name"]
@@ -87,22 +88,24 @@ def replay(model, update_only=True):
     core.watchdog.log.info("replaying " + str(query.count()) +
                            " tweets, model " + model.config["name"])
 
-    with core.db.connection.atomic():
-        page = 0
-        while True:
-            page_q = query.paginate(page, 8096)
-            page += 1
+    page = 0
+    while True:
+        page_q = query.paginate(page, 8096)
+        page += 1
 
-            if page_q.count() == 0:
-                core.watchdog.log.info("no tweets to replay, skipping...")
-                break
+        if page_q.count() == 0:
+            core.watchdog.log.info("no tweets to replay, skipping...")
+            break
 
-            tweets = pandas.DataFrame(page_q.dicts())
-            tweets = predict(model, tweets)
+        tweets = pandas.DataFrame(page_q.dicts())
+        tweets.text = tweets.text.apply(core.utils.standardize)
+        tweets.text = tweets.text.str.slice(0, model.config["max_length"])
 
-            updates = []
-            for i, tweet in tweets.iterrows():
-                updates.append(core.db.Tweet(**tweet))
+        tweets = predict(model, tweets)
 
-            if len(updates) > 0:
-                core.db.Tweet.bulk_update(updates, fields=fields)
+        updates = []
+        for i, tweet in tweets.iterrows():
+            updates.append(core.db.Tweet(**tweet))
+
+        if len(updates) > 0:
+            core.db.Tweet.bulk_update(updates, fields=fields)
