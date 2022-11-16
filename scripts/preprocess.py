@@ -24,9 +24,9 @@ def preprocess(model, filepath):
     # drop duplicates
     raw_df = raw_df.drop_duplicates(subset="tweet", keep="last")
 
-    # preprocess training data and drop empty rows (based on output of clean)
-    # raw_df["tweet"] = raw_df["tweet"].apply(core.utils.standardize)
-    # raw_df = raw_df.dropna()
+    # preprocess training data
+    raw_df["tweet"] = raw_df["tweet"].apply(core.utils.standardize)
+    raw_df["tweet"] = raw_df["tweet"].str.slice(0, model.config["max_length"])
 
     if model.config["class"] == "polarity":
         # take only labeled polarity rows (positive 1 or negative 2)
