@@ -3,6 +3,7 @@ import pathlib
 
 import numpy
 import pandas
+import tensorflow
 
 import core
 
@@ -37,13 +38,19 @@ def predict(model, tweets):
                              max_length=model.config["max_length"],
                              return_tensors="tf")
 
-    prob = model.predict(
-        {
-            "input_ids": inputs["input_ids"],
-            "attention_mask": inputs["attention_mask"]
-        },
-        batch_size=model.config["batch_size"],
-        verbose=1)
+    try:
+        prob = model.predict(
+            {
+                "input_ids": inputs["input_ids"],
+                "attention_mask": inputs["attention_mask"]
+            },
+            batch_size=model.config["batch_size"],
+            verbose=1)
+    except tensorflow.errors.InvalidArgumentError:
+        core.watchdog.log("error in predicting a batch, saved to logs")
+        tweets.to_csv(core.config["HYPNOX_LOGS_DIR"] + "/predict_" + str(
+            tweets.iloc[0].id) + ".tsv", sep="\t", lineterminator="\n", encoding="utf-8")
+        return
 
     if model.config["class"] == "polarity":
         tweets["model_p"] = model.config["name"]
@@ -83,7 +90,7 @@ def replay(model, update_only=True):
     with core.db.connection.atomic():
         page = 0
         while True:
-            page_q = query.paginate(page, 4096)
+            page_q = query.paginate(page, 8096)
             page += 1
 
             if page_q.count() == 0:
@@ -97,4 +104,5 @@ def replay(model, update_only=True):
             for i, tweet in tweets.iterrows():
                 updates.append(core.db.Tweet(**tweet))
 
-            core.db.Tweet.bulk_update(updates, fields=fields)
+            if len(updates) > 0:
+                core.db.Tweet.bulk_update(updates, fields=fields)
