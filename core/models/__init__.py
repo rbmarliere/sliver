@@ -74,7 +74,8 @@ def replay(model, update_only=True):
     if not update_only:
         filter = True
 
-    query = core.db.Tweet.select().where(filter)
+    query = core.db.Tweet.select().where(filter).order_by(
+        core.db.Tweet.id.asc())
     tweets = pandas.DataFrame(query.dicts())
 
     if tweets.empty:
