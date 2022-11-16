@@ -1,34 +1,35 @@
 import setuptools
 
 api_deps = [
-    "flask",
-    "flask-cors",
-    "flask-bcrypt",
-    "flask-jwt-extended",
-    "flask-restful",
-    "waitress"
+    "Flask==2.2.2",
+    "Flask-Bcrypt==1.0.1",
+    "Flask-Cors==3.0.10",
+    "Flask-JWT-Extended==4.4.4",
+    "Flask-RESTful==0.3.9",
+    "waitress==2.1.2"
 ]
 
 core_deps = [
-    "PyYAML",
-    "ccxt",
-    "emoji",
-    "nltk",
-    "pandas",
-    "peewee",
-    "plotly",
-    "psycopg2-binary",
-    "python-dotenv",
-    "python-telegram-bot",
-    "scikit-learn",
-    "tensorflow",
-    "torch",
-    "transformers",
-    "tweepy"
+    "PyYAML==6.0",
+    "ccxt==2.0.73",
+    "emoji==2.1.0",
+    "nltk==3.7",
+    "pandas==1.5.1",
+    "peewee==3.15.3",
+    "plotly==5.10.0",
+    "psycopg2-binary==2.9.5",
+    "python-dotenv==0.21.0",
+    "python-telegram-bot==13.14",
+    "scikit-learn==1.1.3",
+    "tensorflow==2.10.0",
+    "torch==1.12.1",
+    "tqdm==4.64.1",
+    "transformers==4.23.1",
+    "tweepy==4.11.0"
 ]
 
 dev_deps = [
-    "debugpy"
+    "debugpy==1.6.3"
 ]
 
 entry_points = {
