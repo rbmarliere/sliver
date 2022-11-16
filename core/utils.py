@@ -43,40 +43,39 @@ def standardize(text):
     text = re.sub(r"http\S+", "", text)
     # remove hashtags, usernames and html entities
     text = re.sub(r"(#|@|&|\$)\S+", "", text)
-    # remove punctuation
-    text = re.sub(r"[%s]" % re.escape(string.punctuation), " ", text)
 
+    return text
 
-def standardize(text):
-    #     # convert to lower case
-    #     text = text.lower()
-    #     # remove carriages and tabs
-    #     text = re.sub(r"(\n|\r|\t)", " ", text)
-    #     text = text.strip()
-    #     # remove links
-    #     text = re.sub(r"http\S+", "", text)
-    #     # remove hashtags, usernames and html entities
-    #     text = re.sub(r"(#|@|&|\$)\S+", "", text)
-    #     # remove punctuation
-    #     text = re.sub(r"[%s]" % re.escape(string.punctuation), " ", text)
-    #     # remove some stopwords
-    #     text = re.sub(r"\b(" + "|".join(stops) + r")\b\s*", "", text)
-    #     # keep only letters
-    #     text = re.sub(r"[^a-zA-Z]", " ", text)
-    #     # keep only words with more than 2 characters
-    #     text = re.sub(r"\b\S\S?\b", "", text)
-    #     # remove excess white spaces
-    #     text = re.sub(r" +", " ", text)
-    #     # remove leading and trailing white spaces
-    #     text = text.strip()
-    #
-    #     # keep only sentences with four words minimum
-    #     if len(text.split()) >= 4:
-    #         # lemmatize each word
-    #         text = " ".join([lem.lemmatize(w) for w in text.split()])
-    #         return text
-    #     else:
-    #         return None
+# def standardize(text):
+#     # convert to lower case
+#     text = text.lower()
+#     # remove carriages and tabs
+#     text = re.sub(r"(\n|\r|\t)", " ", text)
+#     text = text.strip()
+#     # remove links
+#     text = re.sub(r"http\S+", "", text)
+#     # remove hashtags, usernames and html entities
+#     text = re.sub(r"(#|@|&|\$)\S+", "", text)
+#     # remove punctuation
+#     text = re.sub(r"[%s]" % re.escape(string.punctuation), " ", text)
+#     # remove some stopwords
+#     text = re.sub(r"\b(" + "|".join(stops) + r")\b\s*", "", text)
+#     # keep only letters
+#     text = re.sub(r"[^a-zA-Z]", " ", text)
+#     # keep only words with more than 2 characters
+#     text = re.sub(r"\b\S\S?\b", "", text)
+#     # remove excess white spaces
+#     text = re.sub(r" +", " ", text)
+#     # remove leading and trailing white spaces
+#     text = text.strip()
+#
+#     # keep only sentences with four words minimum
+#     if len(text.split()) >= 4:
+#         # lemmatize each word
+#         text = " ".join([lem.lemmatize(w) for w in text.split()])
+#         return text
+#     else:
+#         return None
 
 
 def get_timeframe_delta(timeframe):
