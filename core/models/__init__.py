@@ -87,9 +87,19 @@ def replay(model, update_only=True):
 
     tweets = predict(model, tweets)
 
+    item = 0
+    page_size = 8096
     updates = []
-    for i, tweet in tweets.iterrows():
-        updates.append(core.db.Tweet(**tweet))
 
-    if len(updates) > 0:
-        core.db.Tweet.bulk_update(updates, fields=fields)
+    for i, tweet in tweets.iterrows():
+        if item == page_size:
+            core.db.Tweet.bulk_update(
+                updates, fields=fields, batch_size=page_size)
+            item = 0
+            updates = []
+
+        updates.append(core.db.Tweet(**tweet))
+        item += 1
+
+    # final update for last truncated page
+    core.db.Tweet.bulk_update(updates, fields=fields)
