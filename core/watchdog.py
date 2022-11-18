@@ -152,7 +152,7 @@ def watch():
                                         u_strat, t_cost)
 
                                     core.telegram.notify(
-                                        "opened position for user " +
+                                        "watchdog: opened position for user " +
                                         u_strat.user.email +
                                         " under strategy " +
                                         str(u_strat.strategy.id) + " (" +
@@ -220,5 +220,5 @@ def watch():
             exception_log.exception(e, exc_info=True)
             break
 
-    core.telegram.notify("shutting down...")
+    core.telegram.notify("watchdog shutting down")
     log.info("shutting down...")
