@@ -31,7 +31,7 @@ def load(model_name):
     return model
 
 
-def predict(model, tweets):
+def predict(model, tweets, verbose=0):
     inputs = model.tokenizer(tweets["text"].to_list(),
                              truncation=True,
                              padding="max_length",
@@ -44,7 +44,7 @@ def predict(model, tweets):
             "attention_mask": inputs["attention_mask"]
         },
         batch_size=model.config["batch_size"],
-        verbose=1)
+        verbose=verbose)
 
     if model.config["class"] == "polarity":
         tweets["model_p"] = model.config["name"]
@@ -64,7 +64,7 @@ def predict(model, tweets):
     return tweets
 
 
-def replay(model, update_only=True):
+def replay(model, update_only=True, verbose=0):
     if model.config["class"] == "intensity":
         filter = core.db.Tweet.model_i.is_null(True)
         fields = ["model_i", "intensity"]
@@ -85,7 +85,7 @@ def replay(model, update_only=True):
     tweets.text = tweets.text.apply(core.utils.standardize)
     tweets.text = tweets.text.str.slice(0, model.config["max_length"])
 
-    tweets = predict(model, tweets)
+    tweets = predict(model, tweets, verbose=verbose)
 
     item = 0
     page_size = 8096

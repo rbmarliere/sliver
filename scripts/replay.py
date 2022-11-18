@@ -41,4 +41,4 @@ if __name__ == "__main__":
         replay_csv(model, filepath)
 
     else:
-        core.models.replay(model, update_only=False)
+        core.models.replay(model, update_only=False, verbose=1)
