@@ -102,7 +102,7 @@ class Stream(tweepy.Stream):
                     core.db.connection.connect(reuse_if_open=True)
                     tweet.save()
                 except peewee.OperationalError:
-                    core.telegram.notify("couldn't reestablish connection to database!")
+                    core.telegram.notify("stream: couldn't reestablish connection to database!")
 
                     # log to cache csv
                     core.watchdog.log.error(
@@ -159,7 +159,7 @@ def stream():
                           core.config["HYPNOX_TWITTER_ACCESS_SECRET"])
     api = tweepy.API(auth)
 
-    core.telegram.notify("initializing twitter stream...")
+    core.telegram.notify("stream init")
     core.watchdog.log.info("initializing")
     stream = Stream(core.config["HYPNOX_TWITTER_CONSUMER_KEY"],
                     core.config["HYPNOX_TWITTER_CONSUMER_SECRET"],
@@ -188,6 +188,7 @@ def stream():
         except Exception as e:
             core.watchdog.log.error("unexpected error: " + e)
         except KeyboardInterrupt:
+            core.telegram.notify("stream shutting down")
             core.watchdog.log.info(
                 "got keyboard interrupt, shutting down...")
             return 1
