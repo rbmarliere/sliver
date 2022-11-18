@@ -7,6 +7,7 @@ import pandas
 import requests
 import tweepy
 import urllib3
+import peewee
 
 import core
 
@@ -91,29 +92,36 @@ class Stream(tweepy.Stream):
 
         # log to stdin
         core.watchdog.log.info(text)
+        tweet = core.db.Tweet(time=time, text=text)
         try:
-            core.db.Tweet(time=time, text=text).save()
+            tweet.save()
         except Exception as e:
-            # notify telegram
-            core.telegram.notify("stream error!")
-            # log to cache csv
-            core.watchdog.log.error(
-                "error on inserting, caching instead...")
-            core.watchdog.log.exception(e, exc_info=True)
-            output = pandas.DataFrame({
-                "time": [time],
-                "text": [text],
-                "model_i": [""],
-                "intensity": [0],
-                "polarity": [0],
-                "model_p": [""]
-            })
-            with open(cache_file, "a") as f:
-                output.to_csv(f,
-                              header=f.tell() == 0,
-                              mode="a",
-                              index=False,
-                              sep="\t")
+            if isinstance(e, peewee.InterfaceError) or isinstance(e, peewee.OperationalError):
+                core.db.connection.close()
+                try:
+                    core.db.connection.connect(reuse_if_open=True)
+                    tweet.save()
+                except peewee.OperationalError:
+                    core.telegram.notify("couldn't reestablish connection to database!")
+
+                    # log to cache csv
+                    core.watchdog.log.error(
+                        "error on inserting, caching instead...")
+                    core.watchdog.log.exception(e, exc_info=True)
+                    output = pandas.DataFrame({
+                        "time": [time],
+                        "text": [text],
+                        "model_i": [""],
+                        "intensity": [0],
+                        "polarity": [0],
+                        "model_p": [""]
+                    })
+                    with open(cache_file, "a") as f:
+                        output.to_csv(f,
+                                      header=f.tell() == 0,
+                                      mode="a",
+                                      index=False,
+                                      sep="\t")
 
 
 def save_uids(users, api):
