@@ -77,10 +77,15 @@ def replay(model, update_only=True, verbose=0):
     query = core.db.Tweet.select().where(filter).order_by(
         core.db.Tweet.id.asc())
 
-    core.watchdog.log.info("replaying " + str(query.count()) +
-                           " tweets, model " + model.config["name"])
-
     tweets = pandas.DataFrame(query.dicts())
+
+    if tweets.empty:
+        core.watchdog.log.info("no tweets to replay")
+        return
+
+    core.watchdog.log.info("replaying " + str(query.count()) +
+                           " tweets with model " + model.config["name"])
+
     tweets.text = tweets.text.apply(core.utils.standardize)
     tweets.text = tweets.text.str.slice(0, model.config["max_length"])
 
