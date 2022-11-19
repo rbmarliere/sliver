@@ -82,6 +82,8 @@ def get_indicators(strategy: core.db.Strategy, since=None):
         & (core.db.Price.timeframe == strategy.timeframe)
         & (time_filter))
     prices = pandas.DataFrame(prices.dicts())
+    # remove last price row so it doesnt compute signal for incomplete interval
+    prices.drop(prices.tail(1).index, inplace=True)
     # check if there are prices available
     if prices.empty:
         core.watchdog.log.info(
@@ -130,7 +132,8 @@ def get_indicators(strategy: core.db.Strategy, since=None):
     indicators = pandas.concat([tweets, prices], join="inner", axis=1)
     # get rid of unused columns
     indicators = indicators[[
-        "price_id", "i_score", "p_score", "open", "high", "low", "close", "volume"
+        "price_id", "i_score", "p_score",
+        "open", "high", "low", "close", "volume"
     ]]
 
     # compute signals
