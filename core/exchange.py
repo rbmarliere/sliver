@@ -25,7 +25,7 @@ def set_api(exchange: core.db.Exchange = None,
     global api
     exchange = getattr(ccxt, exchange.name)
     api = exchange(api_key)
-    api.set_sandbox_mode(True)
+    api.set_sandbox_mode(core.config["HYPNOX_ENV_NAME"] == "development")
     # api.verbose = True
 
     # check if api is alive
