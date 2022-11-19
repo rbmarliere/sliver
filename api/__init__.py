@@ -24,13 +24,7 @@ jwt = flask_jwt_extended.JWTManager(app)
 def serve():
     core.watchdog.set_logger("api")
 
-    env = os.environ.get("ENV_NAME")
-
-    print("env set to '" + env + "'")
-
-    if env == "development":
+    if core.config["HYPNOX_ENV_NAME"] == "development":
         app.run(debug=True, port=5000)
-    elif env == "production":
+    elif core.config["HYPNOX_ENV_NAME"] == "production":
         waitress.serve(app, port=5000)
-    else:
-        print("possible values are 'development' or 'production', exiting...")

@@ -11,6 +11,7 @@ time.tzset()
 dotenv.load_dotenv()
 
 config = [
+    "HYPNOX_ENV_NAME",
     "HYPNOX_LOGS_DIR",
     "HYPNOX_MODELS_DIR",
     "HYPNOX_DB_HOST",
@@ -41,7 +42,9 @@ if not os.path.exists(config["HYPNOX_LOGS_DIR"]):
 if not os.path.exists(config["HYPNOX_MODELS_DIR"]):
     print("HYPNOX_MODELS_DIR=" + config["HYPNOX_MODELS_DIR"] + " not found!")
     sys.exit(1)
-
+if config["HYPNOX_ENV_NAME"] not in ["development", "production"]:
+    print("HYPNOX_ENV_NAME must be 'development' or 'production'!")
+    sys.exit(1)
 
 from . import (
     utils,
