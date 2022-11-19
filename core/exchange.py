@@ -40,7 +40,7 @@ def check_latency():
     elapsed = datetime.datetime.utcnow() - started
     elapsed_in_ms = int(elapsed.total_seconds() * 1000)
 
-    core.watchdog.log.info("api latency: " + str(elapsed_in_ms) + " ms")
+    core.watchdog.log.info("api latency is " + str(elapsed_in_ms) + " ms")
 
     if elapsed_in_ms > 1500:
         core.watchdog.log.info("latency above threshold (1500)")
