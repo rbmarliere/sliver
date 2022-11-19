@@ -3,7 +3,6 @@ import pathlib
 
 import numpy
 import pandas
-import tensorflow
 
 import core
 

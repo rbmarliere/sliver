@@ -29,6 +29,9 @@ if __name__ == "__main__":
                       "--model-name",
                       help="name of model to be used to predict scores",
                       required=True)
+    argp.add_argument("-u",
+                      "--update-only",
+                      action="store_true")
     args = argp.parse_args()
 
     model = core.models.load(args.model_name)
@@ -41,4 +44,4 @@ if __name__ == "__main__":
         replay_csv(model, filepath)
 
     else:
-        core.models.replay(model, update_only=False, verbose=1)
+        core.models.replay(model, update_only=args.update_only, verbose=1)
