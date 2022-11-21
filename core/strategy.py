@@ -71,7 +71,6 @@ def get_indicators(strategy: core.db.Strategy):
     tweets = tweets.where(core.db.Tweet.intensity.is_null(False))
     tweets = tweets.where(core.db.Tweet.polarity.is_null(False))
 
-
     indicators = [i for i in strategy.indicator_set]
 
     if indicators:
@@ -93,7 +92,7 @@ def get_indicators(strategy: core.db.Strategy):
     if tweets.count() == 0:
         core.watchdog.log.info(
             "no tweets found for computing signals, skipping...")
-        return None
+        return
 
     # create tweets dataframe
     tweets = tweets.where(core.db.Tweet.time >= prices.iloc[0].name)
