@@ -1,8 +1,9 @@
 import datetime
+import decimal
 import re
-import string
 
 import nltk
+import pandas
 
 try:
     nltk.data.find("corpora/stopwords.zip")
@@ -109,3 +110,25 @@ def truncate(f, n):
         return float('{0:.{1}f}'.format(f, n))
     i, p, d = s.partition('.')
     return float('.'.join([i, (d + '0' * n)[:n]]))
+
+
+def get_mean_var(series: pandas.DataFrame,
+                 n: int,
+                 old_mean: decimal.Decimal,
+                 old_var: decimal.Decimal):
+    # https://math.stackexchange.com/questions/102978/incremental-computation-of-standard-deviation
+    for i, x in series.items():
+        x = decimal.Decimal(str(x))
+        n += 1
+
+        new_mean = (old_mean*(n-1) + x) / n
+
+        if n == 1:
+            new_var = 0
+        else:
+            new_var = ((n-2)*old_var + (n-1)*(old_mean - new_mean) ** 2 + (x - new_mean)**2) / (n-1)
+
+        old_var = new_var
+        old_mean = new_mean
+
+    return new_mean, new_var

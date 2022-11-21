@@ -67,7 +67,7 @@ def watch():
             if len(strategies) == 0:
                 next_refresh = first_active_strat.next_refresh
                 delta = int((next_refresh -
-                             datetime.datetime.utcnow()).total_seconds()) + 5
+                             datetime.datetime.utcnow()).total_seconds())
                 if delta > 0:
                     log.info("----------------------------------------------")
                     log.info("next refresh at " + str(next_refresh) +

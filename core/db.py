@@ -190,6 +190,11 @@ class Strategy(BaseModel):
         return UserStrategy.select().join(Strategy).where(
             (Strategy.id == self.id) & (UserStrategy.active))
 
+    def get_prices(self):
+        return Price.select().where(
+            (core.db.Price.market == self.market)
+            & (core.db.Price.timeframe == self.timeframe))
+
 
 class UserStrategy(BaseModel):
     user = peewee.ForeignKeyField(User)
@@ -350,7 +355,12 @@ class Indicator(BaseModel):
     price = peewee.ForeignKeyField(Price)
     signal = peewee.TextField()
     i_score = peewee.DecimalField()
+    i_mean = peewee.DecimalField()
+    i_variance = peewee.DecimalField()
     p_score = peewee.DecimalField()
+    p_mean = peewee.DecimalField()
+    p_variance = peewee.DecimalField()
+    n_samples = peewee.IntegerField()
 
     class Meta:
         constraints = [peewee.SQL("UNIQUE (price_id, strategy_id)")]
