@@ -68,6 +68,9 @@ def get_indicators(strategy: core.db.Strategy):
     f = core.db.Tweet.text.iregexp(
         strategy.tweet_filter.encode("unicode_escape"))
     tweets = core.db.Tweet.select().where(f).order_by(core.db.Tweet.time)
+    tweets = tweets.where(core.db.Tweet.intensity.is_null(False))
+    tweets = tweets.where(core.db.Tweet.polarity.is_null(False))
+
 
     indicators = [i for i in strategy.indicator_set]
 
@@ -75,26 +78,26 @@ def get_indicators(strategy: core.db.Strategy):
         since = indicators[-1].price.time
         prices = prices.where(core.db.Price.time > since)
 
+    # check if there are prices available
+    if prices.count() == 0:
+        core.watchdog.log.info(
+            "no price data found for computing signals, skipping...")
+        return
+
     # create prices dataframe
     prices = pandas.DataFrame(prices.dicts())
     prices = prices.set_index("time")
     prices = prices.rename(columns={"id": "price_id"})
 
-    # check if there are prices available
-    if prices.empty:
+    # check if there are tweets with given params
+    if tweets.count() == 0:
         core.watchdog.log.info(
-            "no price data found for computing signals, skipping...")
-        return
+            "no tweets found for computing signals, skipping...")
+        return None
 
     # create tweets dataframe
     tweets = tweets.where(core.db.Tweet.time >= prices.iloc[0].name)
     tweets = pandas.DataFrame(tweets.dicts())
-
-    # check if there are tweets with given params
-    if tweets.empty:
-        core.watchdog.log.info(
-            "no tweets found for computing signals, skipping...")
-        return None
 
     if indicators:
         n_samples = indicators[-1].n_samples + len(tweets)
