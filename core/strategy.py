@@ -19,125 +19,129 @@ def refresh(strategy: core.db.Strategy):
 
     # compute signal for automatic strategies
     if strategy.mode == "auto":
-        update_indicators(strategy)
+        refresh_indicators(strategy)
         strategy.signal = get_signal(strategy)
 
     strategy.save()
 
 
-# def get_rsignal():
-#     import random
-#     i = random.randint(0, 100)
-#     if i > 80:
-#         return 'buy'
-#     elif i < 20:
-#         return 'sell'
-#     else:
-#         return 'neutral'
-
-
 def get_signal(strategy: core.db.Strategy):
-    # signal = get_rsignal()
-    # core.watchdog.log.info("* current strategy signal is " + signal)
-    # return signal
-
     indicator = strategy.indicator_set.order_by(
         core.db.Indicator.id.desc()).get_or_none()
 
     signal = indicator.signal if indicator is not None else "neutral"
 
-    core.watchdog.log.info("* current strategy signal is " + signal)
+    core.watchdog.log.info("strategy signal is " + signal)
 
     return signal
 
 
-def update_indicators(strategy: core.db.Strategy):
-    db_indicators = [i for i in strategy.indicator_set]
-    if db_indicators:
-        since = db_indicators[-1].price.time
-    else:
-        since = None
+def refresh_indicators(strategy: core.db.Strategy):
+    indicators = get_indicators(strategy)
 
-    try:
-        indicators = get_indicators(strategy, since=since)
-    except:
+    if indicators is None:
         return
 
+    # get rid of unused columns
     indicators = indicators[[
-        "price_id", "strategy_id", "signal", "i_score", "p_score"
+        "strategy_id",
+        "price_id",
+        "signal",
+        "i_score",
+        "i_mean",
+        "i_variance",
+        "p_score",
+        "p_mean",
+        "p_variance",
+        "n_samples"
     ]]
 
+    # insert rows into the database
     core.db.Indicator.insert_many(indicators.to_dict("records")).execute()
 
 
-def get_indicators(strategy: core.db.Strategy, since=None):
-    # filter price data by time argument
-    if since is None:
-        time_filter = True
-    else:
-        time_filter = core.db.Price.time > since
-    # grab price data
-    prices = core.db.Price.select().where(
-        (core.db.Price.market == strategy.market)
-        & (core.db.Price.timeframe == strategy.timeframe)
-        & (time_filter))
+def get_indicators(strategy: core.db.Strategy):
+    # get price data
+    prices = strategy.get_prices().order_by(core.db.Price.time)
+
+    # grab tweets filtered by strategy regex
+    f = core.db.Tweet.text.iregexp(
+        strategy.tweet_filter.encode("unicode_escape"))
+    tweets = core.db.Tweet.select().where(f).order_by(core.db.Tweet.time)
+
+    indicators = [i for i in strategy.indicator_set]
+
+    if indicators:
+        since = indicators[-1].price.time
+        prices = prices.where(core.db.Price.time > since)
+
+    # create prices dataframe
     prices = pandas.DataFrame(prices.dicts())
-    # remove last price row so it doesnt compute signal for incomplete interval
-    prices.drop(prices.tail(1).index, inplace=True)
+    prices = prices.set_index("time")
+    prices = prices.rename(columns={"id": "price_id"})
+
     # check if there are prices available
     if prices.empty:
         core.watchdog.log.info(
             "no price data found for computing signals, skipping...")
-        raise Exception
-    prices = prices.rename(columns={"id": "price_id"})
+        return
 
-    # filter tweets based on price data availability
-    time_filter = core.db.Tweet.time >= prices.iloc[0].time
-    # filter tweets based on strategy regex
-    strat_filter = core.db.Tweet.text.iregexp(
-        strategy.tweet_filter.encode("unicode_escape"))
-    # put query result in a pandas df
-    query = core.db.Tweet.select().where((strat_filter) & (time_filter))
-    tweets = pandas.DataFrame(query.dicts())
+    # create tweets dataframe
+    tweets = tweets.where(core.db.Tweet.time >= prices.iloc[0].name)
+    tweets = pandas.DataFrame(tweets.dicts())
+
     # check if there are tweets with given params
     if tweets.empty:
         core.watchdog.log.info(
             "no tweets found for computing signals, skipping...")
-        raise Exception
+        return None
 
-    # normalize intensities and polarities
-    # TODO what if median() instead?
-    aux = tweets["intensity"].astype("float")
-    tweets["i_zscore"] = (aux - aux.mean()) / aux.std()
-    aux = tweets["polarity"].astype("float")
-    tweets["p_zscore"] = (aux - aux.mean()) / aux.std()
-    # sort by date
-    tweets.sort_values("time", inplace=True)
-    # aggregate tweets by timeframe
+    if indicators:
+        n_samples = indicators[-1].n_samples + len(tweets)
+        i_mean, i_variance = core.utils.get_mean_var(tweets["intensity"],
+                                                     indicators[-1].n_samples,
+                                                     indicators[-1].i_mean,
+                                                     indicators[-1].i_variance)
+        p_mean, p_variance = core.utils.get_mean_var(tweets["polarity"],
+                                                     indicators[-1].n_samples,
+                                                     indicators[-1].p_mean,
+                                                     indicators[-1].p_variance)
+    else:
+        n_samples = len(tweets)
+        i_mean, i_variance = core.utils.get_mean_var(tweets["intensity"],
+                                                     0, 0, 0)
+        p_mean, p_variance = core.utils.get_mean_var(tweets["polarity"],
+                                                     0, 0, 0)
+
+    # standardize intensity and polarity scores
+    tweets["i_zscore"] = (
+        (tweets["intensity"] - i_mean) / i_variance.sqrt())
+    tweets["p_zscore"] = (
+        (tweets["polarity"] - p_mean) / p_variance.sqrt())
+
+    # aggregate tweets by strategy timeframe
     tweets["floor"] = tweets.time.dt.floor(strategy.timeframe)
-    # set floor as index
-    tweets.set_index("floor", inplace=True)
-    # compute intensity z-scores from groups
-    tweets["i_score"] = tweets.groupby("floor")["i_zscore"].sum()
-    # compute polarity sum from groups
-    tweets["p_score"] = tweets.groupby("floor")["p_zscore"].sum()
-    # remove duplicated indexes
-    tweets = tweets.loc[~tweets.index.duplicated(keep="first")]
+    tweets = tweets.set_index("floor")
 
-    # sort by strategy timeframe and set index
-    prices = prices.sort_values("time")
-    prices = prices.set_index("time")
+    # sum normalized scores of each time interval
+    tweets["i_score"] = tweets.groupby("floor")["i_zscore"].sum()
+    tweets["p_score"] = tweets.groupby("floor")["p_zscore"].sum()
+
+    # keep only one row for each group
+    tweets = tweets.loc[~tweets.index.duplicated(keep="first")]
 
     # concatenate both dataframes
     indicators = pandas.concat([tweets, prices], join="inner", axis=1)
-    # get rid of unused columns
-    indicators = indicators[[
-        "price_id", "i_score", "p_score",
-        "open", "high", "low", "close", "volume"
-    ]]
+
+    # update new means and variances
+    indicators["strategy_id"] = strategy.id
+    indicators["n_samples"] = n_samples
+    indicators["i_mean"] = i_mean
+    indicators["i_variance"] = i_variance
+    indicators["p_mean"] = p_mean
+    indicators["p_variance"] = p_variance
 
     # compute signals
-    indicators["strategy_id"] = strategy.id
     indicators["signal"] = "neutral"
     buy_rule = ((indicators["i_score"] > strategy.i_threshold) &
                 (indicators["p_score"] > strategy.p_threshold))
@@ -146,8 +150,10 @@ def get_indicators(strategy: core.db.Strategy, since=None):
                  (indicators["p_score"] < strategy.p_threshold))
     indicators.loc[sell_rule, "signal"] = "sell"
 
+    # reset index
+    indicators = indicators.drop("time", axis=1)
     indicators.index.name = "time"
-    indicators.reset_index(inplace=True)
+    indicators = indicators.reset_index()
 
     return indicators
 
