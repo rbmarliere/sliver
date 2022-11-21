@@ -66,29 +66,18 @@ def download(market: core.db.Market, timeframe: str):
     try:
         filter = ((core.db.Price.market == market) &
                   (core.db.Price.timeframe == timeframe))
-        asc = core.db.Price.time.asc()
         desc = core.db.Price.time.desc()
-        first_entry = core.db.Price.select().where(filter).order_by(
-            asc).get().time
         last_entry = core.db.Price.select().where(filter).order_by(
             desc).get().time
-        page_start = last_entry
+        page_start = last_entry + timeframe_delta
     except peewee.DoesNotExist:
-        first_entry = datetime.datetime.utcfromtimestamp(0)
         last_entry = datetime.datetime.utcfromtimestamp(0)
         page_start = datetime.datetime(2000, 1, 1)
         core.watchdog.log.info(
             "no db entries found, downloading everything...")
 
-    # conditional to see up to where to insert or begin from
-    stop_at_first = False
-    if first_entry > page_start:
-        stop_at_first = True
-    elif last_entry >= page_start:
-        page_start = last_entry + timeframe_delta
-
     # return if last entry is last possible result
-    if last_entry + timeframe_delta > datetime.datetime.utcnow():
+    if page_start + timeframe_delta > datetime.datetime.utcnow():
         core.watchdog.log.info("price data is already up to date, skipping...")
         return
 
@@ -116,18 +105,8 @@ def download(market: core.db.Market, timeframe: str):
             prices = pandas.concat(
                 [prices, pandas.DataFrame.from_records(page)])
 
-            # only store up until last stored entry
-            if stop_at_first and page_last > first_entry:
-                for p in page:
-                    curr = datetime.datetime.utcfromtimestamp(p[0] / 1000)
-                    if curr >= first_entry:
-                        prices = prices[prices[0] < p[0]]
-                        break
-                page_start = last_entry + timeframe_delta
-                stop_at_first = False
-                continue
-
             # break if received page is less than max size
+            # TODO this will break if page_size is different than allowed
             if len(page) < page_size:
                 break
 
@@ -150,6 +129,12 @@ def download(market: core.db.Market, timeframe: str):
     prices[5] = prices[5].apply(lambda x: market.base.transform(x))
     prices[6] = timeframe
     prices[7] = market.id
+
+    # remove dups to avoid db errors
+    prices = prices.drop_duplicates()
+
+    # remove last element because it constantly changes before close
+    prices.drop(prices.tail(1).index, inplace=True)
 
     # insert into the database
     with core.db.connection.atomic():
