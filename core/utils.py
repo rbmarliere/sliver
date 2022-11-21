@@ -2,36 +2,7 @@ import datetime
 import decimal
 import re
 
-import nltk
 import pandas
-
-try:
-    nltk.data.find("corpora/stopwords.zip")
-    nltk.data.find("corpora/wordnet.zip")
-    nltk.data.find("corpora/omw-1.4.zip")
-except LookupError:
-    nltk.download("stopwords")
-    nltk.download("wordnet")
-    nltk.download("omw-1.4")
-
-TO_KEEP_STOPWORDS = [
-    "this", "that'll", "these", "having", "does", "doing", "until", "while",
-    "about", "against", "between", "into", "through", "during", "before",
-    "after", "above", "below", "from", "up", "down", "in", "out", "on", "off",
-    "over", "under", "again", "further", "then", "once", "here", "there",
-    "when", "few", "both", "more", "most", "other", "some", "than", "too",
-    "very", "can", "will", "should", "should've", "now", "ain", "aren",
-    "aren't", "could", "couldn", "couldn't", "didn", "didn't", "doesn",
-    "doesn't", "hadn", "hadn't", "hasn", "hasn't", "haven", "haven't", "isn",
-    "isn't", "mighn", "mightn't", "mustn", "mustn't", "needn", "needn't",
-    "shan", "shan't", "shouldn", "shouldn't", "wasn", "wasn't", "weren",
-    "weren't", "won'", "won't", "wouldn", "wouldn't", "if"
-]
-
-nltkstops = set(nltk.corpus.stopwords.words("english"))
-stops = [w for w in nltkstops if w not in TO_KEEP_STOPWORDS]
-
-lem = nltk.stem.wordnet.WordNetLemmatizer()
 
 
 def standardize(text):
@@ -46,37 +17,6 @@ def standardize(text):
     text = re.sub(r"(#|@|&|\$)\S+", "", text)
 
     return text
-
-# def standardize(text):
-#     # convert to lower case
-#     text = text.lower()
-#     # remove carriages and tabs
-#     text = re.sub(r"(\n|\r|\t)", " ", text)
-#     text = text.strip()
-#     # remove links
-#     text = re.sub(r"http\S+", "", text)
-#     # remove hashtags, usernames and html entities
-#     text = re.sub(r"(#|@|&|\$)\S+", "", text)
-#     # remove punctuation
-#     text = re.sub(r"[%s]" % re.escape(string.punctuation), " ", text)
-#     # remove some stopwords
-#     text = re.sub(r"\b(" + "|".join(stops) + r")\b\s*", "", text)
-#     # keep only letters
-#     text = re.sub(r"[^a-zA-Z]", " ", text)
-#     # keep only words with more than 2 characters
-#     text = re.sub(r"\b\S\S?\b", "", text)
-#     # remove excess white spaces
-#     text = re.sub(r" +", " ", text)
-#     # remove leading and trailing white spaces
-#     text = text.strip()
-#
-#     # keep only sentences with four words minimum
-#     if len(text.split()) >= 4:
-#         # lemmatize each word
-#         text = " ".join([lem.lemmatize(w) for w in text.split()])
-#         return text
-#     else:
-#         return None
 
 
 def get_timeframe_delta(timeframe):
@@ -126,9 +66,70 @@ def get_mean_var(series: pandas.DataFrame,
         if n == 1:
             new_var = 0
         else:
-            new_var = ((n-2)*old_var + (n-1)*(old_mean - new_mean) ** 2 + (x - new_mean)**2) / (n-1)
+            new_var = ((n-2)*old_var + (n-1)*(old_mean - new_mean)
+                       ** 2 + (x - new_mean)**2) / (n-1)
 
         old_var = new_var
         old_mean = new_mean
 
     return new_mean, new_var
+
+# import nltk
+# try:
+#     nltk.data.find("corpora/stopwords.zip")
+#     nltk.data.find("corpora/wordnet.zip")
+#     nltk.data.find("corpora/omw-1.4.zip")
+# except LookupError:
+#     nltk.download("stopwords")
+#     nltk.download("wordnet")
+#     nltk.download("omw-1.4")
+
+# TO_KEEP_STOPWORDS = [
+#     "this", "that'll", "these", "having", "does", "doing", "until", "while",
+#     "about", "against", "between", "into", "through", "during", "before",
+#     "after", "above", "below", "from", "up", "down", "in", "out", "on", "off",
+#     "over", "under", "again", "further", "then", "once", "here", "there",
+#     "when", "few", "both", "more", "most", "other", "some", "than", "too",
+#     "very", "can", "will", "should", "should've", "now", "ain", "aren",
+#     "aren't", "could", "couldn", "couldn't", "didn", "didn't", "doesn",
+#     "doesn't", "hadn", "hadn't", "hasn", "hasn't", "haven", "haven't", "isn",
+#     "isn't", "mighn", "mightn't", "mustn", "mustn't", "needn", "needn't",
+#     "shan", "shan't", "shouldn", "shouldn't", "wasn", "wasn't", "weren",
+#     "weren't", "won'", "won't", "wouldn", "wouldn't", "if"
+# ]
+
+# nltkstops = set(nltk.corpus.stopwords.words("english"))
+# stops = [w for w in nltkstops if w not in TO_KEEP_STOPWORDS]
+
+# lem = nltk.stem.wordnet.WordNetLemmatizer()
+
+# def standardize(text):
+#     # convert to lower case
+#     text = text.lower()
+#     # remove carriages and tabs
+#     text = re.sub(r"(\n|\r|\t)", " ", text)
+#     text = text.strip()
+#     # remove links
+#     text = re.sub(r"http\S+", "", text)
+#     # remove hashtags, usernames and html entities
+#     text = re.sub(r"(#|@|&|\$)\S+", "", text)
+#     # remove punctuation
+#     text = re.sub(r"[%s]" % re.escape(string.punctuation), " ", text)
+#     # remove some stopwords
+#     text = re.sub(r"\b(" + "|".join(stops) + r")\b\s*", "", text)
+#     # keep only letters
+#     text = re.sub(r"[^a-zA-Z]", " ", text)
+#     # keep only words with more than 2 characters
+#     text = re.sub(r"\b\S\S?\b", "", text)
+#     # remove excess white spaces
+#     text = re.sub(r" +", " ", text)
+#     # remove leading and trailing white spaces
+#     text = text.strip()
+#
+#     # keep only sentences with four words minimum
+#     if len(text.split()) >= 4:
+#         # lemmatize each word
+#         text = " ".join([lem.lemmatize(w) for w in text.split()])
+#         return text
+#     else:
+#         return None
