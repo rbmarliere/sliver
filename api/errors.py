@@ -22,13 +22,6 @@ class CredentialExists(HTTPException):
     )
 
 
-class CredentialDoesNotExist(HTTPException):
-    code = 404
-    description = (
-        "Credential for this exchange does not exist."
-    )
-
-
 class PositionDoesNotExist(HTTPException):
     code = 404
     description = (

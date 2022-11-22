@@ -59,9 +59,6 @@ class User(BaseModel):
     cash_reserve = peewee.DecimalField(default=0.25)
     target_factor = peewee.DecimalField(default=0.1)
 
-    def get_credential_by_exchange(self, exchange: Exchange):
-        return self.credential_set.where(Credential.exchange == exchange).get()
-
     def get_balances_by_asset(self, asset: Asset):
         return Balance.select().join(
             ExchangeAsset,
