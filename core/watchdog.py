@@ -78,8 +78,10 @@ def watch():
 
             # refresh each strategy
             for strategy in strategies:
+                now = datetime.datetime.utcnow()
+
                 # don't refresh strategy if it doesn't need to
-                if datetime.datetime.utcnow() < strategy.next_refresh:
+                if now < strategy.next_refresh:
                     continue
 
                 symbol = strategy.market.get_symbol()
@@ -102,7 +104,7 @@ def watch():
                                        strategy.timeframe)
 
                 # refresh strategy params
-                core.strategy.refresh(strategy)
+                core.strategy.refresh(strategy, next=now)
 
                 users = [u for u in strategy.get_active_users()]
 
