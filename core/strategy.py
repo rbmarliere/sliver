@@ -7,15 +7,15 @@ from plotly.subplots import make_subplots
 import core
 
 
-def refresh(strategy: core.db.Strategy):
+def refresh(strategy: core.db.Strategy,
+            next: datetime.datetime = datetime.datetime.utcnow()):
     # ideas:
     # - reset num_orders, spread and refresh_interval dynamically
     # - base decision over price data and inventory (amount opened, risk, etc)
 
     # update current strategy next refresh time
     strategy.next_refresh = (
-        datetime.datetime.utcnow() +
-        datetime.timedelta(minutes=strategy.refresh_interval))
+        next + datetime.timedelta(minutes=strategy.refresh_interval))
 
     # compute signal for automatic strategies
     if strategy.mode == "auto":
