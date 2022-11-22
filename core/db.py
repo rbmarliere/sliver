@@ -189,8 +189,8 @@ class Strategy(BaseModel):
 
     def get_prices(self):
         return Price.select().where(
-            (core.db.Price.market == self.market)
-            & (core.db.Price.timeframe == self.timeframe))
+            (Price.market == self.market)
+            & (Price.timeframe == self.timeframe))
 
 
 class UserStrategy(BaseModel):

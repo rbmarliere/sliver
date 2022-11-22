@@ -1,3 +1,4 @@
+import peewee
 from flask_jwt_extended import jwt_required
 from flask_restful import Resource, fields, marshal_with
 
@@ -13,7 +14,7 @@ fields = {
     "volume": fields.String,
     "signal": fields.String,
     "i_score": fields.Float,
-    "p_score": fields.Float
+    "p_score": fields.Float,
 }
 
 
@@ -26,7 +27,10 @@ class Price(Resource):
         except core.db.Strategy.DoesNotExist:
             raise api.errors.StrategyDoesNotExist
 
-        prices = core.strategy.get_prices(strategy)
-        indicators = core.strategy.get_indicators(strategy, prices).to_dict("records")
+        q = strategy\
+            .get_prices() \
+            .join(core.db.Indicator, peewee.JOIN.LEFT_OUTER) \
+            .select(core.db.Price, core.db.Indicator) \
+            .order_by(core.db.Price.id)
 
-        return indicators
+        return [p for p in q.dicts()]
