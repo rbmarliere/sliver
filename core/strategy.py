@@ -1,3 +1,4 @@
+import argparse
 import datetime
 
 import pandas
@@ -60,7 +61,7 @@ def refresh_indicators(strategy: core.db.Strategy):
     core.db.Indicator.insert_many(indicators.to_dict("records")).execute()
 
 
-def get_indicators(strategy: core.db.Strategy):
+def get_indicators(strategy: core.db.Strategy, dryrun: bool = False):
     # get price data
     prices = strategy.get_prices().order_by(core.db.Price.time)
 
@@ -71,7 +72,7 @@ def get_indicators(strategy: core.db.Strategy):
     tweets = tweets.where(core.db.Tweet.intensity.is_null(False))
     tweets = tweets.where(core.db.Tweet.polarity.is_null(False))
 
-    indicators = [i for i in strategy.indicator_set]
+    indicators = [] if dryrun else [i for i in strategy.indicator_set]
 
     if indicators:
         since = indicators[-1].price.time
@@ -160,10 +161,16 @@ def get_indicators(strategy: core.db.Strategy):
     return indicators
 
 
-def backtest(args):
-    strategy = core.db.Strategy.get(id=args.strategy_id)
+def backtest():
+    argp = argparse.ArgumentParser()
+    argp.add_argument("-s",
+                      "--strategy-id",
+                      required=True)
+    args = argp.parse_args()
 
-    indicators = get_indicators(strategy)
+    strategy = core.db.Strategy.get(args.strategy_id)
+
+    indicators = get_indicators(strategy, dryrun=True)
     if indicators.empty:
         core.watchdog.log.info("no indicator data computed")
         raise Exception
