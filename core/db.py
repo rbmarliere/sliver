@@ -280,7 +280,10 @@ class Position(BaseModel):
         return position
 
     def get_orders(self):
-        return Order.select().join(Position)
+        return Order \
+            .select() \
+            .join(Position) \
+            .where(Order.status != "canceled")
 
     def get_open_orders(self):
         query = self.get_orders().where(Order.status == "open")

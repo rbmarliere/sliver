@@ -22,8 +22,18 @@ export class PositionComponent implements OnInit {
     'entry_amount',
     'entry_price',
     'exit_price',
-    'exit_amount'
+    'exit_amount',
+    'actions'
   ];
+
+  constructor(
+    private positionService: PositionService,
+    private dialog: MatDialog
+  ) { }
+
+  ngOnInit(): void {
+    this.getPositions();
+  }
 
   private handleError(error: HttpErrorResponse) {
     const dialogConfig = new MatDialogConfig;
@@ -33,15 +43,6 @@ export class PositionComponent implements OnInit {
     };
 
     this.dialog.open(ErrorDialogComponent, dialogConfig);
-  }
-
-  constructor(
-    private positionService: PositionService,
-    private dialog: MatDialog
-  ) { }
-
-  ngOnInit(): void {
-    this.getPositions();
   }
 
   getPositions(): void {
