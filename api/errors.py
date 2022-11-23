@@ -1,6 +1,13 @@
 from flask_restful import HTTPException
 
 
+class InvalidArgument(HTTPException):
+    code = 400
+    description = (
+        "Missing required fields."
+    )
+
+
 class AuthenticationFailed(HTTPException):
     code = 401
     description = (
@@ -16,7 +23,7 @@ class WrongPassword(HTTPException):
 
 
 class CredentialExists(HTTPException):
-    code = 204
+    code = 400
     description = (
         "Credential for this exchange already exists."
     )
@@ -33,4 +40,11 @@ class StrategyDoesNotExist(HTTPException):
     code = 404
     description = (
         "Strategy does not exist."
+    )
+
+
+class ExchangeDoesNotExist(HTTPException):
+    code = 404
+    description = (
+        "Exchange does not exist."
     )

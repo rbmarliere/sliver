@@ -1,7 +1,6 @@
 from . import (credential, exchange, inventory, order, position, price,
                strategy, user)
 
-Credentials = credential.Credentials
 Credential = credential.Credential
 Exchange = exchange.Exchange
 Inventory = inventory.Inventory

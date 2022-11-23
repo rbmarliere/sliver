@@ -59,23 +59,44 @@ class User(BaseModel):
     cash_reserve = peewee.DecimalField(default=0.25)
     target_factor = peewee.DecimalField(default=0.1)
 
+    def get_credential_by_exchange_or_none(self, exchange: Exchange):
+        return self \
+            .credential_set \
+            .where(Credential.exchange == exchange) \
+            .get_or_none()
+
     def get_balances_by_asset(self, asset: Asset):
-        return Balance.select().join(
-            ExchangeAsset,
-            on=(Balance.asset_id == ExchangeAsset.asset_id
-                )).join(Asset).switch(Balance).join(User).where(
-                    (Balance.user_id == self.id)
-                    & (Asset.id == asset.id)).order_by(Asset.ticker)
+        return Balance \
+            .select() \
+            .join(ExchangeAsset,
+                  on=(Balance.asset_id == ExchangeAsset.asset_id)) \
+            .join(Asset) \
+            .switch(Balance) \
+            .join(User) \
+            .where((Balance.user_id == self.id)
+                   & (Asset.id == asset.id)) \
+            .order_by(Asset.ticker)
 
     def get_open_positions(self):
-        return Position.select().join(UserStrategy).where(
-            (UserStrategy.user_id == self.id)
-            & ((Position.status == "open")
-               | (Position.status == "opening")
-               | (Position.status == "closing")))
+        return Position \
+            .select() \
+            .join(UserStrategy) \
+            .where(
+                (UserStrategy.user_id == self.id)
+                & ((Position.status == "open")
+                    | (Position.status == "opening")
+                    | (Position.status == "closing")))
 
     def get_positions(self):
-        return Position.select(Position, Strategy.id.alias("strategy_id"), Market.id.alias("market_id")).join(UserStrategy).join(Strategy).join(Market).where(UserStrategy.user_id == self.id).order_by(Position.id.desc())
+        return Position \
+            .select(Position,
+                    Strategy.id.alias("strategy_id"),
+                    Market.id.alias("market_id")) \
+            .join(UserStrategy) \
+            .join(Strategy) \
+            .join(Market) \
+            .where(UserStrategy.user_id == self.id) \
+            .order_by(Position.id.desc())
 
 
 class Credential(BaseModel):
