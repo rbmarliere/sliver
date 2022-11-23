@@ -73,7 +73,6 @@ export class CredentialComponent implements OnInit {
   }
 
   deleteCredential(): void {
-    // this.form.value.exchange_id
     this.credentialService
       .deleteCredential(this.form.value.exchange_id)
       .subscribe({
