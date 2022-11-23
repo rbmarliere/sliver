@@ -1,5 +1,4 @@
 <div class="main">
-
   <mat-card>
     <mat-card-content>
 
@@ -49,9 +48,13 @@
         <button mat-raised-button color="primary">Update</button>
 
       </form>
-
     </mat-card-content>
+  </mat-card>
 
+  <mat-card>
+    <mat-card-content>
+      <app-credential *ngFor="let credential of credentials" [credential]="credential"></app-credential>
+    </mat-card-content>
   </mat-card>
 
 </div>

@@ -26,6 +26,8 @@ import { HTTP_INTERCEPTORS } from '@angular/common/http';
 import { AuthInterceptor } from './auth.interceptor';
 import { StrategyComponent } from './strategy/strategy.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
+import { OrderComponent } from './order/order.component';
+import { CredentialComponent } from './credential/credential.component';
 
 @NgModule({
   declarations: [
@@ -36,6 +38,8 @@ import { DashboardComponent } from './dashboard/dashboard.component';
     ErrorDialogComponent,
     StrategyComponent,
     DashboardComponent,
+    OrderComponent,
+    CredentialComponent
   ],
   imports: [
     BrowserModule,
