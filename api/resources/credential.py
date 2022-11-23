@@ -5,17 +5,13 @@ import api.errors
 import core
 
 fields = {
+    "exchange": fields.String,
     "exchange_id": fields.Integer,
-    "api_key": fields.String,
+    "api_key": fields.String
 }
 
 
-argp = reqparse.RequestParser()
-argp.add_argument("api_key", type=str)
-argp.add_argument("api_secret", type=str)
-
-
-class Credentials(Resource):
+class Credential(Resource):
     @marshal_with(fields)
     @jwt_required()
     def get(self):
@@ -26,45 +22,79 @@ class Credentials(Resource):
         for e in core.db.Exchange.select():
             cred = user.credential_set.where(
                 core.db.Credential.exchange == e).get_or_none()
+
             if cred is None:
                 cred = {
                     "exchange_id": e.id,
+                    "exchange": e.name,
                     "api_key": ''
                 }
+            else:
+                cred = {
+                    "exchange_id": e.id,
+                    "exchange": e.name,
+                    "api_key": cred.api_key
+                }
+
             credentials.append(cred)
 
         return credentials
 
-
-class Credential(Resource):
     @marshal_with(fields)
     @jwt_required()
-    def post(self, exchange_id):
+    def post(self):
+        argp = reqparse.RequestParser()
+        argp.add_argument("exchange_id", type=int, required=True)
+        argp.add_argument("api_key", type=str, required=True)
+        argp.add_argument("api_secret", type=str, required=True)
         args = argp.parse_args()
+
+        if not args.api_key or not args.api_secret:
+            raise api.errors.InvalidArgument
 
         uid = int(get_jwt_identity())
         user = core.db.User.get_by_id(uid)
-        credential = user.get_credential_by_exchange(exchange_id)
+
+        try:
+            exchange = core.db.Exchange.get_by_id(args.exchange_id)
+        except core.db.Exchange.DoesNotExist:
+            raise api.errors.ExchangeDoesNotExist
+
+        credential = user.get_credential_by_exchange_or_none(exchange)
         if credential:
             raise api.errors.CredentialExists
 
         credential = core.db.Credential(
             user=user,
-            exchange=exchange_id,
+            exchange=args.exchange_id,
             api_key=args.api_key,
             api_secret=args.api_secret)
         credential.save()
 
-        return credential
+        res = {
+            "exchange": credential.exchange.name,
+            "exchange_id": credential.exchange_id,
+            "api_key": credential.api_key
+        }
+
+        return res
 
     @jwt_required()
-    def delete(self, exchange_id):
+    def delete(self):
+        argp = reqparse.RequestParser()
+        argp.add_argument("exchange_id", type=int, required=True)
+        args = argp.parse_args()
+
         uid = int(get_jwt_identity())
         user = core.db.User.get_by_id(uid)
 
         try:
-            credential = user.get_credential_by_exchange(exchange_id)
-        except core.db.Credential.DoesNotExist:
+            exchange = core.db.Exchange.get_by_id(args.exchange_id)
+        except core.db.Exchange.DoesNotExist:
+            raise api.errors.ExchangeDoesNotExist
+
+        credential = user.get_credential_by_exchange_or_none(exchange)
+        if credential is None:
             raise api.errors.CredentialDoesNotExist
 
         credential.delete_instance()
