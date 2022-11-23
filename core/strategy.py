@@ -127,6 +127,7 @@ def get_indicators(strategy: core.db.Strategy, dryrun: bool = False):
     tweets = tweets.set_index("floor")
 
     # sum normalized scores of each time interval
+    # TODO maybe get median of each group instead
     tweets["i_score"] = tweets.groupby("floor")["i_zscore"].sum()
     tweets["p_score"] = tweets.groupby("floor")["p_zscore"].sum()
 
@@ -168,7 +169,9 @@ def backtest():
                       required=True)
     args = argp.parse_args()
 
-    strategy = core.db.Strategy.get(args.strategy_id)
+    core.watchdog.set_logger("backtest")
+
+    strategy = core.db.Strategy.get_by_id(args.strategy_id)
 
     indicators = get_indicators(strategy, dryrun=True)
     if indicators.empty:
