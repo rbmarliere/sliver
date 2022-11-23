@@ -2,6 +2,8 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
+import { Credential } from '../credential';
+import { CredentialService } from '../credential.service';
 import { ErrorDialogComponent } from '../error-dialog/error-dialog.component';
 import { User } from '../user';
 import { UserService } from '../user.service';
@@ -25,6 +27,8 @@ export class DashboardComponent implements OnInit {
     target_factor: 0 
   });
 
+  credentials: Credential[] = [];
+
   private handleError(error: HttpErrorResponse) {
     const dialogConfig = new MatDialogConfig;
 
@@ -37,12 +41,14 @@ export class DashboardComponent implements OnInit {
 
   constructor(
     private userService: UserService,
+    private credentialService: CredentialService,
     private dialog: MatDialog,
     private formBuilder: FormBuilder
   ) { }
 
   ngOnInit(): void {
     this.getUser();
+    this.getCredentials();
   }
 
   createForm(model: User): FormGroup {
@@ -52,6 +58,13 @@ export class DashboardComponent implements OnInit {
   getUser(): void {
     this.userService.getUser().subscribe({
       next: (res) => this.form.patchValue(res),
+      error: (err) => this.handleError(err)
+    });
+  }
+
+  getCredentials(): void {
+    this.credentialService.getCredentials().subscribe({
+      next: (res) => this.credentials = res,
       error: (err) => this.handleError(err)
     });
   }
