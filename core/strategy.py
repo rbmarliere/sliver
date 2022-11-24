@@ -90,13 +90,13 @@ def get_indicators(strategy: core.db.Strategy, dryrun: bool = False):
     prices = prices.rename(columns={"id": "price_id"})
 
     # check if there are tweets with given params
+    tweets = tweets.where(core.db.Tweet.time >= prices.iloc[0].name)
     if tweets.count() == 0:
         core.watchdog.log.info(
             "no tweets found for computing signals, skipping...")
         return
 
     # create tweets dataframe
-    tweets = tweets.where(core.db.Tweet.time >= prices.iloc[0].name)
     tweets = pandas.DataFrame(tweets.dicts())
 
     if indicators:
