@@ -17,7 +17,7 @@ export class PositionComponent implements OnInit {
   displayedColumns: string[] = [
     'id',
     'strategy_id',
-    'market_id',
+    'market',
     'status',
     'entry_amount',
     'entry_price',
