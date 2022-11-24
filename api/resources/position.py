@@ -1,3 +1,4 @@
+import pandas
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from flask_restful import Resource, fields, marshal_with
 
@@ -5,11 +6,8 @@ import core
 
 fields = {
     "id": fields.Integer,
-    "market_id": fields.Integer,
+    "market": fields.String,
     "strategy_id": fields.Integer,
-    "next_bucket": fields.DateTime,
-    "bucket_max": fields.String,
-    "bucket": fields.String,
     "status": fields.String,
     "target_cost": fields.String,
     "entry_cost": fields.String,
@@ -30,4 +28,27 @@ class Position(Resource):
         uid = int(get_jwt_identity())
         user = core.db.User.get_by_id(uid)
 
-        return [p for p in user.get_positions().dicts()]
+        positions = pandas.DataFrame(user.get_positions().dicts())
+
+        positions["market"] = positions.apply(
+            lambda x: core.utils.sformat(x), axis=1)
+        positions.target_cost = positions.apply(
+            lambda x: core.utils.qformat(x, "target_cost"), axis=1)
+        positions.entry_cost = positions.apply(
+            lambda x: core.utils.qformat(x, "entry_cost"), axis=1)
+        positions.entry_amount = positions.apply(
+            lambda x: core.utils.bformat(x, "entry_amount"), axis=1)
+        positions.entry_price = positions.apply(
+            lambda x: core.utils.qformat(x, "entry_price"), axis=1)
+        positions.exit_price = positions.apply(
+            lambda x: core.utils.qformat(x, "exit_price"), axis=1)
+        positions.exit_amount = positions.apply(
+            lambda x: core.utils.bformat(x, "exit_amount"), axis=1)
+        positions.exit_cost = positions.apply(
+            lambda x: core.utils.qformat(x, "exit_cost"), axis=1)
+        positions.fee = positions.apply(
+            lambda x: core.utils.qformat(x, "fee"), axis=1)
+        positions.pnl = positions.apply(
+            lambda x: core.utils.qformat(x, "pnl"), axis=1)
+
+        return positions.to_dict("records")

@@ -1,3 +1,4 @@
+import pandas
 import peewee
 from flask_jwt_extended import jwt_required
 from flask_restful import Resource, fields, marshal_with
@@ -33,4 +34,11 @@ class Price(Resource):
             .select(core.db.Price, core.db.Indicator) \
             .order_by(core.db.Price.id)
 
-        return [p for p in q.dicts()]
+        prices = pandas.DataFrame(q.dicts())
+        prices.open = prices.open.apply(strategy.market.quote.format)
+        prices.high = prices.high.apply(strategy.market.quote.format)
+        prices.low = prices.low.apply(strategy.market.quote.format)
+        prices.close = prices.close.apply(strategy.market.quote.format)
+        prices.volume = prices.volume.apply(strategy.market.base.format)
+
+        return prices.to_dict("records")

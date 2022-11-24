@@ -7,7 +7,7 @@ import core
 fields = {
     "id": fields.Integer,
     "subscribed": fields.Boolean,
-    "market_id": fields.Integer,
+    "symbol": fields.String,
     "description": fields.String,
     "mode": fields.String,
     "timeframe": fields.String,
@@ -44,6 +44,8 @@ class Strategy(Resource):
             st.subscribed = False
             if st in user_strats:
                 st.subscribed = True
+
+            st.symbol = st.market.get_symbol()
 
         return strategies
 
