@@ -4,6 +4,8 @@ import re
 
 import pandas
 
+import core
+
 
 def standardize(text):
     # convert to lower case
@@ -73,6 +75,21 @@ def get_mean_var(series: pandas.DataFrame,
         old_mean = new_mean
 
     return new_mean, new_var
+
+
+def qformat(x, column):
+    strat = core.db.Strategy.get_by_id(x.strategy_id)
+    return strat.market.quote.format(x[column])
+
+
+def bformat(x, column):
+    strat = core.db.Strategy.get_by_id(x.strategy_id)
+    return strat.market.quote.format(x[column])
+
+
+def sformat(x):
+    strat = core.db.Strategy.get_by_id(x.strategy_id)
+    return strat.market.get_symbol()
 
 # import nltk
 # try:

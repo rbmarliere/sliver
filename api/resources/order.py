@@ -1,6 +1,7 @@
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from flask_restful import Resource, fields, marshal_with
 
+import pandas
 import api.errors
 import core
 
@@ -30,4 +31,17 @@ class Order(Resource):
         if position.user_strategy.user.id != uid:
             raise api.errors.PositionDoesNotExist
 
-        return [o for o in position.get_orders()]
+        orders = pandas.DataFrame(position.get_orders().dicts())
+
+        orders.price = orders.apply(
+            lambda x: core.utils.qformat(x, "price"), axis=1)
+        orders.amount = orders.apply(
+            lambda x: core.utils.bformat(x, "amount"), axis=1)
+        orders.cost = orders.apply(
+            lambda x: core.utils.qformat(x, "cost"), axis=1)
+        orders.filled = orders.apply(
+            lambda x: core.utils.bformat(x, "filled"), axis=1)
+        orders.fee = orders.apply(
+            lambda x: core.utils.qformat(x, "fee"), axis=1)
+
+        return orders.to_dict("records")
