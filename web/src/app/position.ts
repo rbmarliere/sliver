@@ -1,10 +1,7 @@
 export interface Position {
     id: number,
-    market_id: number,
+    market: string,
     strategy_id: number,
-    next_bucket: Date,
-    bucket_max: string,
-    bucket: string,
     status: string,
     target_cost: string,
     entry_cost: string,
