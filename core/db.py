@@ -281,8 +281,10 @@ class Position(BaseModel):
 
     def get_orders(self):
         return Order \
-            .select() \
+            .select(Order, Strategy.id.alias("strategy_id")) \
             .join(Position) \
+            .join(UserStrategy) \
+            .join(Strategy) \
             .where(Order.status != "canceled") \
             .order_by(Order.time.desc())
 
