@@ -1,7 +1,7 @@
 export interface Strategy {
     id: number,
     subscribed: boolean,
-    market_id: number,
+    market: string,
     description: string,
     mode: string,
     timeframe: string,
