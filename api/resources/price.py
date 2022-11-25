@@ -7,15 +7,15 @@ import api
 import core
 
 fields = {
-    "time": fields.DateTime,
-    "open": fields.String,
-    "high": fields.String,
-    "low": fields.String,
-    "close": fields.String,
-    "volume": fields.String,
-    "signal": fields.String,
-    "i_score": fields.Float,
-    "p_score": fields.Float,
+    "time": fields.List(fields.String),
+    "open": fields.List(fields.Float),
+    "high": fields.List(fields.Float),
+    "low": fields.List(fields.Float),
+    "close": fields.List(fields.Float),
+    "volume": fields.List(fields.Float),
+    "signal": fields.List(fields.String),
+    "i_score": fields.List(fields.Float),
+    "p_score": fields.List(fields.Float),
 }
 
 
@@ -35,10 +35,15 @@ class Price(Resource):
             .order_by(core.db.Price.id)
 
         prices = pandas.DataFrame(q.dicts())
+
+        if prices.empty:
+            return
+
+        prices.time = prices.time.dt.strftime("%Y-%m-%d %H:%M")
         prices.open = prices.open.apply(strategy.market.quote.format)
         prices.high = prices.high.apply(strategy.market.quote.format)
         prices.low = prices.low.apply(strategy.market.quote.format)
         prices.close = prices.close.apply(strategy.market.quote.format)
         prices.volume = prices.volume.apply(strategy.market.base.format)
 
-        return prices.to_dict("records")
+        return prices.to_dict("list")
