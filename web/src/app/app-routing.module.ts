@@ -10,7 +10,7 @@ import { PositionComponent } from './position/position.component';
 import { StrategyComponent } from './strategy/strategy.component';
 
 const routes: Routes = [
-  { path: 'login', component: LoginComponent, canActivate: [LoginGuard]},
+  { path: 'login', component: LoginComponent, canActivate: [LoginGuard] },
   { path: '', redirectTo: '/positions', pathMatch: 'full' },
   { path: 'positions', component: PositionComponent, canActivate: [AuthGuard] },
   { path: 'position/:position_id', component: OrderComponent, canActivate: [AuthGuard] },
