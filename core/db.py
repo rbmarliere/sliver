@@ -400,8 +400,10 @@ class Tweet(BaseModel):
 
 
 def get_active_strategies():
-    return Strategy.select().where(Strategy.active).order_by(
-        Strategy.next_refresh)
+    return Strategy \
+        .select() \
+        .where(Strategy.active) \
+        .order_by(Strategy.next_refresh)
 
 
 def get_pending_strategies():
