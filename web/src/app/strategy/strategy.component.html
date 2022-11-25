@@ -8,8 +8,15 @@
       </p>
     </mat-sidenav>
     <mat-sidenav-content *ngIf="selected" class="content">
-      {{ selected.id }}
-      {{ selected.description }}
+      <p>
+        {{ selected.id }} -
+        {{ selected.description }}
+      </p>
+
+      <p>
+        <plotly-plot *ngIf="data" [data]="data" [layout]="layout"></plotly-plot>
+      </p>
     </mat-sidenav-content>
   </mat-sidenav-container>
 </div>
+
