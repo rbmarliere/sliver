@@ -41,10 +41,3 @@ class StrategyDoesNotExist(HTTPException):
     description = (
         "Strategy does not exist."
     )
-
-
-class ExchangeDoesNotExist(HTTPException):
-    code = 404
-    description = (
-        "Exchange does not exist."
-    )
