@@ -36,9 +36,12 @@ class Strategy(Resource):
         uid = int(get_jwt_identity())
         user = core.db.User.get_by_id(uid)
 
-        user_strats = [s.strategy for s in user.userstrategy_set.where(
-            core.db.UserStrategy.active)]
-        strategies = [s for s in core.db.get_active_strategies()]
+        user_strats = [s.strategy for s in
+                       user.userstrategy_set
+                       .where(core.db.UserStrategy.active)]
+        strategies = [s for s in
+                      core.db.get_active_strategies()
+                      .order_by(core.db.Strategy.id.asc())]
 
         for st in strategies:
             st.subscribed = False
