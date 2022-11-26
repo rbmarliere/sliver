@@ -1,9 +1,6 @@
-import argparse
 import datetime
 
 import pandas
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 
 import core
 
@@ -162,16 +159,8 @@ def get_indicators(strategy: core.db.Strategy, dryrun: bool = False):
     return indicators
 
 
-def backtest():
-    argp = argparse.ArgumentParser()
-    argp.add_argument("-s",
-                      "--strategy-id",
-                      required=True)
-    args = argp.parse_args()
-
+def backtest(strategy: core.db.Strategy):
     core.watchdog.set_logger("backtest")
-
-    strategy = core.db.Strategy.get_by_id(args.strategy_id)
 
     indicators = get_indicators(strategy, dryrun=True)
     if indicators.empty:
@@ -216,105 +205,65 @@ def backtest():
 
                 positions.append(curr_pos)
 
-                # core.watchdog.log.info(
-                #     strategy.market.base.print(curr_pos.entry_amount) +
-                #     " @ (" +
-                #     strategy.market.quote.print(curr_pos.exit_price) +
-                #     " - " +
-                #     strategy.market.quote.print(curr_pos.entry_price) +
-                #     ") = " +
-                #     strategy.market.quote.print(curr_pos.pnl) +
-                #     " -- balance: " + strategy.market.quote.print(balance))
-
                 curr_pos = None
 
     if not positions:
         core.watchdog.log.info("no positions entered")
         return
 
-    core.watchdog.log.info("initial balance: " +
-                           strategy.market.quote.print(init_bal))
+    indicators.open = indicators.open.apply(strategy.market.quote.format)
+    indicators.high = indicators.high.apply(strategy.market.quote.format)
+    indicators.low = indicators.low.apply(strategy.market.quote.format)
+    indicators.close = indicators.close.apply(strategy.market.quote.format)
+    indicators.volume = indicators.volume.apply(strategy.market.base.format)
 
-    core.watchdog.log.info("final balance: " +
-                           strategy.market.quote.print(balance))
+    indicators["buys"] = (
+        (1 + .003) *
+        indicators.low.where(indicators.index.isin(buys)))
+    indicators.buys = indicators.buys.replace({float("nan"): None})
+
+    indicators["sells"] = (
+        (1 + .003) *
+        indicators.high.where(indicators.index.isin(sells)))
+    indicators.sells = indicators.sells.replace({float("nan"): None})
+
+    indicators.time = indicators.time.dt.strftime("%Y-%m-%d %H:%M")
 
     init_bh_amount = strategy.market.base.print(positions[0].entry_amount)
-    core.watchdog.log.info("buy and hold amount at first position: " +
-                           init_bh_amount)
-
-    exit_bh_value = positions[-1].entry_price * strategy.market.base.format(
-        positions[0].entry_amount)
-    core.watchdog.log.info("buy and hold value at last position: " +
-                           strategy.market.quote.print(exit_bh_value))
-
+    exit_bh_value = (positions[-1].entry_price *
+                     strategy.market.base.format(positions[0].entry_amount))
     n_days = str(positions[-1].entry_time - positions[0].entry_time)
-    core.watchdog.log.info("number of days: " + n_days)
-
     n_trades = str(len(positions))
-    core.watchdog.log.info("number of trades: " + n_trades)
-
     pnl = balance - init_bal
-    core.watchdog.log.info("pnl: " + strategy.market.quote.print(pnl))
-
     roi = round(pnl / init_bal * 100, 2)
-    core.watchdog.log.info("roi: " + str(roi) + "%")
-
     roi_bh = round(((exit_bh_value / init_bal) - 1) * 100, 2)
-    core.watchdog.log.info("buy and hold roi: " + str(roi_bh) + "%")
-
     roi_vs_bh = round((pnl / exit_bh_value) * 100, 2)
-    core.watchdog.log.info("roi vs buy and hold: " + str(roi_vs_bh) + "%")
+    init_bal = strategy.market.quote.print(init_bal)
+    balance = strategy.market.quote.print(balance)
+    exit_bh_value = strategy.market.quote.print(exit_bh_value)
+    pnl = strategy.market.quote.print(pnl)
 
-    indicators["open"] = indicators["open"].apply(strategy.market.quote.format)
-    indicators["high"] = indicators["high"].apply(strategy.market.quote.format)
-    indicators["low"] = indicators["low"].apply(strategy.market.quote.format)
-    indicators["close"] = indicators["close"].apply(
-        strategy.market.quote.format)
-    indicators["volume"] = indicators["volume"].apply(
-        strategy.market.quote.format)
+    log = """initial balance: {init_bal}
+final balance: {balance}
+buy and hold amount at first position: {init_bh_amount}
+buy and hold value at last position: {exit_bh_value}
+number of days: {n_days}
+number of trades: {n_trades}
+pnl: {pnl}
+roi: {roi}%
+buy and hold roi: {roi_bh}%
+roi vs buy and hold: {roi_vs_bh}%""".format(init_bal=init_bal,
+                                            balance=balance,
+                                            init_bh_amount=init_bh_amount,
+                                            exit_bh_value=exit_bh_value,
+                                            n_days=n_days,
+                                            n_trades=n_trades,
+                                            pnl=pnl,
+                                            roi=roi,
+                                            roi_bh=roi_bh,
+                                            roi_vs_bh=roi_vs_bh)
 
-    fig = make_subplots(rows=3,
-                        cols=1,
-                        shared_xaxes=True,
-                        vertical_spacing=0.03,
-                        subplot_titles=("", "i_score", "p_score"),
-                        row_width=[0.2, 0.2, 0.6])
+    res = indicators.to_dict("list")
+    res["backtest_log"] = log
 
-    fig.add_trace(
-        go.Ohlc(x=indicators["time"],
-                open=indicators["open"],
-                high=indicators["high"],
-                low=indicators["low"],
-                close=indicators["close"],
-                showlegend=False))
-
-    indicators["buys"] = indicators["low"].where(indicators.index.isin(buys))
-    fig.add_trace(
-        go.Scatter(x=indicators["time"],
-                   y=(1 - .003) * indicators["buys"],
-                   mode="markers",
-                   marker=dict(color="Green", size=8)))
-
-    indicators["sells"] = indicators["high"].where(
-        indicators.index.isin(sells))
-    fig.add_trace(
-        go.Scatter(x=indicators["time"],
-                   y=(1 + .003) * indicators["sells"],
-                   mode="markers",
-                   marker=dict(color="Red", size=8)))
-
-    fig.add_trace(go.Bar(x=indicators["time"],
-                         y=indicators["i_score"],
-                         showlegend=False),
-                  row=2,
-                  col=1)
-
-    fig.add_trace(go.Bar(x=indicators["time"],
-                         y=indicators["p_score"],
-                         showlegend=False),
-                  row=3,
-                  col=1)
-
-    fig.update(layout_xaxis_rangeslider_visible=False)
-
-    fig.show()
+    return res
