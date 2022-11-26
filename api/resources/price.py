@@ -16,6 +16,8 @@ fields = {
     "signal": fields.List(fields.String),
     "i_score": fields.List(fields.Float),
     "p_score": fields.List(fields.Float),
+    "buys": fields.List(fields.Float),
+    "sells": fields.List(fields.Float),
 }
 
 
@@ -45,5 +47,17 @@ class Price(Resource):
         prices.low = prices.low.apply(strategy.market.quote.format)
         prices.close = prices.close.apply(strategy.market.quote.format)
         prices.volume = prices.volume.apply(strategy.market.base.format)
+
+        prices["buys"] = (
+            (1 + .003) *
+            prices.close
+            .where(prices.signal == "buy"))
+        prices.buys = prices.buys.replace({float("nan"): None})
+
+        prices["sells"] = (
+            (1 - .003) *
+            prices.close
+            .where(prices.signal == "sell"))
+        prices.sells = prices.sells.replace({float("nan"): None})
 
         return prices.to_dict("list")
