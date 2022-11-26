@@ -20,4 +20,9 @@ export class StrategyService {
         shareReplay()
       );
   }
+
+  updateStrategy(strategy: Strategy): Observable<Strategy> {
+    const req = { strategy_id: strategy.id, subscribed: !strategy.subscribed };
+    return this.http.post<Strategy>(this.url, req);
+  }
 }

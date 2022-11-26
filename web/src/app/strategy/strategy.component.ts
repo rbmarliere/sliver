@@ -76,6 +76,13 @@ export class StrategyComponent implements OnInit, AfterViewInit {
     this.getPrices(strategy.id);
   }
 
+  subscribe(strategy: Strategy): void {
+    this.strategyService.updateStrategy(strategy).subscribe({
+      next: () => location.reload(),
+      error: (err) => this.handleError(err)
+    });
+  }
+
   getPrices(strategy_id: number): void {
     this.priceService.getPrices(strategy_id).subscribe({
       next: (res) => {

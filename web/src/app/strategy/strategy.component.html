@@ -9,12 +9,13 @@
     </mat-sidenav>
     <mat-sidenav-content *ngIf="selected" class="content">
       <p>
-        {{ selected.id }} -
-        {{ selected.description }}
-      </p>
-
-      <p>
         <plotly-plot *ngIf="data" [data]="data" [layout]="layout"></plotly-plot>
+      </p>
+      <p>
+        <button mat-raised-button color="primary" (click)="subscribe(selected)">
+          <span *ngIf="!selected.subscribed">Subscribe</span>
+          <span *ngIf="selected.subscribed">Unsubscribe</span>
+        </button>
       </p>
     </mat-sidenav-content>
   </mat-sidenav-container>
