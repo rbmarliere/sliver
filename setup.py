@@ -35,7 +35,6 @@ dev_deps = [
 
 entry_points = {
     "console_scripts": [
-        "backtest = core.strategy:backtest",
         "serve = api:serve",
         "stream = core.twitter:stream",
         "watch = core.watchdog:watch"
