@@ -9,5 +9,6 @@ export interface Price {
   i_score: number[],
   p_score: number[],
   buys: number[],
-  sells: number[]
+  sells: number[],
+  backtest_log: string,
 }

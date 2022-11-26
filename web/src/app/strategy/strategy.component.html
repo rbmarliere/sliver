@@ -11,12 +11,16 @@
       <p>
         <plotly-plot *ngIf="data" [data]="data" [layout]="layout"></plotly-plot>
       </p>
+
       <p>
         <button mat-raised-button color="primary" (click)="subscribe(selected)">
           <span *ngIf="!selected.subscribed">Subscribe</span>
           <span *ngIf="selected.subscribed">Unsubscribe</span>
         </button>
       </p>
+
+      BACKTEST LOG:
+      <pre>{{ backtest_log }}</pre>
     </mat-sidenav-content>
   </mat-sidenav-container>
 </div>

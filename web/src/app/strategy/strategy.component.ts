@@ -17,6 +17,7 @@ export class StrategyComponent implements OnInit, AfterViewInit {
   private sidenav: any;
 
   strategies: Strategy[] = [];
+  backtest_log?: string;
   data: any;
   layout = {
     width: 969,
@@ -86,6 +87,7 @@ export class StrategyComponent implements OnInit, AfterViewInit {
   getPrices(strategy_id: number): void {
     this.priceService.getPrices(strategy_id).subscribe({
       next: (res) => {
+        this.backtest_log = res.backtest_log;
         this.data = [
           {
             name: 'price',
