@@ -243,7 +243,7 @@ def backtest(strategy: core.db.Strategy):
 final balance: {balance}
 buy and hold amount at first position: {init_bh_amount}
 buy and hold value at last position: {exit_bh_value}
-number of days: {n_days}
+number of candles: {n_days}
 number of trades: {n_trades}
 pnl: {pnl}
 roi: {roi}%
