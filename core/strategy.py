@@ -164,14 +164,10 @@ def backtest(strategy: core.db.Strategy):
 
     indicators = get_indicators(strategy, dryrun=True)
     if indicators.empty:
-        core.watchdog.log.info("no indicator data computed")
-        raise Exception
+        # core.watchdog.log.info("no indicator data computed")
+        return
 
     init_bal = balance = strategy.market.quote.transform(10000)
-
-    core.watchdog.log.info("computing positions from " +
-                           str(indicators["time"].iloc[0]) + " until " +
-                           str(indicators["time"].iloc[-1]))
 
     buys = []
     sells = []
@@ -208,7 +204,7 @@ def backtest(strategy: core.db.Strategy):
                 curr_pos = None
 
     if not positions:
-        core.watchdog.log.info("no positions entered")
+        # core.watchdog.log.info("no positions entered")
         return
 
     indicators.open = indicators.open.apply(strategy.market.quote.format)
