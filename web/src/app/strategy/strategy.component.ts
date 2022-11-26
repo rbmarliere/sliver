@@ -133,6 +133,7 @@ export class StrategyComponent implements OnInit, AfterViewInit {
             yaxis: 'y'
           }
         ];
+        this.sidenav.open();
       },
       error: (err) => this.handleError(err)
     });
