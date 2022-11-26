@@ -33,6 +33,9 @@ class Order(Resource):
 
         orders = pandas.DataFrame(position.get_orders().dicts())
 
+        if orders.empty:
+            return
+
         orders.price = orders.apply(
             lambda x: core.utils.qformat(x, "price"), axis=1)
         orders.amount = orders.apply(
