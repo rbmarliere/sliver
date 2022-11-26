@@ -8,4 +8,6 @@ export interface Price {
   signal: string[],
   i_score: number[],
   p_score: number[],
+  buys: number[],
+  sells: number[]
 }
