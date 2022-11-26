@@ -81,6 +81,7 @@ export class StrategyComponent implements OnInit, AfterViewInit {
       next: (res) => {
         this.data = [
           {
+            name: 'price',
             x: res.time,
             open: res.open,
             high: res.high,
@@ -90,18 +91,21 @@ export class StrategyComponent implements OnInit, AfterViewInit {
             xaxis: 'x',
             yaxis: 'y'
           },{
+            name: 'i_score',
             x: res.time,
             y: res.i_score,
             type: 'line',
             xaxis: 'x',
             yaxis: 'y2'
           },{
+            name: 'p_score',
             x: res.time,
             y: res.p_score,
             type: 'line',
             xaxis: 'x',
             yaxis: 'y3'
           },{
+            name: 'buy signal',
             x: res.time,
             y: res.buys,
             type: 'scatter',
@@ -110,6 +114,7 @@ export class StrategyComponent implements OnInit, AfterViewInit {
             xaxis: 'x',
             yaxis: 'y'
           },{
+            name: 'sell signal',
             x: res.time,
             y: res.sells,
             type: 'scatter',
