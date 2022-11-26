@@ -2,7 +2,6 @@ import { AfterViewInit, Component, Input, OnInit, ViewChild } from '@angular/cor
 import { ErrorDialogComponent } from '../error-dialog/error-dialog.component';
 import { HttpErrorResponse } from '@angular/common/http';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
-import { Price } from '../price';
 import { PriceService } from '../price.service';
 import { Strategy } from '../strategy';
 import { StrategyService } from '../strategy.service';
@@ -21,13 +20,15 @@ export class StrategyComponent implements OnInit, AfterViewInit {
   data: any;
   layout = {
     width: 969,
-    height: 820,
+    height: 969,
+    showlegend: false,
     title: '',
     xaxis: {
       rangeslider: { visible: false },
       autorange: true,
       type: 'date'
     },
+    grid: {rows: 3, columns: 1},
   }
 
   @Input('selected') selected?: Strategy;
@@ -39,6 +40,7 @@ export class StrategyComponent implements OnInit, AfterViewInit {
       msg: error.error.message
     };
 
+    console.log(error);
     this.dialog.open(ErrorDialogComponent, dialogConfig);
   }
 
@@ -77,16 +79,46 @@ export class StrategyComponent implements OnInit, AfterViewInit {
   getPrices(strategy_id: number): void {
     this.priceService.getPrices(strategy_id).subscribe({
       next: (res) => {
-        this.data = [{
-          x: res.time,
-          open: res.open,
-          high: res.high,
-          low: res.low,
-          close: res.close,
-          type: 'ohlc',
-          xaxis: 'x',
-          yaxis: 'y'
-        }];
+        this.data = [
+          {
+            x: res.time,
+            open: res.open,
+            high: res.high,
+            low: res.low,
+            close: res.close,
+            type: 'candlestick',
+            xaxis: 'x',
+            yaxis: 'y'
+          },{
+            x: res.time,
+            y: res.i_score,
+            type: 'line',
+            xaxis: 'x',
+            yaxis: 'y2'
+          },{
+            x: res.time,
+            y: res.p_score,
+            type: 'line',
+            xaxis: 'x',
+            yaxis: 'y3'
+          },{
+            x: res.time,
+            y: res.buys,
+            type: 'scatter',
+            mode: 'markers',
+            marker: { color: 'green', size: 8 },
+            xaxis: 'x',
+            yaxis: 'y'
+          },{
+            x: res.time,
+            y: res.sells,
+            type: 'scatter',
+            mode: 'markers',
+            marker: { color: 'red', size: 8 },
+            xaxis: 'x',
+            yaxis: 'y'
+          }
+        ];
       },
       error: (err) => this.handleError(err)
     });
