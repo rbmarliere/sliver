@@ -30,6 +30,9 @@ class Position(Resource):
 
         positions = pandas.DataFrame(user.get_positions().dicts())
 
+        if positions.empty:
+            return
+
         positions["market"] = positions.apply(
             lambda x: core.utils.sformat(x), axis=1)
         positions.target_cost = positions.apply(
