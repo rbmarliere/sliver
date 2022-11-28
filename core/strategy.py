@@ -163,7 +163,7 @@ def backtest(strategy: core.db.Strategy):
     core.watchdog.set_logger("backtest")
 
     indicators = get_indicators(strategy, dryrun=True)
-    if indicators.empty:
+    if indicators is None:
         # core.watchdog.log.info("no indicator data computed")
         return
 
