@@ -123,8 +123,13 @@ def watch():
                                  "'s strategy " + str(u_strat.id))
 
                         # set api to current exchange
-                        credential = u_strat.user.get_credential_by_exchange(
-                            strategy.market.base.exchange)
+                        credential = u_strat \
+                            .user \
+                            .get_credential_by_exchange_or_none(
+                                strategy.market.base.exchange)
+                        if credential is None:
+                            core.watchdog.log.info("credential not found")
+                            continue
                         core.exchange.set_api(cred=credential)
 
                         p = core.exchange.api.fetch_ticker(symbol)
