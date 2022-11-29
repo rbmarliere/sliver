@@ -70,3 +70,4 @@ if __name__ == "__main__":
     dict(zip(model.metrics_names, result))
 
     model.save(modelpath)
+    model.tokenizer.save_pretrained(modelpath)
