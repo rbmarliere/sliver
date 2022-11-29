@@ -14,7 +14,7 @@ def get(model_name):
     model_module = importlib.import_module("core.models." + model_name)
     model = model_module.get_model()
     model.config = model_module.config
-    model.tokenizer = model_module.get_tokenizer()
+    model.tokenizer = model_module.load_tokenizer()
     return model
 
 
@@ -26,7 +26,7 @@ def load(model_name):
     model_module = importlib.import_module("core.models." + model_name)
     model = model_module.load_model(modelpath)
     model.config = model_module.config
-    model.tokenizer = model_module.get_tokenizer()
+    model.tokenizer = model_module.load_tokenizer(modelpath=modelpath)
     return model
 
 
