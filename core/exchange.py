@@ -11,10 +11,12 @@ import core
 
 def set_api(exchange: core.db.Exchange = None,
             cred: core.db.Credential = None):
+    global credential
+
     if cred is None:
         api_key = {}
+        credential = None
     else:
-        global credential
         if "credential" in globals() and credential == cred:
             return
         credential = cred

@@ -179,12 +179,14 @@ def watch():
                     except IndexError:
                         break
 
-                    except ccxt.AuthenticationError:
+                    except ccxt.AuthenticationError as e:
                         log.error(
                             "authentication error, disabling user's strategy")
                         u_strat.active = False
                         u_strat.save()
                         i += 1
+                        exception_log = get_logger("exception", suppress_output=True)
+                        exception_log.exception(e, exc_info=True)
 
                     except ccxt.InsufficientFunds:
                         log.error(
