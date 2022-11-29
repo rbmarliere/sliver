@@ -3,8 +3,10 @@
 import pathlib
 
 import pandas
-import sklearn
+import sklearn.model_selection
 import tensorflow
+
+import core
 
 
 def preprocess(model, filepath):
@@ -23,6 +25,7 @@ def preprocess(model, filepath):
 
     # drop duplicates
     raw_df = raw_df.drop_duplicates(subset="tweet", keep="last")
+    raw_df = raw_df.dropna()
 
     # preprocess training data
     raw_df["tweet"] = raw_df["tweet"].apply(core.utils.standardize)
