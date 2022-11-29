@@ -285,7 +285,7 @@ class Position(BaseModel):
             .join(Position) \
             .join(UserStrategy) \
             .join(Strategy) \
-            .where(Order.status != "canceled") \
+            .where((Order.status != "canceled") | (Order.filled > 0)) \
             .order_by(Order.time.desc())
 
     def get_open_orders(self):
