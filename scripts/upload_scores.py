@@ -48,14 +48,23 @@ if __name__ == "__main__":
             core.db.Tweet.polarity: None
         }).execute()
 
-        print("uploading " + str(len(t1)) + " intensity records...")
-        print(str(t1[0].id) + " -- " + str(t1[-1].id))
+        print("uploading {c} intensity records...\n"
+              "{first} -- {last}"
+              .format(c=len(t1),
+                      first=t1[0].id,
+                      last=t1[-1].id))
         core.db.Tweet.bulk_update(t1,
                                   fields=fd1,
                                   batch_size=2048)
 
-        print("uploading " + str(len(t2)) + " polarity records...")
-        print(str(t2[0].id) + " -- " + str(t2[-1].id))
+        print("uploading {c} polarity records...\n"
+              "{first} -- {last}"
+              .format(c=len(t2),
+                      first=t2[0].id,
+                      last=t2[-1].id))
         core.db.Tweet.bulk_update(t2,
                                   fields=fd2,
                                   batch_size=2048)
+
+        c = core.db.Indicator.delete().execute()
+        print("deleted all {c} indicators".format(c=c))
