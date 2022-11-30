@@ -1,53 +1,104 @@
 #!/usr/bin/env python3
 
 import argparse
+import sys
 
 import core
 
 
-def fetch_markets(exchange: core.db.Exchange):
-    core.watchdog.log.info("fetching all markets from exchange api...")
+def save_market(ex_market, exchange: core.db.Exchange):
+    with core.db.connection.atomic():
+        if not ex_market["spot"]:
+            return
 
-    ex_markets = core.exchange.api.fetch_markets()
+        try:
+            base_prec = ex_market["precision"]["base"]
+            if base_prec is None:
+                base_prec = 8
+        except KeyError:
+            base_prec = 8
 
-    for ex_market in ex_markets:
-        base, new = core.db.Asset.get_or_create(ticker=ex_market["base"])
-        if new:
-            core.watchdog.log.info("saved new asset " + base.ticker)
+        try:
+            quote_prec = ex_market["precision"]["quote"]
+            if quote_prec is None:
+                quote_prec = 2
+        except KeyError:
+            quote_prec = 2
 
-        quote, new = core.db.Asset.get_or_create(ticker=ex_market["quote"])
-        if new:
-            core.watchdog.log.info("saved new asset " + quote.ticker)
+        try:
+            amount_prec = ex_market["precision"]["amount"]
+            if amount_prec is None:
+                amount_prec = 8
+        except KeyError:
+            amount_prec = 8
 
-        ex_b, new = core.db.ExchangeAsset.get_or_create(asset=base,
-                                                        exchange=exchange)
-        if new:
-            core.watchdog.log.info("saved asset " + ex_b.asset.ticker +
-                                   " to exchange")
+        try:
+            price_prec = ex_market["precision"]["price"]
+            if price_prec is None:
+                price_prec = 2
+        except KeyError:
+            price_prec = 2
 
-        ex_q, new = core.db.ExchangeAsset.get_or_create(asset=quote,
-                                                        exchange=exchange)
-        if new:
-            core.watchdog.log.info("saved asset " + ex_q.asset.ticker +
-                                   " to exchange")
+        base, new = (core.db.Asset
+                     .get_or_create(ticker=ex_market["base"]))
+        quote, new = (core.db.Asset
+                      .get_or_create(ticker=ex_market["quote"]))
 
-        ex_b.precision = ex_market["precision"]["base"]
+        ex_b, new = core.db.ExchangeAsset.get_or_create(
+            asset=base,
+            exchange=exchange)
+        ex_b.precision = base_prec
         ex_b.save()
 
-        ex_q.precision = ex_market["precision"]["quote"]
+        ex_q, new = core.db.ExchangeAsset.get_or_create(
+            asset=quote,
+            exchange=exchange)
+        ex_q.precision = quote_prec
         ex_q.save()
 
         m, new = core.db.Market.get_or_create(base=ex_b, quote=ex_q)
-        if new:
-            core.watchdog.log.info("saved new market " + m.get_symbol())
 
-        m.amount_precision = ex_market["precision"]["amount"]
-        m.price_precision = ex_market["precision"]["price"]
-        m.amount_min = m.base.transform(ex_market["limits"]["amount"]["min"])
-        m.cost_min = m.quote.transform(ex_market["limits"]["cost"]["min"])
-        m.price_min = m.quote.transform(ex_market["limits"]["price"]["min"])
+        m.amount_precision = amount_prec
+        m.price_precision = price_prec
+
+        try:
+            amount_min = ex_market["limits"]["amount"]["min"]
+            if amount_min is None:
+                amount_min = 0.0001
+        except KeyError:
+            amount_min = 0.0001
+
+        try:
+            cost_min = ex_market["limits"]["cost"]["min"]
+            if cost_min is None:
+                cost_min = 10
+        except KeyError:
+            cost_min = 10
+
+        try:
+            price_min = ex_market["limits"]["price"]["min"]
+            if price_min is None:
+                price_min = 1
+        except KeyError:
+            price_min = 1
+
+        m.amount_min = m.base.transform(amount_min)
+        m.cost_min = m.quote.transform(cost_min)
+        m.price_min = m.quote.transform(price_min)
 
         m.save()
+
+
+def fetch_markets(exchange: core.db.Exchange):
+    core.watchdog.log.info("fetching all markets from exchange api...")
+    ex_markets = core.exchange.api.fetch_markets()
+
+    count = 0
+    for ex_market in ex_markets:
+        core.exchange.save_market(ex_market, exchange)
+        count += 1
+
+    print("saved {c} new markets".format(c=count))
 
 
 if __name__ == "__main__":
@@ -55,11 +106,24 @@ if __name__ == "__main__":
 
     argp = argparse.ArgumentParser()
     argp.add_argument("-e",
-                      "--exchange_name",
+                      "--exchange-name",
                       help="exchange name to fetch from",
                       required=True)
+    argp.add_argument("-s",
+                      "--symbol",
+                      help="specify a single market to fetch")
     args = argp.parse_args()
-    exchange = core.db.Exchange.get(name=args.exchange_name)
-    cred = exchange.credential_set.get()
-    core.exchange.set_api(cred=cred)
-    fetch_markets(exchange)
+
+    try:
+        exchange = core.db.Exchange.get(name=args.exchange_name)
+    except core.db.Exchange.DoesNotExist:
+        print("exchange not found in database")
+        sys.exit(1)
+
+    core.exchange.set_api(exchange=exchange)
+
+    if args.symbol:
+        core.exchange.api.load_markets()
+        save_market(core.exchange.api.market(args.symbol), exchange)
+    else:
+        fetch_markets(exchange)
