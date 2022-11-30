@@ -48,8 +48,8 @@ def watch():
     core.telegram.notify("watchdog init")
     log.info("watchdog init")
 
-    model_i = core.models.load(core.models.model_i)
-    model_p = core.models.load(core.models.model_p)
+    model_i = core.models.load(core.config["HYPNOX_DEFAULT_MODEL_I"])
+    model_p = core.models.load(core.config["HYPNOX_DEFAULT_MODEL_P"])
 
     n_tries = 0
 

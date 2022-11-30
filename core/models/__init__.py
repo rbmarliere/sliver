@@ -6,9 +6,6 @@ import pandas
 
 import core
 
-model_i = "i20221129"
-model_p = "p20221129"
-
 
 def get(model_name):
     model_module = importlib.import_module("core.models." + model_name)
@@ -22,6 +19,8 @@ def load(model_name):
     modelpath = pathlib.Path(core.config["HYPNOX_MODELS_DIR"] + "/" +
                              model_name).resolve()
     assert modelpath.exists()
+
+    core.watchdog.log.info("loading model {m}".format(m=model_name))
 
     model_module = importlib.import_module("core.models." + model_name)
     model = model_module.load_model(modelpath)
