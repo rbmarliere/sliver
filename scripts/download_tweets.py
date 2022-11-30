@@ -15,9 +15,17 @@ if __name__ == "__main__":
     argp.add_argument("--name", required=True)
     argp.add_argument("--host", required=True)
     argp.add_argument("--user", required=True)
+    argp.add_argument("-u",
+                      "--update-only",
+                      help="if unset, reset table and download everything")
     args = argp.parse_args()
 
     passwd = getpass.getpass("enter db password: ")
+
+    if not args.update_only:
+        print("resetting tweet table...")
+        core.db.Tweet.drop_table()
+        core.db.Tweet.create_table()
 
     db = peewee.PostgresqlDatabase(
         args.name, **{
@@ -34,7 +42,7 @@ if __name__ == "__main__":
     print("grabbing tweets upstream...")
     query = core.db.Tweet.select().where(f).order_by(core.db.Tweet.id)
     upstream_tweets = [t for t in query]
-    print("found " + str(len(upstream_tweets)) + " tweets")
+    print("found {c} tweets".format(c=len(upstream_tweets)))
 
     db.close()
 
@@ -44,16 +52,19 @@ if __name__ == "__main__":
     print("grabbing tweets downstream...")
     query = core.db.Tweet.select().where(f).order_by(core.db.Tweet.id)
     tweets = [t for t in query]
-    print("found " + str(len(tweets)) + " tweets")
+    print("found {c} tweets".format(c=len(tweets)))
 
-    new_tweets = list(set(upstream_tweets) - set(tweets))
-    if len(new_tweets) == 0:
-        print("no new tweets to sync")
-        sys.exit(1)
+    if args.update_only:
+        new_tweets = list(set(upstream_tweets) - set(tweets))
+        if len(new_tweets) == 0:
+            print("no new tweets to sync")
+            sys.exit(1)
+    else:
+        new_tweets = upstream_tweets
 
     new_rows = [playhouse.shortcuts.model_to_dict(x) for x in new_tweets]
 
     df = pandas.DataFrame(new_rows).sort_values("id")
 
-    print("inserting " + str(len(df)) + " new tweets")
+    print("inserting {c} new tweets".format(c=len(df)))
     core.db.Tweet.insert_many(df.to_dict("records")).execute()
