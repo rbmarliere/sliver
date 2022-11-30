@@ -37,12 +37,18 @@ def set_api(exchange: core.db.Exchange = None,
 def check_latency():
     started = datetime.datetime.utcnow()
 
+    try:
+        getattr(api, "fetch_time")
+    except AttributeError:
+        core.watchdog.log.info("exchange does not have fetch_time")
+        return
+
     api.fetch_time()
 
     elapsed = datetime.datetime.utcnow() - started
     elapsed_in_ms = int(elapsed.total_seconds() * 1000)
 
-    core.watchdog.log.info("api latency is " + str(elapsed_in_ms) + " ms")
+    core.watchdog.log.info("api latency is {l} ms".format(l=elapsed_in_ms))
 
     if elapsed_in_ms > 1500:
         core.watchdog.log.info("latency above threshold (1500)")
