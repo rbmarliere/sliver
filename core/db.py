@@ -45,7 +45,6 @@ class Asset(BaseModel):
 class Exchange(BaseModel):
     name = peewee.TextField(unique=True)
     rate_limit = peewee.IntegerField(default=1200)
-    rounding_mode = peewee.IntegerField(default=TRUNCATE)
     precision_mode = peewee.IntegerField(default=DECIMAL_PLACES)
     padding_mode = peewee.IntegerField(default=NO_PADDING)
 
