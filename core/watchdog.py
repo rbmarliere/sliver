@@ -201,8 +201,16 @@ def watch():
                         i += 1
 
                     except ccxt.RateLimitExceeded:
+                        # TODO: next_refresh += sleep_time
                         sleep_time = strategy.market.base.exchange.rate_limit
                         log.info("rate limit exceeded, sleeping for " +
+                                 str(sleep_time) + " seconds")
+                        time.sleep(sleep_time)
+
+                    except ccxt.ExchangeError:
+                        # TODO: next_refresh += sleep_time
+                        sleep_time = strategy.market.base.exchange.rate_limit
+                        log.info("exchange error, sleeping for " +
                                  str(sleep_time) + " seconds")
                         time.sleep(sleep_time)
 
