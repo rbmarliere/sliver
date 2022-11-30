@@ -6,8 +6,8 @@ import pandas
 
 import core
 
-model_i = "i20221104"
-model_p = "p20221019"
+model_i = "i20221129"
+model_p = "p20221129"
 
 
 def get(model_name):
