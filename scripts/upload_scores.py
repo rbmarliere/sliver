@@ -40,6 +40,14 @@ if __name__ == "__main__":
     db.connect()
 
     with db.atomic():
+        print("removing upstream current scores...")
+        core.db.Tweet.update({
+            core.db.Tweet.model_i: None,
+            core.db.Tweet.intensity: None,
+            core.db.Tweet.model_p: None,
+            core.db.Tweet.polarity: None
+        }).execute()
+
         print("uploading " + str(len(t1)) + " intensity records...")
         print(str(t1[0].id) + " -- " + str(t1[-1].id))
         core.db.Tweet.bulk_update(t1,
