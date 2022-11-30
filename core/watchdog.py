@@ -12,9 +12,7 @@ import core
 def get_logger(name, suppress_output=False):
     log_file = core.config["HYPNOX_LOGS_DIR"] + "/" + name + ".log"
 
-    formatter = logging.Formatter(
-        "%(asctime)s %(levelname)s -- %(message)s :: "
-        "%(funcName)s@%(filename)s:%(lineno)d")
+    formatter = logging.Formatter("")
 
     formatter.converter = time.gmtime
 
@@ -53,6 +51,8 @@ def watch():
     model_i = core.models.load(core.models.model_i)
     model_p = core.models.load(core.models.model_p)
 
+    n_tries = 0
+
     while (True):
         try:
             core.db.connection.connect(reuse_if_open=True)
@@ -69,10 +69,13 @@ def watch():
                 delta = int((next_refresh -
                              datetime.datetime.utcnow()).total_seconds())
                 if delta > 0:
-                    log.info("----------------------------------------------")
-                    log.info("next refresh at " + str(next_refresh) +
-                             " for strategy " + str(first_active_strat.id))
-                    log.info("sleeping for " + str(delta) + " seconds")
+                    log.info("--------------------------------------------\n"
+                             "next refresh at {r} "
+                             "for strategy {s} \n"
+                             "sleeping for {t} seconds"
+                             .format(r=next_refresh,
+                                     s=first_active_strat,
+                                     t=delta))
                     time.sleep(delta)
                     continue
 
@@ -86,12 +89,15 @@ def watch():
 
                 symbol = strategy.market.get_symbol()
 
-                log.info("==============================================")
-                log.info("refreshing strategy " + str(strategy.id))
-                log.info("market is " + symbol)
-                log.info("timeframe is " + strategy.timeframe)
-                log.info("exchange is " +
-                         str(strategy.market.base.exchange.name))
+                log.info("============================================\n"
+                         "refreshing strategy {s} \n"
+                         "market is {m} \n"
+                         "timeframe is {T} \n"
+                         "exchange is {e}"
+                         .format(s=strategy,
+                                 m=symbol,
+                                 T=strategy.timeframe,
+                                 e=strategy.market.base.exchange.name))
 
                 core.exchange.set_api(exchange=strategy.market.base.exchange)
 
@@ -118,24 +124,27 @@ def watch():
                         u_strat = users[i]
 
                         log.info(
-                            "..............................................")
-                        log.info("refreshing " + u_strat.user.email +
-                                 "'s strategy " + str(u_strat.id))
+                            "............................................\n"
+                            "refreshing {u}'s strategy {s}"
+                            .format(u=u_strat.user.email,
+                                    s=u_strat))
 
                         # set api to current exchange
-                        credential = u_strat \
-                            .user \
-                            .get_credential_by_exchange_or_none(
-                                strategy.market.base.exchange)
+                        credential = (u_strat
+                                      .user
+                                      .get_credential_by_exchange_or_none(
+                                          strategy.market.base.exchange))
                         if credential is None:
-                            core.watchdog.log.info("credential not found")
+                            core.watchdog.log.info("credential not found, "
+                                                   "skipping user...")
                             continue
                         core.exchange.set_api(cred=credential)
 
                         p = core.exchange.api.fetch_ticker(symbol)
                         last_price = strategy.market.quote.transform(p["last"])
-                        core.watchdog.log.info("last " + symbol +
-                                               " price is $" + str(p["last"]))
+                        core.watchdog.log.info("last {m} price is ${p}"
+                                               .format(m=symbol,
+                                                       p=p["last"]))
 
                         # get active position for current user_strategy
                         position = u_strat.get_active_position_or_none()
@@ -159,16 +168,18 @@ def watch():
                                         u_strat, t_cost)
 
                                     core.telegram.notify(
-                                        "watchdog: opened position for user " +
-                                        u_strat.user.email +
-                                        " under strategy " +
-                                        str(u_strat.strategy.id) + " (" +
-                                        u_strat.strategy.description +
-                                        ") in market " +
-                                        u_strat.strategy.market.get_symbol() +
-                                        " with target cost " +
-                                        u_strat.strategy.market.quote.print(
-                                            t_cost))
+                                        "watchdog: "
+                                        "opened position for user {u} "
+                                        "under strategy {s} "
+                                        "in market {m} "
+                                        "with target cost {c} "
+                                        .format(
+                                            u=u_strat.user.email,
+                                            s=u_strat.strategy,
+                                            m=u_strat.strategy
+                                            .market.get_symbol(),
+                                            c=u_strat.strategy
+                                            .market.quote.print(t_cost)))
 
                         if position:
                             core.exchange.refresh(position, strategy.signal,
@@ -180,45 +191,44 @@ def watch():
                         break
 
                     except ccxt.AuthenticationError:
-                        log.error(
-                            "authentication error, disabling user's strategy")
+                        log.error("authentication error, "
+                                  "disabling user's strategy...")
                         u_strat.active = False
                         u_strat.save()
                         i += 1
 
                     except ccxt.InsufficientFunds:
-                        log.error(
-                            "insufficient funds, disabling user's strategy")
+                        log.error("insufficient funds, "
+                                  "disabling user's strategy...")
                         u_strat.active = False
                         u_strat.save()
                         i += 1
 
                     except core.db.Credential.DoesNotExist:
-                        log.info("user has no credential for this exchange,"
-                                 " disabling user's strategy")
+                        log.info("user has no credential for this exchange, "
+                                 "disabling user's strategy...")
                         u_strat.active = False
                         u_strat.save()
                         i += 1
 
                     except ccxt.RateLimitExceeded:
-                        # TODO: next_refresh += sleep_time
-                        sleep_time = strategy.market.base.exchange.rate_limit
-                        log.info("rate limit exceeded, sleeping for " +
-                                 str(sleep_time) + " seconds")
-                        time.sleep(sleep_time)
+                        log.info("rate limit exceeded, "
+                                 "skipping user...")
 
-                    except ccxt.ExchangeError:
-                        # TODO: next_refresh += sleep_time
-                        sleep_time = strategy.market.base.exchange.rate_limit
-                        log.info("exchange error, sleeping for " +
-                                 str(sleep_time) + " seconds")
-                        time.sleep(sleep_time)
+        except ccxt.ExchangeError:
+            log.info("exchange error, "
+                     "disabling strategy...")
+            strategy.active = False
+            strategy.save()
 
         except ccxt.NetworkError:
-            # TODO num_tries -> telegram
-            log.info("exchange api error, "
-                     "sleeping 60 seconds before trying again...")
-            time.sleep(60)
+            log.info("exchange api error")
+            n_tries += 1
+            if n_tries > 9:
+                n_tries = 0
+                core.telegram.notify("watchdog: exchange api error, "
+                                     "disabling strategy {s}"
+                                     .format(s=strategy))
 
         except peewee.OperationalError:
             log.error("can't connect to database!")
