@@ -40,7 +40,7 @@ class Strategy(Resource):
                        user.userstrategy_set
                        .where(core.db.UserStrategy.active)]
         strategies = [s for s in
-                      core.db.get_active_strategies()
+                      core.db.Strategy.select()
                       .order_by(core.db.Strategy.id.asc())]
 
         for st in strategies:
