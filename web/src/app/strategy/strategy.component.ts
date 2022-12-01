@@ -65,7 +65,6 @@ export class StrategyComponent implements OnInit, AfterViewInit {
     this.strategyService.getStrategies().subscribe({
       next: (res) => {
         this.strategies = res;
-        this.selectStrategy(this.strategies[0]);
       },
       error: (err) => this.handleError(err)
     });
@@ -78,7 +77,7 @@ export class StrategyComponent implements OnInit, AfterViewInit {
   }
 
   subscribe(strategy: Strategy): void {
-    this.strategyService.updateStrategy(strategy).subscribe({
+    this.strategyService.updateSubscription(strategy).subscribe({
       next: () => location.reload(),
       error: (err) => this.handleError(err)
     });
