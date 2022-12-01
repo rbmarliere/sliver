@@ -20,8 +20,8 @@ export class CredentialService {
       );
   }
 
-  addCredential(cred: Credential): Observable<any> {
-    return this.http.post(this.url, cred);
+  addCredential(cred: Credential): Observable<Credential> {
+    return this.http.post<Credential>(this.url, cred);
   }
 
   deleteCredential(exchange_id: number): Observable<any> {
