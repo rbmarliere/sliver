@@ -1,4 +1,4 @@
-<div class="main">
+<div *ngIf="positions.length > 0" class="main">
   <table mat-table [dataSource]="positions" class="mat-elevation-z8 positions-table">
 
     <ng-container matColumnDef="id">
@@ -46,4 +46,8 @@
     <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
     <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
   </table>
+</div>
+
+<div *ngIf="positions.length == 0" class="main" style="padding: 2vh;">
+  <mat-spinner></mat-spinner>
 </div>
