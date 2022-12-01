@@ -11,22 +11,29 @@
       </mat-button-toggle-group>
     </mat-sidenav>
 
-    <mat-sidenav-content *ngIf="data" class="content">
-      <p>
-        <plotly-plot *ngIf="data" [data]="data" [layout]="layout"></plotly-plot>
-      </p>
+    <mat-sidenav-content class="content">
+      <div *ngIf="data">
+        <p>
+          <button *ngIf="selected" mat-raised-button color="primary" (click)="subscribe(selected)">
+            <span *ngIf="!selected.subscribed">Subscribe</span>
+            <span *ngIf="selected.subscribed">Unsubscribe</span>
+          </button>
+        </p>
 
-      <p>
-        <button *ngIf="selected" mat-raised-button color="primary" (click)="subscribe(selected)">
-          <span *ngIf="!selected.subscribed">Subscribe</span>
-          <span *ngIf="selected.subscribed">Unsubscribe</span>
-        </button>
-      </p>
 
-      <p>
-        BACKTEST LOG:
-      </p>
-      <pre>{{ backtest_log }}</pre>
+        <p>
+          <plotly-plot *ngIf="data" [data]="data" [layout]="layout"></plotly-plot>
+        </p>
+
+        <p>
+          BACKTEST LOG:
+        </p>
+        <pre>{{ backtest_log }}</pre>
+      </div>
+
+      <div *ngIf="selected && !data">
+        <mat-spinner></mat-spinner>
+      </div>
 
     </mat-sidenav-content>
   </mat-sidenav-container>

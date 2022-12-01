@@ -24,7 +24,7 @@ export class DashboardComponent implements OnInit {
     telegram: '',
     max_risk: 0,
     cash_reserve: 0,
-    target_factor: 0 
+    target_factor: 0
   });
 
   credentials: Credential[] = [];

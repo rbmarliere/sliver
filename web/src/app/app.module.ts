@@ -15,6 +15,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatSliderModule } from '@angular/material/slider';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -31,6 +32,7 @@ import { OrderComponent } from './order/order.component';
 import { CredentialComponent } from './credential/credential.component';
 
 import { PlotlyViaWindowModule } from 'angular-plotly.js';
+import { StrategyDetailComponent } from './strategy-detail/strategy-detail.component';
 
 @NgModule({
   declarations: [
@@ -43,6 +45,7 @@ import { PlotlyViaWindowModule } from 'angular-plotly.js';
     DashboardComponent,
     OrderComponent,
     CredentialComponent,
+    StrategyDetailComponent,
   ],
   imports: [
     BrowserModule,
@@ -62,6 +65,7 @@ import { PlotlyViaWindowModule } from 'angular-plotly.js';
     MatSliderModule,
     PlotlyViaWindowModule,
     MatButtonToggleModule,
+    MatProgressSpinnerModule,
   ],
   providers: [
     {

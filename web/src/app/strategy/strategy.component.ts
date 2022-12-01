@@ -20,8 +20,8 @@ export class StrategyComponent implements OnInit, AfterViewInit {
   backtest_log?: string;
   data: any;
   layout = {
-    width: 969,
-    height: 969,
+    width: 880,
+    height: 880,
     showlegend: false,
     title: '',
     xaxis: {
@@ -71,6 +71,7 @@ export class StrategyComponent implements OnInit, AfterViewInit {
   }
 
   selectStrategy(strategy: Strategy): void {
+    this.data = null;
     this.selected = strategy;
     this.layout.title = this.selected.symbol
     this.getPrices(strategy.id);
