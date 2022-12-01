@@ -21,8 +21,12 @@ export class StrategyService {
       );
   }
 
-  updateStrategy(strategy: Strategy): Observable<Strategy> {
+  updateSubscription(strategy: Strategy): Observable<Strategy> {
     const req = { strategy_id: strategy.id, subscribed: !strategy.subscribed };
     return this.http.post<Strategy>(this.url, req);
+  }
+
+  updateStrategy(strategy: Strategy): Observable<Strategy> {
+    return this.http.post<Strategy>(this.url, strategy);
   }
 }
