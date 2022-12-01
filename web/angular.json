@@ -31,15 +31,20 @@
               "./node_modules/@angular/material/prebuilt-themes/deeppurple-amber.css",
               "src/styles.less"
             ],
-            "scripts": []
+            "scripts": [
+              "node_modules/plotly.js-dist-min/plotly.min.js"
+            ],
+            "allowedCommonJsDependencies": [
+              "moment"
+            ]
           },
           "configurations": {
             "production": {
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kb",
-                  "maximumError": "1mb"
+                  "maximumWarning": "5mb",
+                  "maximumError": "5mb"
                 },
                 {
                   "type": "anyComponentStyle",

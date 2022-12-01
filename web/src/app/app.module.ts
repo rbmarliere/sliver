@@ -30,10 +30,7 @@ import { DashboardComponent } from './dashboard/dashboard.component';
 import { OrderComponent } from './order/order.component';
 import { CredentialComponent } from './credential/credential.component';
 
-import * as PlotlyJS from 'plotly.js-dist-min';
-import { PlotlyModule } from 'angular-plotly.js';
-
-PlotlyModule.plotlyjs = PlotlyJS;
+import { PlotlyViaWindowModule } from 'angular-plotly.js';
 
 @NgModule({
   declarations: [
@@ -63,7 +60,7 @@ PlotlyModule.plotlyjs = PlotlyJS;
     MatIconModule,
     MatSidenavModule,
     MatSliderModule,
-    PlotlyModule,
+    PlotlyViaWindowModule,
     MatButtonToggleModule,
   ],
   providers: [
