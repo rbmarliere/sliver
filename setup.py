@@ -12,18 +12,15 @@ api_deps = [
 core_deps = [
     "PyYAML==6.0",
     "ccxt==2.0.73",
-    "emoji==2.1.0",
-    "nltk==3.7",
+    "emoji==2.1.0",  # used in vinai/bertweet-base
     "pandas==1.5.1",
     "peewee==3.15.3",
-    "plotly==5.10.0",
     "psycopg2-binary==2.9.5",
     "python-dotenv==0.21.0",
     "python-telegram-bot==13.14",
     "scikit-learn==1.1.3",
     "tensorflow==2.10.0",
     "torch==1.12.1",
-    "tqdm==4.64.1",
     "transformers==4.23.1",
     "tweepy==4.11.0"
 ]
@@ -42,7 +39,7 @@ entry_points = {
 }
 
 setuptools.setup(name="hypnox",
-                 version="0.02",
+                 version="0.0/3",
                  packages=["api", "core"],
                  entry_points=entry_points,
                  install_requires=api_deps + core_deps)
