@@ -1,26 +1,33 @@
 <div class="main">
   <mat-sidenav-container class="container">
     <mat-sidenav #sidenav mode="side" opened>
-      <p *ngFor="let strategy of strategies">
-        <button mat-button (click)="selectStrategy(strategy)">
-          {{ strategy.description }}
-        </button>
-      </p>
+      <mat-button-toggle-group class="sidenav">
+          <mat-button-toggle
+            class="sidenav"
+            *ngFor="let strategy of strategies"
+            (click)="selectStrategy(strategy)">
+            {{ strategy.description }}
+          </mat-button-toggle>
+      </mat-button-toggle-group>
     </mat-sidenav>
-    <mat-sidenav-content *ngIf="selected" class="content">
+
+    <mat-sidenav-content *ngIf="data" class="content">
       <p>
         <plotly-plot *ngIf="data" [data]="data" [layout]="layout"></plotly-plot>
       </p>
 
       <p>
-        <button mat-raised-button color="primary" (click)="subscribe(selected)">
+        <button *ngIf="selected" mat-raised-button color="primary" (click)="subscribe(selected)">
           <span *ngIf="!selected.subscribed">Subscribe</span>
           <span *ngIf="selected.subscribed">Unsubscribe</span>
         </button>
       </p>
 
-      BACKTEST LOG:
+      <p>
+        BACKTEST LOG:
+      </p>
       <pre>{{ backtest_log }}</pre>
+
     </mat-sidenav-content>
   </mat-sidenav-container>
 </div>
