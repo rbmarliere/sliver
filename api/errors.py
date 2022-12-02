@@ -41,3 +41,10 @@ class StrategyDoesNotExist(HTTPException):
     description = (
         "Strategy does not exist."
     )
+
+
+class StrategyNotEditable(HTTPException):
+    code = 400
+    description = (
+        "Unable to edit a strategy created by another user."
+    )
