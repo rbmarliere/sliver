@@ -3,17 +3,11 @@ import decimal
 
 import peewee
 import tensorflow
-from ccxt.base.decimal_to_precision import DECIMAL_PLACES, NO_PADDING, TRUNCATE
+from ccxt.base.decimal_to_precision import DECIMAL_PLACES, NO_PADDING
 
 import core
 
 tensorflow.get_logger().setLevel('INFO')
-
-# rounding modes:
-# TRUNCATE,
-# ROUND,
-# ROUND_UP,
-# ROUND_DOWN,
 
 # precision modes:
 # DECIMAL_PLACES,
@@ -96,6 +90,12 @@ class User(BaseModel):
             .join(Market) \
             .where(UserStrategy.user_id == self.id) \
             .order_by(Position.id.desc())
+
+    def is_subscribed(self, strategy):
+        for u_st in self.userstrategy_set:
+            if u_st == strategy:
+                return u_st.active
+        return False
 
 
 class Credential(BaseModel):
@@ -183,6 +183,7 @@ class Market(BaseModel):
 
 
 class Strategy(BaseModel):
+    user = peewee.ForeignKeyField(User)
     market = peewee.ForeignKeyField(Market)
     active = peewee.BooleanField(default=False)
     description = peewee.TextField()
@@ -199,9 +200,6 @@ class Strategy(BaseModel):
     i_threshold = peewee.DecimalField(default=0)
     p_threshold = peewee.DecimalField(default=0)
     tweet_filter = peewee.TextField(default="")
-
-    class Meta:
-        constraints = [peewee.SQL("UNIQUE (market_id, active, timeframe)")]
 
     def get_active_users(self):
         return UserStrategy.select().join(Strategy).where(
