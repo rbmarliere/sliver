@@ -60,7 +60,7 @@ def refresh_indicators(strategy: core.db.Strategy):
 
 def get_indicators(strategy: core.db.Strategy, dryrun: bool = False):
     # get price data
-    prices = strategy.get_prices().order_by(core.db.Price.time)
+    prices = strategy.get_prices()
 
     # grab tweets filtered by strategy regex
     f = core.db.Tweet.text.iregexp(
@@ -160,11 +160,13 @@ def get_indicators(strategy: core.db.Strategy, dryrun: bool = False):
 
 
 def backtest(strategy: core.db.Strategy):
-    core.watchdog.set_logger("backtest")
+    if strategy.get_prices().count() == 0:
+        core.exchange.set_api(exchange=strategy.market.base.exchange)
+        core.exchange.download(strategy.market,
+                               strategy.timeframe)
 
     indicators = get_indicators(strategy, dryrun=True)
     if indicators is None:
-        # core.watchdog.log.info("no indicator data computed")
         return
 
     init_bal = balance = strategy.market.quote.transform(10000)
@@ -204,7 +206,6 @@ def backtest(strategy: core.db.Strategy):
                 curr_pos = None
 
     if not positions:
-        # core.watchdog.log.info("no positions entered")
         return
 
     indicators.open = indicators.open.apply(strategy.market.quote.format)

@@ -202,13 +202,17 @@ class Strategy(BaseModel):
     tweet_filter = peewee.TextField(default="")
 
     def get_active_users(self):
-        return UserStrategy.select().join(Strategy).where(
-            (Strategy.id == self.id) & (UserStrategy.active))
+        return UserStrategy \
+            .select() \
+            .join(Strategy) \
+            .where((Strategy.id == self.id) & (UserStrategy.active))
 
     def get_prices(self):
-        return Price.select().where(
-            (Price.market == self.market)
-            & (Price.timeframe == self.timeframe))
+        return Price \
+            .select() \
+            .where((Price.market == self.market)
+                   & (Price.timeframe == self.timeframe)) \
+            .order_by(core.db.Price.time)
 
 
 class UserStrategy(BaseModel):
