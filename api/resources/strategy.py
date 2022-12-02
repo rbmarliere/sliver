@@ -141,3 +141,23 @@ class Strategy(Resource):
         strategy.symbol = strategy.market.get_symbol()
 
         return strategy
+
+    @jwt_required()
+    def delete(self):
+        args = argp.parse_args()
+
+        if not args.id:
+            raise api.errors.InvalidArgument
+
+        uid = int(get_jwt_identity())
+        user = core.db.User.get_by_id(uid)
+
+        try:
+            strategy = core.db.Strategy.get_by_id(args.id)
+            if strategy.user != user:
+                raise api.errors.StrategyNotEditable
+            strategy.delete_instance(recursive=True)
+        except core.db.Strategy.DoesNotExist:
+            raise api.errors.StrategyDoesNotExist
+
+        return "", 204
