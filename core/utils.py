@@ -21,6 +21,32 @@ def standardize(text):
     return text
 
 
+def get_timeframe_freq(timeframe):
+    # convert candle timeframe to pandas freq
+    # https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.dt.floor.html
+    # https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#timeseries-offset-aliases
+    timeframes = {
+        "1m": "1T",
+        "3m": "3T",
+        "5m": "5T",
+        "15m": "15T",
+        "30m": "30T",
+        "1h": "1H",
+        "2h": "2H",
+        "4h": "4H",
+        "6h": "6H",
+        "8h": "8H",
+        "12h": "12H",
+        "1d": "1D",
+        "3d": "3D",
+        "1w": "W-MON"
+    }
+
+    assert timeframe in timeframes, "timeframe not supported"
+
+    return timeframes[timeframe]
+
+
 def get_timeframe_delta(timeframe):
     timeframes = {
         "1m": 1 * 60,

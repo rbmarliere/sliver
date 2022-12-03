@@ -95,6 +95,7 @@ def get_indicators(strategy: core.db.Strategy, dryrun: bool = False):
 
     # create tweets dataframe
     tweets = pandas.DataFrame(tweets.dicts())
+    tweets = tweets.set_index("time")
 
     if indicators:
         n_samples = indicators[-1].n_samples + len(tweets)
@@ -114,22 +115,14 @@ def get_indicators(strategy: core.db.Strategy, dryrun: bool = False):
                                                      0, 0, 0)
 
     # standardize intensity and polarity scores
-    tweets["i_zscore"] = (
+    tweets["i_score"] = (
         (tweets["intensity"] - i_mean) / i_variance.sqrt())
-    tweets["p_zscore"] = (
+    tweets["p_score"] = (
         (tweets["polarity"] - p_mean) / p_variance.sqrt())
 
-    # aggregate tweets by strategy timeframe
-    tweets["floor"] = tweets.time.dt.floor(strategy.timeframe)
-    tweets = tweets.set_index("floor")
-
-    # sum normalized scores of each time interval
-    # TODO maybe get median of each group instead
-    tweets["i_score"] = tweets.groupby("floor")["i_zscore"].sum()
-    tweets["p_score"] = tweets.groupby("floor")["p_zscore"].sum()
-
-    # keep only one row for each group
-    tweets = tweets.loc[~tweets.index.duplicated(keep="first")]
+    # resample tweets by strat timeframe freq median
+    freq = core.utils.get_timeframe_freq(strategy.timeframe)
+    tweets = tweets[["i_score", "p_score"]].resample(freq).median().ffill()
 
     # concatenate both dataframes
     indicators = pandas.concat([tweets, prices], join="inner", axis=1)
@@ -151,12 +144,7 @@ def get_indicators(strategy: core.db.Strategy, dryrun: bool = False):
                  (indicators["p_score"] < strategy.p_threshold))
     indicators.loc[sell_rule, "signal"] = "sell"
 
-    # reset index
-    indicators = indicators.drop("time", axis=1)
-    indicators.index.name = "time"
-    indicators = indicators.reset_index()
-
-    return indicators
+    return indicators.reset_index()
 
 
 def backtest(strategy: core.db.Strategy):
@@ -205,14 +193,14 @@ def backtest(strategy: core.db.Strategy):
 
                 curr_pos = None
 
-    if not positions:
-        return
-
     indicators.open = indicators.open.apply(strategy.market.quote.format)
     indicators.high = indicators.high.apply(strategy.market.quote.format)
     indicators.low = indicators.low.apply(strategy.market.quote.format)
     indicators.close = indicators.close.apply(strategy.market.quote.format)
     indicators.volume = indicators.volume.apply(strategy.market.base.format)
+
+    if not positions:
+        return indicators
 
     indicators["buys"] = (
         (1 + .003) *
