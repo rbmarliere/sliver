@@ -17,50 +17,23 @@ def refresh(strategy: core.db.Strategy,
 
     # compute signal for automatic strategies
     if strategy.mode == "auto":
-        refresh_indicators(strategy)
-        strategy.signal = get_signal(strategy)
+        indicators = refresh_indicators(strategy)
+
+        strategy.signal = indicators[-1].signal if indicators else "neutral"
+
+        core.watchdog.log.info("strategy signal is {s}"
+                               .format(s=strategy.signal))
 
     strategy.save()
 
 
-def get_signal(strategy: core.db.Strategy):
-    indicator = strategy.indicator_set.order_by(
-        core.db.Indicator.id.desc()).get_or_none()
-
-    signal = indicator.signal if indicator is not None else "neutral"
-
-    core.watchdog.log.info("strategy signal is " + signal)
-
-    return signal
-
-
-def refresh_indicators(strategy: core.db.Strategy):
-    indicators = get_indicators(strategy)
-
-    if indicators is None:
-        return
-
-    # get rid of unused columns
-    indicators = indicators[[
-        "strategy_id",
-        "price_id",
-        "signal",
-        "i_score",
-        "i_mean",
-        "i_variance",
-        "p_score",
-        "p_mean",
-        "p_variance",
-        "n_samples"
-    ]]
-
-    # insert rows into the database
-    core.db.Indicator.insert_many(indicators.to_dict("records")).execute()
-
-
-def get_indicators(strategy: core.db.Strategy, dryrun: bool = False):
+def refresh_indicators(strategy: core.db.Strategy, update_only: bool = True):
     # get price data
     prices = strategy.get_prices()
+    if prices.count() == 0:
+        core.exchange.set_api(exchange=strategy.market.base.exchange)
+        core.exchange.download(strategy.market,
+                               strategy.timeframe)
 
     # grab tweets filtered by strategy regex
     f = core.db.Tweet.text.iregexp(
@@ -69,9 +42,9 @@ def get_indicators(strategy: core.db.Strategy, dryrun: bool = False):
     tweets = tweets.where(core.db.Tweet.intensity.is_null(False))
     tweets = tweets.where(core.db.Tweet.polarity.is_null(False))
 
-    indicators = [] if dryrun else [i for i in strategy.indicator_set]
+    indicators = [i for i in strategy.indicator_set]
 
-    if indicators:
+    if indicators and update_only:
         since = indicators[-1].price.time
         prices = prices.where(core.db.Price.time > since)
 
@@ -144,17 +117,40 @@ def get_indicators(strategy: core.db.Strategy, dryrun: bool = False):
                  (indicators["p_score"] < strategy.p_threshold))
     indicators.loc[sell_rule, "signal"] = "sell"
 
-    return indicators.reset_index()
+    # reset index
+    indicators = indicators.reset_index()
+
+    # get rid of unused columns
+    indicators = indicators[[
+        "strategy_id",
+        "price_id",
+        "signal",
+        "i_score",
+        "i_mean",
+        "i_variance",
+        "p_score",
+        "p_mean",
+        "p_variance",
+        "n_samples"
+    ]]
+
+    # insert rows into the database
+    core.db.Indicator.insert_many(indicators.to_dict("records")).execute()
+    core.watchdog.log.info("inserted {c} indicator rows"
+                           .format(c=indicators.size))
+
+    return indicators
 
 
 def backtest(strategy: core.db.Strategy):
-    if strategy.get_prices().count() == 0:
-        core.exchange.set_api(exchange=strategy.market.base.exchange)
-        core.exchange.download(strategy.market,
-                               strategy.timeframe)
+    refresh_indicators(strategy)
 
-    indicators = get_indicators(strategy, dryrun=True)
-    if indicators is None:
+    indicators = pandas.DataFrame(
+        strategy.indicator_set
+        .select(core.db.Price, core.db.Indicator)
+        .join(core.db.Price)
+        .dicts())
+    if indicators.empty:
         return
 
     init_bal = balance = strategy.market.quote.transform(10000)
@@ -200,7 +196,9 @@ def backtest(strategy: core.db.Strategy):
     indicators.volume = indicators.volume.apply(strategy.market.base.format)
 
     if not positions:
-        return indicators
+        res = indicators.to_dict("list")
+        res["backtest_log"] = "no positions entered"
+        return res
 
     indicators["buys"] = (
         (1 + .003) *
@@ -247,6 +245,9 @@ roi vs buy and hold: {roi_vs_bh}%""".format(init_bal=init_bal,
                                             roi=roi,
                                             roi_bh=roi_bh,
                                             roi_vs_bh=roi_vs_bh)
+
+    strategy.backtest_log = log
+    strategy.save()
 
     res = indicators.to_dict("list")
     res["backtest_log"] = log
