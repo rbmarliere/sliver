@@ -140,6 +140,11 @@ class Strategy(Resource):
         strategy.subscribed = user.is_subscribed(strategy)
         strategy.symbol = strategy.market.get_symbol()
 
+        core.db.Indicator \
+            .delete() \
+            .where(core.db.Indicator.strategy_id == strategy.id) \
+            .execute()
+
         return strategy
 
     @jwt_required()
