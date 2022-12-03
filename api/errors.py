@@ -48,3 +48,10 @@ class StrategyNotEditable(HTTPException):
     description = (
         "Unable to edit a strategy created by another user."
     )
+
+
+class ExchangeDoesNotExist(HTTPException):
+    code = 404
+    description = (
+        "Exchange does not exist."
+    )
