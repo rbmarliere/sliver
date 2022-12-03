@@ -70,19 +70,19 @@ class Strategy(Resource):
     def post(self):
         args = argp.parse_args()
 
-        if args.id:
-            return self.subscribe(args)
-        else:
-            return self.create(args)
+        uid = int(get_jwt_identity())
+        user = core.db.User.get_by_id(uid)
 
-    def subscribe(self, args):
+        if args.id and args.id > 0:
+            return self.subscribe(args, user)
+        else:
+            return self.create(args, user)
+
+    def subscribe(self, args, user):
         try:
             strategy = core.db.Strategy.get_by_id(args.id)
         except core.db.Strategy.DoesNotExist:
             raise api.errors.StrategyDoesNotExist
-
-        uid = int(get_jwt_identity())
-        user = core.db.User.get_by_id(uid)
 
         user_strat_exists = False
         for u_st in user.userstrategy_set:
@@ -100,9 +100,11 @@ class Strategy(Resource):
 
         return strategy
 
-    def create(self, args):
+    def create(self, args, user):
         strategy = core.db.Strategy(**args)
+        strategy.id = None
         strategy.active = True
+        strategy.user = user
 
         try:
             strategy.save()
