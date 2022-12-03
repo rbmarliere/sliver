@@ -41,6 +41,7 @@ class Exchange(BaseModel):
     rate_limit = peewee.IntegerField(default=1200)
     precision_mode = peewee.IntegerField(default=DECIMAL_PLACES)
     padding_mode = peewee.IntegerField(default=NO_PADDING)
+    timeframes = peewee.TextField(null=True)
 
 
 class User(BaseModel):
