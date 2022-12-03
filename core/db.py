@@ -93,7 +93,7 @@ class User(BaseModel):
 
     def is_subscribed(self, strategy):
         for u_st in self.userstrategy_set:
-            if u_st == strategy:
+            if u_st.strategy == strategy:
                 return u_st.active
         return False
 
