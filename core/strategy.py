@@ -246,9 +246,6 @@ roi vs buy and hold: {roi_vs_bh}%""".format(init_bal=init_bal,
                                             roi_bh=roi_bh,
                                             roi_vs_bh=roi_vs_bh)
 
-    strategy.backtest_log = log
-    strategy.save()
-
     res = indicators.to_dict("list")
     res["backtest_log"] = log
 
