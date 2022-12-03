@@ -22,11 +22,15 @@ export class StrategyService {
   }
 
   updateSubscription(strategy: Strategy): Observable<Strategy> {
-    const req = { strategy_id: strategy.id, subscribed: !strategy.subscribed };
+    const req = { id: strategy.id, subscribed: !strategy.subscribed };
     return this.http.post<Strategy>(this.url, req);
   }
 
   updateStrategy(strategy: Strategy): Observable<Strategy> {
+    return this.http.put<Strategy>(this.url, strategy);
+  }
+
+  createStrategy(strategy: Strategy): Observable<Strategy> {
     return this.http.post<Strategy>(this.url, strategy);
   }
 }
