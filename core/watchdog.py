@@ -12,7 +12,9 @@ import core
 def get_logger(name, suppress_output=False):
     log_file = core.config["HYPNOX_LOGS_DIR"] + "/" + name + ".log"
 
-    formatter = logging.Formatter("")
+    formatter = logging.Formatter(
+        "%(asctime)s %(levelname)s -- %(message)s :: "
+        "%(funcName)s@%(filename)s:%(lineno)d")
 
     formatter.converter = time.gmtime
 
@@ -69,13 +71,12 @@ def watch():
                 delta = int((next_refresh -
                              datetime.datetime.utcnow()).total_seconds())
                 if delta > 0:
-                    log.info("--------------------------------------------\n"
-                             "next refresh at {r} "
-                             "for strategy {s} \n"
-                             "sleeping for {t} seconds"
+                    log.info("-------------------------------------------")
+                    log.info("next refresh at {r} for strategy {s}"
                              .format(r=next_refresh,
-                                     s=first_active_strat,
-                                     t=delta))
+                                     s=first_active_strat))
+                    log.info("sleeping for {t} seconds"
+                             .format(t=delta))
                     time.sleep(delta)
                     continue
 
@@ -89,15 +90,12 @@ def watch():
 
                 symbol = strategy.market.get_symbol()
 
-                log.info("============================================\n"
-                         "refreshing strategy {s} \n"
-                         "market is {m} \n"
-                         "timeframe is {T} \n"
-                         "exchange is {e}"
-                         .format(s=strategy,
-                                 m=symbol,
-                                 T=strategy.timeframe,
-                                 e=strategy.market.base.exchange.name))
+                log.info("===========================================")
+                log.info("refreshing strategy {s}".format(s=strategy))
+                log.info("market is {m}".format(m=symbol))
+                log.info("timeframe is {T}".format(T=strategy.timeframe))
+                log.info("exchange is {e}"
+                         .format(e=strategy.market.base.exchange.name))
 
                 core.exchange.set_api(exchange=strategy.market.base.exchange)
 
@@ -123,11 +121,10 @@ def watch():
                     try:
                         u_strat = users[i]
 
-                        log.info(
-                            "............................................\n"
-                            "refreshing {u}'s strategy {s}"
-                            .format(u=u_strat.user.email,
-                                    s=u_strat))
+                        log.info("...........................................")
+                        log.info("refreshing {u}'s strategy {s}"
+                                 .format(u=u_strat.user.email,
+                                         s=u_strat))
 
                         # set api to current exchange
                         credential = (u_strat
