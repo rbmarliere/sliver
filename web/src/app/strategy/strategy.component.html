@@ -1,34 +1,39 @@
 <div class="main">
-  <mat-sidenav-container class="container">
-    <mat-sidenav #sidenav mode="side" opened>
+  <mat-sidenav-container class="container" [@.disabled]="true">
+    <mat-sidenav #sidenav mode="side" opened disableClose="true">
       <mat-button-toggle-group class="sidenav">
           <mat-button-toggle
             class="sidenav"
             *ngFor="let strategy of strategies"
-            (click)="selectStrategy(strategy)">
+            (click)="selectStrategy(strategy)"
+          >
             {{ strategy.description }}
+          </mat-button-toggle>
+          <mat-button-toggle
+            class="sidenav"
+            (click)="createStrategy()"
+          >
+            <mat-icon class="icon-display" fontIcon="add"></mat-icon>
           </mat-button-toggle>
       </mat-button-toggle-group>
     </mat-sidenav>
 
     <mat-sidenav-content class="content">
-      <div *ngIf="data">
+      <div *ngIf="selected && data">
         <p>
-          <button *ngIf="selected" mat-raised-button color="primary" (click)="subscribe(selected)">
-            <span *ngIf="!selected.subscribed">Subscribe</span>
-            <span *ngIf="selected.subscribed">Unsubscribe</span>
-          </button>
+          <app-strategy-detail [strategy]="selected" [exchanges]="exchanges"></app-strategy-detail>
         </p>
 
+        <div *ngIf="selected.id > 0">
+          <p>
+            <plotly-plot [data]="data" [layout]="layout"></plotly-plot>
+          </p>
 
-        <p>
-          <plotly-plot *ngIf="data" [data]="data" [layout]="layout"></plotly-plot>
-        </p>
-
-        <p>
-          BACKTEST LOG:
-        </p>
-        <pre>{{ backtest_log }}</pre>
+          <p>
+            BACKTEST LOG:
+          </p>
+          <pre>{{ backtest_log }}</pre>
+        </div>
       </div>
 
       <div *ngIf="selected && !data" class="main">
