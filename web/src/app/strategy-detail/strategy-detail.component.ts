@@ -51,14 +51,6 @@ export class StrategyDetailComponent implements OnInit {
   set strategy(strategy: Strategy) {
     this._strategy = strategy;
 
-    if (strategy.id > 0) {
-      this.form.patchValue(strategy);
-      this.form.get('market_id')?.disable();
-    } else {
-      this.form.patchValue(this.empty_strat);
-      this.form.get('market_id')?.enable();
-    }
-
     if (strategy.mode == "auto") {
       this.form.get('signal')?.disable();
       this.form.get('i_threshold')?.enable();
@@ -67,6 +59,15 @@ export class StrategyDetailComponent implements OnInit {
       this.form.get('signal')?.enable();
       this.form.get('i_threshold')?.disable();
       this.form.get('p_threshold')?.disable();
+    }
+
+    if (strategy.id > 0) {
+      this.form.patchValue(strategy);
+      this.form.get('market_id')?.disable();
+    } else {
+      this.form.patchValue(this.empty_strat);
+      this.form.get('market_id')?.enable();
+      this.form.get('signal')?.enable();
     }
   }
 
