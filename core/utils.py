@@ -20,6 +20,7 @@ def standardize(text):
 
     return text
 
+
 def get_timeframes():
     return [
         "1m",
@@ -37,6 +38,7 @@ def get_timeframes():
         "3d",
         "1w"
     ]
+
 
 def get_timeframe_freq(timeframe):
     # convert candle timeframe to pandas freq
