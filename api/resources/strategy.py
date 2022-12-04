@@ -1,6 +1,6 @@
 import peewee
 from flask_jwt_extended import get_jwt_identity, jwt_required
-from flask_restful import Resource, fields, marshal_with, reqparse
+from flask_restful import Resource, fields, marshal_with, reqparse, inputs
 
 import api
 import core
@@ -16,7 +16,7 @@ fields = {
     "timeframe": fields.String,
     "signal": fields.String,
     "refresh_interval": fields.Integer,
-    "next_refresh": fields.String,
+    "next_refresh": fields.DateTime(dt_format="iso8601"),
     "num_orders": fields.Integer,
     "bucket_interval": fields.Integer,
     "spread": fields.Float,
@@ -37,7 +37,7 @@ argp.add_argument("mode", type=str)
 argp.add_argument("timeframe", type=str)
 argp.add_argument("signal", type=str)
 argp.add_argument("refresh_interval", type=int)
-argp.add_argument("next_refresh", type=str)
+argp.add_argument("next_refresh", type=inputs.datetime_from_iso8601)
 argp.add_argument("num_orders", type=int)
 argp.add_argument("bucket_interval", type=int)
 argp.add_argument("spread", type=float)
