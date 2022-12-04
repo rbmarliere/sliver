@@ -23,6 +23,9 @@ if __name__ == "__main__":
 
     l1 = set([i for i in exchange.timeframes.keys()])
     l2 = set(core.utils.get_timeframes())
+    timeframes = str(list(l1 & l2))
+    if not timeframes:
+        timeframes = ['15m', '30m', '4h', '1h', '1w', '1d']
 
     obj = {
         "name": args.exchange_name,
