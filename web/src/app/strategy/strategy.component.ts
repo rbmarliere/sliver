@@ -5,6 +5,8 @@ import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { PriceService } from '../price.service';
 import { Strategy } from '../strategy';
 import { StrategyService } from '../strategy.service';
+import { ExchangeService } from '../exchange.service';
+import { Exchange } from '../exchange';
 
 @Component({
   selector: 'app-strategy',
@@ -13,15 +15,21 @@ import { StrategyService } from '../strategy.service';
 })
 export class StrategyComponent implements OnInit, AfterViewInit {
 
-  @ViewChild('sidenav')
-  private sidenav: any;
+  @ViewChild('sidenav') private sidenav: any;
+
+  @Input('selected') selected?: Strategy;
 
   strategies: Strategy[] = [];
+
+  exchanges: Exchange[] = [];
+
   backtest_log?: string;
+
   data: any;
+
   layout = {
-    width: 880,
-    height: 880,
+    // width: 880,
+    height: 900,
     showlegend: false,
     title: '',
     xaxis: {
@@ -31,8 +39,6 @@ export class StrategyComponent implements OnInit, AfterViewInit {
     },
     grid: {rows: 3, columns: 1},
   }
-
-  @Input('selected') selected?: Strategy;
 
   private handleError(error: HttpErrorResponse) {
     const dialogConfig = new MatDialogConfig;
@@ -46,19 +52,21 @@ export class StrategyComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    setTimeout(() => {
-      this.sidenav.open();
-    }, 50);
+    // setTimeout(() => {
+    //   this.sidenav.open();
+    // }, 50);
   }
 
   constructor(
     private strategyService: StrategyService,
+    private exchangeService: ExchangeService,
     private priceService: PriceService,
     private dialog: MatDialog,
   ) { }
 
   ngOnInit(): void {
     this.getStrategies();
+    this.getExchanges();
   }
 
   getStrategies(): void {
@@ -77,11 +85,9 @@ export class StrategyComponent implements OnInit, AfterViewInit {
     this.getPrices(strategy.id);
   }
 
-  subscribe(strategy: Strategy): void {
-    this.strategyService.updateSubscription(strategy).subscribe({
-      next: () => location.reload(),
-      error: (err) => this.handleError(err)
-    });
+  createStrategy(): void {
+    this.data = [];
+    this.selected = {} as Strategy;
   }
 
   getPrices(strategy_id: number): void {
@@ -139,4 +145,13 @@ export class StrategyComponent implements OnInit, AfterViewInit {
     });
   }
 
+  getExchanges(): void {
+    this.exchangeService.getExchanges().subscribe({
+      next: (res) => {
+        this.exchanges = res;
+        this.sidenav.open();
+      },
+      error: (err) => this.handleError(err)
+    });
+  }
 }
