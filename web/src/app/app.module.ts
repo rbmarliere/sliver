@@ -16,23 +16,27 @@ import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatSliderModule } from '@angular/material/slider';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSelectModule } from '@angular/material/select';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatGridListModule } from '@angular/material/grid-list';
 
 import { AppRoutingModule } from './app-routing.module';
+import { HTTP_INTERCEPTORS } from '@angular/common/http';
+import { AuthInterceptor } from './auth.interceptor';
+
 import { AppComponent } from './app.component';
 import { NavbarComponent } from './navbar/navbar.component';
 import { LoginComponent } from './login/login.component';
 import { PositionComponent } from './position/position.component';
 import { ErrorDialogComponent } from './error-dialog/error-dialog.component';
 
-import { HTTP_INTERCEPTORS } from '@angular/common/http';
-import { AuthInterceptor } from './auth.interceptor';
 import { StrategyComponent } from './strategy/strategy.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { OrderComponent } from './order/order.component';
 import { CredentialComponent } from './credential/credential.component';
+import { StrategyDetailComponent } from './strategy-detail/strategy-detail.component';
 
 import { PlotlyViaWindowModule } from 'angular-plotly.js';
-import { StrategyDetailComponent } from './strategy-detail/strategy-detail.component';
 
 @NgModule({
   declarations: [
@@ -66,6 +70,9 @@ import { StrategyDetailComponent } from './strategy-detail/strategy-detail.compo
     PlotlyViaWindowModule,
     MatButtonToggleModule,
     MatProgressSpinnerModule,
+    MatSelectModule,
+    MatSlideToggleModule,
+    MatGridListModule,
   ],
   providers: [
     {
