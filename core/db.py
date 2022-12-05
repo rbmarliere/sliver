@@ -390,7 +390,8 @@ class Order(BaseModel):
         self.type = type
         self.side = side
         self.price = price
-        self.amount = amount
+        if not self.amount:
+            self.amount = amount
         self.cost = cost
         self.filled = filled
         self.fee = fee
