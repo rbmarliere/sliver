@@ -1,5 +1,5 @@
 import datetime
-import decimal
+from decimal import Decimal as D
 
 import peewee
 import tensorflow
@@ -117,12 +117,10 @@ class ExchangeAsset(BaseModel):
     precision = peewee.IntegerField(default=1)
 
     def div(self, num, den, trunc_precision=None):
-        if trunc_precision is None or trunc_precision == 0:
+        if not trunc_precision:
             trunc_precision = self.precision
 
-        with decimal.localcontext() as ctx:
-            ctx.prec = self.precision if self.precision > 0 else 1
-            div = decimal.Decimal(str(num)) / decimal.Decimal(str(den))
+        div = D(str(num)) / D(str(den))
 
         if abs(num) > abs(den):
             div = int(div)
@@ -134,25 +132,18 @@ class ExchangeAsset(BaseModel):
         return self.transform(div)
 
     def format(self, value):
-        with decimal.localcontext() as ctx:
-            ctx.prec = self.precision if self.precision > 0 else 1
-            value = decimal.Decimal(str(value)) / 10**self.precision
-        return core.utils.truncate(value, self.precision)
+        precision = D("10") ** D(-1 * self.precision)
+        value = D(str(value)) * precision
+        return value.quantize(precision)
 
     def transform(self, value):
-        with decimal.localcontext() as ctx:
-            ctx.prec = self.precision if self.precision > 0 else 1
-            value = decimal.Decimal(str(value)) * 10**self.precision
-        return int(value)
+        precision = D(10) ** D(self.precision)
+        return int(D(str(value)) * precision)
 
-    def print(self, value, trunc_precision=None):
-        if trunc_precision is None or trunc_precision == 0:
-            trunc_precision = self.precision
-
+    def print(self, value):
         value = self.format(value)
-
         return "{n:.{p}f} {t}".format(n=value,
-                                      p=trunc_precision,
+                                      p=self.precision,
                                       t=self.asset.ticker)
 
 
@@ -277,7 +268,7 @@ class Position(BaseModel):
         bucket_max = strategy.market.quote.div(
             target_cost,
             strategy.num_orders,
-            trunc_precision=strategy.market.price_precision)
+            trun_precision=strategy.market.price_precision)
 
         position = core.db.Position(user_strategy=user_strat,
                                     next_bucket=next_bucket,
@@ -355,12 +346,12 @@ class Order(BaseModel):
 
         price = ex_order["price"]
         amount = ex_order["amount"]
-        cost = ex_order["cost"]
-        if not cost:
-            cost = price * amount
         filled = ex_order["filled"]
         if not filled:
             filled = 0
+        cost = ex_order["cost"]
+        if not cost:
+            cost = filled * amount
 
         # transform values to db entry standard
         price = market.quote.transform(price)
@@ -371,7 +362,8 @@ class Order(BaseModel):
         core.watchdog.info("{a} @ {p} ({c})"
                            .format(a=market.base.print(amount),
                                    p=market.quote.print(price),
-                                   c=market.quote.print(cost)))
+                                   c=market.quote.print(
+                                       market.quote.format(amount*price))))
 
         # check for fees
         if ex_order["fee"] is None:

@@ -59,12 +59,12 @@ def download(market: core.db.Market, timeframe: str):
     # check if symbol is supported by exchange
     symbols = [pair["symbol"] for pair in api.fetch_markets()]
     if market.get_symbol() not in symbols:
-        core.watchdog.info("symbol not supported by exchange!")
+        core.watchdog.info("symbol not supported by exchange")
         return
 
     # check if timeframe is supported by exchange
     if timeframe not in api.timeframes:
-        core.watchdog.info("timeframe not supported by exchange!")
+        core.watchdog.info("timeframe not supported by exchange")
         return
 
     timeframe_delta = core.utils.get_timeframe_delta(timeframe)
