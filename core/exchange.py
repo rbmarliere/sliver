@@ -182,28 +182,7 @@ def sync_orders(position: core.db.Position) -> core.db.Position:
                 ex_order = api.fetch_order(order.exchange_order_id,
                                            market.get_symbol())
 
-            amount = market.base.transform(ex_order["amount"])
-            cost = market.quote.transform(ex_order["cost"])
-            filled = market.base.transform(ex_order["filled"])
-            price = market.quote.transform(ex_order["price"])
-
-            core.watchdog.info("{f} @ {p} ({c})"
-                               .format(f=market.base.print(filled),
-                                       p=market.quote.print(price),
-                                       c=market.quote.print(cost)))
-
-            # update order info
-            order.status = ex_order["status"]
-            order.amount = amount
-            order.cost = cost
-            order.filled = filled
-            order.price = price
-
-            # check for fees
-            if ex_order["fee"] is None:
-                order.fee = 0
-            else:
-                order.fee = market.quote.transform(ex_order["fee"]["cost"])
+            order.sync(ex_order, position)
 
             position = order.position
 
@@ -230,7 +209,6 @@ def sync_orders(position: core.db.Position) -> core.db.Position:
                     position.exit_price = market.quote.transform(
                         (position.exit_cost / position.exit_amount))
 
-            order.save()
             position.save()
 
     return position
@@ -238,9 +216,9 @@ def sync_orders(position: core.db.Position) -> core.db.Position:
 
 def create_order(side: str, position: core.db.Position, amount: int,
                  price: int):
-    market = position.user_strategy.strategy.market
-
     try:
+        market = position.user_strategy.strategy.market
+
         assert amount >= market.amount_min
         assert price >= market.price_min
         assert amount * price >= market.cost_min
@@ -254,23 +232,16 @@ def create_order(side: str, position: core.db.Position, amount: int,
         core.watchdog.info("created new {s} order {i}"
                            .format(s=side,
                                    i=ex_order["id"]))
-        core.watchdog.info(
-            "{a} @ {p} ({c})"
-            .format(a=market.base.print(ex_order["amount"], False),
-                    p=market.quote.print(ex_order["price"], False),
-                    c=market.quote.print(
-                        ex_order["amount"] * ex_order["price"], False)))
+
+        core.db.Order.sync(core.db.Order(), ex_order, position)
 
     except ccxt.OrderImmediatelyFillable as e:
         core.watchdog.error(
             "order would be immediately fillable, skipping...", e)
-        return
+
     except (ccxt.InvalidOrder, AssertionError) as e:
         core.watchdog.error(
             "order values are smaller than exchange minimum, skipping...", e)
-        return
-
-    core.db.Order.create_from_ex_order(ex_order, position)
 
 
 def create_buy_orders(position: core.db.Position, last_price: int,
