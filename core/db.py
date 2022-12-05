@@ -346,8 +346,6 @@ class Order(BaseModel):
 
         price = ex_order["price"]
         amount = ex_order["amount"]
-        if not amount:
-            amount = self.amount
         filled = ex_order["filled"]
         if not filled:
             filled = 0
@@ -357,7 +355,7 @@ class Order(BaseModel):
 
         # transform values to db entry standard
         price = market.quote.transform(price)
-        amount = market.quote.transform(amount)
+        amount = market.base.transform(amount)
         cost = market.quote.transform(cost)
         filled = market.quote.transform(filled)
 
