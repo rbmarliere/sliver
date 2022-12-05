@@ -57,7 +57,7 @@ def error(msg, e):
 def watch():
     set_logger("watchdog")
 
-    core.telegram.notify("watchdog init")
+    # core.telegram.notify("watchdog init")
     info("watchdog init")
 
     model_i = core.models.load(core.config["HYPNOX_DEFAULT_MODEL_I"])
@@ -248,8 +248,8 @@ def watch():
 
         except Exception as e:
             error("watchdog crashed", e)
-            core.telegram.notify("watchdog crashed")
+            # core.telegram.notify("watchdog crashed")
             break
 
-    core.telegram.notify("watchdog shutting down")
+    # core.telegram.notify("watchdog shutting down")
     info("shutting down...")
