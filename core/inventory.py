@@ -108,12 +108,18 @@ def sync_balances(user: core.db.User):
 
     # sync balance for each exchange the user has a key
     for cred in user.credential_set:
-        core.exchange.set_api(cred=cred)
-
         core.watchdog.log.info("fetching user balance in exchange " +
                                core.exchange.api.id)
 
-        ex_bal = core.exchange.api.fetch_balance()
+        try:
+            core.exchange.set_api(cred=cred)
+            ex_bal = core.exchange.api.fetch_balance()
+        except ccxt.ExchangeError:
+            core.watchdog.log.info("exchange error, "
+                                   "disabling credential...")
+            cred.active = False
+            cred.save()
+            continue
 
         ex_val_asset, new = core.db.ExchangeAsset.get_or_create(
             exchange=cred.exchange, asset=value_asset)
