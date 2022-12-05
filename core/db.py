@@ -117,7 +117,7 @@ class ExchangeAsset(BaseModel):
     precision = peewee.IntegerField(default=1)
 
     def div(self, num, den, trunc_precision=None):
-        if trunc_precision is None:
+        if trunc_precision is None or trunc_precision == 0:
             trunc_precision = self.precision
 
         decimal.getcontext().prec = self.precision if self.precision > 0 else 1
@@ -143,7 +143,7 @@ class ExchangeAsset(BaseModel):
         return int(value)
 
     def print(self, value, format_value=True, trunc_precision=None):
-        if trunc_precision is None:
+        if trunc_precision is None or trunc_precision == 0:
             trunc_precision = self.precision
 
         if format_value:
