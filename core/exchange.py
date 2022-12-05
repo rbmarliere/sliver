@@ -155,7 +155,7 @@ def download(market: core.db.Market, timeframe: str):
             ]).execute()
 
 
-def sync_orders(position: core.db.Position):
+def sync_orders(position: core.db.Position) -> core.db.Position:
     market = position.user_strategy.strategy.market
 
     # fetch internal open orders
@@ -164,7 +164,7 @@ def sync_orders(position: core.db.Position):
     # if no orders found, exit
     if len(orders) == 0:
         core.watchdog.log.info("no open orders found")
-        return
+        return position
 
     with core.db.connection.atomic():
         for order in orders:
