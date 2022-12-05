@@ -227,12 +227,17 @@ class UserStrategy(BaseModel):
         constraints = [peewee.SQL("UNIQUE (user_id, strategy_id)")]
 
     def get_active_position_or_none(self):
-        return Position.select().join(UserStrategy).join(Strategy).join(
-            Market).where((UserStrategy.user_id == self.user_id)
-                          & (UserStrategy.strategy_id == self.strategy_id)
-                          & ((Position.status == "open")
-                             | (Position.status == "opening")
-                             | (Position.status == "closing"))).get_or_none()
+        return Position \
+            .select() \
+            .join(UserStrategy) \
+            .join(Strategy) \
+            .join(Market) \
+            .where(UserStrategy.user_id == self.user_id) \
+            .where(UserStrategy.strategy_id == self.strategy_id) \
+            .where((Position.status == "open")
+                   | (Position.status == "opening")
+                   | (Position.status == "closing")) \
+            .get_or_none()
 
 
 class Position(BaseModel):
@@ -284,14 +289,14 @@ class Position(BaseModel):
         return position
 
     def get_orders(self):
-        return Order \
-            .select(Order, Strategy.id.alias("strategy_id")) \
-            .join(Position) \
-            .join(UserStrategy) \
-            .join(Strategy) \
-            .where((Order.status != "canceled") | (Order.filled > 0)) \
-            .where(Position.id == self.id) \
-            .order_by(Order.time.desc())
+        return Order
+        .select(Order, Strategy.id.alias("strategy_id"))
+        .join(Position)
+        .join(UserStrategy)
+        .join(Strategy)
+        .where((Order.status != "canceled") | (Order.filled > 0))
+        .where(Position.id == self.id)
+        .order_by(Order.time.desc())
 
     def get_open_orders(self):
         query = self.get_orders().where(Order.status == "open")
