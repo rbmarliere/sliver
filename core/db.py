@@ -363,7 +363,7 @@ class Order(BaseModel):
                            .format(a=market.base.print(amount),
                                    p=market.quote.print(price),
                                    c=market.quote.print(
-                                       market.quote.format(amount*price))))
+                                       market.base.format(amount)*price)))
 
         # check for fees
         if ex_order["fee"] is None:
