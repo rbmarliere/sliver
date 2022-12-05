@@ -145,16 +145,15 @@ class ExchangeAsset(BaseModel):
             value = decimal.Decimal(str(value)) * 10**self.precision
         return int(value)
 
-    def print(self, value, format_value=True, trunc_precision=None):
+    def print(self, value, trunc_precision=None):
         if trunc_precision is None or trunc_precision == 0:
             trunc_precision = self.precision
 
-        if format_value:
-            value = self.format(value)
+        value = self.format(value)
 
-        prec = str(trunc_precision)
-
-        return str("{:." + prec + "f} ").format(value) + self.asset.ticker
+        return "{n:.{p}f} {t}".format(n=value,
+                                      p=trunc_precision,
+                                      t=self.asset.ticker)
 
 
 class Balance(BaseModel):
