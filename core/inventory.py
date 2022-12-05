@@ -76,14 +76,14 @@ def get_target_cost(user_strat: core.db.UserStrategy):
     net_liquid = inventory["total_value"] - inventory["positions_value"]
     core.watchdog.info("net liquid is {v}".format(v=net_liquid))
 
-    max_risk = net_liquid * float(user.max_risk)
+    max_risk = net_liquid * user.max_risk
     core.watchdog.info("max risk is {v}".format(v=max_risk))
 
     cash_liquid = inventory["USDT"]["total"] - inventory["positions_reserved"]
-    available = cash_liquid * (1 - float(user.cash_reserve))
+    available = cash_liquid * (1 - user.cash_reserve)
     core.watchdog.info("available cash is {v}".format(v=available))
 
-    target_cost = min(max_risk, available * float(user.target_factor))
+    target_cost = min(max_risk, available * user.target_factor)
     core.watchdog.info("target cost is {v}".format(v=target_cost))
 
     return user_strat.strategy.market.quote.transform(target_cost)
