@@ -120,8 +120,9 @@ class ExchangeAsset(BaseModel):
         if trunc_precision is None or trunc_precision == 0:
             trunc_precision = self.precision
 
-        decimal.getcontext().prec = self.precision if self.precision > 0 else 1
-        div = decimal.Decimal(str(num)) / decimal.Decimal(str(den))
+        with decimal.localcontext() as ctx:
+            ctx.prec = self.precision if self.precision > 0 else 1
+            div = decimal.Decimal(str(num)) / decimal.Decimal(str(den))
 
         if abs(num) > abs(den):
             div = int(div)
@@ -133,13 +134,15 @@ class ExchangeAsset(BaseModel):
         return self.transform(div)
 
     def format(self, value):
-        decimal.getcontext().prec = self.precision if self.precision > 0 else 1
-        value = decimal.Decimal(str(value)) / 10**self.precision
+        with decimal.localcontext() as ctx:
+            ctx.prec = self.precision if self.precision > 0 else 1
+            value = decimal.Decimal(str(value)) / 10**self.precision
         return core.utils.truncate(value, self.precision)
 
     def transform(self, value):
-        decimal.getcontext().prec = self.precision if self.precision > 0 else 1
-        value = decimal.Decimal(str(value)) * 10**self.precision
+        with decimal.localcontext() as ctx:
+            ctx.prec = self.precision if self.precision > 0 else 1
+            value = decimal.Decimal(str(value)) * 10**self.precision
         return int(value)
 
     def print(self, value, format_value=True, trunc_precision=None):
