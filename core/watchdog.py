@@ -142,8 +142,8 @@ def watch():
                                       .get_credential_by_exchange_or_none(
                                           strategy.market.base.exchange))
                         if credential is None:
-                            info("credential not found, "
-                                 "skipping user...")
+                            info("credential not found, skipping user...")
+                            i += 1
                             continue
                         core.exchange.set_api(cred=credential)
 
