@@ -74,17 +74,17 @@ def get_target_cost(user_strat: core.db.UserStrategy):
     inventory = get_inventory(user)
 
     net_liquid = inventory["total_value"] - inventory["positions_value"]
-    core.watchdog.log.info("net liquid is " + str(net_liquid))
+    core.watchdog.log.info("net liquid is {v}".format(v=net_liquid))
 
     max_risk = net_liquid * float(user.max_risk)
-    core.watchdog.log.info("max risk is " + str(max_risk))
+    core.watchdog.log.info("max risk is {v}".format(v=max_risk))
 
     cash_liquid = inventory["USDT"]["total"] - inventory["positions_reserved"]
     available = cash_liquid * (1 - float(user.cash_reserve))
-    core.watchdog.log.info("available cash is " + str(available))
+    core.watchdog.log.info("available cash is {v}".format(v=available))
 
     target_cost = min(max_risk, available * float(user.target_factor))
-    core.watchdog.log.info("target cost is " + str(target_cost))
+    core.watchdog.log.info("target cost is {v}".format(v=target_cost))
 
     return user_strat.strategy.market.quote.transform(target_cost)
 
@@ -98,8 +98,7 @@ def sync_balances(user: core.db.User):
     value_ticker = "USDT"
     value_asset, new = core.db.Asset.get_or_create(ticker=value_ticker)
     if new:
-        core.watchdog.log.info("saved asset " + value_asset.ticker +
-                               " to exchange")
+        core.watchdog.log.info("saved asset {a}".format(a=value_asset.ticker))
 
     # backup current api
     curr_cred = None
@@ -107,9 +106,9 @@ def sync_balances(user: core.db.User):
         curr_cred = core.exchange.credential
 
     # sync balance for each exchange the user has a key
-    for cred in user.credential_set:
-        core.watchdog.log.info("fetching user balance in exchange " +
-                               core.exchange.api.id)
+    for cred in user.credential_set.where(core.db.Credential.active):
+        core.watchdog.log.info("fetching user balance in exchange {e}"
+                               .format(e=cred.exchange.name))
 
         try:
             core.exchange.set_api(cred=cred)
@@ -134,18 +133,20 @@ def sync_balances(user: core.db.User):
 
             asset, new = core.db.Asset.get_or_create(ticker=ticker.upper())
             if new:
-                core.watchdog.log.info("saved new asset " + asset.ticker)
+                core.watchdog.log.info("saved new asset {a}"
+                                       .format(a=asset.ticker))
 
             ex_asset, new = core.db.ExchangeAsset.get_or_create(
                 exchange=cred.exchange, asset=asset)
             if new:
-                core.watchdog.log.info("saved asset " + ex_asset.asset.ticker +
-                                       " to exchange")
+                core.watchdog.log.info("saved asset {a}"
+                                       .format(a=ex_asset.asset.ticker))
 
             u_bal, new = core.db.Balance.get_or_create(
                 user=user, asset=ex_asset, value_asset=ex_val_asset)
             if new:
-                core.watchdog.log.info("saved new balance " + str(u_bal.id))
+                core.watchdog.log.info("saved new balance {b}"
+                                       .format(b=u_bal.id))
 
             u_bal.free = ex_asset.transform(ex_bal["free"][ticker])
             u_bal.used = ex_asset.transform(ex_bal["used"][ticker])
@@ -154,8 +155,6 @@ def sync_balances(user: core.db.User):
             try:
                 p = core.exchange.api.fetch_ticker(asset.ticker + "/" +
                                                    value_asset.ticker)
-                # core.watchdog.log.info("last " + asset.ticker +
-                #                          " price is $" + str(p["last"]))
 
                 free_value = p["last"] * ex_bal["free"][ticker]
                 used_value = p["last"] * ex_bal["used"][ticker]
