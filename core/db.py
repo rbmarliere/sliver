@@ -346,6 +346,8 @@ class Order(BaseModel):
 
         price = ex_order["price"]
         amount = ex_order["amount"]
+        if not amount:
+            amount = self.amount
         filled = ex_order["filled"]
         if not filled:
             filled = 0
@@ -390,8 +392,7 @@ class Order(BaseModel):
         self.type = type
         self.side = side
         self.price = price
-        if not self.amount:
-            self.amount = amount
+        self.amount = amount
         self.cost = cost
         self.filled = filled
         self.fee = fee
