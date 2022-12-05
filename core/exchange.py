@@ -223,17 +223,16 @@ def create_order(side: str, position: core.db.Position, amount: int,
         assert price >= market.price_min
         assert amount * price >= market.cost_min
 
-        amount = market.base.format(amount)
-        price = market.quote.format(price)
-
-        ex_order = api.create_order(market.get_symbol(), "limit", side,
-                                    amount, price)
+        ex_order = api.create_limit_order(market.get_symbol(),
+                                          side,
+                                          market.base.format(amount),
+                                          market.base.format(price))
 
         core.watchdog.info("created new {s} order {i}"
                            .format(s=side,
                                    i=ex_order["id"]))
 
-        core.db.Order.sync(core.db.Order(), ex_order, position)
+        core.db.Order.sync(core.db.Order(amount=amount), ex_order, position)
 
     except ccxt.OrderImmediatelyFillable as e:
         core.watchdog.error(
