@@ -12,32 +12,40 @@ def save_market(ex_market, exchange: core.db.Exchange):
             return
 
         try:
-            base_prec = ex_market["precision"]["base"]
-            if base_prec is None:
-                base_prec = 8
-        except KeyError:
-            base_prec = 8
-
-        try:
-            quote_prec = ex_market["precision"]["quote"]
-            if quote_prec is None:
-                quote_prec = 2
-        except KeyError:
-            quote_prec = 2
-
-        try:
             amount_prec = ex_market["precision"]["amount"]
             if amount_prec is None:
+                print("using default amount_prec = 8")
                 amount_prec = 8
         except KeyError:
+            print("using default amount_prec = 8")
             amount_prec = 8
 
         try:
             price_prec = ex_market["precision"]["price"]
             if price_prec is None:
+                print("using default amount_prec = 2")
                 price_prec = 2
         except KeyError:
+            print("using default amount_prec = 2")
             price_prec = 2
+
+        try:
+            base_prec = ex_market["precision"]["base"]
+            if base_prec is None:
+                print("using base_prec = amount_prec")
+                base_prec = amount_prec
+        except KeyError:
+            print("using base_prec = amount_prec")
+            base_prec = amount_prec
+
+        try:
+            quote_prec = ex_market["precision"]["quote"]
+            if quote_prec is None:
+                print("using quote_prec = price_prec")
+                quote_prec = price_prec
+        except KeyError:
+            print("using quote_prec = price_prec")
+            quote_prec = price_prec
 
         base, new = (core.db.Asset
                      .get_or_create(ticker=ex_market["base"]))
@@ -64,22 +72,28 @@ def save_market(ex_market, exchange: core.db.Exchange):
         try:
             amount_min = ex_market["limits"]["amount"]["min"]
             if amount_min is None:
+                print("using default amount_min = 0.0001")
                 amount_min = 0.0001
         except KeyError:
+            print("using default amount_min = 0.0001")
             amount_min = 0.0001
 
         try:
             cost_min = ex_market["limits"]["cost"]["min"]
             if cost_min is None:
+                print("using default cost_min = 10")
                 cost_min = 10
         except KeyError:
+            print("using default cost_min = 10")
             cost_min = 10
 
         try:
             price_min = ex_market["limits"]["price"]["min"]
             if price_min is None:
+                print("using default price_min = 1")
                 price_min = 1
         except KeyError:
+            print("using default price_min = 1")
             price_min = 1
 
         m.amount_min = m.base.transform(amount_min)
