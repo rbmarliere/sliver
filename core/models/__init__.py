@@ -20,7 +20,7 @@ def load(model_name):
                              model_name).resolve()
     assert modelpath.exists()
 
-    core.watchdog.log.info("loading model {m}".format(m=model_name))
+    core.watchdog.info("loading model {m}".format(m=model_name))
 
     model_module = importlib.import_module("core.models." + model_name)
     model = model_module.load_model(modelpath)
@@ -79,11 +79,12 @@ def replay(model, update_only=True, verbose=0):
     tweets = pandas.DataFrame(query.dicts())
 
     if tweets.empty:
-        core.watchdog.log.info("no tweets to replay")
+        core.watchdog.info("no tweets to replay")
         return
 
-    core.watchdog.log.info("replaying " + str(query.count()) +
-                           " tweets with model " + model.config["name"])
+    core.watchdog.info("replaying {c} tweets with model {m}"
+                       .format(c=query.count(),
+                               m=model.config["name"]))
 
     tweets.text = tweets.text.apply(core.utils.standardize)
     tweets.text = tweets.text.str.slice(0, model.config["max_length"])

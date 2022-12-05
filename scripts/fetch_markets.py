@@ -90,7 +90,7 @@ def save_market(ex_market, exchange: core.db.Exchange):
 
 
 def fetch_markets(exchange: core.db.Exchange):
-    core.watchdog.log.info("fetching all markets from exchange api...")
+    print("fetching all markets from exchange api...")
     ex_markets = core.exchange.api.fetch_markets()
 
     count = 0
@@ -102,8 +102,6 @@ def fetch_markets(exchange: core.db.Exchange):
 
 
 if __name__ == "__main__":
-    core.watchdog.set_logger("scripts")
-
     argp = argparse.ArgumentParser()
     argp.add_argument("-e",
                       "--exchange-name",

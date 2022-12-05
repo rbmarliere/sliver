@@ -40,7 +40,7 @@ def check_latency():
     try:
         getattr(api, "fetch_time")
     except AttributeError:
-        core.watchdog.log.info("exchange does not have fetch_time")
+        core.watchdog.info("exchange does not have fetch_time")
         return
 
     api.fetch_time()
@@ -48,10 +48,10 @@ def check_latency():
     elapsed = datetime.datetime.utcnow() - started
     elapsed_in_ms = int(elapsed.total_seconds() * 1000)
 
-    core.watchdog.log.info("api latency is {l} ms".format(l=elapsed_in_ms))
+    core.watchdog.info("api latency is {l} ms".format(l=elapsed_in_ms))
 
     if elapsed_in_ms > 1500:
-        core.watchdog.log.info("latency above threshold (1500)")
+        core.watchdog.info("latency above threshold (1500)")
         raise ccxt.NetworkError
 
 
@@ -59,13 +59,13 @@ def download(market: core.db.Market, timeframe: str):
     # check if symbol is supported by exchange
     symbols = [pair["symbol"] for pair in api.fetch_markets()]
     assert market.get_symbol() in symbols, (
-        "symbol not supported by exchange! possible values are " +
-        str(symbols))
+        "symbol not supported by exchange! possible values are {s}"
+        .format(s=symbols))
 
     # check if timeframe is supported by exchange
     assert timeframe in api.timeframes, (
-        "timeframe not supported by exchange! possible values are " +
-        str([*api.timeframes]))
+        "timeframe not supported by exchange! possible values are {t}"
+        .format(t=[*api.timeframes]))
 
     timeframe_delta = core.utils.get_timeframe_delta(timeframe)
     page_size = 500
@@ -81,19 +81,20 @@ def download(market: core.db.Market, timeframe: str):
     except peewee.DoesNotExist:
         last_entry = datetime.datetime.utcfromtimestamp(0)
         page_start = datetime.datetime(2000, 1, 1)
-        core.watchdog.log.info(
+        core.watchdog.info(
             "no db entries found, downloading everything...")
 
     # return if last entry is last possible result
     if page_start + timeframe_delta > datetime.datetime.utcnow():
-        core.watchdog.log.info("price data is already up to date, skipping...")
+        core.watchdog.info("price data is already up to date, skipping...")
         return
 
     prices = pandas.DataFrame(columns=[0, 1, 2, 3, 4, 5, 6, 7])
     while True:
         try:
             # api call with relevant params
-            core.watchdog.log.info("downloading from " + str(page_start))
+            core.watchdog.info("downloading from {s}"
+                               .format(s=page_start))
             page = api.fetch_ohlcv(market.get_symbol(),
                                    since=int(page_start.timestamp() * 1000),
                                    timeframe=timeframe,
@@ -106,8 +107,9 @@ def download(market: core.db.Market, timeframe: str):
             # logging received range
             page_first = datetime.datetime.utcfromtimestamp(page[0][0] / 1000)
             page_last = datetime.datetime.utcfromtimestamp(page[-1][0] / 1000)
-            core.watchdog.log.info("received data range " + str(page_first) +
-                                   " to " + str(page_last))
+            core.watchdog.info("received data range {f} to {l}"
+                               .format(f=page_first,
+                                       l=page_last))
 
             # concatenating existing pages with current page
             prices = pandas.concat(
@@ -123,8 +125,8 @@ def download(market: core.db.Market, timeframe: str):
 
         except ccxt.RateLimitExceeded:
             sleep_time = market.base.exchange.rate_limit
-            core.watchdog.log.info("rate limit exceeded, sleeping for " +
-                                   str(sleep_time) + " seconds")
+            core.watchdog.info("rate limit exceeded, sleeping for {s} seconds"
+                               .format(s=sleep_time))
             time.sleep(sleep_time)
             continue
 
@@ -163,13 +165,14 @@ def sync_orders(position: core.db.Position) -> core.db.Position:
 
     # if no orders found, exit
     if len(orders) == 0:
-        core.watchdog.log.info("no open orders found")
+        core.watchdog.info("no open orders found")
         return position
 
     with core.db.connection.atomic():
         for order in orders:
-            core.watchdog.log.info("updating " + order.side + " order " +
-                                   str(order.exchange_order_id))
+            core.watchdog.info("updating {s} order {i}"
+                               .format(s=order.side,
+                                       i=order.exchange_order_id))
 
             # fetch each order to sync
             try:
@@ -184,9 +187,10 @@ def sync_orders(position: core.db.Position) -> core.db.Position:
             filled = market.base.transform(ex_order["filled"])
             price = market.quote.transform(ex_order["price"])
 
-            core.watchdog.log.info(
-                market.base.print(filled) + " @ " + market.quote.print(price) +
-                " (" + market.quote.print(cost) + ")")
+            core.watchdog.info("{f} @ {p} ({c})"
+                               .format(f=market.base.print(filled),
+                                       p=market.quote.print(price),
+                                       c=market.quote.print(cost)))
 
             # update order info
             order.status = ex_order["status"]
@@ -247,21 +251,23 @@ def create_order(side: str, position: core.db.Position, amount: int,
         ex_order = api.create_order(market.get_symbol(), "LIMIT_MAKER", side,
                                     amount, price)
 
-        core.watchdog.log.info("created new " + side + " order " +
-                               str(ex_order["id"]))
-        core.watchdog.log.info(
-            market.base.print(ex_order["amount"], False) + " @ " +
-            market.quote.print(ex_order["price"], False) + " (" +
-            market.quote.print(ex_order["amount"] * ex_order["price"], False) +
-            ")")
+        core.watchdog.info("created new {s} order {i}"
+                           .format(s=side,
+                                   i=ex_order["id"]))
+        core.watchdog.info(
+            "{a} @ {p} ({c})"
+            .format(a=market.base.print(ex_order["amount"], False),
+                    p=market.quote.print(ex_order["price"], False),
+                    c=market.quote.print(
+                        ex_order["amount"] * ex_order["price"], False)))
 
-    except ccxt.OrderImmediatelyFillable:
-        core.watchdog.log.info(
-            "order would be immediately fillable, skipping...")
+    except ccxt.OrderImmediatelyFillable as e:
+        core.watchdog.error(
+            "order would be immediately fillable, skipping...", e)
         return
-    except (ccxt.InvalidOrder, AssertionError):
-        core.watchdog.log.info(
-            "order values are smaller than exchange minimum, skipping...")
+    except (ccxt.InvalidOrder, AssertionError) as e:
+        core.watchdog.error(
+            "order values are smaller than exchange minimum, skipping...", e)
         return
 
     core.db.Order.create_from_ex_order(ex_order, position)
@@ -274,10 +280,10 @@ def create_buy_orders(position: core.db.Position, last_price: int,
     # remaining is a cost
     remaining = position.get_remaining_to_open()
 
-    core.watchdog.log.info("bucket amount is " +
-                           market.quote.print(position.bucket))
-    core.watchdog.log.info("remaining to fill bucket is " +
-                           market.quote.print(remaining))
+    core.watchdog.info("bucket amount is {a}"
+                       .format(a=market.quote.print(position.bucket)))
+    core.watchdog.info("remaining to fill bucket is {r}"
+                       .format(r=market.quote.print(remaining)))
 
     # compute price delta based on given spread
     delta = market.quote.div(last_price * spread_pct,
@@ -289,7 +295,8 @@ def create_buy_orders(position: core.db.Position, last_price: int,
     unit_cost = market.quote.div(remaining,
                                  num_orders,
                                  trunc_precision=market.price_precision)
-    core.watchdog.log.info("unit cost is " + market.quote.print(unit_cost))
+    core.watchdog.info("unit cost is {c}"
+                       .format(c=market.quote.print(unit_cost)))
 
     # compute prices for each order
     unit_spread = market.quote.div(delta,
@@ -301,12 +308,12 @@ def create_buy_orders(position: core.db.Position, last_price: int,
     # check if current bucket is filled
     if (datetime.datetime.utcnow() < position.next_bucket
             and remaining < market.cost_min):
-        core.watchdog.log.info("bucket is full, skipping...")
+        core.watchdog.info("bucket is full, skipping...")
         return
 
     # send a single order if cost of each order is lower than market minimum
     if unit_cost < market.cost_min:
-        core.watchdog.log.info(
+        core.watchdog.info(
             "unitary cost is less than exchange minimum, creating single order"
         )
 
@@ -322,8 +329,8 @@ def create_buy_orders(position: core.db.Position, last_price: int,
     # avoid rounding errors
     cost_remainder = remaining - sum([unit_cost] * num_orders)
     if cost_remainder != 0:
-        core.watchdog.log.info("bucket remainder: " +
-                               market.quote.print(cost_remainder))
+        core.watchdog.info("bucket remainder: {r}"
+                           .format(r=market.quote.print(cost_remainder)))
 
     # creates bucket orders if reached here, which normally it will
     with core.db.connection.atomic():
@@ -349,12 +356,12 @@ def create_sell_orders(position: core.db.Position, last_price: int,
     remaining_to_fill = position.get_remaining_to_fill()
     remaining_to_exit = position.get_remaining_to_exit()
 
-    core.watchdog.log.info("bucket amount is " +
-                           market.base.print(position.bucket))
-    core.watchdog.log.info("remaining to fill bucket is " +
-                           market.base.print(remaining_to_fill))
-    core.watchdog.log.info("remaining to exit position is " +
-                           market.base.print(remaining_to_exit))
+    core.watchdog.info("bucket amount is {a}"
+                       .format(a=market.base.print(position.bucket)))
+    core.watchdog.info("remaining to fill bucket is {r}"
+                       .format(r=market.base.print(remaining_to_fill)))
+    core.watchdog.info("remaining to exit position is {r}"
+                       .format(r=market.base.print(remaining_to_exit)))
 
     # compute price delta based on given spread
     delta = market.quote.div(last_price * spread_pct,
@@ -375,15 +382,17 @@ def create_sell_orders(position: core.db.Position, last_price: int,
                                              remaining_to_fill)
     if (position_remainder > 0
             and position_remainder * prices[-1] <= market.cost_min):
-        core.watchdog.log.info("position remainder: " +
-                               market.base.print(position_remainder, False))
+        core.watchdog.info("position remainder: {r}"
+                           .format(r=market.base.print(
+                               position_remainder, False)))
         remaining = remaining_to_exit
 
     # compute amount for each order given a number of orders to create
     unit_amount = market.base.div(remaining,
                                   num_orders,
                                   trunc_precision=market.amount_precision)
-    core.watchdog.log.info("unit amount is " + market.base.print(unit_amount))
+    core.watchdog.info("unit amount is {a}"
+                       .format(a=market.base.print(unit_amount)))
 
     # compute costs
     amount_in_decimal = market.base.format(unit_amount)
@@ -400,25 +409,25 @@ def create_sell_orders(position: core.db.Position, last_price: int,
 
         # if bucket is empty and cost is below minimum, position is stalled
         if position.bucket == 0:
-            core.watchdog.log.info("position is stalled, exiting...")
+            core.watchdog.info("position is stalled, exiting...")
             create_order("sell", position, remaining_to_exit, avg_price)
             return
 
-        core.watchdog.log.info("bucket is full, skipping...")
+        core.watchdog.info("bucket is full, skipping...")
         return
 
     # send a single order if any of the costs is lower than market minimum
     if any(cost < market.cost_min for cost in costs):
-        core.watchdog.log.info("unitary cost is less than exchange minimum, "
-                               "creating single order")
+        core.watchdog.info("unitary cost is less than exchange minimum, "
+                           "creating single order")
         create_order("sell", position, remaining, avg_price)
         return
 
     # avoid bucket rounding errors
     bucket_remainder = remaining - sum([unit_amount] * num_orders)
     if bucket_remainder != 0:
-        core.watchdog.log.info("bucket remainder: " +
-                               market.base.print(bucket_remainder))
+        core.watchdog.info("bucket remainder: {r}"
+                           .format(r=market.base.print(bucket_remainder)))
 
     # creates bucket orders if reached here, which normally it will
     with core.db.connection.atomic():
@@ -435,29 +444,30 @@ def refresh(position: core.db.Position, signal: str, last_price: int):
     now = datetime.datetime.utcnow()
     next_bucket = now + datetime.timedelta(minutes=strategy.bucket_interval)
 
-    core.watchdog.log.info("refreshing '" + position.status + "' position " +
-                           str(position.id) + " for market " +
-                           market.get_symbol())
+    core.watchdog.info("refreshing '{s}' position {i} for market {m}"
+                       .format(s=position.status,
+                               i=position.id,
+                               m=market.get_symbol()))
 
     # check if current bucket needs to be reset
     if now > position.next_bucket:
-        core.watchdog.log.info("moving on to next bucket")
+        core.watchdog.info("moving on to next bucket")
         position.next_bucket = next_bucket
         position.bucket = 0
 
-    core.watchdog.log.info("next bucket starts at " +
-                           str(position.next_bucket))
+    core.watchdog.info("next bucket starts at {t}"
+                       .format(t=position.next_bucket))
 
     # if entry_cost is non-zero, check if position has to be closed
     if position.entry_cost > 0 and position.is_open():
         roi = round(((last_price / position.entry_price) - 1) * 100, 2)
-        core.watchdog.log.info("roi = " + str(roi) + "%")
-        core.watchdog.log.info("minimum roi = " + str(strategy.min_roi) + "%")
-        core.watchdog.log.info("stop loss = " + str(strategy.stop_loss) + "%")
+        core.watchdog.info("roi = {r}%".format(r=roi))
+        core.watchdog.info("minimum roi = {r}%".format(r=strategy.min_roi))
+        core.watchdog.info("stop loss = -{r}%".format(r=strategy.stop_loss))
 
         if (signal == "sell" or roi > strategy.min_roi
                 or roi < strategy.stop_loss * -1):
-            core.watchdog.log.info("closing position")
+            core.watchdog.info("closing position")
 
             # when selling, bucket_max becomes an amount instead of cost
             position.bucket_max = market.base.div(
@@ -470,7 +480,7 @@ def refresh(position: core.db.Position, signal: str, last_price: int):
     # close position if entry_cost is zero while closing it or got sell signal
     elif (position.entry_cost == 0
           and (position.status == "closing" or signal == "sell")):
-        core.watchdog.log.info("entry_cost is 0, position is now closed")
+        core.watchdog.info("entry_cost is 0, position is now closed")
         position.status = "closed"
 
     # position finishes closing when exit equals entry
@@ -481,15 +491,15 @@ def refresh(position: core.db.Position, signal: str, last_price: int):
         position.status = "closed"
         position.pnl = (position.exit_cost - position.entry_cost -
                         position.fee)
-        core.watchdog.log.info("position is now closed, pnl: " +
-                               market.quote.print(position.pnl))
+        core.watchdog.info("position is now closed, pnl: {r}"
+                           .format(r=market.quote.print(position.pnl)))
 
     # position finishes opening when it reaches target
     cost_diff = position.target_cost - position.entry_cost
     if (position.status == "opening" and position.entry_cost > 0
             and cost_diff < market.cost_min):
         position.status = "open"
-        core.watchdog.log.info("position is now open")
+        core.watchdog.info("position is now open")
 
     # create buy orders for an opening position
     if position.status == "opening":
@@ -502,7 +512,7 @@ def refresh(position: core.db.Position, signal: str, last_price: int):
                            strategy.spread)
 
     else:
-        core.watchdog.log.info("position is " + position.status +
-                               ", skipping order creation...")
+        core.watchdog.info("position is {s} , skipping order creation..."
+                           .format(s=position.status))
 
     position.save()
