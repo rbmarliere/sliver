@@ -128,7 +128,11 @@ def sync_balances(user: core.db.User):
 
         # for each exchange asset, update internal user balance
         for ticker in ex_bal["free"]:
-            if ex_bal["total"][ticker] == 0:
+            free = ex_bal["free"][ticker]
+            used = ex_bal["used"][ticker]
+            total = ex_bal["total"][ticker]
+
+            if not total:
                 continue
 
             asset, new = core.db.Asset.get_or_create(ticker=ticker.upper())
@@ -148,17 +152,17 @@ def sync_balances(user: core.db.User):
                 core.watchdog.log.info("saved new balance {b}"
                                        .format(b=u_bal.id))
 
-            u_bal.free = ex_asset.transform(ex_bal["free"][ticker])
-            u_bal.used = ex_asset.transform(ex_bal["used"][ticker])
-            u_bal.total = ex_asset.transform(ex_bal["total"][ticker])
+            u_bal.free = ex_asset.transform(free) if free else 0
+            u_bal.used = ex_asset.transform(used) if used else 0
+            u_bal.total = ex_asset.transform(total) if total else 0
 
             try:
                 p = core.exchange.api.fetch_ticker(asset.ticker + "/" +
                                                    value_asset.ticker)
 
-                free_value = p["last"] * ex_bal["free"][ticker]
-                used_value = p["last"] * ex_bal["used"][ticker]
-                total_value = p["last"] * ex_bal["total"][ticker]
+                free_value = p["last"] * free if free else 0
+                used_value = p["last"] * used if used else 0
+                total_value = p["last"] * total if total else 0
 
                 u_bal.free_value = ex_val_asset.transform(free_value)
                 u_bal.used_value = ex_val_asset.transform(used_value)
