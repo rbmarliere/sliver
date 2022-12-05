@@ -57,6 +57,7 @@ class User(BaseModel):
         return self \
             .credential_set \
             .where(Credential.exchange == exchange) \
+            .where(Credential.active) \
             .get_or_none()
 
     def get_balances_by_asset(self, asset: Asset):
@@ -104,6 +105,7 @@ class Credential(BaseModel):
     exchange = peewee.ForeignKeyField(Exchange)
     api_key = peewee.TextField()
     api_secret = peewee.TextField()
+    active = peewee.BooleanField(default=False)
 
     class Meta:
         constraints = [peewee.SQL("UNIQUE (user_id, exchange_id)")]
