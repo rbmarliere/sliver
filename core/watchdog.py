@@ -212,14 +212,18 @@ def watch():
                         log.info("rate limit exceeded, "
                                  "skipping user...")
 
-        except ccxt.ExchangeError:
+        except ccxt.ExchangeError as e:
             log.info("exchange error, "
                      "disabling strategy...")
+            exception_log = get_logger("exception", suppress_output=True)
+            exception_log.exception(e, exc_info=True)
             strategy.active = False
             strategy.save()
 
-        except ccxt.NetworkError:
+        except ccxt.NetworkError as e:
             log.info("exchange api error")
+            exception_log = get_logger("exception", suppress_output=True)
+            exception_log.exception(e, exc_info=True)
             n_tries += 1
             if n_tries > 9:
                 n_tries = 0
@@ -227,8 +231,10 @@ def watch():
                                      "disabling strategy {s}"
                                      .format(s=strategy))
 
-        except peewee.OperationalError:
+        except peewee.OperationalError as e:
             log.error("can't connect to database!")
+            exception_log = get_logger("exception", suppress_output=True)
+            exception_log.exception(e, exc_info=True)
             break
 
         except KeyboardInterrupt:
