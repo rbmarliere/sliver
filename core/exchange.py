@@ -248,7 +248,7 @@ def create_order(side: str, position: core.db.Position, amount: int,
         amount = market.base.format(amount)
         price = market.quote.format(price)
 
-        ex_order = api.create_order(market.get_symbol(), "LIMIT_MAKER", side,
+        ex_order = api.create_order(market.get_symbol(), "limit", side,
                                     amount, price)
 
         core.watchdog.info("created new {s} order {i}"
