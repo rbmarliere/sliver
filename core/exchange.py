@@ -378,13 +378,13 @@ def create_sell_orders(position: core.db.Position, last_price: int,
 
     # avoid position rounding errors by exiting early
     remaining = min(remaining_to_fill, remaining_to_exit)
+    r = remaining_to_exit - remaining_to_fill
     position_remainder = market.quote.format(remaining_to_exit -
                                              remaining_to_fill)
     if (position_remainder > 0
             and position_remainder * prices[-1] <= market.cost_min):
         core.watchdog.info("position remainder: {r}"
-                           .format(r=market.base.print(
-                               position_remainder, False)))
+                           .format(r=market.base.print(r)))
         remaining = remaining_to_exit
 
     # compute amount for each order given a number of orders to create
