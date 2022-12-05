@@ -1,8 +1,7 @@
 import datetime
 
-import peewee
-
 import pandas
+import peewee
 
 import core
 
@@ -24,8 +23,8 @@ def refresh(strategy: core.db.Strategy,
         strategy.signal = (
             indicators.iloc[-1].signal if not indicators.empty else "neutral")
 
-        core.watchdog.log.info("strategy signal is {s}"
-                               .format(s=strategy.signal))
+        core.watchdog.info("strategy signal is {s}"
+                           .format(s=strategy.signal))
 
     strategy.save()
 
@@ -54,7 +53,7 @@ def refresh_indicators(strategy: core.db.Strategy,
 
     # check if there are prices available
     if prices.count() == 0:
-        core.watchdog.log.info(
+        core.watchdog.info(
             "no price data found for computing signals, skipping...")
         return pandas.DataFrame()
 
@@ -66,7 +65,7 @@ def refresh_indicators(strategy: core.db.Strategy,
     # check if there are tweets with given params
     tweets = tweets.where(core.db.Tweet.time >= prices.iloc[0].name)
     if tweets.count() == 0:
-        core.watchdog.log.info(
+        core.watchdog.info(
             "no tweets found for computing signals, skipping...")
         return pandas.DataFrame()
 
@@ -140,8 +139,8 @@ def refresh_indicators(strategy: core.db.Strategy,
 
     # insert rows into the database
     core.db.Indicator.insert_many(indicators.to_dict("records")).execute()
-    core.watchdog.log.info("inserted {c} indicator rows"
-                           .format(c=indicators.size))
+    core.watchdog.info("inserted {c} indicator rows"
+                       .format(c=indicators.size))
 
     return indicators
 

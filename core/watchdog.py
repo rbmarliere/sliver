@@ -44,11 +44,21 @@ def set_logger(name):
 log = get_logger("hypnox")
 
 
+def info(msg):
+    log.info(msg)
+
+
+def error(msg, e):
+    log.error(msg)
+    get_logger("exception", suppress_output=True) \
+        .exception(e, exc_info=True)
+
+
 def watch():
     set_logger("watchdog")
 
     core.telegram.notify("watchdog init")
-    log.info("watchdog init")
+    info("watchdog init")
 
     model_i = core.models.load(core.config["HYPNOX_DEFAULT_MODEL_I"])
     model_p = core.models.load(core.config["HYPNOX_DEFAULT_MODEL_P"])
@@ -71,12 +81,12 @@ def watch():
                 delta = int((next_refresh -
                              datetime.datetime.utcnow()).total_seconds())
                 if delta > 0:
-                    log.info("-------------------------------------------")
-                    log.info("next refresh at {r} for strategy {s}"
-                             .format(r=next_refresh,
-                                     s=first_active_strat))
-                    log.info("sleeping for {t} seconds"
-                             .format(t=delta))
+                    info("-------------------------------------------")
+                    info("next refresh at {r} for strategy {s}"
+                         .format(r=next_refresh,
+                                 s=first_active_strat))
+                    info("sleeping for {t} seconds"
+                         .format(t=delta))
                     time.sleep(delta)
                     continue
 
@@ -90,12 +100,12 @@ def watch():
 
                 symbol = strategy.market.get_symbol()
 
-                log.info("===========================================")
-                log.info("refreshing strategy {s}".format(s=strategy))
-                log.info("market is {m}".format(m=symbol))
-                log.info("timeframe is {T}".format(T=strategy.timeframe))
-                log.info("exchange is {e}"
-                         .format(e=strategy.market.base.exchange.name))
+                info("===========================================")
+                info("refreshing strategy {s}".format(s=strategy))
+                info("market is {m}".format(m=symbol))
+                info("timeframe is {T}".format(T=strategy.timeframe))
+                info("exchange is {e}"
+                     .format(e=strategy.market.base.exchange.name))
 
                 core.exchange.set_api(exchange=strategy.market.base.exchange)
 
@@ -113,7 +123,7 @@ def watch():
                 users = [u for u in strategy.get_active_users()]
 
                 if len(users) == 0:
-                    log.info("no active users found, skipping...")
+                    info("no active users found, skipping...")
                     continue
 
                 i = 0
@@ -121,10 +131,10 @@ def watch():
                     try:
                         u_strat = users[i]
 
-                        log.info("...........................................")
-                        log.info("refreshing {u}'s strategy {s}"
-                                 .format(u=u_strat.user.email,
-                                         s=u_strat))
+                        info("...........................................")
+                        info("refreshing {u}'s strategy {s}"
+                             .format(u=u_strat.user.email,
+                                     s=u_strat))
 
                         # set api to current exchange
                         credential = (u_strat
@@ -132,16 +142,16 @@ def watch():
                                       .get_credential_by_exchange_or_none(
                                           strategy.market.base.exchange))
                         if credential is None:
-                            core.watchdog.log.info("credential not found, "
-                                                   "skipping user...")
+                            info("credential not found, "
+                                 "skipping user...")
                             continue
                         core.exchange.set_api(cred=credential)
 
                         p = core.exchange.api.fetch_ticker(symbol)
                         last_price = strategy.market.quote.transform(p["last"])
-                        core.watchdog.log.info("last {m} price is ${p}"
-                                               .format(m=symbol,
-                                                       p=p["last"]))
+                        info("last {m} price is ${p}"
+                             .format(m=symbol,
+                                     p=p["last"]))
 
                         # get active position for current user_strategy
                         position = u_strat.get_active_position_or_none()
@@ -153,7 +163,7 @@ def watch():
                         core.inventory.sync_balances(u_strat.user)
 
                         if position is None:
-                            core.watchdog.log.info("no active position")
+                            info("no active position")
 
                             # create position if apt
                             if strategy.signal == "buy":
@@ -187,43 +197,40 @@ def watch():
                     except IndexError:
                         break
 
-                    except ccxt.AuthenticationError:
-                        log.error("authentication error, "
-                                  "disabling user's strategy...")
+                    except ccxt.AuthenticationError as e:
+                        error("authentication error, "
+                              "disabling user's strategy...",
+                              e)
                         u_strat.active = False
                         u_strat.save()
                         i += 1
 
-                    except ccxt.InsufficientFunds:
-                        log.error("insufficient funds, "
-                                  "disabling user's strategy...")
+                    except ccxt.InsufficientFunds as e:
+                        error("insufficient funds, "
+                              "disabling user's strategy...",
+                              e)
                         u_strat.active = False
                         u_strat.save()
                         i += 1
 
-                    except core.db.Credential.DoesNotExist:
-                        log.info("user has no credential for this exchange, "
-                                 "disabling user's strategy...")
+                    except core.db.Credential.DoesNotExist as e:
+                        error("user has no credential for this exchange, "
+                              "disabling user's strategy...",
+                              e)
                         u_strat.active = False
                         u_strat.save()
                         i += 1
 
-                    except ccxt.RateLimitExceeded:
-                        log.info("rate limit exceeded, "
-                                 "skipping user...")
+                    except ccxt.RateLimitExceeded as e:
+                        error("rate limit exceeded, skipping user...", e)
 
         except ccxt.ExchangeError as e:
-            log.info("exchange error, "
-                     "disabling strategy...")
-            exception_log = get_logger("exception", suppress_output=True)
-            exception_log.exception(e, exc_info=True)
+            error("exchange error, disabling strategy...", e)
             strategy.active = False
             strategy.save()
 
         except ccxt.NetworkError as e:
-            log.info("exchange api error")
-            exception_log = get_logger("exception", suppress_output=True)
-            exception_log.exception(e, exc_info=True)
+            error("exchange api error", e)
             n_tries += 1
             if n_tries > 9:
                 n_tries = 0
@@ -232,21 +239,17 @@ def watch():
                                      .format(s=strategy))
 
         except peewee.OperationalError as e:
-            log.error("can't connect to database!")
-            exception_log = get_logger("exception", suppress_output=True)
-            exception_log.exception(e, exc_info=True)
+            error("can't connect to database!", e)
             break
 
         except KeyboardInterrupt:
-            log.info("got keyboard interrupt")
+            info("got keyboard interrupt")
             break
 
         except Exception as e:
-            core.telegram.notify("watchdog crashed!")
-            log.error(e)
-            exception_log = get_logger("exception", suppress_output=True)
-            exception_log.exception(e, exc_info=True)
+            error("watchdog crashed", e)
+            core.telegram.notify("watchdog crashed")
             break
 
     core.telegram.notify("watchdog shutting down")
-    log.info("shutting down...")
+    info("shutting down...")

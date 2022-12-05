@@ -284,7 +284,7 @@ class Position(BaseModel):
                                     target_cost=target_cost)
         position.save()
 
-        core.watchdog.log.info("opened position " + str(position.id))
+        core.watchdog.info("opened position " + str(position.id))
 
         return position
 
