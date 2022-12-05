@@ -342,34 +342,68 @@ class Order(BaseModel):
     # effective fee paid
     fee = peewee.BigIntegerField()
 
-    def create_from_ex_order(ex_order, position):
+    def sync(self, ex_order, position):
         market = position.user_strategy.strategy.market
 
+        id = ex_order["id"]
+        status = ex_order["status"]
+        type = ex_order["type"]
+        side = ex_order["side"]
+        time = ex_order["datetime"]
+        if not time:
+            time = datetime.datetime.now()
+
+        price = ex_order["price"]
+        amount = ex_order["amount"]
+        cost = ex_order["cost"]
+        if not cost:
+            cost = price * amount
+        filled = ex_order["filled"]
+        if not filled:
+            filled = 0
+
         # transform values to db entry standard
-        price = market.quote.transform(ex_order["price"])
-        amount = market.quote.transform(ex_order["amount"])
-        cost = market.quote.transform(ex_order["cost"])
-        filled = market.quote.transform(ex_order["filled"])
+        price = market.quote.transform(price)
+        amount = market.quote.transform(amount)
+        cost = market.quote.transform(cost)
+        filled = market.quote.transform(filled)
+
+        core.watchdog.info("{a} @ {p} ({c})"
+                           .format(a=market.base.print(amount),
+                                   p=market.quote.print(price),
+                                   c=market.quote.print(cost)))
 
         # check for fees
         if ex_order["fee"] is None:
             fee = 0
         else:
-            fee = market.quote.transform(ex_order["fee"]["cost"])
+            try:
+                fee = market.quote.transform(ex_order["fee"]["cost"])
+            except KeyError:
+                fee = 0
 
-        # create model and save
-        order = core.db.Order(position=position,
-                              exchange_order_id=ex_order["id"],
-                              time=ex_order["datetime"],
-                              status=ex_order["status"],
-                              type=ex_order["type"],
-                              side=ex_order["side"],
-                              price=price,
-                              amount=amount,
-                              cost=cost,
-                              filled=filled,
-                              fee=fee)
-        order.save()
+        if not status:
+            if self.id:
+                if filled == cost:
+                    status = 'closed'
+                else:
+                    status = 'canceled'
+            else:
+                status = "open"
+
+        self.position = position
+        self.exchange_order_id = id
+        self.time = time
+        self.status = status
+        self.type = type
+        self.side = side
+        self.price = price
+        self.amount = amount
+        self.cost = cost
+        self.filled = filled
+        self.fee = fee
+
+        self.save()
 
 
 class Price(BaseModel):
