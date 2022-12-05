@@ -289,14 +289,14 @@ class Position(BaseModel):
         return position
 
     def get_orders(self):
-        return Order
-        .select(Order, Strategy.id.alias("strategy_id"))
-        .join(Position)
-        .join(UserStrategy)
-        .join(Strategy)
-        .where((Order.status != "canceled") | (Order.filled > 0))
-        .where(Position.id == self.id)
-        .order_by(Order.time.desc())
+        return Order \
+            .select(Order, Strategy.id.alias("strategy_id")) \
+            .join(Position) \
+            .join(UserStrategy) \
+            .join(Strategy) \
+            .where((Order.status != "canceled") | (Order.filled > 0)) \
+            .where(Position.id == self.id) \
+            .order_by(Order.time.desc())
 
     def get_open_orders(self):
         query = self.get_orders().where(Order.status == "open")
