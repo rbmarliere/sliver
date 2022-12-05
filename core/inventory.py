@@ -74,17 +74,17 @@ def get_target_cost(user_strat: core.db.UserStrategy):
     inventory = get_inventory(user)
 
     net_liquid = inventory["total_value"] - inventory["positions_value"]
-    core.watchdog.log.info("net liquid is {v}".format(v=net_liquid))
+    core.watchdog.info("net liquid is {v}".format(v=net_liquid))
 
     max_risk = net_liquid * float(user.max_risk)
-    core.watchdog.log.info("max risk is {v}".format(v=max_risk))
+    core.watchdog.info("max risk is {v}".format(v=max_risk))
 
     cash_liquid = inventory["USDT"]["total"] - inventory["positions_reserved"]
     available = cash_liquid * (1 - float(user.cash_reserve))
-    core.watchdog.log.info("available cash is {v}".format(v=available))
+    core.watchdog.info("available cash is {v}".format(v=available))
 
     target_cost = min(max_risk, available * float(user.target_factor))
-    core.watchdog.log.info("target cost is {v}".format(v=target_cost))
+    core.watchdog.info("target cost is {v}".format(v=target_cost))
 
     return user_strat.strategy.market.quote.transform(target_cost)
 
@@ -98,7 +98,7 @@ def sync_balances(user: core.db.User):
     value_ticker = "USDT"
     value_asset, new = core.db.Asset.get_or_create(ticker=value_ticker)
     if new:
-        core.watchdog.log.info("saved asset {a}".format(a=value_asset.ticker))
+        core.watchdog.info("saved asset {a}".format(a=value_asset.ticker))
 
     # backup current api
     curr_cred = None
@@ -107,15 +107,15 @@ def sync_balances(user: core.db.User):
 
     # sync balance for each exchange the user has a key
     for cred in user.credential_set.where(core.db.Credential.active):
-        core.watchdog.log.info("fetching user balance in exchange {e}"
-                               .format(e=cred.exchange.name))
+        core.watchdog.info("fetching user balance in exchange {e}"
+                           .format(e=cred.exchange.name))
 
         try:
             core.exchange.set_api(cred=cred)
             ex_bal = core.exchange.api.fetch_balance()
         except ccxt.ExchangeError:
-            core.watchdog.log.info("exchange error, "
-                                   "disabling credential...")
+            core.watchdog.info("exchange error, "
+                               "disabling credential...")
             cred.active = False
             cred.save()
             continue
@@ -123,8 +123,8 @@ def sync_balances(user: core.db.User):
         ex_val_asset, new = core.db.ExchangeAsset.get_or_create(
             exchange=cred.exchange, asset=value_asset)
         if new:
-            core.watchdog.log.info("saved asset " + ex_val_asset.asset.ticker +
-                                   " to exchange")
+            core.watchdog.info("saved asset " + ex_val_asset.asset.ticker +
+                               " to exchange")
 
         # for each exchange asset, update internal user balance
         for ticker in ex_bal["free"]:
@@ -137,20 +137,20 @@ def sync_balances(user: core.db.User):
 
             asset, new = core.db.Asset.get_or_create(ticker=ticker.upper())
             if new:
-                core.watchdog.log.info("saved new asset {a}"
-                                       .format(a=asset.ticker))
+                core.watchdog.info("saved new asset {a}"
+                                   .format(a=asset.ticker))
 
             ex_asset, new = core.db.ExchangeAsset.get_or_create(
                 exchange=cred.exchange, asset=asset)
             if new:
-                core.watchdog.log.info("saved asset {a}"
-                                       .format(a=ex_asset.asset.ticker))
+                core.watchdog.info("saved asset {a}"
+                                   .format(a=ex_asset.asset.ticker))
 
             u_bal, new = core.db.Balance.get_or_create(
                 user=user, asset=ex_asset, value_asset=ex_val_asset)
             if new:
-                core.watchdog.log.info("saved new balance {b}"
-                                       .format(b=u_bal.id))
+                core.watchdog.info("saved new balance {b}"
+                                   .format(b=u_bal.id))
 
             u_bal.free = ex_asset.transform(free) if free else 0
             u_bal.used = ex_asset.transform(used) if used else 0
