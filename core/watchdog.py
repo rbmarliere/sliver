@@ -170,6 +170,11 @@ def watch():
                                 t_cost = core.inventory.get_target_cost(
                                     u_strat)
 
+                                if (t_cost == 0
+                                        or t_cost < strategy.market.cost_min):
+                                    info("target cost less than minimums, "
+                                         "skipping position creation...")
+
                                 if t_cost > 0:
                                     position = core.db.Position.open(
                                         u_strat, t_cost)
