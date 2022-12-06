@@ -24,10 +24,23 @@ def refresh(strategy: core.db.Strategy,
         strategy.signal = (
             indicators.iloc[-1].signal if not indicators.empty else "neutral")
 
-        core.watchdog.info("strategy signal is {s}"
-                           .format(s=strategy.signal))
+    elif strategy.mode == "random":
+        strategy.signal = get_rsignal()
+
+    core.watchdog.info("strategy signal is {s}".format(s=strategy.signal))
 
     strategy.save()
+
+
+def get_rsignal():
+    import random
+    r = random.randint(1, 10)
+    if r >= 8:
+        return "buy"
+    elif r <= 2:
+        return "sell"
+    else:
+        return "neutral"
 
 
 def refresh_indicators(strategy: core.db.Strategy,
