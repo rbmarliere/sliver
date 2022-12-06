@@ -365,6 +365,10 @@ class Order(BaseModel):
                                    c=market.quote.print(
                                        market.base.format(amount)*price)))
 
+        if self.id:
+            core.watchdog.info("filled: {f}"
+                               .format(f=market.quote.print(filled)))
+
         # check for fees
         if ex_order["fee"] is None:
             fee = 0
