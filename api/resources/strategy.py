@@ -128,9 +128,9 @@ class Strategy(Resource):
         user = core.db.User.get_by_id(uid)
 
         try:
-            strategy = core.db.Strategy.get_by_id(args.id)
-            market = strategy.market
-            if strategy.user != user:
+            old_strategy = core.db.Strategy.get_by_id(args.id)
+            market = old_strategy.market
+            if old_strategy.user != user:
                 raise api.errors.StrategyNotEditable
         except core.db.Strategy.DoesNotExist:
             raise api.errors.StrategyDoesNotExist
@@ -142,10 +142,13 @@ class Strategy(Resource):
         strategy.subscribed = user.is_subscribed(strategy)
         strategy.symbol = strategy.market.get_symbol()
 
-        core.db.Indicator \
-            .delete() \
-            .where(core.db.Indicator.strategy_id == strategy.id) \
-            .execute()
+        if (strategy.i_threshold != float(old_strategy.i_threshold)
+                or strategy.p_threshold != float(old_strategy.p_threshold)
+                or strategy.tweet_filter != old_strategy.tweet_filter):
+            core.db.Indicator \
+                .delete() \
+                .where(core.db.Indicator.strategy_id == strategy.id) \
+                .execute()
 
         return strategy
 
