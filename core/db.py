@@ -268,7 +268,7 @@ class Position(BaseModel):
         bucket_max = strategy.market.quote.div(
             target_cost,
             strategy.num_orders,
-            trun_precision=strategy.market.price_precision)
+            trunc_precision=strategy.market.price_precision)
 
         position = core.db.Position(user_strategy=user_strat,
                                     next_bucket=next_bucket,
