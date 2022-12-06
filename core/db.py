@@ -64,12 +64,12 @@ class User(BaseModel):
         return Balance \
             .select() \
             .join(ExchangeAsset,
-                  on=(Balance.asset_id == ExchangeAsset.asset_id)) \
+                  on=(Balance.asset_id == ExchangeAsset.id)) \
             .join(Asset) \
             .switch(Balance) \
             .join(User) \
-            .where((Balance.user_id == self.id)
-                   & (Asset.id == asset.id)) \
+            .where(Balance.user_id == self.id) \
+            .where(Asset.id == asset.id) \
             .order_by(Asset.ticker)
 
     def get_open_positions(self):
