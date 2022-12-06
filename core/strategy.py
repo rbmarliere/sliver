@@ -1,4 +1,5 @@
 import datetime
+from decimal import Decimal as D
 
 import pandas
 import peewee
@@ -205,12 +206,12 @@ def backtest(strategy: core.db.Strategy):
     indicators.time = indicators.time.dt.strftime("%Y-%m-%d %H:%M")
 
     indicators["buys"] = (
-        (1 + .003) *
+        D(1 + .003) *
         indicators.low.where(indicators.index.isin(buys)))
     indicators.buys = indicators.buys.replace({float("nan"): None})
 
     indicators["sells"] = (
-        (1 + .003) *
+        D(1 + .003) *
         indicators.high.where(indicators.index.isin(sells)))
     indicators.sells = indicators.sells.replace({float("nan"): None})
 
