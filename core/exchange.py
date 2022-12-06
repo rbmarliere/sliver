@@ -254,7 +254,7 @@ def create_buy_orders(position: core.db.Position, last_price: int,
     # remaining is a cost
     remaining = position.get_remaining_to_open()
 
-    core.watchdog.info("bucket amount is {a}"
+    core.watchdog.info("bucket cost is {a}"
                        .format(a=market.quote.print(position.bucket)))
     core.watchdog.info("remaining to fill bucket is {r}"
                        .format(r=market.quote.print(remaining)))
