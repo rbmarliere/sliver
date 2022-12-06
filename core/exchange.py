@@ -174,8 +174,12 @@ def sync_orders(position: core.db.Position) -> core.db.Position:
                                .format(s=order.side,
                                        i=order.exchange_order_id))
 
-            ex_order = api.cancel_order(order.exchange_order_id,
-                                        market.get_symbol())
+            # fetch each order to sync
+            try:
+                ex_order = api.cancel_order(order.exchange_order_id,
+                                            market.get_symbol())
+            except ccxt.OrderNotFound:
+                pass
 
             ex_order = api.fetch_order(order.exchange_order_id,
                                        market.get_symbol())
