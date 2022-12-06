@@ -57,7 +57,7 @@ def error(msg, e):
 def watch():
     set_logger("watchdog")
 
-    # core.telegram.notify("watchdog init")
+    core.telegram.notify("watchdog init")
     info("watchdog init")
 
     model_i = core.models.load(core.config["HYPNOX_DEFAULT_MODEL_I"])
@@ -130,6 +130,7 @@ def watch():
                 while True:
                     try:
                         u_strat = users[i]
+                        i += 1
 
                         info("...........................................")
                         info("refreshing {u}'s strategy {s}"
@@ -143,7 +144,6 @@ def watch():
                                           strategy.market.base.exchange))
                         if credential is None:
                             info("credential not found, skipping user...")
-                            i += 1
                             continue
                         core.exchange.set_api(cred=credential)
 
@@ -189,10 +189,9 @@ def watch():
                                             .market.quote.print(t_cost)))
 
                         if position:
-                            core.exchange.refresh(position, strategy.signal,
+                            core.exchange.refresh(position,
+                                                  strategy.signal,
                                                   last_price)
-
-                        i += 1
 
                     except IndexError:
                         break
@@ -203,7 +202,6 @@ def watch():
                               e)
                         u_strat.active = False
                         u_strat.save()
-                        i += 1
 
                     except ccxt.InsufficientFunds as e:
                         error("insufficient funds, "
@@ -211,7 +209,6 @@ def watch():
                               e)
                         u_strat.active = False
                         u_strat.save()
-                        i += 1
 
                     except core.db.Credential.DoesNotExist as e:
                         error("user has no credential for this exchange, "
@@ -219,7 +216,6 @@ def watch():
                               e)
                         u_strat.active = False
                         u_strat.save()
-                        i += 1
 
                     except ccxt.RateLimitExceeded as e:
                         error("rate limit exceeded, skipping user...", e)
@@ -237,6 +233,8 @@ def watch():
                 core.telegram.notify("watchdog: exchange api error, "
                                      "disabling strategy {s}"
                                      .format(s=strategy))
+                strategy.active = False
+                strategy.save()
 
         except peewee.OperationalError as e:
             error("can't connect to database!", e)
@@ -248,8 +246,8 @@ def watch():
 
         except Exception as e:
             error("watchdog crashed", e)
-            # core.telegram.notify("watchdog crashed")
+            core.telegram.notify("watchdog crashed")
             break
 
-    # core.telegram.notify("watchdog shutting down")
+    core.telegram.notify("watchdog shutting down")
     info("shutting down...")
