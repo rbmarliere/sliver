@@ -70,6 +70,7 @@ def get_inventory(user: core.db.User):
 
 def get_target_cost(user_strat: core.db.UserStrategy):
     user = user_strat.user
+    exchange = user_strat.strategy.market.base.exchange
 
     inventory = get_inventory(user)
 
@@ -82,6 +83,23 @@ def get_target_cost(user_strat: core.db.UserStrategy):
     cash_liquid = inventory["USDT"]["total"] - inventory["positions_reserved"]
     available = cash_liquid * (1 - user.cash_reserve)
     core.watchdog.info("available cash is {v}".format(v=available))
+
+    q = (user
+         .get_balances_by_asset(
+             core.db.Asset.get(core.db.Asset.ticker == "USDT"))
+         .where(core.db.ExchangeAsset.exchange == exchange))
+    available_in_exch = [b for b in q]
+    if not available_in_exch:
+        available_in_exch = 0
+    else:
+        if available_in_exch[0].free > 0:  # some exchanges dont use this
+            available_in_exch = available_in_exch[0].free
+        else:
+            available_in_exch = available_in_exch[0].total
+    core.watchdog.info("available cash in exchange is {v}"
+                       .format(v=available_in_exch))
+
+    available = min(available, available_in_exch)
 
     target_cost = min(max_risk, available * user.target_factor)
     core.watchdog.info("target cost is {v}".format(v=target_cost))
