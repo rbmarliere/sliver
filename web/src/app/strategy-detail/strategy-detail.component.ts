@@ -35,7 +35,8 @@ export class StrategyDetailComponent implements OnInit {
     stop_loss: 0,
     i_threshold: 0,
     p_threshold: 0,
-    tweet_filter: ''
+    tweet_filter: '',
+    lm_ratio: 0,
   }
 
   form = this.createForm(this.empty_strat);
@@ -127,4 +128,7 @@ export class StrategyDetailComponent implements OnInit {
     });
   }
 
+  formatLabel(value: number) {
+    return Math.round(value * 100) + '%';
+  }
 }

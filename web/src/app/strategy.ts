@@ -18,4 +18,5 @@ export interface Strategy {
   i_threshold: number,
   p_threshold: number,
   tweet_filter: string
+  lm_ratio: number,
 }
