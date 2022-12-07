@@ -23,6 +23,7 @@ export class PositionComponent implements OnInit {
     'entry_price',
     'exit_price',
     'exit_amount',
+    'pnl',
     'actions'
   ];
 
