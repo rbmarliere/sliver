@@ -24,7 +24,8 @@ fields = {
     "stop_loss": fields.Float,
     "i_threshold": fields.Float,
     "p_threshold": fields.Float,
-    "tweet_filter": fields.String
+    "tweet_filter": fields.String,
+    "lm_ratio": fields.Float
 }
 
 argp = reqparse.RequestParser()
@@ -46,6 +47,7 @@ argp.add_argument("stop_loss", type=float)
 argp.add_argument("i_threshold", type=float)
 argp.add_argument("p_threshold", type=float)
 argp.add_argument("tweet_filter", type=str)
+argp.add_argument("lm_ratio", type=float)
 
 
 class Strategy(Resource):
