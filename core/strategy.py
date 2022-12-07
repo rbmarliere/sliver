@@ -2,7 +2,6 @@ import datetime
 from decimal import Decimal as D
 
 import pandas
-import peewee
 
 import core
 
@@ -19,28 +18,15 @@ def refresh(strategy: core.db.Strategy,
 
     # compute signal for automatic strategies
     if strategy.mode == "auto":
-        indicators = refresh_indicators(strategy)
-
-        strategy.signal = (
-            indicators.iloc[-1].signal if not indicators.empty else "neutral")
+        refresh_indicators(strategy)
+        strategy.signal = strategy.get_asignal()
 
     elif strategy.mode == "random":
-        strategy.signal = get_rsignal()
+        strategy.signal = strategy.get_rsignal()
 
     core.watchdog.info("strategy signal is {s}".format(s=strategy.signal))
 
     strategy.save()
-
-
-def get_rsignal():
-    import random
-    r = random.randint(1, 10)
-    if r >= 8:
-        return "buy"
-    elif r <= 2:
-        return "sell"
-    else:
-        return "neutral"
 
 
 def refresh_indicators(strategy: core.db.Strategy,
@@ -69,7 +55,7 @@ def refresh_indicators(strategy: core.db.Strategy,
     if prices.count() == 0:
         core.watchdog.info(
             "no price data found for computing signals, skipping...")
-        return pandas.DataFrame()
+        return
 
     # create prices dataframe
     prices = pandas.DataFrame(prices.dicts())
@@ -81,7 +67,7 @@ def refresh_indicators(strategy: core.db.Strategy,
     if tweets.count() == 0:
         core.watchdog.info(
             "no tweets found for computing signals, skipping...")
-        return pandas.DataFrame()
+        return
 
     # create tweets dataframe
     tweets = pandas.DataFrame(tweets.dicts())
@@ -156,24 +142,11 @@ def refresh_indicators(strategy: core.db.Strategy,
     core.watchdog.info("inserted {c} indicator rows"
                        .format(c=indicators.size))
 
-    return indicators
-
 
 def backtest(strategy: core.db.Strategy):
     refresh(strategy)
 
-    indicators = pandas.DataFrame(
-        strategy.indicator_set
-        .select(core.db.Price, core.db.Indicator)
-        .join(core.db.Price)
-        .dicts())
-
-    if indicators.empty:
-        indicators = pandas.DataFrame(
-            strategy.get_prices()
-            .select(core.db.Price, core.db.Indicator)
-            .join(core.db.Indicator, peewee.JOIN.LEFT_OUTER)
-            .dicts())
+    indicators = pandas.DataFrame(strategy.get_indicators().dicts())
 
     init_bal = balance = strategy.market.quote.transform(10000)
 
