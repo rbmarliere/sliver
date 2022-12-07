@@ -147,17 +147,11 @@ def watch():
                             continue
                         core.exchange.set_api(cred=credential)
 
-                        p = core.exchange.api.fetch_ticker(symbol)
-                        last_price = strategy.market.quote.transform(p["last"])
-                        info("last {m} price is ${p}"
-                             .format(m=symbol,
-                                     p=p["last"]))
-
                         # get active position for current user_strategy
                         position = u_strat.get_active_position_or_none()
 
                         if position:
-                            position = core.exchange.sync_orders(position)
+                            core.exchange.sync_limit_orders(position)
 
                         # sync user's balances across all exchanges
                         core.inventory.sync_balances(u_strat.user)
@@ -194,9 +188,7 @@ def watch():
                                             .market.quote.print(t_cost)))
 
                         if position:
-                            core.exchange.refresh(position,
-                                                  strategy.signal,
-                                                  last_price)
+                            core.exchange.refresh(position)
 
                     except IndexError:
                         break
