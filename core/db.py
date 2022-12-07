@@ -197,6 +197,7 @@ class Strategy(BaseModel):
     i_threshold = peewee.DecimalField(default=0)
     p_threshold = peewee.DecimalField(default=0)
     tweet_filter = peewee.TextField(default="")
+    lm_ratio = peewee.DecimalField(default=0)
 
     def get_active_users(self):
         return UserStrategy \
