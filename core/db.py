@@ -210,7 +210,7 @@ class Strategy(BaseModel):
             .select() \
             .where((Price.market == self.market)
                    & (Price.timeframe == self.timeframe)) \
-            .order_by(core.db.Price.time)
+            .order_by(Price.time)
 
     def get_indicators(self):
         return self.get_prices() \
@@ -296,11 +296,11 @@ class Position(BaseModel):
             strategy.num_orders,
             trunc_precision=strategy.market.price_precision)
 
-        position = core.db.Position(user_strategy=user_strat,
-                                    next_bucket=next_bucket,
-                                    bucket_max=bucket_max,
-                                    status="opening",
-                                    target_cost=target_cost)
+        position = Position(user_strategy=user_strat,
+                            next_bucket=next_bucket,
+                            bucket_max=bucket_max,
+                            status="opening",
+                            target_cost=target_cost)
         position.save()
 
         core.watchdog.info("opened position " + str(position.id))
@@ -324,6 +324,9 @@ class Position(BaseModel):
     def is_open(self):
         return self.status != "closing" and self.status != "closed"
 
+    def is_pending(self):
+        return self.status == "opening" or self.status == "closing"
+
     def get_remaining_to_fill(self):
         return self.bucket_max - self.bucket
 
@@ -333,6 +336,77 @@ class Position(BaseModel):
     def get_remaining_to_open(self):
         return min(self.target_cost - self.entry_cost,
                    self.bucket_max - self.bucket)
+
+    def get_remaining(self, last_price):
+        market = self.user_strategy.strategy.market
+
+        if self.status == "opening":
+            # remaining is a cost
+            remaining = self.get_remaining_to_open()
+
+            core.watchdog.info(
+                "bucket cost is {a}"
+                .format(a=market.quote.print(self.bucket)))
+            core.watchdog.info(
+                "remaining to fill in bucket is {r}"
+                .format(r=market.quote.print(remaining)))
+
+            return remaining
+
+        elif self.status == "closing":
+            # remaining is an amount
+            remaining_to_fill = self.get_remaining_to_fill()
+            remaining_to_exit = self.get_remaining_to_exit()
+            remaining = min(remaining_to_fill, remaining_to_exit)
+            core.watchdog.info(
+                "bucket amount is {a}"
+                .format(a=market.base.print(self.bucket)))
+            core.watchdog.info(
+                "remaining to fill in bucket is {r}"
+                .format(r=market.base.print(remaining_to_fill)))
+            core.watchdog.info(
+                "remaining to exit position is {r}"
+                .format(r=market.base.print(remaining_to_exit)))
+
+            # avoid position rounding errors by exiting early
+            r = remaining_to_exit - remaining_to_fill
+            position_remainder = market.base.format(r)
+            if (position_remainder > 0
+                    and
+                    position_remainder * last_price <= market.cost_min):
+                core.watchdog.info("position remainder is {r}"
+                                   .format(r=market.base.print(r)))
+                remaining = remaining_to_exit
+
+            return remaining
+
+    def add_order(self, order):
+        market = self.user_strategy.strategy.market
+
+        # update self info
+        if order.side == "buy":
+            self.bucket += order.cost
+            self.entry_cost += order.cost
+            self.entry_amount += order.filled
+            self.fee += order.fee
+
+            # update entry price if entry_amount is non zero
+            if self.entry_amount > 0:
+                self.entry_price = market.quote.transform(
+                    (self.entry_cost / self.entry_amount))
+
+        elif order.side == "sell":
+            self.bucket += order.filled
+            self.exit_amount += order.filled
+            self.exit_cost += order.cost
+            self.fee += order.fee
+
+            # update exit price if exit_amount is non zero
+            if self.exit_amount > 0:
+                self.exit_price = market.quote.transform(
+                    (self.exit_cost / self.exit_amount))
+
+        self.save()
 
 
 class Order(BaseModel):
@@ -407,9 +481,9 @@ class Order(BaseModel):
         if not status:
             if self.id:
                 if filled == cost:
-                    status = 'closed'
+                    status = "closed"
                 else:
-                    status = 'canceled'
+                    status = "canceled"
             else:
                 status = "open"
 
@@ -426,6 +500,9 @@ class Order(BaseModel):
         self.fee = fee
 
         self.save()
+
+        if status != "open":
+            position.add_order(self)
 
 
 class Price(BaseModel):
