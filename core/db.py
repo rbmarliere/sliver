@@ -1,6 +1,7 @@
 import datetime
 from decimal import Decimal as D
 
+import pandas
 import peewee
 import tensorflow
 from ccxt.base.decimal_to_precision import DECIMAL_PLACES, NO_PADDING
@@ -209,6 +210,30 @@ class Strategy(BaseModel):
             .where((Price.market == self.market)
                    & (Price.timeframe == self.timeframe)) \
             .order_by(core.db.Price.time)
+
+    def get_indicators(self):
+        return self.get_prices() \
+            .select(Price, Indicator) \
+            .join(Indicator, peewee.JOIN.LEFT_OUTER)
+
+    def get_rsignal(self):
+        import random
+        r = random.randint(1, 10)
+        if r >= 8:
+            return "buy"
+        elif r <= 2:
+            return "sell"
+        else:
+            return "neutral"
+
+    def get_asignal(self):
+        indicators = pandas.DataFrame(self.get_indicators().dicts())
+        if indicators.empty:
+            return "neutral"
+        signal = indicators.iloc[-1].signal
+        if signal is None:
+            return "neutral"
+        return signal
 
 
 class UserStrategy(BaseModel):
