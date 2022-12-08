@@ -52,13 +52,18 @@ def error(msg, e):
     log.error(msg)
     get_logger("exception", suppress_output=True) \
         .exception(e, exc_info=True)
+    core.telegram.notify(msg)
+
+
+def notify(msg):
+    log.info(msg)
+    core.telegram.notify(msg)
 
 
 def watch():
     set_logger("watchdog")
 
-    core.telegram.notify("watchdog init")
-    info("watchdog init")
+    notify("watchdog init")
 
     model_i = core.models.load(core.config["HYPNOX_DEFAULT_MODEL_I"])
     model_p = core.models.load(core.config["HYPNOX_DEFAULT_MODEL_P"])
@@ -173,7 +178,7 @@ def watch():
                                     position = core.db.Position.open(
                                         u_strat, t_cost)
 
-                                    core.telegram.notify(
+                                    notify(
                                         "watchdog: "
                                         "opened position for user {u} "
                                         "under strategy {s} "
@@ -227,9 +232,9 @@ def watch():
             n_tries += 1
             if n_tries > 9:
                 n_tries = 0
-                core.telegram.notify("watchdog: exchange api error, "
-                                     "disabling strategy {s}"
-                                     .format(s=strategy))
+                notify("watchdog: exchange api error, "
+                       "disabling strategy {s}"
+                       .format(s=strategy))
                 strategy.active = False
                 strategy.save()
 
@@ -243,8 +248,6 @@ def watch():
 
         except Exception as e:
             error("watchdog crashed", e)
-            core.telegram.notify("watchdog crashed")
             break
 
-    core.telegram.notify("watchdog shutting down")
-    info("shutting down...")
+    notify("watchdog shutting down...")
