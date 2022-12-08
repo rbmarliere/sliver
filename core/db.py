@@ -459,15 +459,18 @@ class Order(BaseModel):
         cost = market.quote.transform(cost)
         filled = market.quote.transform(filled)
 
-        core.watchdog.info("{a} @ {p} ({c})"
-                           .format(a=market.base.print(amount),
-                                   p=market.quote.print(price),
-                                   c=market.quote.print(
-                                       market.base.format(amount)*price)))
+        msg = "{a} @ {p} ({c})" \
+            .format(a=market.base.print(amount),
+                    p=market.quote.print(price),
+                    c=market.quote.print(market.base.format(amount)*price))
+
+        core.watchdog.info(msg)
 
         if self.id:
             core.watchdog.info("filled: {f}"
                                .format(f=market.quote.print(filled)))
+            if filled > 0:
+                core.watchdog.notify(msg)
 
         # check for fees
         if ex_order["fee"] is None:
