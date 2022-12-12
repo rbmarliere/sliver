@@ -215,7 +215,8 @@ class Strategy(BaseModel):
     def get_indicators(self):
         return self.get_prices() \
             .select(Price, Indicator) \
-            .join(Indicator, peewee.JOIN.LEFT_OUTER)
+            .join(Indicator, peewee.JOIN.LEFT_OUTER) \
+            .where(Indicator.strategy == self)
 
     def get_rsignal(self):
         import random
