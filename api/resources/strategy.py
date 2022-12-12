@@ -1,6 +1,6 @@
 import peewee
 from flask_jwt_extended import get_jwt_identity, jwt_required
-from flask_restful import Resource, fields, marshal_with, reqparse, inputs
+from flask_restful import Resource, fields, inputs, marshal_with, reqparse
 
 import api
 import core
@@ -50,7 +50,7 @@ argp.add_argument("tweet_filter", type=str)
 argp.add_argument("lm_ratio", type=float)
 
 
-class Strategy(Resource):
+class Strategies(Resource):
     @marshal_with(fields)
     @jwt_required()
     def get(self):
@@ -173,3 +173,21 @@ class Strategy(Resource):
             raise api.errors.StrategyDoesNotExist
 
         return "", 204
+
+
+class Strategy(Resource):
+    @marshal_with(fields)
+    @jwt_required()
+    def get(self, strategy_id):
+        uid = int(get_jwt_identity())
+        user = core.db.User.get_by_id(uid)
+
+        try:
+            strategy = core.db.Strategy.get_by_id(strategy_id)
+        except core.db.Strategy.DoesNotExist:
+            raise api.errors.StrategyDoesNotExist
+
+        strategy.symbol = strategy.market.get_symbol()
+        strategy.subscribed = user.is_subscribed(strategy)
+
+        return strategy
