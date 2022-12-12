@@ -560,10 +560,15 @@ class Indicator(BaseModel):
 class Tweet(BaseModel):
     time = peewee.DateTimeField()
     text = peewee.TextField()
-    model_i = peewee.TextField(null=True)
-    intensity = peewee.DecimalField(null=True)
-    model_p = peewee.TextField(null=True)
-    polarity = peewee.DecimalField(null=True)
+
+
+class Score(BaseModel):
+    tweet = peewee.ForeignKeyField(Tweet)
+    model = peewee.TextField()
+    score = peewee.DecimalField()
+
+    class Meta:
+        constraints = [peewee.SQL("UNIQUE (tweet_id, model)")]
 
 
 def get_active_strategies():
@@ -576,3 +581,12 @@ def get_active_strategies():
 def get_pending_strategies():
     now = datetime.datetime.utcnow()
     return get_active_strategies().where((now > Strategy.next_refresh))
+
+
+def get_tweets_by_model(model: str):
+    return Tweet \
+        .select(Tweet, Score) \
+        .join(Score,
+              peewee.JOIN.LEFT_OUTER,
+              on=((Score.tweet_id == Tweet.id) & (Score.model == model))) \
+        .order_by(Tweet.id)
