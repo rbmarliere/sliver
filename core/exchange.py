@@ -390,6 +390,7 @@ def refresh(position: core.db.Position):
             core.watchdog.info("minimum roi = {r}%".format(r=strategy.min_roi))
             core.watchdog.info("stoploss = -{r}%".format(r=strategy.stop_loss))
             core.watchdog.info("closing position")
+            core.watchdog.notice("closing " + position.get_notice())
 
             # when selling, bucket_max becomes an amount instead of cost
             position.bucket_max = market.base.div(
@@ -492,6 +493,7 @@ def refresh(position: core.db.Position):
                         position.fee)
         core.watchdog.info("position is now closed, pnl: {r}"
                            .format(r=market.quote.print(position.pnl)))
+        core.watchdog.notice("closed " + position.get_notice())
 
     # position finishes opening when it reaches target
     cost_diff = position.target_cost - position.entry_cost

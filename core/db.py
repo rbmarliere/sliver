@@ -285,27 +285,35 @@ class Position(BaseModel):
     # position profit or loss
     pnl = peewee.BigIntegerField(default=0)
 
-    def open(user_strat: UserStrategy, target_cost: int):
-        strategy = user_strat.strategy
+    def open(u_st: UserStrategy, tcost: int):
+        strategy = u_st.strategy
         now = datetime.datetime.utcnow()
         next_bucket = now + datetime.timedelta(
             minutes=strategy.bucket_interval)
 
         bucket_max = strategy.market.quote.div(
-            target_cost,
+            tcost,
             strategy.num_orders,
             trunc_precision=strategy.market.price_precision)
 
-        position = Position(user_strategy=user_strat,
+        position = Position(user_strategy=u_st,
                             next_bucket=next_bucket,
                             bucket_max=bucket_max,
                             status="opening",
-                            target_cost=target_cost)
+                            target_cost=tcost)
         position.save()
 
-        core.watchdog.info("opened position " + str(position.id))
+        core.watchdog.info("opening position {i}".format(i=position.id))
+        core.watchdog.notice("opening " + position.get_notice())
 
         return position
+
+    def get_notice(self):
+        return ("position for user {u} under strategy {s} in market {m}"
+                .format(
+                    u=self.user_strategy.user.email,
+                    s=self.user_strategy.strategy,
+                    m=self.user_strategy.strategy.market.get_symbol()))
 
     def get_timedelta(self):
         if self.is_pending():
@@ -480,7 +488,7 @@ class Order(BaseModel):
             core.watchdog.info("filled: {f}"
                                .format(f=market.quote.print(filled)))
             if filled > 0:
-                core.watchdog.notify(msg)
+                core.watchdog.notice(msg)
 
         # check for fees
         if ex_order["fee"] is None:

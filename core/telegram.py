@@ -3,7 +3,7 @@ import telegram
 import core
 
 
-def notify(message):
+def notice(message):
     try:
         assert core.config["HYPNOX_TELEGRAM_KEY"]
         assert core.config["HYPNOX_TELEGRAM_CHANNEL"]
