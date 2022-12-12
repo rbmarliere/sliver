@@ -99,6 +99,13 @@ export class StrategyDetailComponent implements OnInit {
       }
       this.timeframes = exchange.timeframes;
     }
+
+    if (this.strategy.id > 0) {
+      this.strategyService.getStrategy(this.strategy.id).subscribe({
+        next: (res) => this.strategy = res,
+        error: (err) => this.handleError(err)
+      });
+    }
   }
 
   createForm(model: Strategy): FormGroup {
