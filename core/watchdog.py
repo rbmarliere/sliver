@@ -124,7 +124,7 @@ def watch():
                                        strategy.timeframe)
 
                 # refresh strategy params
-                core.strategy.refresh(strategy, next=now)
+                core.strategy.refresh(strategy)
 
                 users = [u for u in strategy.get_active_users()]
 
