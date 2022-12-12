@@ -52,18 +52,19 @@ def error(msg, e):
     log.error(msg)
     get_logger("exception", suppress_output=True) \
         .exception(e, exc_info=True)
-    core.telegram.notify(msg)
+    core.telegram.notice(msg)
 
 
-def notify(msg):
+def notice(msg):
+    msg = "{l}: {m}".format(l=log.name, m=msg)
     log.info(msg)
-    core.telegram.notify(msg)
+    core.telegram.notice(msg)
 
 
 def watch():
     set_logger("watchdog")
 
-    notify("watchdog init")
+    notice("init")
 
     model_i = core.models.load(core.config["HYPNOX_DEFAULT_MODEL_I"])
     model_p = core.models.load(core.config["HYPNOX_DEFAULT_MODEL_P"])
@@ -178,20 +179,6 @@ def watch():
                                     position = core.db.Position.open(
                                         u_strat, t_cost)
 
-                                    notify(
-                                        "watchdog: "
-                                        "opened position for user {u} "
-                                        "under strategy {s} "
-                                        "in market {m} "
-                                        "with target cost {c} "
-                                        .format(
-                                            u=u_strat.user.email,
-                                            s=u_strat.strategy,
-                                            m=u_strat.strategy
-                                            .market.get_symbol(),
-                                            c=u_strat.strategy
-                                            .market.quote.print(t_cost)))
-
                         if position:
                             core.exchange.refresh(position)
 
@@ -232,8 +219,7 @@ def watch():
             n_tries += 1
             if n_tries > 9:
                 n_tries = 0
-                notify("watchdog: exchange api error, "
-                       "disabling strategy {s}"
+                notice("exchange api error, disabling strategy {s}"
                        .format(s=strategy))
                 strategy.active = False
                 strategy.save()
@@ -250,4 +236,4 @@ def watch():
             error("watchdog crashed", e)
             break
 
-    notify("watchdog shutting down...")
+    notice("shutting down...")
