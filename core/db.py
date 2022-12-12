@@ -307,6 +307,16 @@ class Position(BaseModel):
 
         return position
 
+    def get_timedelta(self):
+        if self.is_pending():
+            return datetime.timedelta(0)
+        orders = [o for o in self.get_orders()]
+        if len(orders) > 1:
+            t1 = orders[-1].time
+            t2 = orders[0].time
+            return t2 - t1
+        return datetime.timedelta(0)
+
     def get_orders(self):
         return Order \
             .select(Order, Strategy.id.alias("strategy_id")) \

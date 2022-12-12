@@ -153,6 +153,7 @@ def backtest(strategy: core.db.Strategy):
     buys = []
     sells = []
     positions = []
+    positions_timedeltas = []
     curr_pos = None
     for idx, ind in indicators.iterrows():
         if ind["signal"] == "buy":
@@ -161,7 +162,7 @@ def backtest(strategy: core.db.Strategy):
 
                 curr_pos = core.db.Position(status="closed",
                                             entry_price=ind["open"],
-                                            entry_time=idx)
+                                            entry_time=ind["time"])
 
         elif ind["signal"] == "sell":
             if curr_pos is not None:
@@ -174,11 +175,14 @@ def backtest(strategy: core.db.Strategy):
 
                 curr_pos.entry_cost = balance
                 curr_pos.entry_amount = entry_amount
-                curr_pos.exit_time = idx
+                curr_pos.exit_time = ind["time"]
                 curr_pos.exit_price = ind["open"]
                 curr_pos.pnl = price_delta
 
                 balance += price_delta
+
+                time_in_position = curr_pos.exit_time - curr_pos.entry_time
+                positions_timedeltas.append(time_in_position)
 
                 positions.append(curr_pos)
 
@@ -219,6 +223,7 @@ def backtest(strategy: core.db.Strategy):
     balance = strategy.market.quote.print(balance)
     exit_bh_value = strategy.market.quote.print(exit_bh_value)
     pnl = strategy.market.quote.print(pnl)
+    avg_timedelta = pandas.Series(positions_timedeltas).mean()
 
     log = """initial balance: {init_bal}
 final balance: {balance}
@@ -229,16 +234,19 @@ number of trades: {n_trades}
 pnl: {pnl}
 roi: {roi}%
 buy and hold roi: {roi_bh}%
-roi vs buy and hold: {roi_vs_bh}%""".format(init_bal=init_bal,
-                                            balance=balance,
-                                            init_bh_amount=init_bh_amount,
-                                            exit_bh_value=exit_bh_value,
-                                            n_days=n_days,
-                                            n_trades=n_trades,
-                                            pnl=pnl,
-                                            roi=roi,
-                                            roi_bh=roi_bh,
-                                            roi_vs_bh=roi_vs_bh)
+roi vs buy and hold: {roi_vs_bh}%
+average timedelta in position: {avg_timedelta}
+""".format(init_bal=init_bal,
+           balance=balance,
+           init_bh_amount=init_bh_amount,
+           exit_bh_value=exit_bh_value,
+           n_days=n_days,
+           n_trades=n_trades,
+           pnl=pnl,
+           roi=roi,
+           roi_bh=roi_bh,
+           roi_vs_bh=roi_vs_bh,
+           avg_timedelta=avg_timedelta)
 
     res = indicators.to_dict("list")
     res["backtest_log"] = log
