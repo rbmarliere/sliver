@@ -188,6 +188,8 @@ def backtest(strategy: core.db.Strategy):
 
                 curr_pos = None
 
+    n_days = str(indicators.iloc[-1].time - indicators.iloc[0].time)
+
     indicators.open = indicators.open.apply(strategy.market.quote.format)
     indicators.high = indicators.high.apply(strategy.market.quote.format)
     indicators.low = indicators.low.apply(strategy.market.quote.format)
@@ -213,7 +215,6 @@ def backtest(strategy: core.db.Strategy):
     init_bh_amount = strategy.market.base.print(positions[0].entry_amount)
     exit_bh_value = (positions[-1].entry_price *
                      strategy.market.base.format(positions[0].entry_amount))
-    n_days = str(positions[-1].entry_time - positions[0].entry_time)
     n_trades = str(len(positions))
     pnl = balance - init_bal
     roi = round(pnl / init_bal * 100, 2)
@@ -229,13 +230,13 @@ def backtest(strategy: core.db.Strategy):
 final balance: {balance}
 buy and hold amount at first position: {init_bh_amount}
 buy and hold value at last position: {exit_bh_value}
-number of candles: {n_days}
+total timedelta: {n_days}
 number of trades: {n_trades}
+average timedelta in position: {avg_timedelta}
 pnl: {pnl}
 roi: {roi}%
 buy and hold roi: {roi_bh}%
 roi vs buy and hold: {roi_vs_bh}%
-average timedelta in position: {avg_timedelta}
 """.format(init_bal=init_bal,
            balance=balance,
            init_bh_amount=init_bh_amount,
