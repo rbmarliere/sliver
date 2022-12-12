@@ -59,7 +59,7 @@ class Strategies(Resource):
 
         strategies = [s for s in
                       core.db.Strategy.select()
-                      .order_by(core.db.Strategy.id.asc())]
+                      .order_by(core.db.Strategy.description)]
 
         for st in strategies:
             st.subscribed = user.is_subscribed(st)
