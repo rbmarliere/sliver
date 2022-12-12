@@ -6,15 +6,19 @@ import pandas
 import core
 
 
-def refresh(strategy: core.db.Strategy,
-            next: datetime.datetime = datetime.datetime.utcnow()):
+def refresh(strategy: core.db.Strategy):
     # ideas:
     # - reset num_orders, spread and refresh_interval dynamically
     # - base decision over price data and inventory (amount opened, risk, etc)
 
     # update current strategy next refresh time
-    strategy.next_refresh = (
-        next + datetime.timedelta(minutes=strategy.refresh_interval))
+    freq = core.utils.get_timeframe_delta(strategy.timeframe)
+    now = datetime.datetime.utcnow()
+    last = now.replace(minute=0, second=0, microsecond=0)
+    range = pandas.date_range(last, periods=61, freq=freq)
+    series = range.to_series().asfreq(freq)
+    strategy.next_refresh = series.loc[series > now].iloc[0]
+    core.watchdog.info("next refresh is {n}".format(n=strategy.next_refresh))
 
     # compute signal for automatic strategies
     if strategy.mode == "auto":
@@ -24,7 +28,7 @@ def refresh(strategy: core.db.Strategy,
     elif strategy.mode == "random":
         strategy.signal = strategy.get_rsignal()
 
-    core.watchdog.info("strategy signal is {s}".format(s=strategy.signal))
+    core.watchdog.info("signal is {s}".format(s=strategy.signal))
 
     strategy.save()
 
@@ -45,7 +49,8 @@ def refresh_indicators(strategy: core.db.Strategy,
     tweets = tweets.where(core.db.Tweet.intensity.is_null(False))
     tweets = tweets.where(core.db.Tweet.polarity.is_null(False))
 
-    indicators = [i for i in strategy.indicator_set]
+    q = strategy.indicator_set.order_by(core.db.Indicator.id)
+    indicators = [i for i in q]
 
     if indicators and update_only:
         since = indicators[-1].price.time
