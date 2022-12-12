@@ -8,4 +8,5 @@ Order = order.Order
 Position = position.Position
 Price = price.Price
 Strategy = strategy.Strategy
+Strategies = strategy.Strategies
 User = user.User
