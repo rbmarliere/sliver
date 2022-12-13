@@ -22,12 +22,12 @@ def load(model_name):
     except AttributeError:
         pass
 
+    core.watchdog.info("loading model {m}".format(m=model_name))
+
     modelpath = pathlib.Path(core.config["HYPNOX_MODELS_DIR"] + "/" +
                              model_name).resolve()
     if not modelpath.exists():
         raise core.errors.ModelDoesNotExist
-
-    core.watchdog.info("loading model {m}".format(m=model_name))
 
     model_module = importlib.import_module("core.models." + model_name)
     model = model_module.load_model(modelpath)

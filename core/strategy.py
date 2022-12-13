@@ -7,6 +7,31 @@ import core
 
 
 def refresh(strategy: core.db.Strategy):
+    symbol = strategy.market.get_symbol()
+
+    core.watchdog.info("===========================================")
+    core.watchdog.info("refreshing strategy {s}".format(s=strategy))
+    core.watchdog.info("market is {m}".format(m=symbol))
+    core.watchdog.info("timeframe is {T}".format(T=strategy.timeframe))
+    core.watchdog.info("exchange is {e}"
+                       .format(e=strategy.market.base.exchange.name))
+
+    core.exchange.set_api(exchange=strategy.market.base.exchange)
+
+    # update tweet scores
+    if strategy.model_i:
+        model_i = core.models.load(strategy.model_i)
+        core.models.replay(model_i)
+    if strategy.model_p:
+        model_p = core.models.load(strategy.model_p)
+        core.models.replay(model_p)
+
+    # download historical price ohlcv data
+    core.exchange.download(strategy.market,
+                           strategy.timeframe)
+
+    # refresh strategy params
+
     # ideas:
     # - reset num_orders, spread and refresh_interval dynamically
     # - base decision over price data and inventory (amount opened, risk, etc)
@@ -31,6 +56,48 @@ def refresh(strategy: core.db.Strategy):
     core.watchdog.info("signal is {s}".format(s=strategy.signal))
 
     strategy.save()
+
+
+def refresh_user(user_strat: core.db.UserStrategy):
+    strategy = user_strat.strategy
+    exchange = strategy.market.base.exchange
+    user = user_strat.user
+
+    core.watchdog.info("...........................................")
+    core.watchdog.info("refreshing {u}'s strategy {s}"
+                       .format(u=user_strat.user.email,
+                               s=user_strat))
+
+    # set api to current exchange
+    credential = user.get_active_credential(exchange).get()
+    core.exchange.set_api(cred=credential)
+
+    # get active position for current user_strategy
+    position = user_strat.get_active_position_or_none()
+
+    if position:
+        core.exchange.sync_limit_orders(position)
+
+    # sync user's balances across all exchanges
+    core.inventory.sync_balances(user_strat.user)
+
+    if position is None:
+        core.watchdog.info("no active position")
+
+        # create position if apt
+        if strategy.signal == "buy":
+            t_cost = core.inventory.get_target_cost(
+                user_strat)
+
+            if (t_cost == 0 or t_cost < strategy.market.cost_min):
+                core.watchdog.info("target cost less than minimums, "
+                                   "skipping position creation...")
+
+            if t_cost > 0:
+                position = core.db.Position.open(user_strat, t_cost)
+
+    if position:
+        core.exchange.refresh(position)
 
 
 def refresh_indicators(strategy: core.db.Strategy,
