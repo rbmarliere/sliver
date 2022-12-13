@@ -104,6 +104,7 @@ def get_mean_var(series: pandas.DataFrame,
                  old_mean: decimal.Decimal,
                  old_var: decimal.Decimal):
     # https://math.stackexchange.com/questions/102978/incremental-computation-of-standard-deviation
+    n = decimal.Decimal(str(n))
     for i, x in series.items():
         x = decimal.Decimal(str(x))
         n += 1
