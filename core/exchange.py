@@ -444,7 +444,7 @@ def refresh(position: core.db.Position):
         if (datetime.datetime.utcnow() < position.next_bucket
                 and remaining_cost < market.cost_min
                 and remaining > 0):
-            core.watchdog.info("bucket is full, skipping order creation...")
+            core.watchdog.info("bucket is full")
             bucket_is_full = True
 
         # if bucket is not full but can't insert new orders, fill at market
