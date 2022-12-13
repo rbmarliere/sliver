@@ -18,7 +18,16 @@ if __name__ == "__main__":
 
     passwd = getpass.getpass("enter db password: ")
 
-    print("grabbing scores...")
+    db = peewee.PostgresqlDatabase(
+        args.name, **{
+            "host": args.host,
+            "user": args.user,
+            "password": passwd
+        })
+    db.bind([core.db.Score])
+    db.connect()
+
+    print("downloading scores...")
     f = core.db.Score.model == args.model
     q = core.db.Score \
         .select() \
@@ -29,21 +38,16 @@ if __name__ == "__main__":
         sys.exit(1)
     scores = [s for s in q]
 
-    db = peewee.PostgresqlDatabase(
-        args.name, **{
-            "host": args.host,
-            "user": args.user,
-            "password": passwd
-        })
-    db.bind([core.db.Score])
-    db.connect()
+    db.close()
+    core.db.connection.bind([core.db.Score])
+    core.db.connection.connect(reuse_if_open=True)
 
     with db.atomic():
         c = core.db.Score.delete().where(f).execute()
-        print("deleted all {c} upstream scores..."
+        print("deleted all {c} downstream scores..."
               .format(c=c))
 
-        print("uploading {c} scores...\n"
+        print("inserting {c} scores...\n"
               "{first} -- {last}"
               .format(c=len(scores),
                       first=scores[0].id,

@@ -17,7 +17,8 @@ if __name__ == "__main__":
     argp.add_argument("--user", required=True)
     argp.add_argument("-u",
                       "--update-only",
-                      help="if unset, reset table and download everything")
+                      help="if unset, reset table and download everything",
+                      action="store_true")
     args = argp.parse_args()
 
     passwd = getpass.getpass("enter db password: ")
@@ -36,21 +37,17 @@ if __name__ == "__main__":
     db.bind([core.db.Tweet])
     db.connect()
 
-    f = ((core.db.Tweet.model_i.is_null(False)) &
-         (core.db.Tweet.model_p.is_null(False)))
-
     print("grabbing tweets upstream...")
-    query = core.db.Tweet.select().where(f).order_by(core.db.Tweet.id)
+    query = core.db.Tweet.select().order_by(core.db.Tweet.id)
     upstream_tweets = [t for t in query]
     print("found {c} tweets".format(c=len(upstream_tweets)))
 
     db.close()
-
     core.db.connection.bind([core.db.Tweet])
     core.db.connection.connect(reuse_if_open=True)
 
     print("grabbing tweets downstream...")
-    query = core.db.Tweet.select().where(f).order_by(core.db.Tweet.id)
+    query = core.db.Tweet.select().order_by(core.db.Tweet.id)
     tweets = [t for t in query]
     print("found {c} tweets".format(c=len(tweets)))
 
