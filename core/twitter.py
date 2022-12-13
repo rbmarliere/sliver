@@ -111,11 +111,7 @@ class Stream(tweepy.Stream):
                         "error on inserting, caching instead...", e)
                     output = pandas.DataFrame({
                         "time": [time],
-                        "text": [text],
-                        "model_i": [""],
-                        "intensity": [0],
-                        "polarity": [0],
-                        "model_p": [""]
+                        "text": [text]
                     })
                     with open(cache_file, "a") as f:
                         output.to_csv(f,
