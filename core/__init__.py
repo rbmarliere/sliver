@@ -49,6 +49,7 @@ if config["HYPNOX_ENV_NAME"] not in ["development", "production"]:
 from . import (
     utils,
     db,
+    errors,
     exchange,
     inventory,
     models,
@@ -60,6 +61,7 @@ from . import (
 __all__ = [
     "utils",
     "db",
+    "errors",
     "exchange",
     "inventory",
     "models",
