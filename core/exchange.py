@@ -86,7 +86,7 @@ def download(market: core.db.Market, timeframe: str):
 
     # return if last entry is last possible result
     if page_start + timeframe_delta > datetime.datetime.utcnow():
-        core.watchdog.info("price data is already up to date, skipping...")
+        core.watchdog.info("price data is up to date, skipping...")
         return
 
     prices = pandas.DataFrame(columns=[0, 1, 2, 3, 4, 5, 6, 7])

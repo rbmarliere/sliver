@@ -198,6 +198,8 @@ class Strategy(BaseModel):
     p_threshold = peewee.DecimalField(default=0)
     tweet_filter = peewee.TextField(default="")
     lm_ratio = peewee.DecimalField(default=0)
+    model_i = peewee.TextField(null=True)
+    model_p = peewee.TextField(null=True)
 
     def get_active_users(self):
         return UserStrategy \
@@ -215,8 +217,10 @@ class Strategy(BaseModel):
     def get_indicators(self):
         return self.get_prices() \
             .select(Price, Indicator) \
-            .join(Indicator, peewee.JOIN.LEFT_OUTER) \
-            .where(Indicator.strategy == self)
+            .join(Indicator,
+                  peewee.JOIN.LEFT_OUTER,
+                  on=((Indicator.price_id == Price.id)
+                      & (Indicator.strategy == self)))
 
     def get_rsignal(self):
         import random
@@ -589,4 +593,4 @@ def get_tweets_by_model(model: str):
         .join(Score,
               peewee.JOIN.LEFT_OUTER,
               on=((Score.tweet_id == Tweet.id) & (Score.model == model))) \
-        .order_by(Tweet.id)
+        .order_by(Tweet.time)
