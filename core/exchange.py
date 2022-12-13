@@ -440,11 +440,12 @@ def refresh(position: core.db.Position):
             limit_total_cost = market.base.format(limit_total) * last_price
 
         # check if current bucket is filled
+        bucket_is_full = False
         if (datetime.datetime.utcnow() < position.next_bucket
                 and remaining_cost < market.cost_min
                 and remaining > 0):
-            core.watchdog.info("bucket is full, skipping...")
-            return
+            core.watchdog.info("bucket is full, skipping order creation...")
+            bucket_is_full = True
 
         # if bucket is not full but can't insert new orders, fill at market
         if (market_total_cost < market.cost_min
@@ -453,7 +454,7 @@ def refresh(position: core.db.Position):
             limit_total = 0
 
     # create buy orders for an opening position
-    if position.status == "opening":
+    if position.status == "opening" and not bucket_is_full:
         if market_total > 0:
             # market_total is a cost
             market_total = market.base.div(market_total, last_price)
@@ -467,7 +468,7 @@ def refresh(position: core.db.Position):
                                     strategy.spread)
 
     # create sell orders for a closing position or close
-    elif position.status == "closing":
+    elif position.status == "closing" and not bucket_is_full:
         if market_total > 0:
             # market_total is an amount
             create_order("market", "sell", position, market_total, last_price)
@@ -478,10 +479,6 @@ def refresh(position: core.db.Position):
                                      last_price,
                                      strategy.num_orders,
                                      strategy.spread)
-
-    else:
-        core.watchdog.info("position is {s} , skipping order creation..."
-                           .format(s=position.status))
 
     # position finishes closing when exit equals entry
     amount_diff = position.entry_amount - position.exit_amount
