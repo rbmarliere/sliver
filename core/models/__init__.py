@@ -30,7 +30,7 @@ def load(model_name):
 
 
 def predict(model, tweets, verbose=0):
-    inputs = model.tokenizer(tweets["text"].to_list(),
+    inputs = model.tokenizer(tweets,
                              truncation=True,
                              padding="max_length",
                              max_length=model.config["max_length"],
@@ -45,65 +45,43 @@ def predict(model, tweets, verbose=0):
         verbose=verbose)
 
     if model.config["class"] == "polarity":
-        tweets["model_p"] = model.config["name"]
-
         indexes = prob.argmax(axis=1)
         values = numpy.take_along_axis(prob,
                                        numpy.expand_dims(indexes, axis=1),
                                        axis=1).squeeze(axis=1)
         labels = [-1 if x == 2 else x for x in indexes]
 
-        tweets["polarity"] = labels * values
+        scores = labels * values
 
     elif model.config["class"] == "intensity":
-        tweets["model_i"] = model.config["name"]
-        tweets["intensity"] = prob.flatten()
+        scores = prob.flatten()
 
-    return tweets
+    return scores
 
 
 def replay(model, update_only=True, verbose=0):
-    if model.config["class"] == "intensity":
-        filter = core.db.Tweet.model_i.is_null(True)
-        fields = ["model_i", "intensity"]
-    else:
-        filter = core.db.Tweet.model_p.is_null(True)
-        fields = ["model_p", "polarity"]
+    query = core.db.get_tweets_by_model(model.config["name"])
 
-    if not update_only:
-        filter = True
-
-    query = core.db.Tweet.select().where(filter).order_by(
-        core.db.Tweet.id.asc())
+    if update_only:
+        query = query.where(core.db.Score.model.is_null())
 
     tweets = pandas.DataFrame(query.dicts())
 
     if tweets.empty:
-        core.watchdog.info("no tweets to replay")
+        core.watchdog.info("{m}: no tweets to replay"
+                           .format(m=model.config["name"]))
         return
 
-    core.watchdog.info("replaying {c} tweets with model {m}"
+    core.watchdog.info("{m}: replaying {c} tweets"
                        .format(c=query.count(),
                                m=model.config["name"]))
 
     tweets.text = tweets.text.apply(core.utils.standardize)
     tweets.text = tweets.text.str.slice(0, model.config["max_length"])
 
-    tweets = predict(model, tweets, verbose=verbose)
+    tweets = tweets.rename(columns={"id": "tweet_id"})
+    tweets["model"] = model.config["name"]
+    tweets["score"] = predict(model, tweets["text"].to_list(), verbose=verbose)
 
-    item = 0
-    page_size = 8096
-    updates = []
-
-    for i, tweet in tweets.iterrows():
-        if item == page_size:
-            core.db.Tweet.bulk_update(
-                updates, fields=fields, batch_size=page_size)
-            item = 0
-            updates = []
-
-        updates.append(core.db.Tweet(**tweet))
-        item += 1
-
-    # final update for last truncated page
-    core.db.Tweet.bulk_update(updates, fields=fields)
+    scores = tweets[["tweet_id", "model", "score"]]
+    core.db.Score.insert_many(scores.to_dict("records")).execute()
