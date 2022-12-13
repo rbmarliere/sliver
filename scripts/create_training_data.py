@@ -18,6 +18,10 @@ if __name__ == "__main__":
                       "--num_lines",
                       help="number of tweets to fetch from top scored",
                       required=True)
+    argp.add_argument("-m",
+                      "--model",
+                      help="model to grab scores from",
+                      required=True)
     args = argp.parse_args()
 
     print("loading input labeled data")
@@ -33,10 +37,8 @@ if __name__ == "__main__":
         core.utils.standardize)
 
     print("retrieving highest scored tweets set")
-    query = \
-        core.db.Tweet \
-        .select() \
-        .order_by(core.db.Tweet.intensity.desc()) \
+    query = core.db.get_tweets_by_model(args.model) \
+        .order_by(core.db.Score.score.desc()) \
         .limit(args.num_lines)
     tweets = pandas.DataFrame(query.dicts())
     tweets["clean"] = tweets["text"].apply(core.utils.standardize)
