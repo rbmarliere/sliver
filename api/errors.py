@@ -29,6 +29,13 @@ class CredentialExists(HTTPException):
     )
 
 
+class CredentialDoesNotExist(HTTPException):
+    code = 400
+    description = (
+        "Credential does not exist."
+    )
+
+
 class PositionDoesNotExist(HTTPException):
     code = 404
     description = (
