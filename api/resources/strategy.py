@@ -150,7 +150,9 @@ class Strategies(Resource):
 
         if (strategy.i_threshold != float(old_strategy.i_threshold)
                 or strategy.p_threshold != float(old_strategy.p_threshold)
-                or strategy.tweet_filter != old_strategy.tweet_filter):
+                or strategy.tweet_filter != old_strategy.tweet_filter
+                or strategy.model_i != old_strategy.model_i
+                or strategy.model_p != old_strategy.model_p):
             core.db.Indicator \
                 .delete() \
                 .where(core.db.Indicator.strategy_id == strategy.id) \
