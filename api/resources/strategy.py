@@ -25,7 +25,9 @@ fields = {
     "i_threshold": fields.Float,
     "p_threshold": fields.Float,
     "tweet_filter": fields.String,
-    "lm_ratio": fields.Float
+    "lm_ratio": fields.Float,
+    "model_i": fields.String,
+    "model_p": fields.String
 }
 
 argp = reqparse.RequestParser()
@@ -48,6 +50,8 @@ argp.add_argument("i_threshold", type=float)
 argp.add_argument("p_threshold", type=float)
 argp.add_argument("tweet_filter", type=str)
 argp.add_argument("lm_ratio", type=float)
+argp.add_argument("model_i", type=str)
+argp.add_argument("model_p", type=str)
 
 
 class Strategies(Resource):
