@@ -17,6 +17,8 @@ export interface Strategy {
   stop_loss: number,
   i_threshold: number,
   p_threshold: number,
-  tweet_filter: string
+  tweet_filter: string,
   lm_ratio: number,
+  model_i: string,
+  model_p: string,
 }
