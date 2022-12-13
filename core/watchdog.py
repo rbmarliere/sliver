@@ -211,6 +211,11 @@ def watch():
                     except ccxt.RateLimitExceeded as e:
                         error("rate limit exceeded, skipping user...", e)
 
+        except core.errors.ModelDoesNotExist as e:
+            error("can't load model, disabling strategy...", e)
+            strategy.active = False
+            strategy.save()
+
         except tensorflow.errors.ResourceExhaustedError as e:
             error("can't load model, disabling strategy...", e)
             strategy.active = False
