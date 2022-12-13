@@ -50,11 +50,10 @@ def refresh_indicators(strategy: core.db.Strategy,
     if update_only:
         existing = indicators.dropna()
         indicators = indicators[indicators.isnull().any(axis=1)]
+        if indicators.empty:
+            core.watchdog.info("indicator data is up to date, skipping...")
+            return
         f = f & (core.db.Tweet.time > indicators.iloc[0].time)
-
-    if indicators.empty:
-        core.watchdog.info("indicator data is up to date, skipping...")
-        return
 
     # grab scores
     intensities_q = core.db.get_tweets_by_model(strategy.model_i).where(f)
