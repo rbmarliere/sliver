@@ -203,6 +203,11 @@ class Strategy(BaseModel):
     model_i = peewee.TextField(null=True)
     model_p = peewee.TextField(null=True)
 
+    def disable(self):
+        core.watchdog.info("disabling strategy...")
+        self.active = False
+        self.save()
+
     def get_active_users(self):
         return UserStrategy \
             .select() \
@@ -251,6 +256,11 @@ class UserStrategy(BaseModel):
 
     class Meta:
         constraints = [peewee.SQL("UNIQUE (user_id, strategy_id)")]
+
+    def disable(self):
+        core.watchdog.info("disabling user's strategy...")
+        self.active = False
+        self.save()
 
     def get_active_position_or_none(self):
         return Position \

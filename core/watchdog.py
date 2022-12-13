@@ -1,4 +1,3 @@
-import datetime
 import logging
 import logging.handlers
 import time
@@ -64,7 +63,6 @@ def notice(msg):
 
 def watch():
     set_logger("watchdog")
-
     notice("init")
 
     n_tries = 0
@@ -73,169 +71,56 @@ def watch():
         try:
             core.db.connection.connect(reuse_if_open=True)
 
-            # kill switch if no active strategies
-            first_active_strat = core.db.get_active_strategies().first()
-            assert first_active_strat
-
-            strategies = [s for s in core.db.get_pending_strategies()]
-
-            # if no pending strategies, sleep until next demand
-            if len(strategies) == 0:
-                next_refresh = first_active_strat.next_refresh
-                delta = int((next_refresh -
-                             datetime.datetime.utcnow()).total_seconds())
-                if delta > 0:
-                    info("-------------------------------------------")
-                    info("next refresh at {r} for strategy {s}"
-                         .format(r=next_refresh,
-                                 s=first_active_strat))
-                    info("sleeping for {t} seconds"
-                         .format(t=delta))
-                    time.sleep(delta)
-                    continue
-
-            # refresh each strategy
-            for strategy in strategies:
-                now = datetime.datetime.utcnow()
-
-                # don't refresh strategy if it doesn't need to
-                if now < strategy.next_refresh:
-                    continue
-
-                symbol = strategy.market.get_symbol()
-
-                info("===========================================")
-                info("refreshing strategy {s}".format(s=strategy))
-                info("market is {m}".format(m=symbol))
-                info("timeframe is {T}".format(T=strategy.timeframe))
-                info("exchange is {e}"
-                     .format(e=strategy.market.base.exchange.name))
-
-                core.exchange.set_api(exchange=strategy.market.base.exchange)
-
-                # update tweet scores
-                if strategy.model_i:
-                    model_i = core.models.load(strategy.model_i)
-                    core.models.replay(model_i)
-                if strategy.model_p:
-                    model_p = core.models.load(strategy.model_p)
-                    core.models.replay(model_p)
-
-                # download historical price ohlcv data
-                core.exchange.download(strategy.market,
-                                       strategy.timeframe)
-
-                # refresh strategy params
+            for strategy in core.db.get_pending_strategies():
                 core.strategy.refresh(strategy)
 
-                users = [u for u in strategy.get_active_users()]
+                for user_strat in strategy.get_active_users():
+                    core.strategy.refresh_user(user_strat)
 
-                if len(users) == 0:
-                    info("no active users found, skipping...")
-                    continue
+            first_active_strat = core.db.get_active_strategies().first()
+            next_refresh = first_active_strat.next_refresh
+            info("-------------------------------------------")
+            info("next refresh at {r} for strategy {s}"
+                 .format(r=next_refresh,
+                         s=first_active_strat))
 
-                i = 0
-                while True:
-                    try:
-                        u_strat = users[i]
-                        i += 1
+            time.sleep(60)
 
-                        info("...........................................")
-                        info("refreshing {u}'s strategy {s}"
-                             .format(u=u_strat.user.email,
-                                     s=u_strat))
+        except ccxt.AuthenticationError as e:
+            error("authentication error", e)
+            user_strat.disable()
 
-                        # set api to current exchange
-                        credential = u_strat \
-                            .user \
-                            .get_active_credential(
-                                strategy.market.base.exchange) \
-                            .get_or_none()
-                        if credential is None:
-                            info("credential not found, skipping user...")
-                            continue
-                        core.exchange.set_api(cred=credential)
+        except ccxt.InsufficientFunds as e:
+            error("insufficient funds", e)
+            user_strat.disable()
 
-                        # get active position for current user_strategy
-                        position = u_strat.get_active_position_or_none()
+        except core.db.Credential.DoesNotExist as e:
+            error("credential not found", e)
+            user_strat.disable()
 
-                        if position:
-                            core.exchange.sync_limit_orders(position)
-
-                        # sync user's balances across all exchanges
-                        core.inventory.sync_balances(u_strat.user)
-
-                        if position is None:
-                            info("no active position")
-
-                            # create position if apt
-                            if strategy.signal == "buy":
-                                t_cost = core.inventory.get_target_cost(
-                                    u_strat)
-
-                                if (t_cost == 0
-                                        or t_cost < strategy.market.cost_min):
-                                    info("target cost less than minimums, "
-                                         "skipping position creation...")
-
-                                if t_cost > 0:
-                                    position = core.db.Position.open(
-                                        u_strat, t_cost)
-
-                        if position:
-                            core.exchange.refresh(position)
-
-                    except IndexError:
-                        break
-
-                    except ccxt.AuthenticationError as e:
-                        error("authentication error, "
-                              "disabling user's strategy...",
-                              e)
-                        u_strat.active = False
-                        u_strat.save()
-
-                    except ccxt.InsufficientFunds as e:
-                        error("insufficient funds, "
-                              "disabling user's strategy...",
-                              e)
-                        u_strat.active = False
-                        u_strat.save()
-
-                    except core.db.Credential.DoesNotExist as e:
-                        error("user has no credential for this exchange, "
-                              "disabling user's strategy...",
-                              e)
-                        u_strat.active = False
-                        u_strat.save()
-
-                    except ccxt.RateLimitExceeded as e:
-                        error("rate limit exceeded, skipping user...", e)
+        except ccxt.RateLimitExceeded as e:
+            error("rate limit exceeded, skipping user...", e)
 
         except core.errors.ModelDoesNotExist as e:
-            error("can't load model, disabling strategy...", e)
-            strategy.active = False
-            strategy.save()
+            error("can't load model", e)
+            strategy.disable()
 
         except tensorflow.errors.ResourceExhaustedError as e:
-            error("can't load model, disabling strategy...", e)
-            strategy.active = False
-            strategy.save()
+            error("can't load model", e)
+            strategy.disable()
 
         except ccxt.ExchangeError as e:
-            error("exchange error, disabling strategy...", e)
-            strategy.active = False
-            strategy.save()
+            error("exchange error", e)
+            strategy.disable()
 
         except ccxt.NetworkError as e:
             error("exchange api error", e)
             n_tries += 1
             if n_tries > 9:
                 n_tries = 0
-                notice("exchange api error, disabling strategy {s}"
-                       .format(s=strategy))
-                strategy.active = False
-                strategy.save()
+                notice("exchange api error, disabling user's strategy {s}"
+                       .format(s=user_strat))
+                user_strat.disable()
 
         except peewee.OperationalError as e:
             error("can't connect to database!", e)
@@ -249,4 +134,4 @@ def watch():
             error("watchdog crashed", e)
             break
 
-    notice("shutting down...")
+    notice("shutdown")
