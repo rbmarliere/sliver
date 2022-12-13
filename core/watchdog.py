@@ -77,13 +77,6 @@ def watch():
                 for user_strat in strategy.get_active_users():
                     core.strategy.refresh_user(user_strat)
 
-                first_active_strat = core.db.get_active_strategies().first()
-                next_refresh = first_active_strat.next_refresh
-                info("-------------------------------------------")
-                info("next refresh at {r} for strategy {s}"
-                     .format(r=next_refresh,
-                             s=first_active_strat))
-
             time.sleep(60)
 
         except ccxt.AuthenticationError as e:
