@@ -17,7 +17,8 @@ export class CredentialComponent implements OnInit {
     exchange: '',
     exchange_id: 0,
     api_key: '',
-    api_secret: ''
+    api_secret: '',
+    active: false
   });
 
   @Input() credential?: Credential;
@@ -31,20 +32,22 @@ export class CredentialComponent implements OnInit {
 
   ngOnInit(): void {
     if (this.credential?.api_key) {
-      this.form.get('api_key')?.disable()
-      this.form.get('api_secret')?.disable()
+      this.form.get('api_key')?.disable();
+      this.form.get('api_secret')?.disable();
       this.form.setValue({
         exchange: this.credential?.exchange,
         exchange_id: this.credential?.exchange_id,
         api_key: this.credential?.api_key,
-        api_secret: '*******************'
+        api_secret: '*******************',
+        active: this.credential?.active
       });
     } else {
       this.form.setValue({
         exchange: this.credential?.exchange,
         exchange_id: this.credential?.exchange_id,
         api_key: '',
-        api_secret: ''
+        api_secret: '',
+        active: true
       });
     }
   }
@@ -78,6 +81,16 @@ export class CredentialComponent implements OnInit {
       .subscribe({
         next: () => location.reload(),
         error: (err) => this.handleError(err)
+    });
+  }
+
+  activateCredential(): void {
+    const cred = this.form.value;
+    cred.active = true;
+
+    this.credentialService.updateCredential(cred).subscribe({
+      next: () => location.reload(),
+      error: (err) => this.handleError(err)
     });
   }
 

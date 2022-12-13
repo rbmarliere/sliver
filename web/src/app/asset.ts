@@ -1,5 +1,5 @@
 export interface Asset {
-  id: number,
-  ticker: string,
+  id: number
+  ticker: string
   precision: number
 }
