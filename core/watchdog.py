@@ -1,4 +1,5 @@
 import datetime
+import tensorflow
 import logging
 import logging.handlers
 import time
@@ -66,9 +67,6 @@ def watch():
 
     notice("init")
 
-    model_i = core.models.load(core.config["HYPNOX_DEFAULT_MODEL_I"])
-    model_p = core.models.load(core.config["HYPNOX_DEFAULT_MODEL_P"])
-
     n_tries = 0
 
     while (True):
@@ -116,8 +114,12 @@ def watch():
                 core.exchange.set_api(exchange=strategy.market.base.exchange)
 
                 # update tweet scores
-                core.models.replay(model_i)
-                core.models.replay(model_p)
+                if strategy.model_i:
+                    model_i = core.models.load(strategy.model_i)
+                    core.models.replay(model_i)
+                if strategy.model_p:
+                    model_p = core.models.load(strategy.model_p)
+                    core.models.replay(model_p)
 
                 # download historical price ohlcv data
                 core.exchange.download(strategy.market,
@@ -208,6 +210,11 @@ def watch():
 
                     except ccxt.RateLimitExceeded as e:
                         error("rate limit exceeded, skipping user...", e)
+
+        except tensorflow.errors.ResourceExhaustedError as e:
+            error("can't load model, disabling strategy...", e)
+            strategy.active = False
+            strategy.save()
 
         except ccxt.ExchangeError as e:
             error("exchange error, disabling strategy...", e)

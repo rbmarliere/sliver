@@ -1,5 +1,6 @@
 import importlib
 import pathlib
+import sys
 
 import numpy
 import pandas
@@ -16,6 +17,11 @@ def get(model_name):
 
 
 def load(model_name):
+    try:
+        return getattr(sys.modules[__name__], model_name)
+    except AttributeError:
+        pass
+
     modelpath = pathlib.Path(core.config["HYPNOX_MODELS_DIR"] + "/" +
                              model_name).resolve()
     assert modelpath.exists()
@@ -26,6 +32,9 @@ def load(model_name):
     model = model_module.load_model(modelpath)
     model.config = model_module.config
     model.tokenizer = model_module.load_tokenizer(modelpath=modelpath)
+
+    setattr(sys.modules[__name__], model_name, model)
+
     return model
 
 
