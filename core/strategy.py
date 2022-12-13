@@ -35,86 +35,98 @@ def refresh(strategy: core.db.Strategy):
 
 def refresh_indicators(strategy: core.db.Strategy,
                        update_only: bool = True) -> pandas.DataFrame:
-    # get price data
-    prices = strategy.get_prices()
-    if prices.count() == 0:
+    # grab indicators
+    indicators_q = strategy.get_indicators()
+    if indicators_q.count() == 0:
         core.exchange.set_api(exchange=strategy.market.base.exchange)
         core.exchange.download(strategy.market,
                                strategy.timeframe)
+    indicators = pandas.DataFrame(indicators_q.dicts())
 
-    # grab tweets filtered by strategy regex
-    f = core.db.Tweet.text.iregexp(
-        strategy.tweet_filter.encode("unicode_escape"))
-    tweets = core.db.Tweet.select().where(f).order_by(core.db.Tweet.time)
-    tweets = tweets.where(core.db.Tweet.intensity.is_null(False))
-    tweets = tweets.where(core.db.Tweet.polarity.is_null(False))
+    # filter relevant data
+    strategy_regex = strategy.tweet_filter.encode("unicode_escape")
+    f = core.db.Tweet.text.iregexp(strategy_regex)
+    f = f & (core.db.Score.model.is_null(False))
+    if update_only:
+        existing = indicators.dropna()
+        indicators = indicators[indicators.isnull().any(axis=1)]
+        f = f & (core.db.Tweet.time > indicators.iloc[0].time)
 
-    q = strategy.indicator_set.order_by(core.db.Indicator.id)
-    indicators = [i for i in q]
-
-    if indicators and update_only:
-        since = indicators[-1].price.time
-        prices = prices.where(core.db.Price.time > since)
-
-    # check if there are prices available
-    if prices.count() == 0:
-        core.watchdog.info(
-            "no price data found for computing signals, skipping...")
+    if indicators.empty:
+        core.watchdog.info("indicator data is up to date, skipping...")
         return
 
-    # create prices dataframe
-    prices = pandas.DataFrame(prices.dicts())
-    prices = prices.set_index("time")
-    prices = prices.rename(columns={"id": "price_id"})
-
-    # check if there are tweets with given params
-    tweets = tweets.where(core.db.Tweet.time >= prices.iloc[0].name)
-    if tweets.count() == 0:
-        core.watchdog.info(
-            "no tweets found for computing signals, skipping...")
+    # grab scores
+    intensities_q = core.db.get_tweets_by_model(strategy.model_i).where(f)
+    polarities_q = core.db.get_tweets_by_model(strategy.model_p).where(f)
+    if intensities_q.count() == 0 or polarities_q.count() == 0:
+        core.watchdog.info("indicator data is up to date, skipping...")
         return
 
-    # create tweets dataframe
-    tweets = pandas.DataFrame(tweets.dicts())
-    tweets = tweets.set_index("time")
+    intensities = pandas.DataFrame(intensities_q.dicts())
+    intensities = intensities.rename(columns={"score": "intensity"})
+    intensities = intensities.set_index("time")
 
-    if indicators:
-        n_samples = indicators[-1].n_samples + len(tweets)
-        i_mean, i_variance = core.utils.get_mean_var(tweets["intensity"],
-                                                     indicators[-1].n_samples,
-                                                     indicators[-1].i_mean,
-                                                     indicators[-1].i_variance)
-        p_mean, p_variance = core.utils.get_mean_var(tweets["polarity"],
-                                                     indicators[-1].n_samples,
-                                                     indicators[-1].p_mean,
-                                                     indicators[-1].p_variance)
+    # grab polarities
+    polarities = pandas.DataFrame(polarities_q.dicts())
+    polarities = polarities.rename(columns={"score": "polarity"})
+    polarities = polarities.set_index("time")
+
+    # build tweets dataframe
+    tweets = pandas.concat([intensities, polarities], axis=1)
+    if tweets.empty:
+        core.watchdog.info("indicator data is up to date, skipping...")
+        return
+    tweets = tweets[["intensity", "polarity"]]
+
+    # grab last computed metrics
+    if existing.empty:
+        n_samples = 0
+        i_mean = 0
+        p_mean = 0
+        i_variance = 0
+        p_variance = 0
     else:
-        n_samples = len(tweets)
-        i_mean, i_variance = core.utils.get_mean_var(tweets["intensity"],
-                                                     0, 0, 0)
-        p_mean, p_variance = core.utils.get_mean_var(tweets["polarity"],
-                                                     0, 0, 0)
+        n_samples = existing.iloc[-1].n_samples
+        i_mean = existing.iloc[-1].i_mean
+        p_mean = existing.iloc[-1].p_mean
+        i_variance = existing.iloc[-1].i_variance
+        p_variance = existing.iloc[-1].p_variance
 
-    # standardize intensity and polarity scores
-    tweets["i_score"] = (
-        (tweets["intensity"] - i_mean) / i_variance.sqrt())
-    tweets["p_score"] = (
-        (tweets["polarity"] - p_mean) / p_variance.sqrt())
+    # compute new metrics
+    i_mean, i_variance = core.utils.get_mean_var(tweets.intensity,
+                                                 n_samples,
+                                                 i_mean,
+                                                 i_variance)
+    p_mean, p_variance = core.utils.get_mean_var(tweets.polarity,
+                                                 n_samples,
+                                                 p_mean,
+                                                 p_variance)
+
+    # apply normalization
+    tweets["i_score"] = (tweets.intensity - i_mean) / i_variance.sqrt()
+    tweets["p_score"] = (tweets.polarity - p_mean) / p_variance.sqrt()
 
     # resample tweets by strat timeframe freq median
     freq = core.utils.get_timeframe_freq(strategy.timeframe)
     tweets = tweets[["i_score", "p_score"]].resample(freq).median().ffill()
 
-    # concatenate both dataframes
-    indicators = pandas.concat([tweets, prices], join="inner", axis=1)
+    # join both dataframes
+    indicators = indicators.set_index("time")
+    indicators = indicators.drop("i_score", axis=1)
+    indicators = indicators.drop("p_score", axis=1)
+    indicators = pandas.concat([indicators, tweets], join="inner", axis=1)
 
-    # update new means and variances
-    indicators["strategy_id"] = strategy.id
-    indicators["n_samples"] = n_samples
-    indicators["i_mean"] = i_mean
-    indicators["i_variance"] = i_variance
-    indicators["p_mean"] = p_mean
-    indicators["p_variance"] = p_variance
+    # fill out remaining columns
+    indicators = indicators.drop("price", axis=1)
+    indicators.strategy = strategy.id
+    indicators.n_samples = n_samples + len(tweets)
+    indicators.i_mean = i_mean
+    indicators.i_variance = i_variance
+    indicators.p_mean = p_mean
+    indicators.p_variance = p_variance
+    indicators = indicators.rename(columns={"id": "price_id"})
+    indicators = indicators.rename(columns={"strategy": "strategy_id"})
 
     # compute signals
     indicators["signal"] = "neutral"
