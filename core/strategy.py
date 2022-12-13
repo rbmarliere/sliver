@@ -12,7 +12,7 @@ def refresh(strategy: core.db.Strategy):
     # - base decision over price data and inventory (amount opened, risk, etc)
 
     # update current strategy next refresh time
-    freq = core.utils.get_timeframe_delta(strategy.timeframe)
+    freq = "{i}T".format(i=strategy.refresh_interval)
     now = datetime.datetime.utcnow()
     last = now.replace(minute=0, second=0, microsecond=0)
     range = pandas.date_range(last, periods=61, freq=freq)
