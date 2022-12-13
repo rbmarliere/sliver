@@ -54,12 +54,14 @@ class User(BaseModel):
     cash_reserve = peewee.DecimalField(default=0.25)
     target_factor = peewee.DecimalField(default=0.1)
 
-    def get_credential_by_exchange_or_none(self, exchange: Exchange):
+    def get_exchange_credential(self, exchange: Exchange):
         return self \
             .credential_set \
-            .where(Credential.exchange == exchange) \
-            .where(Credential.active) \
-            .get_or_none()
+            .where(Credential.exchange == exchange)
+
+    def get_active_credential(self, exchange: Exchange):
+        return self.get_exchange_credential(exchange) \
+            .where(Credential.active)
 
     def get_balances_by_asset(self, asset: Asset):
         return Balance \
@@ -106,7 +108,7 @@ class Credential(BaseModel):
     exchange = peewee.ForeignKeyField(Exchange)
     api_key = peewee.TextField()
     api_secret = peewee.TextField()
-    active = peewee.BooleanField(default=False)
+    active = peewee.BooleanField(default=True)
 
     class Meta:
         constraints = [peewee.SQL("UNIQUE (user_id, exchange_id)")]

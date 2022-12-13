@@ -31,4 +31,8 @@ export class CredentialService {
     };
     return this.http.delete(this.url, opt);
   }
+
+  updateCredential(cred: Credential): Observable<Credential> {
+    return this.http.put<Credential>(this.url, cred);
+  }
 }
