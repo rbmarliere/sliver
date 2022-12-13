@@ -1,11 +1,11 @@
 import datetime
-import tensorflow
 import logging
 import logging.handlers
 import time
 
 import ccxt
 import peewee
+import tensorflow
 
 import core
 
@@ -146,10 +146,11 @@ def watch():
                                      s=u_strat))
 
                         # set api to current exchange
-                        credential = (u_strat
-                                      .user
-                                      .get_credential_by_exchange_or_none(
-                                          strategy.market.base.exchange))
+                        credential = u_strat \
+                            .user \
+                            .get_active_credential(
+                                strategy.market.base.exchange) \
+                            .get_or_none()
                         if credential is None:
                             info("credential not found, skipping user...")
                             continue
