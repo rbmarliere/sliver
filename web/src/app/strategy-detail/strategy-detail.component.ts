@@ -37,6 +37,8 @@ export class StrategyDetailComponent implements OnInit {
     p_threshold: 0,
     tweet_filter: '',
     lm_ratio: 0,
+    model_i: '',
+    model_p: '',
   }
 
   form = this.createForm(this.empty_strat);
