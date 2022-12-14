@@ -53,16 +53,20 @@ def info(msg):
 
 def error(msg, e):
     log.error(msg)
+
     get_logger("exception", suppress_output=True) \
         .exception(e, exc_info=True)
+
     if log.name == "watchdog":
+        msg = "{l}: {m}".format(l=log.name, m=msg)
         core.telegram.notice(msg)
 
 
 def notice(msg):
-    msg = "{l}: {m}".format(l=log.name, m=msg)
     log.info(msg)
+
     if log.name == "watchdog":
+        msg = "{l}: {m}".format(l=log.name, m=msg)
         core.telegram.notice(msg)
 
 
