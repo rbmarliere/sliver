@@ -5,23 +5,26 @@ import time
 import ccxt
 import peewee
 import tensorflow
+import transformers
 
 import core
+
+transformers.logging.set_verbosity_error()
+tensorflow.get_logger().setLevel("INFO")
 
 
 def get_logger(name, suppress_output=False):
     log_file = core.config["HYPNOX_LOGS_DIR"] + "/" + name + ".log"
 
     formatter = logging.Formatter(
-        "%(asctime)s %(levelname)s -- %(message)s :: "
-        "%(funcName)s@%(filename)s:%(lineno)d")
+        "%(asctime)s %(levelname)s -- %(message)s")
 
     formatter.converter = time.gmtime
 
     file_handler = logging.handlers.RotatingFileHandler(
         log_file,
         maxBytes=52428800,  # 50mb
-        backupCount=10)
+        backupCount=32)
     file_handler.setFormatter(formatter)
 
     log = logging.getLogger(name)
@@ -65,8 +68,6 @@ def watch():
     set_logger("watchdog")
     notice("init")
 
-    n_tries = 0
-
     while (True):
         try:
             core.db.connection.connect(reuse_if_open=True)
@@ -75,30 +76,28 @@ def watch():
                 core.strategy.refresh(strategy)
 
                 for user_strat in strategy.get_active_users():
-                    core.strategy.refresh_user(user_strat)
+                    try:
+                        core.strategy.refresh_user(user_strat)
+
+                    except ccxt.AuthenticationError as e:
+                        error("authentication error", e)
+                        user_strat.disable()
+
+                    except ccxt.InsufficientFunds as e:
+                        error("insufficient funds", e)
+                        user_strat.disable()
+
+                    except core.db.Credential.DoesNotExist as e:
+                        error("credential not found", e)
+                        user_strat.disable()
+
+                    except ccxt.RateLimitExceeded as e:
+                        error("rate limit exceeded, skipping user...", e)
 
             time.sleep(60)
 
-        except ccxt.AuthenticationError as e:
-            error("authentication error", e)
-            user_strat.disable()
-
-        except ccxt.InsufficientFunds as e:
-            error("insufficient funds", e)
-            user_strat.disable()
-
-        except core.db.Credential.DoesNotExist as e:
-            error("credential not found", e)
-            user_strat.disable()
-
-        except ccxt.RateLimitExceeded as e:
-            error("rate limit exceeded, skipping user...", e)
-
-        except core.errors.ModelDoesNotExist as e:
-            error("can't load model", e)
-            strategy.disable()
-
-        except tensorflow.errors.ResourceExhaustedError as e:
+        except (tensorflow.errors.ResourceExhaustedError,
+                core.errors.ModelDoesNotExist) as e:
             error("can't load model", e)
             strategy.disable()
 
@@ -108,12 +107,7 @@ def watch():
 
         except ccxt.NetworkError as e:
             error("exchange api error", e)
-            n_tries += 1
-            if n_tries > 9:
-                n_tries = 0
-                notice("exchange api error, disabling user's strategy {s}"
-                       .format(s=user_strat))
-                user_strat.disable()
+            strategy.postpone()
 
         except peewee.OperationalError as e:
             error("can't connect to database!", e)
@@ -124,7 +118,7 @@ def watch():
             break
 
         except Exception as e:
-            error("watchdog crashed", e)
+            error("crashed", e)
             break
 
     notice("shutdown")

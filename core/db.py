@@ -3,12 +3,9 @@ from decimal import Decimal as D
 
 import pandas
 import peewee
-import tensorflow
 from ccxt.base.decimal_to_precision import DECIMAL_PLACES, NO_PADDING
 
 import core
-
-tensorflow.get_logger().setLevel('INFO')
 
 # precision modes:
 # DECIMAL_PLACES,
@@ -204,8 +201,13 @@ class Strategy(BaseModel):
     model_p = peewee.TextField(null=True)
 
     def disable(self):
-        core.watchdog.info("disabling strategy...")
+        core.watchdog.info("disabling strategy {s}...".format(s=self))
         self.active = False
+        self.save()
+
+    def postpone(self):
+        core.watchdog.info("next refresh at {n}".format(n=self.next_refresh))
+        self.next_refresh = self.get_next_refresh()
         self.save()
 
     def get_active_users(self):
@@ -248,6 +250,15 @@ class Strategy(BaseModel):
             return "neutral"
         return signal
 
+    def get_next_refresh(self):
+        freq = "{i}T".format(i=self.refresh_interval)
+        now = datetime.datetime.utcnow()
+        last = now.replace(minute=0, second=0, microsecond=0)
+        range = pandas.date_range(last, periods=61, freq=freq)
+        series = range.to_series().asfreq(freq)
+        next_refresh = series.loc[series > now].iloc[0]
+        return next_refresh
+
 
 class UserStrategy(BaseModel):
     user = peewee.ForeignKeyField(User)
@@ -258,7 +269,7 @@ class UserStrategy(BaseModel):
         constraints = [peewee.SQL("UNIQUE (user_id, strategy_id)")]
 
     def disable(self):
-        core.watchdog.info("disabling user's strategy...")
+        core.watchdog.info("disabling user's strategy {s}...".format(s=self))
         self.active = False
         self.save()
 

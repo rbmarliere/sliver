@@ -18,7 +18,7 @@ if __name__ == "__main__":
 
     passwd = getpass.getpass("enter db password: ")
 
-    print("grabbing scores...")
+    print("fetching scores...")
     f = core.db.Score.model == args.model
     q = core.db.Score \
         .select() \
