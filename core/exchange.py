@@ -63,13 +63,13 @@ def download_prices(strategy: core.db.Strategy):
     # check if symbol is supported by exchange
     symbols = [pair["symbol"] for pair in api.fetch_markets()]
     if market.get_symbol() not in symbols:
-        core.watchdog.info("symbol not supported by exchange")
-        return
+        core.watchdog.error("symbol not supported by exchange")
+        raise ccxt.ExchangeError
 
     # check if timeframe is supported by exchange
     if timeframe not in api.timeframes:
-        core.watchdog.info("timeframe not supported by exchange")
-        return
+        core.watchdog.error("timeframe not supported by exchange")
+        raise ccxt.ExchangeError
 
     timeframe_delta = core.utils.get_timeframe_delta(timeframe)
     page_size = 500
@@ -222,11 +222,11 @@ def create_order(type: str,
                            position)
 
     except ccxt.OrderImmediatelyFillable as e:
-        core.watchdog.error(
+        core.watchdog.info(
             "order would be immediately fillable, skipping...", e)
 
     except (ccxt.InvalidOrder, AssertionError) as e:
-        core.watchdog.error(
+        core.watchdog.info(
             "order values are smaller than exchange minimum, skipping...", e)
 
     except ccxt.RequestTimeout as e:
