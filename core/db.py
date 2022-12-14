@@ -206,8 +206,8 @@ class Strategy(BaseModel):
         self.save()
 
     def postpone(self):
-        core.watchdog.info("next refresh at {n}".format(n=self.next_refresh))
         self.next_refresh = self.get_next_refresh()
+        core.watchdog.info("next refresh at {n}".format(n=self.next_refresh))
         self.save()
 
     def refresh(self):
