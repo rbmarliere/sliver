@@ -55,7 +55,11 @@ def check_latency():
         raise ccxt.NetworkError
 
 
-def download(market: core.db.Market, timeframe: str):
+def download_prices(strategy: core.db.Strategy):
+    timeframe = strategy.timeframe
+    market = strategy.market
+    set_api(exchange=strategy.market.base.exchange)
+
     # check if symbol is supported by exchange
     symbols = [pair["symbol"] for pair in api.fetch_markets()]
     if market.get_symbol() not in symbols:
@@ -86,7 +90,7 @@ def download(market: core.db.Market, timeframe: str):
 
     # return if last entry is last possible result
     if page_start + timeframe_delta > datetime.datetime.utcnow():
-        core.watchdog.info("price data is up to date, skipping...")
+        core.watchdog.info("price data is up to date")
         return
 
     prices = pandas.DataFrame(columns=[0, 1, 2, 3, 4, 5, 6, 7])
@@ -225,8 +229,8 @@ def create_order(type: str,
         core.watchdog.error(
             "order values are smaller than exchange minimum, skipping...", e)
 
-    except ccxt.RequestTimeout:
-        pass
+    except ccxt.RequestTimeout as e:
+        core.watchdog.error("order request timeout", e)
         # if a request to createOrder() fails with a RequestTimeout the user should:
         # call fetchOrders(), fetchOpenOrders(), fetchClosedOrders() to check if the request to place the order has succeeded and the order is now open
         # if the order is not 'open' the user should fetchBalance() to check if the balance has changed since the order was created on the first run and then was filled and closed by the time of the second check.

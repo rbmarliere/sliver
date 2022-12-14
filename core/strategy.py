@@ -15,8 +15,7 @@ def refresh(strategy: core.db.Strategy):
     core.watchdog.info("timeframe is {T}".format(T=strategy.timeframe))
     core.watchdog.info("exchange is {e}"
                        .format(e=strategy.market.base.exchange.name))
-
-    core.exchange.set_api(exchange=strategy.market.base.exchange)
+    core.watchdog.info("mode is {m}".format(m=strategy.mode))
 
     # update tweet scores
     if strategy.model_i:
@@ -27,8 +26,7 @@ def refresh(strategy: core.db.Strategy):
         core.models.replay(model_p)
 
     # download historical price ohlcv data
-    core.exchange.download(strategy.market,
-                           strategy.timeframe)
+    core.exchange.download_prices(strategy)
 
     # refresh strategy params
 
@@ -37,13 +35,7 @@ def refresh(strategy: core.db.Strategy):
     # - base decision over price data and inventory (amount opened, risk, etc)
 
     # update current strategy next refresh time
-    freq = "{i}T".format(i=strategy.refresh_interval)
-    now = datetime.datetime.utcnow()
-    last = now.replace(minute=0, second=0, microsecond=0)
-    range = pandas.date_range(last, periods=61, freq=freq)
-    series = range.to_series().asfreq(freq)
-    strategy.next_refresh = series.loc[series > now].iloc[0]
-    core.watchdog.info("next refresh is {n}".format(n=strategy.next_refresh))
+    strategy.postpone()
 
     # compute signal for automatic strategies
     if strategy.mode == "auto":
@@ -109,9 +101,7 @@ def refresh_indicators(strategy: core.db.Strategy,
     # grab indicators
     indicators_q = strategy.get_indicators()
     if indicators_q.count() == 0:
-        core.exchange.set_api(exchange=strategy.market.base.exchange)
-        core.exchange.download(strategy.market,
-                               strategy.timeframe)
+        core.exchange.download_prices(strategy)
     indicators = pandas.DataFrame(indicators_q.dicts())
 
     # filter relevant data
@@ -122,7 +112,7 @@ def refresh_indicators(strategy: core.db.Strategy,
         existing = indicators.dropna()
         indicators = indicators[indicators.isnull().any(axis=1)]
         if indicators.empty:
-            core.watchdog.info("indicator data is up to date, skipping...")
+            core.watchdog.info("indicator data is up to date")
             return 0
         f = f & (core.db.Tweet.time > indicators.iloc[0].time)
 
@@ -130,7 +120,7 @@ def refresh_indicators(strategy: core.db.Strategy,
     intensities_q = core.db.get_tweets_by_model(strategy.model_i).where(f)
     polarities_q = core.db.get_tweets_by_model(strategy.model_p).where(f)
     if intensities_q.count() == 0 or polarities_q.count() == 0:
-        core.watchdog.info("indicator data is up to date, skipping...")
+        core.watchdog.info("indicator data is up to date")
         return 0
 
     intensities = pandas.DataFrame(intensities_q.dicts())
@@ -145,7 +135,7 @@ def refresh_indicators(strategy: core.db.Strategy,
     # build tweets dataframe
     tweets = pandas.concat([intensities, polarities], axis=1)
     if tweets.empty:
-        core.watchdog.info("indicator data is up to date, skipping...")
+        core.watchdog.info("indicator data is up to date")
         return 0
     tweets = tweets[["intensity", "polarity"]]
 

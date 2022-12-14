@@ -37,7 +37,7 @@ if __name__ == "__main__":
     db.bind([core.db.Tweet])
     db.connect()
 
-    print("grabbing tweets upstream...")
+    print("fetching tweets upstream...")
     query = core.db.Tweet.select().order_by(core.db.Tweet.id)
     upstream_tweets = [t for t in query]
     print("found {c} tweets".format(c=len(upstream_tweets)))
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     core.db.connection.bind([core.db.Tweet])
     core.db.connection.connect(reuse_if_open=True)
 
-    print("grabbing tweets downstream...")
+    print("fetching tweets downstream...")
     query = core.db.Tweet.select().order_by(core.db.Tweet.id)
     tweets = [t for t in query]
     print("found {c} tweets".format(c=len(tweets)))
