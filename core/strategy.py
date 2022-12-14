@@ -247,7 +247,7 @@ def backtest(strategy: core.db.Strategy):
 
                 balance += price_delta
 
-                roi = (curr_pos.exit_price / curr_pos.entry_price) - 1
+                roi = ((curr_pos.exit_price / curr_pos.entry_price) - 1) * 100
                 positions_roi.append(roi)
 
                 time_in_position = curr_pos.exit_time - curr_pos.entry_time
