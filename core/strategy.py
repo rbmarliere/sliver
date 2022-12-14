@@ -1,4 +1,3 @@
-import datetime
 from decimal import Decimal as D
 
 import pandas
@@ -37,21 +36,8 @@ def refresh(strategy: core.db.Strategy):
     # update current strategy next refresh time
     strategy.postpone()
 
-    # compute signal for automatic strategies
-    if strategy.mode == "auto":
-        new_indicators_count = refresh_indicators(strategy)
-        strategy.signal = strategy.get_asignal()
-        if new_indicators_count > 0:
-            core.watchdog.notice("strategy {st} new signal is {s}"
-                                 .format(st=strategy,
-                                         s=strategy.signal))
-
-    elif strategy.mode == "random":
-        strategy.signal = strategy.get_rsignal()
-
-    core.watchdog.info("signal is {s}".format(s=strategy.signal))
-
-    strategy.save()
+    # refresh strategy signal
+    strategy.refresh()
 
 
 def refresh_user(user_strat: core.db.UserStrategy):
@@ -223,7 +209,7 @@ def refresh_indicators(strategy: core.db.Strategy,
 
 
 def backtest(strategy: core.db.Strategy):
-    refresh(strategy)
+    strategy.refresh()
 
     indicators = pandas.DataFrame(strategy.get_indicators().dicts())
 
@@ -233,6 +219,7 @@ def backtest(strategy: core.db.Strategy):
     sells = []
     positions = []
     positions_timedeltas = []
+    positions_roi = []
     curr_pos = None
     for idx, ind in indicators.iterrows():
         if ind["signal"] == "buy":
@@ -259,6 +246,9 @@ def backtest(strategy: core.db.Strategy):
                 curr_pos.pnl = price_delta
 
                 balance += price_delta
+
+                roi = (curr_pos.exit_price / curr_pos.entry_price) - 1
+                positions_roi.append(roi)
 
                 time_in_position = curr_pos.exit_time - curr_pos.entry_time
                 positions_timedeltas.append(time_in_position)
@@ -304,6 +294,7 @@ def backtest(strategy: core.db.Strategy):
     exit_bh_value = strategy.market.quote.print(exit_bh_value)
     pnl = strategy.market.quote.print(pnl)
     avg_timedelta = pandas.Series(positions_timedeltas).mean()
+    avg_roi = round(pandas.Series(positions_roi).mean(), 2)
 
     log = """initial balance: {init_bal}
 final balance: {balance}
@@ -312,8 +303,9 @@ buy and hold value at last position: {exit_bh_value}
 total timedelta: {n_days}
 number of trades: {n_trades}
 average timedelta in position: {avg_timedelta}
-pnl: {pnl}
-roi: {roi}%
+average position roi: {avg_roi}%
+total pnl: {pnl}
+total roi: {roi}%
 buy and hold roi: {roi_bh}%
 roi vs buy and hold: {roi_vs_bh}%
 """.format(init_bal=init_bal,
@@ -322,11 +314,12 @@ roi vs buy and hold: {roi_vs_bh}%
            exit_bh_value=exit_bh_value,
            n_days=n_days,
            n_trades=n_trades,
+           avg_timedelta=avg_timedelta,
+           avg_roi=avg_roi,
            pnl=pnl,
            roi=roi,
            roi_bh=roi_bh,
-           roi_vs_bh=roi_vs_bh,
-           avg_timedelta=avg_timedelta)
+           roi_vs_bh=roi_vs_bh)
 
     res = indicators.to_dict("list")
     res["backtest_log"] = log

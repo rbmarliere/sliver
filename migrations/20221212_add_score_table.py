@@ -19,6 +19,7 @@ class OldTweet(core.db.BaseModel):
     class Meta:
         table_name = "tweet"
 
+
 q = OldTweet.select().order_by(OldTweet.id)
 
 i_filter = OldTweet.model_i.is_null(False)

@@ -210,6 +210,22 @@ class Strategy(BaseModel):
         self.next_refresh = self.get_next_refresh()
         self.save()
 
+    def refresh(self):
+        if self.mode == "auto":
+            new_indicators_count = core.strategy.refresh_indicators(self)
+            self.signal = self.get_asignal()
+            if new_indicators_count > 0:
+                core.watchdog.notice("strategy {st} new signal is {s}"
+                                     .format(st=self,
+                                             s=self.signal))
+
+        elif self.mode == "random":
+            self.signal = self.get_rsignal()
+
+        core.watchdog.info("signal is {s}".format(s=self.signal))
+
+        self.save()
+
     def get_active_users(self):
         return UserStrategy \
             .select() \
