@@ -47,8 +47,12 @@ def refresh(strategy: core.db.Strategy):
 
     # compute signal for automatic strategies
     if strategy.mode == "auto":
-        refresh_indicators(strategy)
+        new_indicators_count = refresh_indicators(strategy)
         strategy.signal = strategy.get_asignal()
+        if new_indicators_count > 0:
+            core.watchdog.notice("strategy {st} new signal is {s}"
+                                 .format(st=strategy,
+                                         s=strategy.signal))
 
     elif strategy.mode == "random":
         strategy.signal = strategy.get_rsignal()
@@ -101,7 +105,7 @@ def refresh_user(user_strat: core.db.UserStrategy):
 
 
 def refresh_indicators(strategy: core.db.Strategy,
-                       update_only: bool = True) -> pandas.DataFrame:
+                       update_only: bool = True) -> int:
     # grab indicators
     indicators_q = strategy.get_indicators()
     if indicators_q.count() == 0:
@@ -119,7 +123,7 @@ def refresh_indicators(strategy: core.db.Strategy,
         indicators = indicators[indicators.isnull().any(axis=1)]
         if indicators.empty:
             core.watchdog.info("indicator data is up to date, skipping...")
-            return
+            return 0
         f = f & (core.db.Tweet.time > indicators.iloc[0].time)
 
     # grab scores
@@ -127,7 +131,7 @@ def refresh_indicators(strategy: core.db.Strategy,
     polarities_q = core.db.get_tweets_by_model(strategy.model_p).where(f)
     if intensities_q.count() == 0 or polarities_q.count() == 0:
         core.watchdog.info("indicator data is up to date, skipping...")
-        return
+        return 0
 
     intensities = pandas.DataFrame(intensities_q.dicts())
     intensities = intensities.rename(columns={"score": "intensity"})
@@ -142,7 +146,7 @@ def refresh_indicators(strategy: core.db.Strategy,
     tweets = pandas.concat([intensities, polarities], axis=1)
     if tweets.empty:
         core.watchdog.info("indicator data is up to date, skipping...")
-        return
+        return 0
     tweets = tweets[["intensity", "polarity"]]
 
     # grab last computed metrics
@@ -224,6 +228,8 @@ def refresh_indicators(strategy: core.db.Strategy,
     core.db.Indicator.insert_many(indicators.to_dict("records")).execute()
     core.watchdog.info("inserted {c} indicator rows"
                        .format(c=indicators.size))
+
+    return indicators.size
 
 
 def backtest(strategy: core.db.Strategy):
