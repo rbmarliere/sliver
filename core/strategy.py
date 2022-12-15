@@ -1,5 +1,3 @@
-from decimal import Decimal as D
-
 import pandas
 
 import core
@@ -27,17 +25,13 @@ def refresh(strategy: core.db.Strategy):
     # download historical price ohlcv data
     core.exchange.download_prices(strategy)
 
-    # refresh strategy params
-
     # ideas:
     # - reset num_orders, spread and refresh_interval dynamically
     # - base decision over price data and inventory (amount opened, risk, etc)
 
-    # update current strategy next refresh time
-    strategy.postpone()
+    strategy.refresh_signal()
 
-    # refresh strategy signal
-    strategy.refresh()
+    strategy.postpone()
 
 
 def refresh_user(user_strat: core.db.UserStrategy):
@@ -206,122 +200,3 @@ def refresh_indicators(strategy: core.db.Strategy,
                        .format(c=indicators.size))
 
     return indicators.size
-
-
-def backtest(strategy: core.db.Strategy):
-    strategy.refresh()
-
-    indicators = pandas.DataFrame(strategy.get_indicators().dicts())
-
-    init_bal = balance = strategy.market.quote.transform(10000)
-
-    buys = []
-    sells = []
-    positions = []
-    positions_timedeltas = []
-    positions_roi = []
-    curr_pos = None
-    for idx, ind in indicators.iterrows():
-        if ind["signal"] == "buy":
-            if curr_pos is None:
-                buys.append(idx)
-
-                curr_pos = core.db.Position(status="closed",
-                                            entry_price=ind["open"],
-                                            entry_time=ind["time"])
-
-        elif ind["signal"] == "sell":
-            if curr_pos is not None:
-                sells.append(idx)
-
-                price_delta = ind["open"] - curr_pos.entry_price
-
-                entry_amount = strategy.market.base.transform(balance /
-                                                              ind["open"])
-
-                curr_pos.entry_cost = balance
-                curr_pos.entry_amount = entry_amount
-                curr_pos.exit_time = ind["time"]
-                curr_pos.exit_price = ind["open"]
-                curr_pos.pnl = price_delta
-
-                balance += price_delta
-
-                roi = ((curr_pos.exit_price / curr_pos.entry_price) - 1) * 100
-                positions_roi.append(roi)
-
-                time_in_position = curr_pos.exit_time - curr_pos.entry_time
-                positions_timedeltas.append(time_in_position)
-
-                positions.append(curr_pos)
-
-                curr_pos = None
-
-    n_days = str(indicators.iloc[-1].time - indicators.iloc[0].time)
-
-    indicators.open = indicators.open.apply(strategy.market.quote.format)
-    indicators.high = indicators.high.apply(strategy.market.quote.format)
-    indicators.low = indicators.low.apply(strategy.market.quote.format)
-    indicators.close = indicators.close.apply(strategy.market.quote.format)
-    indicators.volume = indicators.volume.apply(strategy.market.base.format)
-    indicators.time = indicators.time.dt.strftime("%Y-%m-%d %H:%M")
-
-    indicators["buys"] = (
-        D(1 + .003) *
-        indicators.low.where(indicators.index.isin(buys)))
-    indicators.buys = indicators.buys.replace({float("nan"): None})
-
-    indicators["sells"] = (
-        D(1 + .003) *
-        indicators.high.where(indicators.index.isin(sells)))
-    indicators.sells = indicators.sells.replace({float("nan"): None})
-
-    if not positions:
-        res = indicators.to_dict("list")
-        res["backtest_log"] = "no positions entered"
-        return res
-
-    init_bh_amount = strategy.market.base.print(positions[0].entry_amount)
-    exit_bh_value = (positions[-1].entry_price *
-                     strategy.market.base.format(positions[0].entry_amount))
-    n_trades = str(len(positions))
-    pnl = balance - init_bal
-    roi = round(pnl / init_bal * 100, 2)
-    roi_bh = round(((exit_bh_value / init_bal) - 1) * 100, 2)
-    roi_vs_bh = round((pnl / exit_bh_value) * 100, 2)
-    init_bal = strategy.market.quote.print(init_bal)
-    balance = strategy.market.quote.print(balance)
-    exit_bh_value = strategy.market.quote.print(exit_bh_value)
-    pnl = strategy.market.quote.print(pnl)
-    avg_timedelta = pandas.Series(positions_timedeltas).mean()
-    avg_roi = round(pandas.Series(positions_roi).mean(), 2)
-
-    log = """initial balance: {init_bal}
-final balance: {balance}
-buy and hold amount at first position: {init_bh_amount}
-buy and hold value at last position: {exit_bh_value}
-total timedelta: {n_days}
-number of trades: {n_trades}
-average timedelta in position: {avg_timedelta}
-average position roi: {avg_roi}%
-total pnl: {pnl}
-total roi: {roi}%
-buy and hold roi: {roi_bh}%
-roi vs buy and hold: {roi_vs_bh}%
-""".format(init_bal=init_bal,
-           balance=balance,
-           init_bh_amount=init_bh_amount,
-           exit_bh_value=exit_bh_value,
-           n_days=n_days,
-           n_trades=n_trades,
-           avg_timedelta=avg_timedelta,
-           avg_roi=avg_roi,
-           pnl=pnl,
-           roi=roi,
-           roi_bh=roi_bh,
-           roi_vs_bh=roi_vs_bh)
-
-    res = indicators.to_dict("list")
-    res["backtest_log"] = log
-
-    return res
