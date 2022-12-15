@@ -5,10 +5,8 @@ export interface Price {
   low: number[]
   close: number[]
   volume: number[]
-  signal: string[]
   i_score: number[]
   p_score: number[]
   buys: number[]
   sells: number[]
-  backtest_log: string
 }
