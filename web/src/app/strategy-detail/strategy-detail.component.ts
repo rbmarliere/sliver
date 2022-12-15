@@ -2,8 +2,10 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, Input, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
+import { ActivatedRoute } from '@angular/router';
 import { ErrorDialogComponent } from '../error-dialog/error-dialog.component';
 import { Exchange } from '../exchange';
+import { ExchangeService } from '../exchange.service';
 import { Market } from '../market';
 import { Strategy } from '../strategy';
 import { StrategyService } from '../strategy.service';
@@ -15,7 +17,6 @@ import { StrategyService } from '../strategy.service';
 })
 export class StrategyDetailComponent implements OnInit {
 
-  // private test = new Date().toISOString();
   private empty_strat = {
     symbol: '',
     market_id: 0,
@@ -39,7 +40,36 @@ export class StrategyDetailComponent implements OnInit {
     lm_ratio: 0,
     model_i: '',
     model_p: '',
+    prices: {
+      time: [],
+      open: [],
+      high: [],
+      low: [],
+      close: [],
+      volume: [],
+      i_score: [],
+      p_score: [],
+      buys: [],
+      sells: []
+    }
   }
+
+  plot_layout = {
+    // width: 880,
+    height: 900,
+    showlegend: false,
+    title: '',
+    xaxis: {
+      rangeslider: { visible: false },
+      autorange: true,
+      type: 'date'
+    },
+    grid: {rows: 3, columns: 1},
+  }
+
+  plot_data: any;
+
+  loading: Boolean = true;
 
   form = this.createForm(this.empty_strat);
 
@@ -47,9 +77,19 @@ export class StrategyDetailComponent implements OnInit {
 
   markets: Market[] = [];
 
-  @Input() exchanges: Exchange[] = [];
+  set exchanges(exchanges: Exchange[]) {
+    for (let exchange of exchanges) {
+      for (let market of exchange.markets) {
+        const m = market;
+        m.exchange_name = exchange.name;
+        this.markets.push(m);
+      }
+      this.timeframes = exchange.timeframes;
+    }
+  }
 
-  @Input()
+  @Input() strategy_id: number = 0;
+
   get strategy(): Strategy { return this._strategy; }
   set strategy(strategy: Strategy) {
     this._strategy = strategy;
@@ -74,7 +114,7 @@ export class StrategyDetailComponent implements OnInit {
     }
   }
 
-  private _strategy = {} as Strategy;
+  private _strategy: Strategy = this.empty_strat;
 
   private handleError(error: HttpErrorResponse) {
     const dialogConfig = new MatDialogConfig;
@@ -88,26 +128,83 @@ export class StrategyDetailComponent implements OnInit {
 
   constructor(
     private strategyService: StrategyService,
+    private exchangeService: ExchangeService,
     private formBuilder: FormBuilder,
     private dialog: MatDialog,
+    private route: ActivatedRoute,
   ) { }
 
   ngOnInit(): void {
-    for (let exchange of this.exchanges) {
-      for (let market of exchange.markets) {
-        const m = market;
-        m.exchange_name = exchange.name;
-        this.markets.push(m);
-      }
-      this.timeframes = exchange.timeframes;
-    }
+    this.getExchanges();
 
-    if (this.strategy.id > 0) {
-      this.strategyService.getStrategy(this.strategy.id).subscribe({
-        next: (res) => this.strategy = res,
+    const strategy_id = Number(this.route.snapshot.paramMap.get('strategy_id'));
+
+    if (!strategy_id) {
+      this.loading = false;
+      this.strategy = this.empty_strat;
+    } else {
+      this.strategyService.getStrategy(strategy_id).subscribe({
+        next: (res) => {
+          this.strategy = res,
+          this.loading = false;
+          this.plot_layout.title = this.strategy.symbol
+          this.plot_data = [
+            {
+              name: 'price',
+              x: res.prices.time,
+              open: res.prices.open,
+              high: res.prices.high,
+              low: res.prices.low,
+              close: res.prices.close,
+              type: 'candlestick',
+              xaxis: 'x',
+              yaxis: 'y'
+            },{
+              name: 'i_score',
+              x: res.prices.time,
+              y: res.prices.i_score,
+              type: 'line',
+              xaxis: 'x',
+              yaxis: 'y2'
+            },{
+              name: 'p_score',
+              x: res.prices.time,
+              y: res.prices.p_score,
+              type: 'line',
+              xaxis: 'x',
+              yaxis: 'y3'
+            },{
+              name: 'buy signal',
+              x: res.prices.time,
+              y: res.prices.buys,
+              type: 'scatter',
+              mode: 'markers',
+              marker: { color: 'green', size: 8 },
+              xaxis: 'x',
+              yaxis: 'y'
+            },{
+              name: 'sell signal',
+              x: res.prices.time,
+              y: res.prices.sells,
+              type: 'scatter',
+              mode: 'markers',
+              marker: { color: 'red', size: 8 },
+              xaxis: 'x',
+              yaxis: 'y'
+            }
+          ];
+        },
         error: (err) => this.handleError(err)
       });
     }
+
+  }
+
+  getExchanges(): void {
+    this.exchangeService.getExchanges().subscribe({
+      next: (res) => this.exchanges = res,
+      error: (err) => this.handleError(err)
+    });
   }
 
   createForm(model: Strategy): FormGroup {
