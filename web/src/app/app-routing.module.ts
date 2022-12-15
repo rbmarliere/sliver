@@ -7,6 +7,7 @@ import { LoginGuard } from './login.guard';
 import { LoginComponent } from './login/login.component';
 import { OrderComponent } from './order/order.component';
 import { PositionComponent } from './position/position.component';
+import { StrategyDetailComponent } from './strategy-detail/strategy-detail.component';
 import { StrategyComponent } from './strategy/strategy.component';
 
 const routes: Routes = [
@@ -15,6 +16,7 @@ const routes: Routes = [
   { path: 'positions', component: PositionComponent, canActivate: [AuthGuard] },
   { path: 'position/:position_id', component: OrderComponent, canActivate: [AuthGuard] },
   { path: 'strategies', component: StrategyComponent, canActivate: [AuthGuard] },
+  { path: 'strategy/:strategy_id', component: StrategyDetailComponent, canActivate: [AuthGuard] },
   { path: 'dashboard', component: DashboardComponent, canActivate: [AuthGuard] },
 ];
 
