@@ -1,5 +1,13 @@
-<div *ngIf="orders.length > 0" class="main">
-  <table mat-table [dataSource]="orders" class="mat-elevation-z8 orders-table">
+<div *ngIf="loading" class="main" style="padding: 2vh;">
+  <mat-spinner></mat-spinner>
+</div>
+
+<div *ngIf="!loading" class="main">
+  <table
+    mat-table
+    *ngIf="orders.length > 0"
+    [dataSource]="orders"
+    class="mat-elevation-z8 orders-table">
 
   <ng-container matColumnDef="time">
     <th mat-header-cell *matHeaderCellDef> Time </th>
@@ -41,8 +49,4 @@
   <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
   <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
   </table>
-</div>
-
-<div *ngIf="orders.length == 0" class="main" style="padding: 2vh;">
-  <mat-spinner></mat-spinner>
 </div>
