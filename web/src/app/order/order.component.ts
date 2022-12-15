@@ -26,6 +26,8 @@ export class OrderComponent implements OnInit {
     "fee",
   ];
 
+  loading: Boolean = true;
+
   constructor(
     private orderService: OrderService,
     private dialog: MatDialog,
@@ -49,7 +51,10 @@ export class OrderComponent implements OnInit {
 
   getOrders(position_id: number): void {
     this.orderService.getOrders(position_id).subscribe({
-      next: (res) => this.orders = res,
+      next: (res) => {
+        this.orders = res;
+        this.loading = false;
+      },
       error: (err) => this.handleError(err)
     });
   }

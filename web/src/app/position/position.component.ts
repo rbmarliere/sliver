@@ -27,6 +27,8 @@ export class PositionComponent implements OnInit {
     'actions'
   ];
 
+  loading: Boolean = true;
+
   constructor(
     private positionService: PositionService,
     private dialog: MatDialog
@@ -48,7 +50,10 @@ export class PositionComponent implements OnInit {
 
   getPositions(): void {
     this.positionService.getPositions().subscribe({
-      next: (res) => this.positions = res,
+      next: (res) => {
+        this.positions = res;
+        this.loading = false;
+      },
       error: (err) => this.handleError(err)
     });
   }
