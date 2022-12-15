@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, Input, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ErrorDialogComponent } from '../error-dialog/error-dialog.component';
 import { Exchange } from '../exchange';
 import { ExchangeService } from '../exchange.service';
@@ -132,6 +132,7 @@ export class StrategyDetailComponent implements OnInit {
     private formBuilder: FormBuilder,
     private dialog: MatDialog,
     private route: ActivatedRoute,
+    private router: Router
   ) { }
 
   ngOnInit(): void {
@@ -221,7 +222,7 @@ export class StrategyDetailComponent implements OnInit {
       });
     } else {
       this.strategyService.createStrategy(strategy).subscribe({
-        next: () => location.reload(),
+        next: () => this.router.navigate(['/strategies']),
         error: (err) => this.handleError(err)
       });
     }
