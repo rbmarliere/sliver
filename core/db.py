@@ -182,6 +182,7 @@ class Strategy(BaseModel):
     user = peewee.ForeignKeyField(User)
     market = peewee.ForeignKeyField(Market)
     active = peewee.BooleanField(default=False)
+    deleted = peewee.BooleanField(default=False)
     description = peewee.TextField()
     mode = peewee.TextField(default="auto")
     timeframe = peewee.TextField(default="1d")
@@ -205,12 +206,16 @@ class Strategy(BaseModel):
         self.active = False
         self.save()
 
+    def delete(self):
+        self.deleted = True
+        self.save()
+
     def postpone(self):
         self.next_refresh = self.get_next_refresh()
         core.watchdog.info("next refresh at {n}".format(n=self.next_refresh))
         self.save()
 
-    def refresh(self):
+    def refresh_signal(self):
         if self.mode == "auto":
             new_indicators_count = core.strategy.refresh_indicators(self)
             self.signal = self.get_asignal()
