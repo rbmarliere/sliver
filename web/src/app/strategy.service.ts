@@ -74,4 +74,8 @@ export class StrategyService {
         })
       );
   }
+
+  deleteStrategy(strategy_id: number): Observable<any> {
+    return this.http.delete<any>(this.strategy_url + "/" + strategy_id);
+  }
 }

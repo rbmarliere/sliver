@@ -1,3 +1,5 @@
+import { Price } from "./price"
+
 export interface Strategy {
   symbol: string
   market_id: number
@@ -21,4 +23,5 @@ export interface Strategy {
   lm_ratio: number
   model_i: string
   model_p: string
+  prices: Price
 }
