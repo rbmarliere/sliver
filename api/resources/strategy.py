@@ -1,9 +1,23 @@
+import pandas
 import peewee
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from flask_restful import Resource, fields, inputs, marshal_with, reqparse
 
 import api
 import core
+
+price_fields = {
+    "time": fields.List(fields.String),
+    "open": fields.List(fields.Float),
+    "high": fields.List(fields.Float),
+    "low": fields.List(fields.Float),
+    "close": fields.List(fields.Float),
+    "volume": fields.List(fields.Float),
+    "i_score": fields.List(fields.Float),
+    "p_score": fields.List(fields.Float),
+    "buys": fields.List(fields.Float),
+    "sells": fields.List(fields.Float),
+}
 
 fields = {
     "symbol": fields.String,
@@ -27,7 +41,8 @@ fields = {
     "tweet_filter": fields.String,
     "lm_ratio": fields.Float,
     "model_i": fields.String,
-    "model_p": fields.String
+    "model_p": fields.String,
+    "prices": fields.Nested(price_fields)
 }
 
 argp = reqparse.RequestParser()
@@ -63,6 +78,7 @@ class Strategies(Resource):
 
         strategies = [s for s in
                       core.db.Strategy.select()
+                      .where(core.db.Strategy.deleted == False)
                       .order_by(core.db.Strategy.description)]
 
         for st in strategies:
@@ -87,6 +103,8 @@ class Strategies(Resource):
     def subscribe(self, args, user):
         try:
             strategy = core.db.Strategy.get_by_id(args.id)
+            if strategy.deleted:
+                raise api.errors.StrategyDoesNotExist
         except core.db.Strategy.DoesNotExist:
             raise api.errors.StrategyDoesNotExist
 
@@ -98,8 +116,9 @@ class Strategies(Resource):
                 u_st.save()
 
         if not user_strat_exists:
-            core.db.UserStrategy(
-                user=user, strategy=strategy, active=args.subscribed).save()
+            core.db.UserStrategy(user=user,
+                                 strategy=strategy,
+                                 active=args.subscribed).save()
 
         strategy.subscribed = args.subscribed
         strategy.symbol = strategy.market.get_symbol()
@@ -135,6 +154,8 @@ class Strategies(Resource):
 
         try:
             old_strategy = core.db.Strategy.get_by_id(args.id)
+            if old_strategy.deleted:
+                raise api.errors.StrategyDoesNotExist
             market = old_strategy.market
             if old_strategy.user != user:
                 raise api.errors.StrategyNotEditable
@@ -160,26 +181,6 @@ class Strategies(Resource):
 
         return strategy
 
-    @jwt_required()
-    def delete(self):
-        args = argp.parse_args()
-
-        if not args.id:
-            raise api.errors.InvalidArgument
-
-        uid = int(get_jwt_identity())
-        user = core.db.User.get_by_id(uid)
-
-        try:
-            strategy = core.db.Strategy.get_by_id(args.id)
-            if strategy.user != user:
-                raise api.errors.StrategyNotEditable
-            strategy.delete_instance(recursive=True)
-        except core.db.Strategy.DoesNotExist:
-            raise api.errors.StrategyDoesNotExist
-
-        return "", 204
-
 
 class Strategy(Resource):
     @marshal_with(fields)
@@ -190,10 +191,57 @@ class Strategy(Resource):
 
         try:
             strategy = core.db.Strategy.get_by_id(strategy_id)
+            if strategy.deleted:
+                raise api.errors.StrategyDoesNotExist
         except core.db.Strategy.DoesNotExist:
             raise api.errors.StrategyDoesNotExist
+
+        strategy.refresh_signal()
 
         strategy.symbol = strategy.market.get_symbol()
         strategy.subscribed = user.is_subscribed(strategy)
 
+        ind = pandas.DataFrame(strategy.get_indicators().dicts())
+        if not ind.empty:
+            buys = []
+            sells = []
+            curr_pos = False
+            for idx, row in ind.iterrows():
+                if row.signal == "buy":
+                    if not curr_pos:
+                        buys.append(idx)
+                        curr_pos = True
+                elif row.signal == "sell":
+                    if curr_pos:
+                        sells.append(idx)
+                        curr_pos = False
+            ind.time = ind.time.dt.strftime("%Y-%m-%d %H:%M")
+            ind.open = ind.open.apply(strategy.market.quote.format)
+            ind.high = ind.high.apply(strategy.market.quote.format)
+            ind.low = ind.low.apply(strategy.market.quote.format)
+            ind.close = ind.close.apply(strategy.market.quote.format)
+            ind.volume = ind.volume.apply(strategy.market.base.format)
+            ind["buys"] = ind.open.where(ind.index.isin(buys))
+            ind.buys = ind.buys.replace({float("nan"): None})
+            ind["sells"] = ind.open.where(ind.index.isin(sells))
+            ind.sells = ind.sells.replace({float("nan"): None})
+            strategy.prices = ind.to_dict("list")
+
         return strategy
+
+    @jwt_required()
+    def delete(self, strategy_id):
+        uid = int(get_jwt_identity())
+        user = core.db.User.get_by_id(uid)
+
+        try:
+            strategy = core.db.Strategy.get_by_id(strategy_id)
+            if strategy.user != user:
+                raise api.errors.StrategyNotEditable
+            if strategy.get_active_users().count() > 0:
+                raise api.errors.StrategyIsActive
+            strategy.delete()
+        except core.db.Strategy.DoesNotExist:
+            raise api.errors.StrategyDoesNotExist
+
+        return "", 204

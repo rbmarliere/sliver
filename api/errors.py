@@ -63,6 +63,12 @@ class StrategyNotEditable(HTTPException):
         "Unable to edit a strategy created by another user."
     )
 
+class StrategyIsActive(HTTPException):
+    code = 400
+    description = (
+        "Strategy has active users."
+    )
+
 
 class ExchangeDoesNotExist(HTTPException):
     code = 404
