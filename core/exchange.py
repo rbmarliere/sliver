@@ -56,6 +56,7 @@ def check_latency():
 
 
 def download_prices(strategy: core.db.Strategy):
+    now = datetime.datetime.utcnow()
     timeframe = strategy.timeframe
     market = strategy.market
     set_api(exchange=strategy.market.base.exchange)
@@ -89,7 +90,7 @@ def download_prices(strategy: core.db.Strategy):
             "no db entries found, downloading everything...")
 
     # return if last entry is last possible result
-    if page_start + timeframe_delta > datetime.datetime.utcnow():
+    if page_start + timeframe_delta > now:
         core.watchdog.info("price data is up to date")
         return
 
@@ -144,21 +145,25 @@ def download_prices(strategy: core.db.Strategy):
     prices[6] = timeframe
     prices[7] = market.id
 
+    prices = prices.rename(columns={
+                               0: "time",
+                               1: "open",
+                               2: "high",
+                               3: "low",
+                               4: "close",
+                               5: "volume",
+                               6: "timeframe",
+                               7: "market_id"})
+
     # remove dups to avoid db errors
     prices = prices.drop_duplicates()
 
-    # remove last element because it constantly changes before close
-    prices.drop(prices.tail(1).index, inplace=True)
+    if not prices.empty:
+        last = prices.iloc[-1]
+        if last.time + timeframe_delta > now:
+            prices.drop(last.name, inplace=True)
 
-    # insert into the database
-    with core.db.connection.atomic():
-        core.db.Price.insert_many(
-            prices.values.tolist(),
-            fields=[
-                core.db.Price.time, core.db.Price.open, core.db.Price.high,
-                core.db.Price.low, core.db.Price.close, core.db.Price.volume,
-                core.db.Price.timeframe, core.db.Price.market
-            ]).execute()
+        core.db.Price.insert_many(prices.to_dict("records")).execute()
 
 
 def sync_limit_orders(position: core.db.Position) -> core.db.Position:
