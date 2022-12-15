@@ -57,7 +57,7 @@ def error(msg, e):
     get_logger("exception", suppress_output=True) \
         .exception(e, exc_info=True)
 
-    if log.name == "watchdog":
+    if log.name == "watchdog" or log.name == "stream":
         msg = "{l}: {m}".format(l=log.name, m=msg)
         core.telegram.notice(msg)
 
@@ -65,7 +65,7 @@ def error(msg, e):
 def notice(msg):
     log.info(msg)
 
-    if log.name == "watchdog":
+    if log.name == "watchdog" or log.name == "stream":
         msg = "{l}: {m}".format(l=log.name, m=msg)
         core.telegram.notice(msg)
 
