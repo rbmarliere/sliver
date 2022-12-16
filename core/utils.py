@@ -130,7 +130,7 @@ def qformat(x, column):
 
 def bformat(x, column):
     strat = core.db.Strategy.get_by_id(x.strategy_id)
-    return strat.market.quote.format(x[column])
+    return strat.market.base.format(x[column])
 
 
 def sformat(x):
