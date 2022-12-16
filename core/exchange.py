@@ -51,7 +51,7 @@ def check_latency():
     core.watchdog.info("api latency is {l} ms".format(l=elapsed_in_ms))
 
     if elapsed_in_ms > 1500:
-        core.watchdog.error("latency above threshold (1500)")
+        core.watchdog.error("latency above threshold (1500)", None)
         raise ccxt.NetworkError
 
 
