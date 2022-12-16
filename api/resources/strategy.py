@@ -21,6 +21,7 @@ price_fields = {
 
 fields = {
     "symbol": fields.String,
+    "exchange": fields.String,
     "market_id": fields.Integer,
     "id": fields.Integer,
     "subscribed": fields.Boolean,
@@ -79,11 +80,12 @@ class Strategies(Resource):
         strategies = [s for s in
                       core.db.Strategy.select()
                       .where(core.db.Strategy.deleted == False)
-                      .order_by(core.db.Strategy.description)]
+                      .order_by(core.db.Strategy.id.desc())]
 
         for st in strategies:
             st.subscribed = user.is_subscribed(st)
             st.symbol = st.market.get_symbol()
+            st.exchange = st.market.quote.exchange.name
 
         return strategies
 
@@ -122,6 +124,7 @@ class Strategies(Resource):
 
         strategy.subscribed = args.subscribed
         strategy.symbol = strategy.market.get_symbol()
+        strategy.exchange = strategy.market.quote.exchange.name
 
         return strategy
 
@@ -138,6 +141,7 @@ class Strategies(Resource):
 
         strategy.subscribed = False
         strategy.symbol = strategy.market.get_symbol()
+        strategy.exchange = strategy.market.quote.exchange.name
 
         return strategy
 
@@ -168,6 +172,7 @@ class Strategies(Resource):
 
         strategy.subscribed = user.is_subscribed(strategy)
         strategy.symbol = strategy.market.get_symbol()
+        strategy.exchange = strategy.market.quote.exchange.name
 
         if (strategy.i_threshold != float(old_strategy.i_threshold)
                 or strategy.p_threshold != float(old_strategy.p_threshold)
@@ -196,9 +201,13 @@ class Strategy(Resource):
         except core.db.Strategy.DoesNotExist:
             raise api.errors.StrategyDoesNotExist
 
+        if strategy.get_prices().count() == 0:
+            core.exchange.download_prices(strategy)
+
         strategy.refresh_signal()
 
         strategy.symbol = strategy.market.get_symbol()
+        strategy.exchange = strategy.market.quote.exchange.name
         strategy.subscribed = user.is_subscribed(strategy)
 
         ind = pandas.DataFrame(strategy.get_indicators().dicts())
