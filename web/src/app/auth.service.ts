@@ -1,5 +1,3 @@
-import * as moment from 'moment';
-
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
@@ -21,7 +19,7 @@ export class AuthService {
       return null;
     }
     const expiresAt = JSON.parse(expiration);
-    return moment(expiresAt);
+    return expiresAt;
   }
 
   constructor(
@@ -42,7 +40,7 @@ export class AuthService {
   }
 
   setSession(authResult: User) {
-    const expiresAt = moment(authResult.expires_at, 'X');
+    const expiresAt = authResult.expires_at;
     localStorage.setItem('access_key', authResult.access_key);
     localStorage.setItem('expires_at', JSON.stringify(expiresAt.valueOf()));
     this.authenticated.next(true)
@@ -50,7 +48,8 @@ export class AuthService {
   }
 
   isAuthenticated() {
-    if (moment().isBefore(this.getExpiration())) {
+    var now = new Date().getTime() / 1000;
+    if (now < this.getExpiration()) {
       this.authenticated.next(true);
     } else {
       this.authenticated.next(false);
