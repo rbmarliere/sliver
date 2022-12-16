@@ -320,12 +320,14 @@ export class StrategyDetailComponent implements OnInit {
     for (i = 0; i < positions.length; i++) {
       var pos = positions[i];
 
+      var entry_amount = balance / pos.entry_price;
       var pricedelta = pos.exit_price - pos.entry_price;
+      var pnl = pricedelta * entry_amount;
       var timedelta = pos.exit_time.getTime() - pos.entry_time.getTime();
 
       avg_time = (avg_time * i + timedelta) / (i + 1);
 
-      var new_balance = balance + pricedelta;
+      var new_balance = balance + pnl;
       var roi = ((new_balance / balance) - 1) * 100;
       avg_roi = (avg_roi * i + roi) / (i + 1);
 
@@ -351,8 +353,6 @@ buy and hold amount at first candle = ${init_bh_amount.toFixed(8)}
 buy and hold value at last candle = ${exit_bh_value.toFixed(2)}
 buy and hold roi = ${roi_bh.toFixed(2)}%
 `;
-
-    console.log(positions);
   }
 
   msToString(ms: number): string {
