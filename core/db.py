@@ -638,6 +638,3 @@ def get_tweets_by_model(model: str):
               peewee.JOIN.LEFT_OUTER,
               on=((Score.tweet_id == Tweet.id) & (Score.model == model))) \
         .order_by(Tweet.time)
-
-def test():
-    print("hello")
