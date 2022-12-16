@@ -6,7 +6,8 @@ import api.errors
 import core
 
 fields = {
-    "time": fields.DateTime,
+    "exchange_order_id": fields.String,
+    "time": fields.DateTime(dt_format="iso8601"),
     "status": fields.String,
     "type": fields.String,
     "side": fields.String,
