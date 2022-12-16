@@ -19,6 +19,7 @@ export class StrategyDetailComponent implements OnInit {
 
   private empty_strat = {
     symbol: '',
+    exchange: '',
     market_id: 0,
     id: 0,
     subscribed: false,
@@ -52,7 +53,7 @@ export class StrategyDetailComponent implements OnInit {
       buys: [],
       sells: []
     }
-  }
+  };
 
   plot_layout = {
     // width: 880,
