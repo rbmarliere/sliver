@@ -533,11 +533,13 @@ class Order(BaseModel):
 
         core.watchdog.info(msg)
 
-        if self.id:
+        if filled > 0:
             core.watchdog.info("filled: {f}"
-                               .format(f=market.quote.print(filled)))
-            if filled > 0:
-                core.watchdog.notice(msg)
+                               .format(f=market.base.print(filled)))
+            core.watchdog.notice("\nfilled {o}\nin strategy {s} for user {u}"
+                                 .format(o=msg,
+                                         s=position.user_strategy.strategy,
+                                         u=position.user_strategy.user.email))
 
         # check for fees
         if ex_order["fee"] is None:
