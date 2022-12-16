@@ -199,8 +199,20 @@
 
   <div *ngIf="strategy.id && plot_data">
     <p>
-      <plotly-plot [data]="plot_data" [layout]="plot_layout"></plotly-plot>
+      <plotly-plot
+        [config]="plot_config"
+        [data]="plot_data"
+        [layout]="plot_layout"
+        (relayout)="zoom($event)"
+      ></plotly-plot>
     </p>
+
+    <p class="text-center">
+      -- BACKTEST --
+    </p>
+    <pre class="text-center">
+      {{ backtest_log }}
+    </pre>
   </div>
 
 </div>
