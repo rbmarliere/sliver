@@ -15,9 +15,10 @@ export class OrderComponent implements OnInit {
 
   orders: Order[] = [];
   displayedColumns: string[] = [
+    "exchange_order_id",
     "time",
     "status",
-    // "type",
+    "type",
     "side",
     "price",
     "amount",

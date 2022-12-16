@@ -1,5 +1,6 @@
 export interface Order {
-  time: Date
+  exchange_order_id: string
+  time: string
   status: string
   type: string
   side: string
