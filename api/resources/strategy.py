@@ -133,6 +133,8 @@ class Strategies(Resource):
         strategy.id = None
         strategy.active = True
         strategy.user = user
+        strategy.stop_loss = abs(strategy.stop_loss)
+        strategy.min_roi = abs(strategy.min_roi)
 
         try:
             strategy.save()
@@ -167,6 +169,8 @@ class Strategies(Resource):
             raise api.errors.StrategyDoesNotExist
 
         strategy = core.db.Strategy(**args)
+        strategy.stop_loss = abs(strategy.stop_loss)
+        strategy.min_roi = abs(strategy.min_roi)
         strategy.market = market
         strategy.save()
 
