@@ -353,16 +353,18 @@ class Position(BaseModel):
         position.save()
 
         core.watchdog.info("opening position {i}".format(i=position.id))
-        core.watchdog.notice("opening " + position.get_notice())
+        core.watchdog.notice(position.get_notice(prefix="opening"))
 
         return position
 
-    def get_notice(self):
-        return ("position for user {u} under strategy {s} in market {m}"
+    def get_notice(self, prefix="", suffix=""):
+        return ("{p}position for user {u} with strategy {s} in market {m} {su}"
                 .format(
+                    p=prefix + " ",
                     u=self.user_strategy.user.email,
                     s=self.user_strategy.strategy,
-                    m=self.user_strategy.strategy.market.get_symbol()))
+                    m=self.user_strategy.strategy.market.get_symbol(),
+                    su=suffix))
 
     def get_timedelta(self):
         if self.is_pending():
@@ -536,10 +538,6 @@ class Order(BaseModel):
         if filled > 0:
             core.watchdog.info("filled: {f}"
                                .format(f=market.base.print(filled)))
-            core.watchdog.notice("\nfilled {o}\nin strategy {s} for user {u}"
-                                 .format(o=msg,
-                                         s=position.user_strategy.strategy,
-                                         u=position.user_strategy.user.email))
 
         # check for fees
         if ex_order["fee"] is None:
