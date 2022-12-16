@@ -459,8 +459,8 @@ class Position(BaseModel):
 
             # update entry price if entry_amount is non zero
             if self.entry_amount > 0:
-                self.entry_price = market.quote.transform(
-                    (self.entry_cost / self.entry_amount))
+                self.entry_price = market.base.div(self.entry_cost,
+                                                   self.entry_amount)
 
         elif order.side == "sell":
             self.bucket += order.filled
@@ -524,7 +524,7 @@ class Order(BaseModel):
         price = market.quote.transform(price)
         amount = market.base.transform(amount)
         cost = market.quote.transform(cost)
-        filled = market.quote.transform(filled)
+        filled = market.base.transform(filled)
 
         msg = "{a} @ {p} ({c})" \
             .format(a=market.base.print(amount),
@@ -638,3 +638,6 @@ def get_tweets_by_model(model: str):
               peewee.JOIN.LEFT_OUTER,
               on=((Score.tweet_id == Tweet.id) & (Score.model == model))) \
         .order_by(Tweet.time)
+
+def test():
+    print("hello")
