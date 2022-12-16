@@ -472,8 +472,8 @@ class Position(BaseModel):
 
             # update exit price if exit_amount is non zero
             if self.exit_amount > 0:
-                self.exit_price = market.quote.transform(
-                    (self.exit_cost / self.exit_amount))
+                self.exit_price = market.base.div(self.exit_cost,
+                                                  self.exit_amount)
 
         self.save()
 
