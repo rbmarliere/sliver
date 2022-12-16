@@ -146,14 +146,14 @@ def download_prices(strategy: core.db.Strategy):
     prices[7] = market.id
 
     prices = prices.rename(columns={
-                               0: "time",
-                               1: "open",
-                               2: "high",
-                               3: "low",
-                               4: "close",
-                               5: "volume",
-                               6: "timeframe",
-                               7: "market_id"})
+        0: "time",
+        1: "open",
+        2: "high",
+        3: "low",
+        4: "close",
+        5: "volume",
+        6: "timeframe",
+        7: "market_id"})
 
     # remove dups to avoid db errors
     prices = prices.drop_duplicates()
@@ -211,16 +211,18 @@ def create_order(type: str,
         assert price >= market.price_min
         assert amount * price >= market.cost_min
 
-        ex_order = api.create_order(market.get_symbol(),
-                                    type,
-                                    side,
-                                    market.base.format(amount),
-                                    market.quote.format(price))
+        new_order = api.create_order(market.get_symbol(),
+                                     type,
+                                     side,
+                                     market.base.format(amount),
+                                     market.quote.format(price))
 
         core.watchdog.info("created new {t} {s} order {i}"
                            .format(t=type,
                                    s=side,
-                                   i=ex_order["id"]))
+                                   i=new_order["id"]))
+
+        ex_order = api.fetch_order(new_order["id"])
 
         core.db.Order.sync(core.db.Order(),
                            ex_order,
