@@ -2,6 +2,7 @@ import { Price } from "./price"
 
 export interface Strategy {
   symbol: string
+  exchange: string
   market_id: number
   id: number
   subscribed: boolean

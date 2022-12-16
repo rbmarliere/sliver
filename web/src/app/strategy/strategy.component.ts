@@ -16,6 +16,7 @@ export class StrategyComponent implements OnInit {
     "id",
     "description",
     "symbol",
+    "exchange",
     "actions"
   ];
 
