@@ -222,18 +222,19 @@ def create_order(type: str,
                                    s=side,
                                    i=new_order["id"]))
 
-        ex_order = api.fetch_order(new_order["id"])
+        ex_order = api.fetch_order(new_order["id"],
+                                   market.get_symbol())
 
         core.db.Order.sync(core.db.Order(),
                            ex_order,
                            position)
 
     except ccxt.OrderImmediatelyFillable as e:
-        core.watchdog.info(
+        core.watchdog.error(
             "order would be immediately fillable, skipping...", e)
 
     except (ccxt.InvalidOrder, AssertionError) as e:
-        core.watchdog.info(
+        core.watchdog.error(
             "order values are smaller than exchange minimum, skipping...", e)
 
     except ccxt.RequestTimeout as e:
@@ -438,6 +439,7 @@ def refresh(position: core.db.Position):
             market_total = remaining * strategy.lm_ratio
             limit_total = remaining - market_total
         else:
+            market_total = 0
             limit_total = remaining
 
         # check if theyre amounts or costs
@@ -459,8 +461,10 @@ def refresh(position: core.db.Position):
             bucket_is_full = True
 
         # if bucket is not full but can't insert new orders, fill at market
-        if (market_total_cost < market.cost_min
-                or limit_total_cost < market.cost_min):
+        if (strategy.lm_ratio > 0
+            and (market_total_cost < market.cost_min
+                 or limit_total_cost < market.cost_min)):
+            core.watchdog.info("filling at market")
             market_total = remaining
             limit_total = 0
 
