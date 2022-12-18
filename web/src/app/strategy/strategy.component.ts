@@ -14,6 +14,7 @@ export class StrategyComponent implements OnInit {
 
   displayedColumns: string[] = [
     "id",
+    "active",
     "description",
     "symbol",
     "exchange",
