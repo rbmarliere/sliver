@@ -15,12 +15,13 @@ def refresh(strategy: core.db.Strategy):
     core.watchdog.info("mode is {m}".format(m=strategy.mode))
 
     # update tweet scores
-    if strategy.model_i:
-        model_i = core.models.load(strategy.model_i)
-        core.models.replay(model_i)
-    if strategy.model_p:
-        model_p = core.models.load(strategy.model_p)
-        core.models.replay(model_p)
+    if strategy.mode == "auto":
+        if strategy.model_i:
+            model_i = core.models.load(strategy.model_i)
+            core.models.replay(model_i)
+        if strategy.model_p:
+            model_p = core.models.load(strategy.model_p)
+            core.models.replay(model_p)
 
     # download historical price ohlcv data
     core.exchange.download_prices(strategy)
