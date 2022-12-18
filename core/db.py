@@ -273,13 +273,16 @@ class Strategy(BaseModel):
         return signal
 
     def get_next_refresh(self):
-        freq = "{i}T".format(i=self.refresh_interval)
         now = datetime.datetime.utcnow()
-        last = now.replace(minute=0, second=0, microsecond=0)
-        range = pandas.date_range(last, periods=61, freq=freq)
-        series = range.to_series().asfreq(freq)
-        next_refresh = series.loc[series > now].iloc[0]
-        return next_refresh
+        try:
+            freq = "{i}T".format(i=self.refresh_interval)
+            last = now.replace(minute=0, second=0, microsecond=0)
+            range = pandas.date_range(last, periods=61, freq=freq)
+            series = range.to_series().asfreq(freq)
+            next_refresh = series.loc[series > now].iloc[0]
+            return next_refresh
+        except ValueError:
+            return now + core.utils.get_timeframe_delta(self.timeframe)
 
 
 class UserStrategy(BaseModel):
