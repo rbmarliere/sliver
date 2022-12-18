@@ -101,6 +101,8 @@ def watch():
                     except ccxt.RateLimitExceeded as e:
                         error("rate limit exceeded, skipping user...", e)
 
+            core.db.connection.close()
+
             time.sleep(60)
 
         except (tensorflow.errors.ResourceExhaustedError,
@@ -117,8 +119,8 @@ def watch():
             strategy.postpone()
 
         except peewee.OperationalError as e:
-            error("can't connect to database!", e)
-            break
+            error("database error", e)
+            time.sleep(60)
 
         except KeyboardInterrupt:
             info("got keyboard interrupt")
