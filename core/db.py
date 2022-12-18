@@ -465,8 +465,8 @@ class Position(BaseModel):
 
             # update entry price if entry_amount is non zero
             if self.entry_amount > 0:
-                self.entry_price = market.base.div(self.entry_cost,
-                                                   self.entry_amount)
+                self.entry_price = market.quote.transform(
+                    self.entry_cost / self.entry_amount)
 
         elif order.side == "sell":
             self.bucket += order.filled
@@ -476,8 +476,8 @@ class Position(BaseModel):
 
             # update exit price if exit_amount is non zero
             if self.exit_amount > 0:
-                self.exit_price = market.base.div(self.exit_cost,
-                                                  self.exit_amount)
+                self.exit_price = market.base.transform(
+                    self.exit_cost / self.exit_amount)
 
         self.save()
 
