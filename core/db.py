@@ -208,6 +208,7 @@ class Strategy(BaseModel):
 
     def delete(self):
         self.deleted = True
+        self.active = False
         self.save()
 
     def postpone(self):
