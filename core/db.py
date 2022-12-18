@@ -122,9 +122,7 @@ class ExchangeAsset(BaseModel):
 
         div = D(str(num)) / D(str(den))
 
-        if abs(num) > abs(den):
-            div = int(div)
-        else:
+        if abs(num) <= abs(den):
             div = self.transform(div)
 
         div = core.utils.truncate(self.format(div), trunc_precision)
