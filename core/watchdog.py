@@ -77,7 +77,7 @@ def watch():
 
     while (True):
         try:
-            core.db.connection.connect(reuse_if_open=True)
+            core.db.connection.connect()
 
             for strategy in core.db.get_pending_strategies():
                 core.strategy.refresh(strategy)
@@ -100,8 +100,6 @@ def watch():
 
                     except ccxt.RateLimitExceeded as e:
                         error("rate limit exceeded, skipping user...", e)
-
-            core.db.connection.close()
 
             time.sleep(60)
 
@@ -129,5 +127,8 @@ def watch():
         except Exception as e:
             error("crashed", e)
             break
+
+        finally:
+            core.db.connection.close()
 
     notice("shutdown")
