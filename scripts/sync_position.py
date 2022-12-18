@@ -41,4 +41,7 @@ if __name__ == "__main__":
         elif order.status != "open":
             pos.add_order(order)
 
+    if pos.status == "closed":
+        pos.pnl = (pos.exit_cost - pos.entry_cost - pos.fee)
+
     pos.save()
