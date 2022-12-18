@@ -130,10 +130,7 @@ class ExchangeAsset(BaseModel):
         return self.transform(div)
 
     def format(self, value, prec=None):
-        if prec is None:
-            precision = D("10") ** D(-1 * self.precision)
-        else:
-            precision = D("10") ** D(-1 * prec)
+        precision = D("10") ** D(-1 * self.precision)
         value = D(str(value)) * precision
         return value.quantize(precision)
 
