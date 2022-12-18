@@ -464,7 +464,6 @@ def refresh(position: core.db.Position):
         if (strategy.lm_ratio > 0
             and (market_total_cost < market.cost_min
                  or limit_total_cost < market.cost_min)):
-            core.watchdog.info("filling at market")
             market_total = remaining
             limit_total = 0
 
