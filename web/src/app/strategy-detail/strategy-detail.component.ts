@@ -13,10 +13,9 @@ import { StrategyService } from '../strategy.service';
 @Component({
   selector: 'app-strategy-detail',
   templateUrl: './strategy-detail.component.html',
-  styleUrls: ['./strategy-detail.component.less']
+  styleUrls: ['./strategy-detail.component.less'],
 })
 export class StrategyDetailComponent implements OnInit {
-
   private empty_strat = {
     symbol: '',
     exchange: '',
@@ -51,8 +50,8 @@ export class StrategyDetailComponent implements OnInit {
       i_score: [],
       p_score: [],
       buys: [],
-      sells: []
-    }
+      sells: [],
+    },
   };
 
   plot_layout = {
@@ -63,13 +62,13 @@ export class StrategyDetailComponent implements OnInit {
     xaxis: {
       rangeslider: { visible: false },
       autorange: true,
-      type: 'date'
+      type: 'date',
     },
     grid: { rows: 3, columns: 1 },
   };
 
   plot_config = {
-    modeBarButtonsToRemove: ['select2d', 'lasso2d', 'zoomIn2d', 'zoomOut2d']
+    modeBarButtonsToRemove: ['select2d', 'lasso2d', 'zoomIn2d', 'zoomOut2d'],
   };
 
   plot_data: any;
@@ -97,15 +96,17 @@ export class StrategyDetailComponent implements OnInit {
 
   @Input() strategy_id: number = 0;
 
-  get strategy(): Strategy { return this._strategy; }
+  get strategy(): Strategy {
+    return this._strategy;
+  }
   set strategy(strategy: Strategy) {
     this._strategy = strategy;
 
-    if (strategy.mode == "auto") {
+    if (strategy.mode == 'auto') {
       this.form.get('signal')?.disable();
       this.form.get('i_threshold')?.enable();
       this.form.get('p_threshold')?.enable();
-    } else if (strategy.mode == "manual") {
+    } else if (strategy.mode == 'manual') {
       this.form.get('signal')?.enable();
       this.form.get('i_threshold')?.disable();
       this.form.get('p_threshold')?.disable();
@@ -124,10 +125,10 @@ export class StrategyDetailComponent implements OnInit {
   private _strategy: Strategy = this.empty_strat;
 
   private handleError(error: HttpErrorResponse) {
-    const dialogConfig = new MatDialogConfig;
+    const dialogConfig = new MatDialogConfig();
 
     dialogConfig.data = {
-      msg: error.error.message
+      msg: error.error.message,
     };
 
     this.dialog.open(ErrorDialogComponent, dialogConfig);
@@ -153,9 +154,8 @@ export class StrategyDetailComponent implements OnInit {
     } else {
       this.strategyService.getStrategy(strategy_id).subscribe({
         next: (res) => {
-          this.strategy = res,
-          this.loading = false;
-          this.plot_layout.title = this.strategy.symbol
+          (this.strategy = res), (this.loading = false);
+          this.plot_layout.title = this.strategy.symbol;
           this.plot_data = [
             {
               name: 'price',
@@ -166,22 +166,25 @@ export class StrategyDetailComponent implements OnInit {
               close: res.prices.close,
               type: 'candlestick',
               xaxis: 'x',
-              yaxis: 'y'
-            }, {
+              yaxis: 'y',
+            },
+            {
               name: 'i_score',
               x: res.prices.time,
               y: res.prices.i_score,
               type: 'line',
               xaxis: 'x',
-              yaxis: 'y2'
-            }, {
+              yaxis: 'y2',
+            },
+            {
               name: 'p_score',
               x: res.prices.time,
               y: res.prices.p_score,
               type: 'line',
               xaxis: 'x',
-              yaxis: 'y3'
-            }, {
+              yaxis: 'y3',
+            },
+            {
               name: 'buy signal',
               x: res.prices.time,
               y: res.prices.buys,
@@ -189,8 +192,9 @@ export class StrategyDetailComponent implements OnInit {
               mode: 'markers',
               marker: { color: 'green', size: 8 },
               xaxis: 'x',
-              yaxis: 'y'
-            }, {
+              yaxis: 'y',
+            },
+            {
               name: 'sell signal',
               x: res.prices.time,
               y: res.prices.sells,
@@ -198,21 +202,20 @@ export class StrategyDetailComponent implements OnInit {
               mode: 'markers',
               marker: { color: 'red', size: 8 },
               xaxis: 'x',
-              yaxis: 'y'
-            }
+              yaxis: 'y',
+            },
           ];
           this.zoom(0);
         },
-        error: (err) => this.handleError(err)
+        error: (err) => this.handleError(err),
       });
     }
-
   }
 
   getExchanges(): void {
     this.exchangeService.getExchanges().subscribe({
-      next: (res) => this.exchanges = res,
-      error: (err) => this.handleError(err)
+      next: (res) => (this.exchanges = res),
+      error: (err) => this.handleError(err),
     });
   }
 
@@ -226,12 +229,12 @@ export class StrategyDetailComponent implements OnInit {
     if (strategy.id > 0) {
       this.strategyService.updateStrategy(strategy).subscribe({
         next: () => location.reload(),
-        error: (err) => this.handleError(err)
+        error: (err) => this.handleError(err),
       });
     } else {
       this.strategyService.createStrategy(strategy).subscribe({
         next: () => this.router.navigate(['/strategies']),
-        error: (err) => this.handleError(err)
+        error: (err) => this.handleError(err),
       });
     }
   }
@@ -239,7 +242,7 @@ export class StrategyDetailComponent implements OnInit {
   subscribe(strategy: Strategy): void {
     this.strategyService.updateSubscription(strategy).subscribe({
       next: () => location.reload(),
-      error: (err) => this.handleError(err)
+      error: (err) => this.handleError(err),
     });
   }
 
@@ -255,7 +258,8 @@ export class StrategyDetailComponent implements OnInit {
     } else {
       this.backtest(
         this.strategy.prices.time[0],
-        this.strategy.prices.time[this.strategy.prices.time.length - 1]);
+        this.strategy.prices.time[this.strategy.prices.time.length - 1]
+      );
     }
   }
 
@@ -266,6 +270,8 @@ export class StrategyDetailComponent implements OnInit {
     var times = this.strategy.prices.time;
     var buys = this.strategy.prices.buys;
     var sells = this.strategy.prices.sells;
+    var all_intensities = this.strategy.prices.i_score;
+    var all_polarities = this.strategy.prices.p_score;
     var len = times.length;
     var indexes = [];
     for (var i = 0; i < len; i++) {
@@ -276,16 +282,20 @@ export class StrategyDetailComponent implements OnInit {
     }
 
     // get existing positions in filtered data
-    var positions = []
+    var intensities = [];
+    var polarities = [];
+    var positions = [];
     var curr = false;
     var currPos = {
       entry_price: 0,
       entry_time: new Date(0),
       exit_price: 0,
-      exit_time: new Date(0)
+      exit_time: new Date(0),
     };
     for (i = 0; i < indexes.length; i++) {
       var idx = indexes[i];
+      intensities.push(all_intensities[idx]);
+      polarities.push(all_polarities[idx]);
       if (buys[idx] > 0) {
         if (!curr) {
           curr = true;
@@ -301,14 +311,14 @@ export class StrategyDetailComponent implements OnInit {
             entry_price: currPos.entry_price,
             entry_time: currPos.entry_time,
             exit_price: currPos.exit_price,
-            exit_time: currPos.exit_time
+            exit_time: currPos.exit_time,
           });
         }
       }
     }
 
     if (positions.length == 0) {
-      this.backtest_log = "no positions opened";
+      this.backtest_log = 'no positions opened';
       return;
     }
 
@@ -328,17 +338,21 @@ export class StrategyDetailComponent implements OnInit {
       avg_time = (avg_time * i + timedelta) / (i + 1);
 
       var new_balance = balance + pnl;
-      var roi = ((new_balance / balance) - 1) * 100;
+      var roi = (new_balance / balance - 1) * 100;
       avg_roi = (avg_roi * i + roi) / (i + 1);
 
-      balance = new_balance
+      balance = new_balance;
     }
 
     var init_bh_amount = init_balance / this.strategy.prices.open[indexes[0]];
-    var exit_bh_value = init_bh_amount * this.strategy.prices.open[indexes[indexes.length - 1]];
+    var exit_bh_value =
+      init_bh_amount * this.strategy.prices.open[indexes[indexes.length - 1]];
 
-    var roi = ((balance / init_balance) - 1) * 100;
-    var roi_bh = ((exit_bh_value / init_balance) - 1) * 100;
+    var roi = (balance / init_balance - 1) * 100;
+    var roi_bh = (exit_bh_value / init_balance - 1) * 100;
+
+    var i_median = this.median(intensities);
+    var p_median = this.median(polarities);
 
     this.backtest_log = `
 initial balance = ${init_balance.toFixed(2)}
@@ -352,6 +366,8 @@ average position roi = ${avg_roi.toFixed(2)}%
 buy and hold amount at first candle = ${init_bh_amount.toFixed(8)}
 buy and hold value at last candle = ${exit_bh_value.toFixed(2)}
 buy and hold roi = ${roi_bh.toFixed(2)}%
+intensity median = ${i_median}
+polarity median = ${p_median}
 `;
   }
 
@@ -363,7 +379,21 @@ buy and hold roi = ${roi_bh.toFixed(2)}%
     const hours = parseInt((seconds / 3600).toString());
     seconds = seconds % 3600;
     const minutes = parseInt((seconds / 60).toString());
-    return `${days}d ${hours}h ${minutes}m`
+    return `${days}d ${hours}h ${minutes}m`;
   }
 
+  median(values: any): any {
+    // https://stackoverflow.com/questions/45309447/calculating-median-javascript
+    if (values.length === 0) return 0;
+
+    values.sort(function(a: number, b: number) {
+      return a - b;
+    });
+
+    var half = Math.floor(values.length / 2);
+
+    if (values.length % 2) return values[half];
+
+    return (values[half - 1] + values[half]) / 2.0;
+  }
 }
