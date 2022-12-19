@@ -455,8 +455,7 @@ def refresh(position: core.db.Position):
         # check if current bucket is filled
         bucket_is_full = False
         if (datetime.datetime.utcnow() < position.next_bucket
-                and remaining_cost < market.cost_min
-                and remaining > 0):
+                and remaining_cost < market.cost_min):
             core.watchdog.info("bucket is full")
             bucket_is_full = True
 
