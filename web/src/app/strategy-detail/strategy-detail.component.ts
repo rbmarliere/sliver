@@ -318,10 +318,14 @@ export class StrategyDetailComponent implements OnInit {
     }
 
     var i_median = this.median(intensities);
+    var i_mean = this.mean(intensities);
     var p_median = this.median(polarities);
+    var p_mean = this.mean(polarities);
     this.backtest_log = `
 intensity median = ${i_median.toFixed(4)}
+intensity mean = ${i_mean.toFixed(4)}
 polarity median = ${p_median.toFixed(4)}
+polarity mean = ${p_mean.toFixed(4)}
 `;
 
     if (positions.length == 0) {
@@ -397,5 +401,13 @@ buy and hold roi = ${roi_bh.toFixed(2)}%
     if (values.length % 2) return values[half];
 
     return (values[half - 1] + values[half]) / 2.0;
+  }
+
+  mean(values: any): any {
+    if (values.length === 0 || values[0] == null) return 0;
+
+    const sum = values.reduce((a: any, b: any) => a + b, 0);
+    const avg = sum / values.length || 0;
+    return avg
   }
 }
