@@ -320,8 +320,8 @@ export class StrategyDetailComponent implements OnInit {
     var i_median = this.median(intensities);
     var p_median = this.median(polarities);
     this.backtest_log = `
-intensity median = ${i_median}
-polarity median = ${p_median}
+intensity median = ${i_median.toFixed(4)}
+polarity median = ${p_median.toFixed(4)}
 `;
 
     if (positions.length == 0) {
