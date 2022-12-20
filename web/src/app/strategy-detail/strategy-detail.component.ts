@@ -317,8 +317,15 @@ export class StrategyDetailComponent implements OnInit {
       }
     }
 
+    var i_median = this.median(intensities);
+    var p_median = this.median(polarities);
+    this.backtest_log = `
+intensity median = ${i_median}
+polarity median = ${p_median}
+`;
+
     if (positions.length == 0) {
-      this.backtest_log = 'no positions opened';
+      this.backtest_log += 'no positions opened';
       return;
     }
 
@@ -351,10 +358,7 @@ export class StrategyDetailComponent implements OnInit {
     var roi = (balance / init_balance - 1) * 100;
     var roi_bh = (exit_bh_value / init_balance - 1) * 100;
 
-    var i_median = this.median(intensities);
-    var p_median = this.median(polarities);
-
-    this.backtest_log = `
+    this.backtest_log += `
 initial balance = ${init_balance.toFixed(2)}
 final balance = ${balance.toFixed(2)}
 pnl = ${(balance - init_balance).toFixed(2)}
@@ -366,8 +370,6 @@ average position roi = ${avg_roi.toFixed(2)}%
 buy and hold amount at first candle = ${init_bh_amount.toFixed(8)}
 buy and hold value at last candle = ${exit_bh_value.toFixed(2)}
 buy and hold roi = ${roi_bh.toFixed(2)}%
-intensity median = ${i_median}
-polarity median = ${p_median}
 `;
   }
 
@@ -384,7 +386,7 @@ polarity median = ${p_median}
 
   median(values: any): any {
     // https://stackoverflow.com/questions/45309447/calculating-median-javascript
-    if (values.length === 0) return 0;
+    if (values.length === 0 || values[0] == null) return 0;
 
     values.sort(function(a: number, b: number) {
       return a - b;
