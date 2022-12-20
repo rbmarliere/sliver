@@ -390,7 +390,7 @@ buy and hold roi = ${roi_bh.toFixed(2)}%
 
   median(values: any): any {
     // https://stackoverflow.com/questions/45309447/calculating-median-javascript
-    if (values.length === 0 || values[0] == null) return 0;
+    if (values.length === 0) return 0;
 
     values.sort(function(a: number, b: number) {
       return a - b;
@@ -404,7 +404,7 @@ buy and hold roi = ${roi_bh.toFixed(2)}%
   }
 
   mean(values: any): any {
-    if (values.length === 0 || values[0] == null) return 0;
+    if (values.length === 0) return 0;
 
     const sum = values.reduce((a: any, b: any) => a + b, 0);
     const avg = sum / values.length || 0;
