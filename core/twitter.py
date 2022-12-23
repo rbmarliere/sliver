@@ -63,7 +63,7 @@ TRACK_USERS = [
     "walter_wyckoff", "xxstevelee"
 ]
 
-cache_file = core.config["HYPNOX_LOGS_DIR"] + "/cache.tsv"
+cache_file = core.config["LOGS_DIR"] + "/cache.tsv"
 
 
 class Stream(tweepy.Stream):
@@ -124,7 +124,7 @@ class Stream(tweepy.Stream):
 def save_uids(users, api):
     # save the ids of the users to track to disk
     core.watchdog.info("loading user ids")
-    path = core.config["HYPNOX_LOGS_DIR"] + "/user_ids.txt"
+    path = core.config["LOGS_DIR"] + "/user_ids.txt"
     uids_file = open(path, "a")
     uids = []
     for user in users:
@@ -144,27 +144,27 @@ def stream():
     core.watchdog.set_logger("stream")
 
     core.watchdog.info("loading twitter API keys")
-    if (core.config["HYPNOX_TWITTER_CONSUMER_KEY"] == ""
-            or core.config["HYPNOX_TWITTER_CONSUMER_SECRET"] == ""
-            or core.config["HYPNOX_TWITTER_ACCESS_KEY"] == ""
-            or core.config["HYPNOX_TWITTER_ACCESS_SECRET"] == ""):
+    if (core.config["TWITTER_CONSUMER_KEY"] == ""
+            or core.config["TWITTER_CONSUMER_SECRET"] == ""
+            or core.config["TWITTER_ACCESS_KEY"] == ""
+            or core.config["TWITTER_ACCESS_SECRET"] == ""):
         core.watchdog.error("empty keys in config!", Exception)
         return 1
-    auth = tweepy.OAuthHandler(core.config["HYPNOX_TWITTER_CONSUMER_KEY"],
-                               core.config["HYPNOX_TWITTER_CONSUMER_SECRET"])
-    auth.set_access_token(core.config["HYPNOX_TWITTER_ACCESS_KEY"],
-                          core.config["HYPNOX_TWITTER_ACCESS_SECRET"])
+    auth = tweepy.OAuthHandler(core.config["TWITTER_CONSUMER_KEY"],
+                               core.config["TWITTER_CONSUMER_SECRET"])
+    auth.set_access_token(core.config["TWITTER_ACCESS_KEY"],
+                          core.config["TWITTER_ACCESS_SECRET"])
     api = tweepy.API(auth)
 
     core.watchdog.notice("init")
-    stream = Stream(core.config["HYPNOX_TWITTER_CONSUMER_KEY"],
-                    core.config["HYPNOX_TWITTER_CONSUMER_SECRET"],
-                    core.config["HYPNOX_TWITTER_ACCESS_KEY"],
-                    core.config["HYPNOX_TWITTER_ACCESS_SECRET"])
+    stream = Stream(core.config["TWITTER_CONSUMER_KEY"],
+                    core.config["TWITTER_CONSUMER_SECRET"],
+                    core.config["TWITTER_ACCESS_KEY"],
+                    core.config["TWITTER_ACCESS_SECRET"])
 
     core.watchdog.info("reading users")
     try:
-        path = core.config["HYPNOX_LOGS_DIR"] + "/user_ids.txt"
+        path = core.config["LOGS_DIR"] + "/user_ids.txt"
         uids = open(path).read().splitlines()
         if len(uids) != len(TRACK_USERS):
             os.remove(path)

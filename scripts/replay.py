@@ -16,7 +16,7 @@ def replay_csv(model, filepath):
     tweets["intensity"] = tweets["intensity"].map("{:.4f}".format)
     tweets["polarity"] = tweets["polarity"].map("{:.4f}".format)
 
-    tweets.to_csv(core.config["HYPNOX_LOGS_DIR"] + "/replay_results.csv",
+    tweets.to_csv(core.config["LOGS_DIR"] + "/replay_results.csv",
                   index=False)
 
 

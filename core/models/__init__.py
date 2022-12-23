@@ -24,7 +24,7 @@ def load(model_name):
 
     core.watchdog.info("loading model {m}".format(m=model_name))
 
-    modelpath = pathlib.Path(core.config["HYPNOX_MODELS_DIR"] + "/" +
+    modelpath = pathlib.Path(core.config["MODELS_DIR"] + "/" +
                              model_name).resolve()
     if not modelpath.exists():
         raise core.errors.ModelDoesNotExist
