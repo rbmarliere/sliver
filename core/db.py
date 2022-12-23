@@ -17,10 +17,10 @@ import core
 # PAD_WITH_ZERO,
 
 connection = peewee.PostgresqlDatabase(
-    core.config["HYPNOX_DB_NAME"], **{
-        "host": core.config["HYPNOX_DB_HOST"],
-        "user": core.config["HYPNOX_DB_USER"],
-        "password": core.config["HYPNOX_DB_PASSWORD"]
+    core.config["DB_NAME"], **{
+        "host": core.config["DB_HOST"],
+        "user": core.config["DB_USER"],
+        "password": core.config["DB_PASSWORD"]
     })
 
 
@@ -619,6 +619,12 @@ class Score(BaseModel):
 
     class Meta:
         constraints = [peewee.SQL("UNIQUE (tweet_id, model)")]
+
+
+def get_active_positions():
+    # should return only open|opening?
+    # no need to check for stoploss if already closing...
+    pass
 
 
 def get_active_strategies():

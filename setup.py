@@ -38,8 +38,8 @@ entry_points = {
     ]
 }
 
-setuptools.setup(name="hypnox",
-                 version="0.0/3",
+setuptools.setup(name="sliver",
+                 version="1.0",
                  packages=["api", "core"],
                  entry_points=entry_points,
                  install_requires=api_deps + core_deps)

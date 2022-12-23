@@ -78,7 +78,7 @@ if __name__ == "__main__":
             "tweet": output
         })
         output_df.to_csv("{path}/training_{date}_{i}.tsv"
-                         .format(path=core.config["HYPNOX_LOGS_DIR"],
+                         .format(path=core.config["LOGS_DIR"],
                                  date=date,
                                  i=i),
                          sep="\t",

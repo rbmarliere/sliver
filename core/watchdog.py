@@ -14,7 +14,7 @@ tensorflow.get_logger().setLevel("INFO")
 
 
 def get_logger(name, suppress_output=False):
-    log_file = core.config["HYPNOX_LOGS_DIR"] + "/" + name + ".log"
+    log_file = core.config["LOGS_DIR"] + "/" + name + ".log"
 
     formatter = logging.Formatter(
         "%(asctime)s %(levelname)s -- %(message)s")
@@ -44,7 +44,7 @@ def set_logger(name):
     log = get_logger(name)
 
 
-log = get_logger("hypnox")
+log = get_logger("core")
 
 
 def info(msg):
