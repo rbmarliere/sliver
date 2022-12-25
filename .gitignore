@@ -3,6 +3,6 @@
 .env
 .venv
 logs/
-models/*
+models/saved/*
 scripts/*.csv
 scripts/*.tsv
