@@ -1,42 +1,8 @@
-import importlib
-import pathlib
-import sys
-
 import numpy
 import pandas
 
 import core
-
-
-def get(model_name):
-    model_module = importlib.import_module("core.models." + model_name)
-    model = model_module.get_model()
-    model.config = model_module.config
-    model.tokenizer = model_module.load_tokenizer()
-    return model
-
-
-def load(model_name):
-    try:
-        return getattr(sys.modules[__name__], model_name)
-    except AttributeError:
-        pass
-
-    core.watchdog.info("loading model {m}".format(m=model_name))
-
-    modelpath = pathlib.Path(core.config["MODELS_DIR"] + "/" +
-                             model_name).resolve()
-    if not modelpath.exists():
-        raise core.errors.ModelDoesNotExist
-
-    model_module = importlib.import_module("core.models." + model_name)
-    model = model_module.load_model(modelpath)
-    model.config = model_module.config
-    model.tokenizer = model_module.load_tokenizer(modelpath=modelpath)
-
-    setattr(sys.modules[__name__], model_name, model)
-
-    return model
+import strategies
 
 
 def predict(model, tweets, verbose=0):
@@ -70,10 +36,11 @@ def predict(model, tweets, verbose=0):
 
 
 def replay(model, update_only=True, verbose=0):
-    query = core.db.get_tweets_by_model(model.config["name"])
+    query = strategies.hypnox.HypnoxTweet.get_tweets_by_model(
+        model.config["name"])
 
     if update_only:
-        query = query.where(core.db.Score.model.is_null())
+        query = query.where(strategies.hypnox.HypnoxScore.model.is_null())
 
     tweets = pandas.DataFrame(query.dicts())
 
@@ -94,4 +61,5 @@ def replay(model, update_only=True, verbose=0):
     tweets["score"] = predict(model, tweets["text"].to_list(), verbose=verbose)
 
     scores = tweets[["tweet_id", "model", "score"]]
-    core.db.Score.insert_many(scores.to_dict("records")).execute()
+    strategies.hypnox.HypnoxScore.insert_many(
+        scores.to_dict("records")).execute()
