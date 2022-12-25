@@ -9,6 +9,8 @@ import peewee
 import playhouse.shortcuts
 
 import core
+import strategies
+
 
 if __name__ == "__main__":
     argp = argparse.ArgumentParser()
@@ -23,10 +25,12 @@ if __name__ == "__main__":
 
     passwd = getpass.getpass("enter db password: ")
 
+    tweet_table = strategies.hypnox.HypnoxTweet
+
     if not args.update_only:
         print("resetting tweet table...")
-        core.db.Tweet.drop_table()
-        core.db.Tweet.create_table()
+        tweet_table.drop_table()
+        tweet_table.create_table()
 
     db = peewee.PostgresqlDatabase(
         args.name, **{
@@ -34,20 +38,20 @@ if __name__ == "__main__":
             "user": args.user,
             "password": passwd
         })
-    db.bind([core.db.Tweet])
+    db.bind([tweet_table])
     db.connect()
 
     print("fetching tweets upstream...")
-    query = core.db.Tweet.select().order_by(core.db.Tweet.id)
+    query = tweet_table.select().order_by(tweet_table.id)
     upstream_tweets = [t for t in query]
     print("found {c} tweets".format(c=len(upstream_tweets)))
 
     db.close()
-    core.db.connection.bind([core.db.Tweet])
+    core.db.connection.bind([tweet_table])
     core.db.connection.connect(reuse_if_open=True)
 
     print("fetching tweets downstream...")
-    query = core.db.Tweet.select().order_by(core.db.Tweet.id)
+    query = tweet_table.select().order_by(tweet_table.id)
     tweets = [t for t in query]
     print("found {c} tweets".format(c=len(tweets)))
 
@@ -64,4 +68,4 @@ if __name__ == "__main__":
     df = pandas.DataFrame(new_rows).sort_values("id")
 
     print("inserting {c} new tweets".format(c=len(df)))
-    core.db.Tweet.insert_many(df.to_dict("records")).execute()
+    tweet_table.insert_many(df.to_dict("records")).execute()

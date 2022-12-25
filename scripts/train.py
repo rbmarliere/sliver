@@ -3,9 +3,11 @@
 import argparse
 
 import tensorflow
-from preprocess import preprocess, tokenize
 
 import core
+import models
+from preprocess import preprocess, tokenize
+
 
 if __name__ == "__main__":
     argp = argparse.ArgumentParser()
@@ -19,7 +21,7 @@ if __name__ == "__main__":
                       required=True)
     args = argp.parse_args()
 
-    model = core.models.get(args.model_name)
+    model = models.get(args.model_name)
 
     modelpath = core.config["MODELS_DIR"] + "/" + args.model_name
 
