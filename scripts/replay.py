@@ -6,12 +6,14 @@ import pathlib
 import pandas
 
 import core
+import models
+from strategies.hypnox.replay import replay
 
 
 def replay_csv(model, filepath):
     tweets = pandas.read_csv(filepath)
 
-    tweets = core.models.predict(model, tweets)
+    tweets = models.predict(model, tweets)
 
     tweets["intensity"] = tweets["intensity"].map("{:.4f}".format)
     tweets["polarity"] = tweets["polarity"].map("{:.4f}".format)
@@ -34,7 +36,7 @@ if __name__ == "__main__":
                       action="store_true")
     args = argp.parse_args()
 
-    model = core.models.load(args.model_name)
+    model = models.load(args.model_name)
 
     if args.input_file:
         filepath = pathlib.Path().cwd() / args.input_file
@@ -44,4 +46,4 @@ if __name__ == "__main__":
         replay_csv(model, filepath)
 
     else:
-        core.models.replay(model, update_only=args.update_only, verbose=1)
+        replay(model, update_only=args.update_only, verbose=1)
