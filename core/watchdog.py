@@ -1,16 +1,22 @@
-import logging
 import logging.handlers
 import time
 
 import ccxt
 import peewee
-import tensorflow
-import transformers
+import telegram
 
 import core
 
-transformers.logging.set_verbosity_error()
-tensorflow.get_logger().setLevel("INFO")
+
+def send_telegram(message):
+    try:
+        assert core.config["TELEGRAM_KEY"]
+        assert core.config["TELEGRAM_CHANNEL"]
+        bot = telegram.Bot(core.config["TELEGRAM_KEY"])
+        bot.send_message(text=message,
+                         chat_id=core.config["TELEGRAM_CHANNEL"])
+    except (KeyError, AssertionError):
+        pass
 
 
 def get_logger(name, suppress_output=False):
@@ -60,7 +66,7 @@ def error(msg, exception):
 
     if log.name == "watchdog" or log.name == "stream":
         msg = "{l}: {m}".format(l=log.name, m=msg)
-        core.telegram.notice(msg)
+        send_telegram(msg)
 
 
 def notice(msg):
@@ -68,7 +74,7 @@ def notice(msg):
 
     if log.name == "watchdog" or log.name == "stream":
         msg = "{l}: {m}".format(l=log.name, m=msg)
-        core.telegram.notice(msg)
+        send_telegram(msg)
 
 
 def watch():
@@ -79,12 +85,14 @@ def watch():
         try:
             core.db.connection.connect()
 
+            # TODO check stop losses
+
             for strategy in core.db.get_pending_strategies():
-                core.strategy.refresh(strategy)
+                strategy.refresh()
 
                 for user_strat in strategy.get_active_users():
                     try:
-                        core.strategy.refresh_user(user_strat)
+                        user_strat.refresh()
 
                     except ccxt.AuthenticationError as e:
                         error("authentication error", e)
@@ -103,9 +111,8 @@ def watch():
 
             time.sleep(60)
 
-        except (tensorflow.errors.ResourceExhaustedError,
-                core.errors.ModelDoesNotExist) as e:
-            error("can't load model", e)
+        except (core.errors.ModelTooLarge,
+                core.errors.ModelDoesNotExist):
             strategy.disable()
 
         except ccxt.ExchangeError as e:

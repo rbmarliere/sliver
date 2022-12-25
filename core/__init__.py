@@ -1,8 +1,9 @@
-import sys
 import os
+import sys
 import time
 
 import dotenv
+
 
 # for ccxt requests
 os.environ["TZ"] = "Europe/London"
@@ -46,27 +47,21 @@ if config["ENV_NAME"] not in ["development", "production"]:
     print("ENV_NAME must be 'development' or 'production'!")
     sys.exit(1)
 
-from . import (
-    utils,
+
+from . import (  # noqa 402
     db,
     errors,
     exchange,
     inventory,
-    models,
-    strategy,
-    telegram,
-    twitter,
+    utils,
     watchdog)
-
 __all__ = [
-    "utils",
     "db",
     "errors",
     "exchange",
     "inventory",
-    "models",
-    "strategy",
-    "telegram",
-    "twitter",
+    "utils",
     "watchdog"
 ]
+
+import strategies  # noqa 402

@@ -373,7 +373,7 @@ def create_limit_sell_orders(total_amount: int,
 
 def refresh(position: core.db.Position):
     strategy = position.user_strategy.strategy
-    signal = strategy.signal
+    signal = strategy.get_signal()
     market = strategy.market
     p = api.fetch_ticker(market.get_symbol())
     last_price = market.quote.transform(p["last"])
