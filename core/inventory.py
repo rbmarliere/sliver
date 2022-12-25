@@ -137,11 +137,9 @@ def sync_balances(user: core.db.User):
         try:
             core.exchange.set_api(cred=cred)
             ex_bal = core.exchange.api.fetch_balance()
-        except ccxt.ExchangeError:
-            core.watchdog.info("exchange error, "
-                               "disabling credential...")
-            cred.active = False
-            cred.save()
+        except ccxt.ExchangeError as e:
+            core.watchdog.error("exchange error", e)
+            cred.disable()
             continue
 
         ex_val_asset, new = core.db.ExchangeAsset.get_or_create(

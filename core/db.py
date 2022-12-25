@@ -7,6 +7,7 @@ from ccxt.base.decimal_to_precision import DECIMAL_PLACES, NO_PADDING
 
 import core
 
+
 # precision modes:
 # DECIMAL_PLACES,
 # SIGNIFICANT_DIGITS,
@@ -110,6 +111,11 @@ class Credential(BaseModel):
     class Meta:
         constraints = [peewee.SQL("UNIQUE (user_id, exchange_id)")]
 
+    def disable(self):
+        core.watchdog.info("disabling credential {s}...".format(s=self))
+        self.active = False
+        self.save()
+
 
 class ExchangeAsset(BaseModel):
     exchange = peewee.ForeignKeyField(Exchange)
@@ -177,14 +183,13 @@ class Market(BaseModel):
 
 
 class Strategy(BaseModel):
-    user = peewee.ForeignKeyField(User)
-    market = peewee.ForeignKeyField(Market)
+    creator = peewee.ForeignKeyField(User)
+    description = peewee.TextField()
+    type = peewee.IntegerField(default=0)
     active = peewee.BooleanField(default=False)
     deleted = peewee.BooleanField(default=False)
-    description = peewee.TextField()
-    mode = peewee.TextField(default="auto")
+    market = peewee.ForeignKeyField(Market)
     timeframe = peewee.TextField(default="1d")
-    signal = peewee.TextField(default="neutral")
     refresh_interval = peewee.IntegerField(default=1)  # 1 minute
     next_refresh = peewee.DateTimeField(default=datetime.datetime.utcnow())
     num_orders = peewee.IntegerField(default=1)
@@ -192,12 +197,7 @@ class Strategy(BaseModel):
     spread = peewee.DecimalField(default=1)  # 1%
     min_roi = peewee.DecimalField(default=5)  # 5%
     stop_loss = peewee.DecimalField(default=3)  # -3%
-    i_threshold = peewee.DecimalField(default=0)
-    p_threshold = peewee.DecimalField(default=0)
-    tweet_filter = peewee.TextField(default="")
     lm_ratio = peewee.DecimalField(default=0)
-    model_i = peewee.TextField(null=True)
-    model_p = peewee.TextField(null=True)
 
     def disable(self):
         core.watchdog.info("disabling strategy {s}...".format(s=self))
@@ -214,21 +214,49 @@ class Strategy(BaseModel):
         core.watchdog.info("next refresh at {n}".format(n=self.next_refresh))
         self.save()
 
-    def refresh_signal(self):
-        if self.mode == "auto":
-            new_indicators_count = core.strategy.refresh_indicators(self)
-            self.signal = self.get_asignal()
-            if new_indicators_count > 0:
-                core.watchdog.notice("strategy {st} new signal is {s}"
-                                     .format(st=self,
-                                             s=self.signal))
+    def get_signal(self):
+        indicator = self \
+            .indicator_set \
+            .order_by(core.db.Indicator.id.desc()) \
+            .get_or_none()
+        if indicator:
+            return indicator.signal
+        return "neutral"
 
-        elif self.mode == "random":
-            self.signal = self.get_rsignal()
+    def get_indicators(self):
+        return self.get_prices() \
+            .select(Price, Indicator) \
+            .join(Indicator,
+                  peewee.JOIN.LEFT_OUTER,
+                  on=((Indicator.price_id == Price.id)
+                      & (Indicator.strategy == self)))
 
-        core.watchdog.info("signal is {s}".format(s=self.signal))
+    def refresh(self):
+        symbol = self.market.get_symbol()
 
-        self.save()
+        core.watchdog.info("===========================================")
+        core.watchdog.info("refreshing strategy {s}".format(s=self))
+        core.watchdog.info("market is {m}".format(m=symbol))
+        core.watchdog.info("timeframe is {T}".format(T=self.timeframe))
+        core.watchdog.info("exchange is {e}"
+                           .format(e=self.market.base.exchange.name))
+        core.watchdog.info("type is {m}".format(
+            m=core.strategies.Types(self.type).name))
+
+        # ideas:
+        # - reset num_orders, spread and refresh_interval dynamically
+        # - base decision over price data and inventory
+        #   (amount opened, risk, etc)
+
+        # download historical price ohlcv data
+        core.exchange.download_prices(self)
+
+        strat = core.strategies.load(self)
+        strat.refresh()
+
+        core.watchdog.info("signal is {s}".format(s=self.get_signal()))
+
+        self.postpone()
 
     def get_active_users(self):
         return UserStrategy \
@@ -242,33 +270,6 @@ class Strategy(BaseModel):
             .where((Price.market == self.market)
                    & (Price.timeframe == self.timeframe)) \
             .order_by(Price.time)
-
-    def get_indicators(self):
-        return self.get_prices() \
-            .select(Price, Indicator) \
-            .join(Indicator,
-                  peewee.JOIN.LEFT_OUTER,
-                  on=((Indicator.price_id == Price.id)
-                      & (Indicator.strategy == self)))
-
-    def get_rsignal(self):
-        import random
-        r = random.randint(1, 10)
-        if r >= 8:
-            return "buy"
-        elif r <= 2:
-            return "sell"
-        else:
-            return "neutral"
-
-    def get_asignal(self):
-        indicators = pandas.DataFrame(self.get_indicators().dicts())
-        if indicators.empty:
-            return "neutral"
-        signal = indicators.iloc[-1].signal
-        if signal is None:
-            return "neutral"
-        return signal
 
     def get_next_refresh(self):
         now = datetime.datetime.utcnow()
@@ -308,6 +309,47 @@ class UserStrategy(BaseModel):
                    | (Position.status == "opening")
                    | (Position.status == "closing")) \
             .get_or_none()
+
+    def refresh(self):
+        strategy = self.strategy
+        exchange = strategy.market.base.exchange
+        user = self.user
+
+        core.watchdog.info("...........................................")
+        core.watchdog.info("refreshing {u}'s strategy {s}"
+                           .format(u=self.user.email,
+                                   s=self))
+
+        # set api to current exchange
+        credential = user.get_active_credential(exchange).get()
+        core.exchange.set_api(cred=credential)
+
+        # get active position for current selfegy
+        position = self.get_active_position_or_none()
+
+        if position:
+            core.exchange.sync_limit_orders(position)
+
+        # sync user's balances across all exchanges
+        core.inventory.sync_balances(self.user)
+
+        if position is None:
+            core.watchdog.info("no active position")
+
+            # create position if apt
+            if strategy.get_signal() == "buy":
+                t_cost = core.inventory.get_target_cost(
+                    self)
+
+                if (t_cost == 0 or t_cost < strategy.market.cost_min):
+                    core.watchdog.info("target cost less than minimums, "
+                                       "skipping position creation...")
+
+                if t_cost > 0:
+                    position = core.db.Position.open(self, t_cost)
+
+        if position:
+            core.exchange.refresh(position)
 
 
 class Position(BaseModel):
@@ -595,30 +637,9 @@ class Indicator(BaseModel):
     strategy = peewee.ForeignKeyField(Strategy)
     price = peewee.ForeignKeyField(Price)
     signal = peewee.TextField()
-    i_score = peewee.DecimalField()
-    i_mean = peewee.DecimalField()
-    i_variance = peewee.DecimalField()
-    p_score = peewee.DecimalField()
-    p_mean = peewee.DecimalField()
-    p_variance = peewee.DecimalField()
-    n_samples = peewee.IntegerField()
 
     class Meta:
         constraints = [peewee.SQL("UNIQUE (price_id, strategy_id)")]
-
-
-class Tweet(BaseModel):
-    time = peewee.DateTimeField()
-    text = peewee.TextField()
-
-
-class Score(BaseModel):
-    tweet = peewee.ForeignKeyField(Tweet)
-    model = peewee.TextField()
-    score = peewee.DecimalField()
-
-    class Meta:
-        constraints = [peewee.SQL("UNIQUE (tweet_id, model)")]
 
 
 def get_active_positions():
@@ -637,12 +658,3 @@ def get_active_strategies():
 def get_pending_strategies():
     now = datetime.datetime.utcnow()
     return get_active_strategies().where((now > Strategy.next_refresh))
-
-
-def get_tweets_by_model(model: str):
-    return Tweet \
-        .select(Tweet, Score) \
-        .join(Score,
-              peewee.JOIN.LEFT_OUTER,
-              on=((Score.tweet_id == Tweet.id) & (Score.model == model))) \
-        .order_by(Tweet.time)
