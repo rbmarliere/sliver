@@ -11,14 +11,16 @@ api_deps = [
 ]
 
 core_deps = [
-    "PyYAML==6.0",
     "ccxt==2.0.73",
-    "emoji==2.1.0",  # used in vinai/bertweet-base
     "pandas==1.5.1",
     "peewee==3.15.3",
     "psycopg2-binary==2.9.5",
     "python-dotenv==0.21.0",
     "python-telegram-bot==13.14",
+]
+
+hypnox_deps = [
+    "emoji==2.1.0",  # used in vinai/bertweet-base
     "scikit-learn==1.1.3",
     "tensorflow==2.10.0",
     "torch==1.12.1",
@@ -27,7 +29,6 @@ core_deps = [
 ]
 
 dev_deps = [
-    "debugpy==1.6.3",
     "pudb==2022.1.2"
 ]
 
@@ -43,4 +44,4 @@ setuptools.setup(name="sliver",
                  version="1.0",
                  packages=["api", "models", "strategies", "core"],
                  entry_points=entry_points,
-                 install_requires=api_deps + core_deps)
+                 install_requires=api_deps + core_deps + hypnox_deps)
