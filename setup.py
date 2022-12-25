@@ -1,5 +1,6 @@
 import setuptools
 
+
 api_deps = [
     "Flask==2.2.2",
     "Flask-Bcrypt==1.0.1",
@@ -33,13 +34,13 @@ dev_deps = [
 entry_points = {
     "console_scripts": [
         "serve = api:serve",
-        "stream = core.twitter:stream",
+        "stream = strategies.hypnox.twitter:stream",
         "watch = core.watchdog:watch"
     ]
 }
 
 setuptools.setup(name="sliver",
                  version="1.0",
-                 packages=["api", "core"],
+                 packages=["api", "models", "strategies", "core"],
                  entry_points=entry_points,
                  install_requires=api_deps + core_deps)
