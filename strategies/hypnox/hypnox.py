@@ -3,6 +3,7 @@ import peewee
 
 import core
 import models
+from ..base import BaseStrategy
 from strategies.hypnox.replay import replay
 
 
@@ -21,7 +22,9 @@ class HypnoxTweet(core.db.BaseModel):
 
 
 class HypnoxScore(core.db.BaseModel):
-    tweet = peewee.ForeignKeyField(HypnoxTweet)
+    tweet = peewee.ForeignKeyField(HypnoxTweet,
+                                   primary_key=True,
+                                   on_delete="CASCADE")
     model = peewee.TextField()
     score = peewee.DecimalField()
 
@@ -30,7 +33,9 @@ class HypnoxScore(core.db.BaseModel):
 
 
 class HypnoxIndicator(core.db.BaseModel):
-    indicator = peewee.ForeignKeyField(core.db.Indicator)
+    indicator = peewee.ForeignKeyField(core.db.Indicator,
+                                       primary_key=True,
+                                       on_delete="CASCADE")
     i_score = peewee.DecimalField()
     i_mean = peewee.DecimalField()
     i_variance = peewee.DecimalField()
@@ -40,19 +45,22 @@ class HypnoxIndicator(core.db.BaseModel):
     n_samples = peewee.IntegerField()
 
 
-class HypnoxStrategy(core.db.BaseModel):
-    strategy = peewee.ForeignKeyField(core.db.Strategy)
+class HypnoxStrategy(BaseStrategy):
     i_threshold = peewee.DecimalField(default=0)
     p_threshold = peewee.DecimalField(default=0)
-    tweet_filter = peewee.TextField(default="")
+    tweet_filter = peewee.TextField(null=True)
     model_i = peewee.TextField(null=True)
     model_p = peewee.TextField(null=True)
 
     def get_indicators(self):
-        return self.strategy \
+        return super() \
             .get_indicators() \
             .select(core.db.Price, core.db.Indicator, HypnoxIndicator) \
             .join(HypnoxIndicator, peewee.JOIN.LEFT_OUTER)
+
+    def get_indicators_df(self):
+        df = super().get_indicators_df(self.get_indicators())
+        return df
 
     def refresh(self):
         # update tweet scores
@@ -71,7 +79,8 @@ class HypnoxStrategy(core.db.BaseModel):
         indicators = pandas.DataFrame(indicators_q.dicts())
 
         # filter relevant data
-        self_regex = self.tweet_filter.encode("unicode_escape")
+        self_regex = self.tweet_filter.encode("unicode_escape") \
+            if self.tweet_filter else b""
         f = HypnoxTweet.text.iregexp(self_regex)
         f = f & (HypnoxScore.model.is_null(False))
         existing = indicators.dropna()

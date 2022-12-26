@@ -1,15 +1,15 @@
 import peewee
 
-import core
+from ..base import BaseStrategy
 
 
-class ManualStrategy(core.db.BaseModel):
-    strategy = peewee.ForeignKeyField(core.db.Strategy)
-    signal = peewee.TextField()
+class ManualStrategy(BaseStrategy):
+    signal = peewee.TextField(null=True)
+
+    def refresh(self, signal=None):
+        if signal:
+            self.signal = signal
+            self.save()
 
     def get_signal(self):
         return self.signal
-
-    def set_signal(self, signal):
-        self.signal = signal
-        self.save()
