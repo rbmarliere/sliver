@@ -13,13 +13,13 @@ class Types(enum.Enum):
 
 def load(strategy):
     if strategy.type == Types.MANUAL.value:
-        return ManualStrategy.get(strategy=strategy)
+        return ManualStrategy.get_or_create(strategy=strategy)[0]
 
     elif strategy.type == Types.RANDOM.value:
-        return RandomStrategy.get(strategy=strategy)
+        return RandomStrategy.get_or_create(strategy=strategy)[0]
 
     elif strategy.type == Types.HYPNOX.value:
-        return HypnoxStrategy.get(strategy=strategy)
+        return HypnoxStrategy.get_or_create(strategy=strategy)[0]
 
     else:
         raise ValueError("invalid strategy type")

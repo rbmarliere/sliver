@@ -1,19 +1,17 @@
 import random
 
 import pandas
-import peewee
 
 import core
+from ..base import BaseStrategy
 
 
-class RandomStrategy(core.db.BaseModel):
-    strategy = peewee.ForeignKeyField(core.db.Strategy)
-
+class RandomStrategy(BaseStrategy):
     def refresh(self):
         self.refresh_indicators()
 
     def refresh_indicators(self):
-        indicators = pandas.DataFrame(self.strategy.get_indicators().dicts())
+        indicators = pandas.DataFrame(self.get_indicators().dicts())
 
         # remove non-empty rows
         indicators = indicators[indicators.isnull().any(axis=1)]

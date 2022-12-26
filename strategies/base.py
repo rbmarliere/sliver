@@ -1,0 +1,65 @@
+import peewee
+
+import core
+import pandas
+
+
+class BaseStrategy(core.db.BaseModel):
+    strategy = peewee.ForeignKeyField(core.db.Strategy, primary_key=True)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__dict__.update(self.strategy.__data__)
+        self.__dict__.update(self.strategy.get_fields())
+
+    def get_signal(self):
+        indicator = self.strategy \
+            .indicator_set \
+            .order_by(core.db.Indicator.id.desc()) \
+            .get_or_none()
+        if indicator:
+            return indicator.signal
+        return "neutral"
+
+    def get_indicators(self):
+        return self.strategy.get_prices() \
+            .select(core.db.Price, core.db.Indicator) \
+            .join(core.db.Indicator,
+                  peewee.JOIN.LEFT_OUTER,
+                  on=((core.db.Indicator.price_id == core.db.Price.id)
+                      & (core.db.Indicator.strategy == self)))
+
+    def get_indicators_df(self, query):
+        if query is None:
+            query = self.get_indicators()
+
+        df = pandas.DataFrame(query.dicts())
+
+        if not df.empty:
+            buys = []
+            sells = []
+            curr_pos = False
+            for idx, row in df.iterrows():
+                if row.signal == "buy":
+                    if not curr_pos:
+                        buys.append(idx)
+                        curr_pos = True
+                elif row.signal == "sell":
+                    if curr_pos:
+                        sells.append(idx)
+                        curr_pos = False
+            df.time = df.time.dt.strftime("%Y-%m-%d %H:%M")
+            df.open = df.open.apply(self.market.quote.format)
+            df.high = df.high.apply(self.market.quote.format)
+            df.low = df.low.apply(self.market.quote.format)
+            df.close = df.close.apply(self.market.quote.format)
+            df.volume = df.volume.apply(self.market.base.format)
+            df["buys"] = df.open.where(df.index.isin(buys))
+            df.buys = df.buys.replace({float("nan"): None})
+            df["sells"] = df.open.where(df.index.isin(sells))
+            df.sells = df.sells.replace({float("nan"): None})
+
+        return df
+
+    def refresh(self):
+        pass
