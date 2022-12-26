@@ -199,37 +199,19 @@ class Strategy(BaseModel):
     stop_loss = peewee.DecimalField(default=3)  # -3%
     lm_ratio = peewee.DecimalField(default=0)
 
-    def disable(self):
-        core.watchdog.info("disabling strategy {s}...".format(s=self))
-        self.active = False
-        self.save()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.id:
+            self.__dict__.update(self.get_fields())
 
-    def delete(self):
-        self.deleted = True
-        self.active = False
-        self.save()
-
-    def postpone(self):
-        self.next_refresh = self.get_next_refresh()
-        core.watchdog.info("next refresh at {n}".format(n=self.next_refresh))
-        self.save()
+    def get_fields(self):
+        return {
+            "symbol": self.market.get_symbol(),
+            "exchange": self.market.quote.exchange.name,
+        }
 
     def get_signal(self):
-        indicator = self \
-            .indicator_set \
-            .order_by(core.db.Indicator.id.desc()) \
-            .get_or_none()
-        if indicator:
-            return indicator.signal
-        return "neutral"
-
-    def get_indicators(self):
-        return self.get_prices() \
-            .select(Price, Indicator) \
-            .join(Indicator,
-                  peewee.JOIN.LEFT_OUTER,
-                  on=((Indicator.price_id == Price.id)
-                      & (Indicator.strategy == self)))
+        return core.strategies.load(self).get_signal()
 
     def refresh(self):
         symbol = self.market.get_symbol()
@@ -251,12 +233,42 @@ class Strategy(BaseModel):
         # download historical price ohlcv data
         core.exchange.download_prices(self)
 
-        strat = core.strategies.load(self)
-        strat.refresh()
+        core.strategies.load(self).refresh()
 
         core.watchdog.info("signal is {s}".format(s=self.get_signal()))
 
         self.postpone()
+
+    def disable(self):
+        core.watchdog.info("disabling strategy {s}...".format(s=self))
+        self.active = False
+        self.save()
+
+    def delete(self):
+        self.deleted = True
+        self.active = False
+        self.save()
+
+    def postpone(self):
+        self.next_refresh = self.get_next_refresh()
+        core.watchdog.info("next refresh at {n}".format(n=self.next_refresh))
+        self.save()
+
+    def subscribe(self, user, subscribed):
+        if subscribed is None:
+            subscribed = False
+
+        user_strat_exists = False
+        for u_st in user.userstrategy_set:
+            if u_st.strategy_id == self.id:
+                user_strat_exists = True
+                u_st.active = subscribed
+                u_st.save()
+
+        if not user_strat_exists:
+            core.db.UserStrategy(user=user,
+                                 strategy=self,
+                                 active=subscribed).save()
 
     def get_active_users(self):
         return UserStrategy \
