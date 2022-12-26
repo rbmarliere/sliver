@@ -1,0 +1,114 @@
+from flask_restful import fields, reqparse, inputs
+
+
+import strategies
+
+
+base_fields = {
+    "id": fields.Integer,
+    "symbol": fields.String,
+    "exchange": fields.String,
+    # "creator_id": fields.Integer,
+    "description": fields.String,
+    "type": fields.Integer,
+    "active": fields.Boolean,
+    # "deleted": fields.Boolean,
+}
+spec_fields = {
+    **base_fields,
+    "signal": fields.String,
+    "market_id": fields.Integer,
+    "timeframe": fields.String,
+    "refresh_interval": fields.Integer,
+    "next_refresh": fields.DateTime(dt_format="iso8601"),
+    "num_orders": fields.Integer,
+    "bucket_interval": fields.Integer,
+    "spread": fields.Float,
+    "min_roi": fields.Float,
+    "stop_loss": fields.Float,
+    "lm_ratio": fields.Float,
+    "subscribed": fields.Boolean,
+}
+price_fields = {
+    "time": fields.List(fields.String),
+    "open": fields.List(fields.Float),
+    "high": fields.List(fields.Float),
+    "low": fields.List(fields.Float),
+    "close": fields.List(fields.Float),
+    "volume": fields.List(fields.Float),
+    "buys": fields.List(fields.Float),
+    "sells": fields.List(fields.Float),
+}
+all_fields = {
+    **spec_fields,
+    "prices": fields.Nested(price_fields),
+}
+
+hypnox_indicators = {
+    **price_fields,
+    "i_score": fields.List(fields.Float),
+    "p_score": fields.List(fields.Float),
+}
+hypnox_fields = {
+    **spec_fields,
+    "i_threshold": fields.Float,
+    "p_threshold": fields.Float,
+    "tweet_filter": fields.String,
+    "model_i": fields.String,
+    "model_p": fields.String,
+    "prices": fields.Nested(hypnox_indicators),
+}
+
+
+def get_fields(type=None):
+    if type == strategies.Types.MANUAL.value:
+        pass
+
+    elif type == strategies.Types.RANDOM.value:
+        pass
+
+    elif type == strategies.Types.HYPNOX.value:
+        return hypnox_fields
+
+    return all_fields
+
+
+base_parser = reqparse.RequestParser()
+base_parser.add_argument("id", type=int)
+# base_parser.add_argument("symbol", type=str)
+# base_parser.add_argument("exchange", type=str)
+# base_parser.add_argument("signal", type=str)
+# base_parser.add_argument("creator_id", type=int)
+base_parser.add_argument("description", type=str)
+base_parser.add_argument("type", type=int)
+base_parser.add_argument("active", type=bool)
+# base_parser.add_argument("deleted", type=bool)
+base_parser.add_argument("market_id", type=int)
+base_parser.add_argument("timeframe", type=str)
+base_parser.add_argument("refresh_interval", type=int)
+base_parser.add_argument("next_refresh", type=inputs.datetime_from_iso8601)
+base_parser.add_argument("num_orders", type=int)
+base_parser.add_argument("bucket_interval", type=int)
+base_parser.add_argument("spread", type=float)
+base_parser.add_argument("min_roi", type=float)
+base_parser.add_argument("stop_loss", type=float)
+base_parser.add_argument("lm_ratio", type=float)
+base_parser.add_argument("subscribed", type=bool)
+
+
+def get_parser(type=None):
+    if type == strategies.Types.MANUAL.value:
+        base_parser.add_argument("signal", type=str)
+
+    elif type == strategies.Types.RANDOM.value:
+        pass
+
+    elif type == strategies.Types.HYPNOX.value:
+        base_parser.add_argument("i_threshold", type=float)
+        base_parser.add_argument("p_threshold", type=float)
+        base_parser.add_argument("tweet_filter", type=str)
+        base_parser.add_argument("lm_ratio", type=float)
+        base_parser.add_argument("model_i", type=str)
+        base_parser.add_argument("model_p", type=str)
+
+    return base_parser

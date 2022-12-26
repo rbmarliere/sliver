@@ -7,8 +7,8 @@ import flask_restful
 import waitress
 
 import core
-
 from . import routes
+
 
 app = flask.Flask(__name__)
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
