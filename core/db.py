@@ -409,14 +409,14 @@ class Position(BaseModel):
         position.save()
 
         core.watchdog.info("opening position {i}".format(i=position.id))
-        core.watchdog.notice(position.get_notice(prefix="opening"))
+        core.watchdog.notice(position.get_notice(prefix="opening "))
 
         return position
 
     def get_notice(self, prefix="", suffix=""):
         return ("{p}position for user {u} with strategy {s} in market {m} {su}"
                 .format(
-                    p=prefix + " ",
+                    p=prefix,
                     u=self.user_strategy.user.email,
                     s=self.user_strategy.strategy,
                     m=self.user_strategy.strategy.market.get_symbol(),
