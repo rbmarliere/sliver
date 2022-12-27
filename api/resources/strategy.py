@@ -62,10 +62,13 @@ class Strategy(Resource):
 
         args = get_parser(old_strategy.type).parse_args()
 
-        if args["subscribed"] is not None:
-            old_strategy.subscribe(user, args["subscribed"])
-            strategy = strategies.load(old_strategy, user=user)
-            return marshal(strategy, get_fields(strategy.type))
+        try:
+            if args["subscribe"]:
+                old_strategy.subscribe(user, args["subscribed"])
+                strategy = strategies.load(old_strategy, user=user)
+                return marshal(strategy, get_fields(strategy.type))
+        except KeyError:
+            pass
 
         if old_strategy.creator != user:
             raise api.errors.StrategyNotEditable
