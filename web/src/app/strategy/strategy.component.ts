@@ -7,15 +7,16 @@ import { ErrorDialogComponent } from '../error-dialog/error-dialog.component';
 import { Exchange } from '../exchange';
 import { ExchangeService } from '../exchange.service';
 import { Market } from '../market';
+import { StrategiesService } from '../strategies.service';
 import { Strategy } from '../strategy';
 import { StrategyService } from '../strategy.service';
 
 @Component({
-  selector: 'app-strategy-detail',
-  templateUrl: './strategy-detail.component.html',
-  styleUrls: ['./strategy-detail.component.less'],
+  selector: 'app-strategy',
+  templateUrl: './strategy.component.html',
+  styleUrls: ['./strategy.component.less'],
 })
-export class StrategyDetailComponent implements OnInit {
+export class StrategyComponent implements OnInit {
   private empty_strat = {
     symbol: '',
     exchange: '',
@@ -24,7 +25,7 @@ export class StrategyDetailComponent implements OnInit {
     subscribed: false,
     active: false,
     description: '',
-    mode: '',
+    type: 0,
     timeframe: '',
     signal: '',
     refresh_interval: 0,
@@ -102,11 +103,11 @@ export class StrategyDetailComponent implements OnInit {
   set strategy(strategy: Strategy) {
     this._strategy = strategy;
 
-    if (strategy.mode == 'auto') {
+    if (strategy.type == 2) {
       this.form.get('signal')?.disable();
       this.form.get('i_threshold')?.enable();
       this.form.get('p_threshold')?.enable();
-    } else if (strategy.mode == 'manual') {
+    } else if (strategy.type == 0) {
       this.form.get('signal')?.enable();
       this.form.get('i_threshold')?.disable();
       this.form.get('p_threshold')?.disable();
@@ -127,8 +128,9 @@ export class StrategyDetailComponent implements OnInit {
   private handleError(error: HttpErrorResponse) {
     const dialogConfig = new MatDialogConfig();
 
+    console.log(error);
     dialogConfig.data = {
-      msg: error.error.message,
+      msg: error.error.message.type,
     };
 
     this.dialog.open(ErrorDialogComponent, dialogConfig);
@@ -136,6 +138,7 @@ export class StrategyDetailComponent implements OnInit {
 
   constructor(
     private strategyService: StrategyService,
+    private strategiesService: StrategiesService,
     private exchangeService: ExchangeService,
     private formBuilder: FormBuilder,
     private dialog: MatDialog,
@@ -232,7 +235,7 @@ export class StrategyDetailComponent implements OnInit {
         error: (err) => this.handleError(err),
       });
     } else {
-      this.strategyService.createStrategy(strategy).subscribe({
+      this.strategiesService.createStrategy(strategy).subscribe({
         next: () => this.router.navigate(['/strategies']),
         error: (err) => this.handleError(err),
       });
@@ -265,104 +268,105 @@ export class StrategyDetailComponent implements OnInit {
 
   backtest(_start: string, _end: string): void {
     // filter data based on zoomed region
-    var start = new Date(_start);
-    var end = new Date(_end);
-    var times = this.strategy.prices.time;
-    var buys = this.strategy.prices.buys;
-    var sells = this.strategy.prices.sells;
-    var all_intensities = this.strategy.prices.i_score;
-    var all_polarities = this.strategy.prices.p_score;
-    var len = times.length;
-    var indexes = [];
-    for (var i = 0; i < len; i++) {
-      var element = this.strategy.prices.time[i];
-      if (new Date(element) >= start && new Date(element) <= end) {
-        indexes.push(i);
-      }
-    }
-
-    // get existing positions in filtered data
-    var intensities = [];
-    var polarities = [];
-    var positions = [];
-    var curr = false;
-    var currPos = {
-      entry_price: 0,
-      entry_time: new Date(0),
-      exit_price: 0,
-      exit_time: new Date(0),
-    };
-    for (i = 0; i < indexes.length; i++) {
-      var idx = indexes[i];
-      intensities.push(all_intensities[idx]);
-      polarities.push(all_polarities[idx]);
-      if (buys[idx] > 0) {
-        if (!curr) {
-          curr = true;
-          currPos.entry_price = buys[idx];
-          currPos.entry_time = new Date(times[idx]);
-        }
-      } else if (sells[idx] > 0) {
-        if (curr) {
-          curr = false;
-          currPos.exit_price = sells[idx];
-          currPos.exit_time = new Date(times[idx]);
-          positions.push({
-            entry_price: currPos.entry_price,
-            entry_time: currPos.entry_time,
-            exit_price: currPos.exit_price,
-            exit_time: currPos.exit_time,
-          });
+    if (this.strategy.prices.i_score && this.strategy.prices.p_score) {
+      var start = new Date(_start);
+      var end = new Date(_end);
+      var times = this.strategy.prices.time;
+      var buys = this.strategy.prices.buys;
+      var sells = this.strategy.prices.sells;
+      var all_intensities = this.strategy.prices.i_score;
+      var all_polarities = this.strategy.prices.p_score;
+      var len = times.length;
+      var indexes = [];
+      for (var i = 0; i < len; i++) {
+        var element = this.strategy.prices.time[i];
+        if (new Date(element) >= start && new Date(element) <= end) {
+          indexes.push(i);
         }
       }
-    }
 
-    var i_median = this.median(intensities);
-    var i_mean = this.mean(intensities);
-    var p_median = this.median(polarities);
-    var p_mean = this.mean(polarities);
-    this.backtest_log = `
+      // get existing positions in filtered data
+      var intensities = [];
+      var polarities = [];
+      var positions = [];
+      var curr = false;
+      var currPos = {
+        entry_price: 0,
+        entry_time: new Date(0),
+        exit_price: 0,
+        exit_time: new Date(0),
+      };
+      for (i = 0; i < indexes.length; i++) {
+        var idx = indexes[i];
+        intensities.push(all_intensities[idx]);
+        polarities.push(all_polarities[idx]);
+        if (buys[idx] > 0) {
+          if (!curr) {
+            curr = true;
+            currPos.entry_price = buys[idx];
+            currPos.entry_time = new Date(times[idx]);
+          }
+        } else if (sells[idx] > 0) {
+          if (curr) {
+            curr = false;
+            currPos.exit_price = sells[idx];
+            currPos.exit_time = new Date(times[idx]);
+            positions.push({
+              entry_price: currPos.entry_price,
+              entry_time: currPos.entry_time,
+              exit_price: currPos.exit_price,
+              exit_time: currPos.exit_time,
+            });
+          }
+        }
+      }
+
+      var i_median = this.median(intensities);
+      var i_mean = this.mean(intensities);
+      var p_median = this.median(polarities);
+      var p_mean = this.mean(polarities);
+      this.backtest_log = `
 intensity median = ${i_median.toFixed(4)}
 intensity mean = ${i_mean.toFixed(4)}
 polarity median = ${p_median.toFixed(4)}
 polarity mean = ${p_mean.toFixed(4)}
 `;
 
-    if (positions.length == 0) {
-      this.backtest_log += 'no positions opened';
-      return;
-    }
+      if (positions.length == 0) {
+        this.backtest_log += 'no positions opened';
+        return;
+      }
 
-    // compute metrics based on found positions
-    var init_balance = 10000;
-    var balance = 10000;
-    var avg_time = 0;
-    var avg_roi = 0;
-    for (i = 0; i < positions.length; i++) {
-      var pos = positions[i];
+      // compute metrics based on found positions
+      var init_balance = 10000;
+      var balance = 10000;
+      var avg_time = 0;
+      var avg_roi = 0;
+      for (i = 0; i < positions.length; i++) {
+        var pos = positions[i];
 
-      var entry_amount = balance / pos.entry_price;
-      var pricedelta = pos.exit_price - pos.entry_price;
-      var pnl = pricedelta * entry_amount;
-      var timedelta = pos.exit_time.getTime() - pos.entry_time.getTime();
+        var entry_amount = balance / pos.entry_price;
+        var pricedelta = pos.exit_price - pos.entry_price;
+        var pnl = pricedelta * entry_amount;
+        var timedelta = pos.exit_time.getTime() - pos.entry_time.getTime();
 
-      avg_time = (avg_time * i + timedelta) / (i + 1);
+        avg_time = (avg_time * i + timedelta) / (i + 1);
 
-      var new_balance = balance + pnl;
-      var roi = (new_balance / balance - 1) * 100;
-      avg_roi = (avg_roi * i + roi) / (i + 1);
+        var new_balance = balance + pnl;
+        var roi = (new_balance / balance - 1) * 100;
+        avg_roi = (avg_roi * i + roi) / (i + 1);
 
-      balance = new_balance;
-    }
+        balance = new_balance;
+      }
 
-    var init_bh_amount = init_balance / this.strategy.prices.open[indexes[0]];
-    var exit_bh_value =
-      init_bh_amount * this.strategy.prices.open[indexes[indexes.length - 1]];
+      var init_bh_amount = init_balance / this.strategy.prices.open[indexes[0]];
+      var exit_bh_value =
+        init_bh_amount * this.strategy.prices.open[indexes[indexes.length - 1]];
 
-    var roi = (balance / init_balance - 1) * 100;
-    var roi_bh = (exit_bh_value / init_balance - 1) * 100;
+      var roi = (balance / init_balance - 1) * 100;
+      var roi_bh = (exit_bh_value / init_balance - 1) * 100;
 
-    this.backtest_log += `
+      this.backtest_log += `
 initial balance = ${init_balance.toFixed(2)}
 final balance = ${balance.toFixed(2)}
 pnl = ${(balance - init_balance).toFixed(2)}
@@ -375,6 +379,7 @@ buy and hold amount at first candle = ${init_bh_amount.toFixed(8)}
 buy and hold value at last candle = ${exit_bh_value.toFixed(2)}
 buy and hold roi = ${roi_bh.toFixed(2)}%
 `;
+    }
   }
 
   msToString(ms: number): string {
@@ -391,6 +396,7 @@ buy and hold roi = ${roi_bh.toFixed(2)}%
   median(values: any): any {
     // https://stackoverflow.com/questions/45309447/calculating-median-javascript
     if (values.length === 0) return 0;
+    if (this.containsNaN(values)) return 0;
 
     values.sort(function(a: number, b: number) {
       return a - b;
@@ -405,9 +411,21 @@ buy and hold roi = ${roi_bh.toFixed(2)}%
 
   mean(values: any): any {
     if (values.length === 0) return 0;
+    if (this.containsNaN(values)) return 0;
 
     const sum = values.reduce((a: any, b: any) => a + b, 0);
     const avg = sum / values.length || 0;
-    return avg
+    return avg;
   }
+
+  // function that checks if a list contains a NaN value
+  containsNaN(values: any): boolean {
+    for (var i = 0; i < values.length; i++) {
+      if (isNaN(values[i])) {
+        return true;
+      }
+    }
+    return false;
+  }
+
 }
