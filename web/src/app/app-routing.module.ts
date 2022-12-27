@@ -6,8 +6,8 @@ import { LoginGuard } from './login.guard';
 import { LoginComponent } from './login/login.component';
 import { OrderComponent } from './order/order.component';
 import { PositionComponent } from './position/position.component';
+import { StrategiesComponent } from './strategies/strategies.component';
 import { StrategyDetailComponent } from './strategy-detail/strategy-detail.component';
-import { StrategyComponent } from './strategy/strategy.component';
 
 const routes: Routes = [
   { path: 'login', component: LoginComponent, canActivate: [LoginGuard] },
@@ -20,7 +20,7 @@ const routes: Routes = [
   },
   {
     path: 'strategies',
-    component: StrategyComponent,
+    component: StrategiesComponent,
     canActivate: [AuthGuard],
   },
   {
