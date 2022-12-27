@@ -4,8 +4,8 @@ from flask_restful import Resource, marshal_with
 
 import api
 import core
-from api.resources.fields.strategy import base_fields, get_parser
 import strategies
+from api.resources.fields.strategy import base_fields, get_parser
 
 
 class Strategies(Resource):
@@ -16,6 +16,9 @@ class Strategies(Resource):
                       core.db.Strategy.select()
                       .where(core.db.Strategy.deleted == False)
                       .order_by(core.db.Strategy.id.desc())]
+        for strategy in strat_list:
+            strategy.symbol = strategy.market.get_symbol()
+            strategy.exchange = strategy.market.quote.exchange.name
 
         return strat_list
 
@@ -41,4 +44,7 @@ class Strategies(Resource):
             except (peewee.IntegrityError, core.db.Market.DoesNotExist):
                 raise api.errors.InvalidArgument
 
-        return core.db.Strategy.get_by_id(strategy.id)
+        strategy.symbol = strategy.market.get_symbol()
+        strategy.exchange = strategy.market.quote.exchange.name
+
+        return strategy

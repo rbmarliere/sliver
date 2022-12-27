@@ -22,7 +22,11 @@ class Strategy(Resource):
 
         strategy = strategies.load(strategy)
         strategy.id = strategy.strategy_id
-        strategy.subscribed = user.is_subscribed(strategy)
+        strategy.subscribed = user.is_subscribed(strategy.id)
+        strategy.signal = strategy.get_signal()
+        strategy.symbol = strategy.strategy.market.get_symbol()
+        strategy.exchange = strategy.strategy.market.quote.exchange.name
+
         # strategy.refresh()
 
         ind = strategy.get_indicators_df()
@@ -94,6 +98,8 @@ class Strategy(Resource):
 
         strategy.id = strategy.strategy_id
         strategy.signal = strategy.get_signal()
-        strategy.subscribed = user.is_subscribed(strategy)
+        strategy.subscribed = user.is_subscribed(strategy.id)
+        strategy.symbol = strategy.strategy.market.get_symbol()
+        strategy.exchange = strategy.strategy.market.quote.exchange.name
 
         return marshal(strategy, get_fields(strategy.type))
