@@ -10,7 +10,6 @@ class BaseStrategy(core.db.BaseModel):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.__dict__.update(self.strategy.__data__)
-        self.__dict__.update(self.strategy.get_fields())
 
     def get_signal(self):
         indicator = self.strategy \

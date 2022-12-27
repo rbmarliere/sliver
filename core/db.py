@@ -199,17 +199,6 @@ class Strategy(BaseModel):
     stop_loss = peewee.DecimalField(default=3)  # -3%
     lm_ratio = peewee.DecimalField(default=0)
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if self.id:
-            self.__dict__.update(self.get_fields())
-
-    def get_fields(self):
-        return {
-            "symbol": self.market.get_symbol(),
-            "exchange": self.market.quote.exchange.name,
-        }
-
     def get_signal(self):
         return core.strategies.load(self).get_signal()
 
