@@ -12,13 +12,15 @@ class Strategies(Resource):
     @marshal_with(base_fields)
     @jwt_required()
     def get(self):
-        strat_list = [s for s in
-                      core.db.Strategy.select()
-                      .where(core.db.Strategy.deleted == False)
-                      .order_by(core.db.Strategy.id.desc())]
-        for strategy in strat_list:
-            strategy.symbol = strategy.market.get_symbol()
-            strategy.exchange = strategy.market.quote.exchange.name
+        uid = int(get_jwt_identity())
+        user = core.db.User.get_by_id(uid)
+
+        strat_list = []
+        for strategy in [s for s in
+                         core.db.Strategy.select()
+                         .where(core.db.Strategy.deleted == False)
+                         .order_by(core.db.Strategy.id.desc())]:
+            strat_list.append(strategies.load(strategy, user=user))
 
         return strat_list
 
@@ -35,16 +37,15 @@ class Strategies(Resource):
                 args["id"] = None
                 args["active"] = True
                 args["creator"] = user
-                args["stop_loss"] = abs(args.stop_loss)
-                args["min_roi"] = abs(args.min_roi)
+                if args["stop_loss"]:
+                    args["stop_loss"] = abs(args.stop_loss)
+                if args["min_roi"]:
+                    args["min_roi"] = abs(args.min_roi)
                 strategy = core.db.Strategy.create(**args)
                 strategy.save()
 
-                strategies.load(strategy)
+                strategy = strategies.load(strategy, user=user)
             except (peewee.IntegrityError, core.db.Market.DoesNotExist):
                 raise api.errors.InvalidArgument
-
-        strategy.symbol = strategy.market.get_symbol()
-        strategy.exchange = strategy.market.quote.exchange.name
 
         return strategy

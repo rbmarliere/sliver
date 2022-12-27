@@ -1,6 +1,5 @@
 from flask_restful import fields, reqparse, inputs
 
-
 import strategies
 
 
@@ -13,9 +12,6 @@ base_fields = {
     "type": fields.Integer,
     "active": fields.Boolean,
     # "deleted": fields.Boolean,
-}
-spec_fields = {
-    **base_fields,
     "signal": fields.String,
     "market_id": fields.Integer,
     "timeframe": fields.String,
@@ -40,7 +36,7 @@ price_fields = {
     "sells": fields.List(fields.Float),
 }
 all_fields = {
-    **spec_fields,
+    **base_fields,
     "prices": fields.Nested(price_fields),
 }
 
@@ -50,7 +46,7 @@ hypnox_indicators = {
     "p_score": fields.List(fields.Float),
 }
 hypnox_fields = {
-    **spec_fields,
+    **base_fields,
     "i_threshold": fields.Float,
     "p_threshold": fields.Float,
     "tweet_filter": fields.String,
