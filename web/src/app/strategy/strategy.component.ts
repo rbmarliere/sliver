@@ -1,9 +1,6 @@
-import { HttpErrorResponse } from '@angular/common/http';
 import { Component, Input, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
-import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ErrorDialogComponent } from '../error-dialog/error-dialog.component';
 import { Exchange } from '../exchange';
 import { ExchangeService } from '../exchange.service';
 import { Market } from '../market';
@@ -128,23 +125,11 @@ export class StrategyComponent implements OnInit {
 
   private _strategy: Strategy = this.empty_strat;
 
-  private handleError(error: HttpErrorResponse) {
-    const dialogConfig = new MatDialogConfig();
-
-    console.log(error);
-    dialogConfig.data = {
-      msg: error.error.message.type,
-    };
-
-    this.dialog.open(ErrorDialogComponent, dialogConfig);
-  }
-
   constructor(
     private strategyService: StrategyService,
     private strategiesService: StrategiesService,
     private exchangeService: ExchangeService,
     private formBuilder: FormBuilder,
-    private dialog: MatDialog,
     private route: ActivatedRoute,
     private router: Router
   ) { }
@@ -160,7 +145,6 @@ export class StrategyComponent implements OnInit {
     } else {
       this.strategyService.getStrategy(strategy_id).subscribe({
         next: (res) => this.handleStrategy(res),
-        error: (err) => this.handleError(err),
       });
     }
   }
@@ -168,7 +152,6 @@ export class StrategyComponent implements OnInit {
   getExchanges(): void {
     this.exchangeService.getExchanges().subscribe({
       next: (res) => (this.exchanges = res),
-      error: (err) => this.handleError(err),
     });
   }
 
@@ -186,12 +169,10 @@ export class StrategyComponent implements OnInit {
     if (strategy.id > 0) {
       this.strategyService.updateStrategy(strategy).subscribe({
         next: () => location.reload(),
-        error: (err) => this.handleError(err),
       });
     } else {
       this.strategiesService.createStrategy(strategy).subscribe({
         next: () => this.router.navigate(['/strategies']),
-        error: (err) => this.handleError(err),
       });
     }
   }
@@ -199,7 +180,6 @@ export class StrategyComponent implements OnInit {
   subscribe(strategy: Strategy): void {
     this.strategyService.updateSubscription(strategy).subscribe({
       next: () => location.reload(),
-      error: (err) => this.handleError(err),
     });
   }
 
