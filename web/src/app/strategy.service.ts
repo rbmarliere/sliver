@@ -29,7 +29,7 @@ export class StrategyService {
   }
 
   updateSubscription(strategy: Strategy): Observable<Strategy> {
-    const req = { subscribed: !strategy.subscribed };
+    const req = { subscribe: true, subscribed: !strategy.subscribed };
     return this.http.put<Strategy>(this.url + '/' + strategy.id, req).pipe(
       map((st) => {
         st.next_refresh = st.next_refresh.slice(0, 16);

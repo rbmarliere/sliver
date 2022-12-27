@@ -89,6 +89,8 @@ base_parser.add_argument("spread", type=float)
 base_parser.add_argument("min_roi", type=float)
 base_parser.add_argument("stop_loss", type=float)
 base_parser.add_argument("lm_ratio", type=float)
+
+base_parser.add_argument("subscribe", type=bool)
 base_parser.add_argument("subscribed", type=bool)
 
 
