@@ -10,6 +10,7 @@ import { Market } from '../market';
 import { StrategiesService } from '../strategies.service';
 import { Strategy } from '../strategy';
 import { StrategyService } from '../strategy.service';
+import { getStrategyTypes, StrategyType } from './strategy-types';
 import { mean, median, msToString } from './utils';
 
 @Component({
@@ -83,6 +84,8 @@ export class StrategyComponent implements OnInit {
 
   markets: Market[] = [];
 
+  types: StrategyType[] = getStrategyTypes();
+
   set exchanges(exchanges: Exchange[]) {
     for (let exchange of exchanges) {
       for (let market of exchange.markets) {
@@ -115,6 +118,7 @@ export class StrategyComponent implements OnInit {
     if (strategy.id > 0) {
       this.form.patchValue(strategy);
       this.form.get('market_id')?.disable();
+      this.form.get('type')?.disable();
     } else {
       this.form.patchValue(this.empty_strat);
       this.form.get('market_id')?.enable();
