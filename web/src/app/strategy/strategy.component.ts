@@ -10,6 +10,7 @@ import { Market } from '../market';
 import { StrategiesService } from '../strategies.service';
 import { Strategy } from '../strategy';
 import { StrategyService } from '../strategy.service';
+import { mean, median, msToString } from './utils';
 
 @Component({
   selector: 'app-strategy',
@@ -48,8 +49,6 @@ export class StrategyComponent implements OnInit {
       low: [],
       close: [],
       volume: [],
-      i_score: [],
-      p_score: [],
       buys: [],
       sells: [],
     },
@@ -156,60 +155,7 @@ export class StrategyComponent implements OnInit {
       this.strategy = this.empty_strat;
     } else {
       this.strategyService.getStrategy(strategy_id).subscribe({
-        next: (res) => {
-          (this.strategy = res), (this.loading = false);
-          this.plot_layout.title = this.strategy.symbol;
-          this.plot_data = [
-            {
-              name: 'price',
-              x: res.prices.time,
-              open: res.prices.open,
-              high: res.prices.high,
-              low: res.prices.low,
-              close: res.prices.close,
-              type: 'candlestick',
-              xaxis: 'x',
-              yaxis: 'y',
-            },
-            {
-              name: 'i_score',
-              x: res.prices.time,
-              y: res.prices.i_score,
-              type: 'line',
-              xaxis: 'x',
-              yaxis: 'y2',
-            },
-            {
-              name: 'p_score',
-              x: res.prices.time,
-              y: res.prices.p_score,
-              type: 'line',
-              xaxis: 'x',
-              yaxis: 'y3',
-            },
-            {
-              name: 'buy signal',
-              x: res.prices.time,
-              y: res.prices.buys,
-              type: 'scatter',
-              mode: 'markers',
-              marker: { color: 'green', size: 8 },
-              xaxis: 'x',
-              yaxis: 'y',
-            },
-            {
-              name: 'sell signal',
-              x: res.prices.time,
-              y: res.prices.sells,
-              type: 'scatter',
-              mode: 'markers',
-              marker: { color: 'red', size: 8 },
-              xaxis: 'x',
-              yaxis: 'y',
-            },
-          ];
-          this.zoom(0);
-        },
+        next: (res) => this.handleStrategy(res),
         error: (err) => this.handleError(err),
       });
     }
@@ -224,6 +170,10 @@ export class StrategyComponent implements OnInit {
 
   createForm(model: Strategy): FormGroup {
     return this.formBuilder.group(model);
+  }
+
+  formatLabel(value: number) {
+    return Math.round(value * 100) + '%';
   }
 
   updateStrategy() {
@@ -249,8 +199,60 @@ export class StrategyComponent implements OnInit {
     });
   }
 
-  formatLabel(value: number) {
-    return Math.round(value * 100) + '%';
+  handleStrategy(strategy: Strategy) {
+    this.strategy = strategy;
+    this.loading = false;
+    this.plot_layout.title = this.strategy.symbol;
+    this.plot_data = [
+      {
+        name: 'price',
+        x: strategy.prices.time,
+        open: strategy.prices.open,
+        high: strategy.prices.high,
+        low: strategy.prices.low,
+        close: strategy.prices.close,
+        type: 'candlestick',
+        xaxis: 'x',
+        yaxis: 'y',
+      },
+      {
+        name: 'i_score',
+        x: strategy.prices.time,
+        y: strategy.prices.i_score,
+        type: 'line',
+        xaxis: 'x',
+        yaxis: 'y2',
+      },
+      {
+        name: 'p_score',
+        x: strategy.prices.time,
+        y: strategy.prices.p_score,
+        type: 'line',
+        xaxis: 'x',
+        yaxis: 'y3',
+      },
+      {
+        name: 'buy signal',
+        x: strategy.prices.time,
+        y: strategy.prices.buys,
+        type: 'scatter',
+        mode: 'markers',
+        marker: { color: 'green', size: 8 },
+        xaxis: 'x',
+        yaxis: 'y',
+      },
+      {
+        name: 'sell signal',
+        x: strategy.prices.time,
+        y: strategy.prices.sells,
+        type: 'scatter',
+        mode: 'markers',
+        marker: { color: 'red', size: 8 },
+        xaxis: 'x',
+        yaxis: 'y',
+      },
+    ];
+    this.zoom(0);
   }
 
   zoom(event: any): void {
@@ -321,10 +323,10 @@ export class StrategyComponent implements OnInit {
         }
       }
 
-      var i_median = this.median(intensities);
-      var i_mean = this.mean(intensities);
-      var p_median = this.median(polarities);
-      var p_mean = this.mean(polarities);
+      var i_median = median(intensities);
+      var i_mean = mean(intensities);
+      var p_median = median(polarities);
+      var p_mean = mean(polarities);
       this.backtest_log = `
 intensity median = ${i_median.toFixed(4)}
 intensity mean = ${i_mean.toFixed(4)}
@@ -371,61 +373,15 @@ initial balance = ${init_balance.toFixed(2)}
 final balance = ${balance.toFixed(2)}
 pnl = ${(balance - init_balance).toFixed(2)}
 roi = ${roi.toFixed(2)}%
-total timedelta = ${this.msToString(end.getTime() - start.getTime())}
+total timedelta = ${msToString(end.getTime() - start.getTime())}
 number of trades = ${positions.length}
-average timedelta in position = ${this.msToString(avg_time)}
+average timedelta in position = ${msToString(avg_time)}
 average position roi = ${avg_roi.toFixed(2)}%
 buy and hold amount at first candle = ${init_bh_amount.toFixed(8)}
 buy and hold value at last candle = ${exit_bh_value.toFixed(2)}
 buy and hold roi = ${roi_bh.toFixed(2)}%
 `;
     }
-  }
-
-  msToString(ms: number): string {
-    // https://stackoverflow.com/questions/29816872/how-can-i-convert-milliseconds-to-hhmmss-format-using-javascript
-    var seconds = ms / 1000;
-    const days = parseInt((seconds / 86400).toString());
-    seconds = seconds % 86400;
-    const hours = parseInt((seconds / 3600).toString());
-    seconds = seconds % 3600;
-    const minutes = parseInt((seconds / 60).toString());
-    return `${days}d ${hours}h ${minutes}m`;
-  }
-
-  median(values: any): any {
-    // https://stackoverflow.com/questions/45309447/calculating-median-javascript
-    if (values.length === 0) return 0;
-    if (this.containsNaN(values)) return 0;
-
-    values.sort(function(a: number, b: number) {
-      return a - b;
-    });
-
-    var half = Math.floor(values.length / 2);
-
-    if (values.length % 2) return values[half];
-
-    return (values[half - 1] + values[half]) / 2.0;
-  }
-
-  mean(values: any): any {
-    if (values.length === 0) return 0;
-    if (this.containsNaN(values)) return 0;
-
-    const sum = values.reduce((a: any, b: any) => a + b, 0);
-    const avg = sum / values.length || 0;
-    return avg;
-  }
-
-  // function that checks if a list contains a NaN value
-  containsNaN(values: any): boolean {
-    for (var i = 0; i < values.length; i++) {
-      if (isNaN(values[i])) {
-        return true;
-      }
-    }
-    return false;
   }
 
 }
