@@ -94,9 +94,9 @@ class User(BaseModel):
             .where(UserStrategy.user_id == self.id) \
             .order_by(Position.id.desc())
 
-    def is_subscribed(self, strategy):
+    def is_subscribed(self, strategy_id):
         for u_st in self.userstrategy_set:
-            if u_st.strategy == strategy:
+            if u_st.strategy_id == strategy_id:
                 return u_st.active
         return False
 
