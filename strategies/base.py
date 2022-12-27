@@ -62,3 +62,11 @@ class BaseStrategy(core.db.BaseModel):
 
     def refresh(self):
         pass
+
+    def load_fields(self, user):
+        self.id = self.strategy_id
+        self.market_id = self.strategy.market_id
+        self.subscribed = user.is_subscribed(self.id)
+        self.signal = self.get_signal()
+        self.symbol = self.strategy.market.get_symbol()
+        self.exchange = self.strategy.market.quote.exchange.name
