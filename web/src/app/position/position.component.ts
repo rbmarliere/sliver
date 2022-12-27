@@ -1,9 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { PositionService } from '../position.service';
-import { HttpErrorResponse } from '@angular/common/http';
-import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 
-import { ErrorDialogComponent } from '../error-dialog/error-dialog.component';
 import { Position } from '../position';
 
 @Component({
@@ -29,23 +26,10 @@ export class PositionComponent implements OnInit {
 
   loading: Boolean = true;
 
-  constructor(
-    private positionService: PositionService,
-    private dialog: MatDialog
-  ) { }
+  constructor(private positionService: PositionService) { }
 
   ngOnInit(): void {
     this.getPositions();
-  }
-
-  private handleError(error: HttpErrorResponse) {
-    const dialogConfig = new MatDialogConfig;
-
-    dialogConfig.data = {
-      msg: error.error.message
-    };
-
-    this.dialog.open(ErrorDialogComponent, dialogConfig);
   }
 
   getPositions(): void {
@@ -53,8 +37,7 @@ export class PositionComponent implements OnInit {
       next: (res) => {
         this.positions = res;
         this.loading = false;
-      },
-      error: (err) => this.handleError(err)
+      }
     });
   }
 

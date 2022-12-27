@@ -1,8 +1,5 @@
-import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
-import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { ActivatedRoute } from '@angular/router';
-import { ErrorDialogComponent } from '../error-dialog/error-dialog.component';
 import { Order } from '../order';
 import { OrderService } from '../order.service';
 
@@ -31,7 +28,6 @@ export class OrderComponent implements OnInit {
 
   constructor(
     private orderService: OrderService,
-    private dialog: MatDialog,
     private route: ActivatedRoute,
   ) { }
 
@@ -40,23 +36,12 @@ export class OrderComponent implements OnInit {
     this.getOrders(position_id);
   }
 
-  private handleError(error: HttpErrorResponse) {
-    const dialogConfig = new MatDialogConfig;
-
-    dialogConfig.data = {
-      msg: error.error.message
-    };
-
-    this.dialog.open(ErrorDialogComponent, dialogConfig);
-  }
-
   getOrders(position_id: number): void {
     this.orderService.getOrders(position_id).subscribe({
       next: (res) => {
         this.orders = res;
         this.loading = false;
       },
-      error: (err) => this.handleError(err)
     });
   }
 }

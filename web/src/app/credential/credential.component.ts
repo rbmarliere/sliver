@@ -1,10 +1,7 @@
-import { HttpErrorResponse } from '@angular/common/http';
 import { Component, Input, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
-import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { Credential } from '../credential';
 import { CredentialService } from '../credential.service';
-import { ErrorDialogComponent } from '../error-dialog/error-dialog.component';
 
 @Component({
   selector: 'app-credential',
@@ -25,7 +22,6 @@ export class CredentialComponent implements OnInit {
 
   constructor(
     private credentialService: CredentialService,
-    private dialog: MatDialog,
     private formBuilder: FormBuilder
   ) {
   }
@@ -52,15 +48,6 @@ export class CredentialComponent implements OnInit {
     }
   }
 
-  private handleError(error: HttpErrorResponse) {
-    const dialogConfig = new MatDialogConfig
-
-    dialogConfig.data = {
-      msg: error.error.message
-    };
-
-    this.dialog.open(ErrorDialogComponent, dialogConfig);
-  }
 
   createForm(model: Credential): FormGroup {
     return this.formBuilder.group(model);
@@ -71,7 +58,6 @@ export class CredentialComponent implements OnInit {
 
     this.credentialService.addCredential(cred).subscribe({
       next: () => location.reload(),
-      error: (err) => this.handleError(err)
     });
   }
 
@@ -80,8 +66,7 @@ export class CredentialComponent implements OnInit {
       .deleteCredential(this.form.value.exchange_id)
       .subscribe({
         next: () => location.reload(),
-        error: (err) => this.handleError(err)
-    });
+      });
   }
 
   activateCredential(): void {
@@ -90,7 +75,6 @@ export class CredentialComponent implements OnInit {
 
     this.credentialService.updateCredential(cred).subscribe({
       next: () => location.reload(),
-      error: (err) => this.handleError(err)
     });
   }
 
