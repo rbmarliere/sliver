@@ -7,7 +7,7 @@ import { BaseStrategy } from '../strategy';
 import { StrategyService } from '../strategy.service';
 
 @Component({
-  selector: 'app-strategy',
+  selector: 'app-strategies',
   templateUrl: './strategies.component.html',
   styleUrls: ['./strategies.component.less'],
 })
