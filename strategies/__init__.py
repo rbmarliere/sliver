@@ -11,15 +11,20 @@ class Types(enum.Enum):
     HYPNOX = 2
 
 
-def load(strategy):
+def load(strategy, user=None):
     if strategy.type == Types.MANUAL.value:
-        return ManualStrategy.get_or_create(strategy=strategy)[0]
+        stt = ManualStrategy.get_or_create(strategy=strategy)[0]
 
     elif strategy.type == Types.RANDOM.value:
-        return RandomStrategy.get_or_create(strategy=strategy)[0]
+        stt = RandomStrategy.get_or_create(strategy=strategy)[0]
 
     elif strategy.type == Types.HYPNOX.value:
-        return HypnoxStrategy.get_or_create(strategy=strategy)[0]
+        stt = HypnoxStrategy.get_or_create(strategy=strategy)[0]
 
     else:
         raise ValueError("invalid strategy type")
+
+    if user is not None:
+        stt.load_fields(user)
+
+    return stt
