@@ -25,6 +25,7 @@ import { AuthInterceptor } from './auth.interceptor';
 import { CredentialComponent } from './credential/credential.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { ErrorDialogComponent } from './error-dialog/error-dialog.component';
+import { HttpErrorInterceptor } from './http-error.interceptor';
 import { LoginComponent } from './login/login.component';
 import { NavbarComponent } from './navbar/navbar.component';
 import { OrderComponent } from './order/order.component';
@@ -72,6 +73,11 @@ import { StrategyComponent } from './strategy/strategy.component';
     {
       provide: HTTP_INTERCEPTORS,
       useClass: AuthInterceptor,
+      multi: true,
+    },
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: HttpErrorInterceptor,
       multi: true,
     },
   ],

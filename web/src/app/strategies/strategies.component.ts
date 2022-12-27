@@ -1,7 +1,4 @@
-import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
-import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
-import { ErrorDialogComponent } from '../error-dialog/error-dialog.component';
 import { StrategiesService } from '../strategies.service';
 import { BaseStrategy } from '../strategy';
 import { StrategyService } from '../strategy.service';
@@ -25,21 +22,9 @@ export class StrategiesComponent implements OnInit {
 
   strategies: BaseStrategy[] = [];
 
-  private handleError(error: HttpErrorResponse) {
-    const dialogConfig = new MatDialogConfig();
-
-    dialogConfig.data = {
-      msg: error.error.message,
-    };
-
-    console.log(error);
-    this.dialog.open(ErrorDialogComponent, dialogConfig);
-  }
-
   constructor(
     private strategyService: StrategyService,
     private strategiesService: StrategiesService,
-    private dialog: MatDialog
   ) { }
 
   ngOnInit(): void {
@@ -52,14 +37,12 @@ export class StrategiesComponent implements OnInit {
         this.strategies = res;
         this.loading = false;
       },
-      error: (err) => this.handleError(err),
     });
   }
 
   deleteStrategy(strategy_id: number) {
     this.strategyService.deleteStrategy(strategy_id).subscribe({
       next: () => location.reload(),
-      error: (err) => this.handleError(err),
     });
   }
 }
