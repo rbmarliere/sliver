@@ -20,13 +20,7 @@ class Strategy(Resource):
         except core.db.Strategy.DoesNotExist:
             raise api.errors.StrategyDoesNotExist
 
-        strategy = strategies.load(strategy)
-        strategy.id = strategy.strategy_id
-        strategy.subscribed = user.is_subscribed(strategy.id)
-        strategy.signal = strategy.get_signal()
-        strategy.symbol = strategy.strategy.market.get_symbol()
-        strategy.exchange = strategy.strategy.market.quote.exchange.name
-
+        strategy = strategies.load(strategy, user=user)
         # strategy.refresh()
 
         ind = strategy.get_indicators_df()
@@ -68,15 +62,20 @@ class Strategy(Resource):
 
         args = get_parser(old_strategy.type).parse_args()
 
-        old_strategy.subscribe(user, args["subscribed"])
+        if args["subscribed"] is not None:
+            old_strategy.subscribe(user, args["subscribed"])
+            strategy = strategies.load(old_strategy, user=user)
+            return marshal(strategy, get_fields(strategy.type))
 
         if old_strategy.creator != user:
             raise api.errors.StrategyNotEditable
 
         with core.db.connection.atomic():
             args["id"] = int(strategy_id)
-            args["stop_loss"] = abs(args.stop_loss)
-            args["min_roi"] = abs(args.min_roi)
+            if args["stop_loss"]:
+                args["stop_loss"] = abs(args.stop_loss)
+            if args["min_roi"]:
+                args["min_roi"] = abs(args.min_roi)
             args["market"] = old_strategy.market.id
             args["type"] = old_strategy.type
             strategy = core.db.Strategy(**args)
@@ -96,10 +95,6 @@ class Strategy(Resource):
                 .where(core.db.Indicator.strategy_id == strategy.id) \
                 .execute()
 
-        strategy.id = strategy.strategy_id
-        strategy.signal = strategy.get_signal()
-        strategy.subscribed = user.is_subscribed(strategy.id)
-        strategy.symbol = strategy.strategy.market.get_symbol()
-        strategy.exchange = strategy.strategy.market.quote.exchange.name
+        strategy = strategies.load(strategy, user=user)
 
         return marshal(strategy, get_fields(strategy.type))
