@@ -29,8 +29,8 @@ import { LoginComponent } from './login/login.component';
 import { NavbarComponent } from './navbar/navbar.component';
 import { OrderComponent } from './order/order.component';
 import { PositionComponent } from './position/position.component';
+import { StrategiesComponent } from './strategies/strategies.component';
 import { StrategyDetailComponent } from './strategy-detail/strategy-detail.component';
-import { StrategyComponent } from './strategy/strategy.component';
 
 @NgModule({
   declarations: [
@@ -39,7 +39,7 @@ import { StrategyComponent } from './strategy/strategy.component';
     LoginComponent,
     PositionComponent,
     ErrorDialogComponent,
-    StrategyComponent,
+    StrategiesComponent,
     DashboardComponent,
     OrderComponent,
     CredentialComponent,
