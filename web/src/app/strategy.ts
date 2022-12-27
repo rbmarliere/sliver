@@ -1,27 +1,12 @@
-export interface Price {
-  time: string[];
-  open: number[];
-  high: number[];
-  low: number[];
-  close: number[];
-  volume: number[];
-  buys: number[];
-  sells: number[];
-
-  // hypnox
-  i_score?: number[];
-  p_score?: number[];
-}
-
 export interface BaseStrategy {
   id: number;
   symbol: string;
   exchange: string;
-  // "creator_id": fields.Integer,
+  // creator_id: number;
   description: string;
   type: number;
   active: boolean;
-  // "deleted": fields.Boolean,
+  // deleted: boolean;
   signal: string;
   market_id: number;
   timeframe: string;
@@ -44,5 +29,18 @@ export interface Strategy extends BaseStrategy {
   model_i?: string;
   model_p?: string;
 
-  prices: Price;
+  prices: {
+    time: string[];
+    open: number[];
+    high: number[];
+    low: number[];
+    close: number[];
+    volume: number[];
+    buys: number[];
+    sells: number[];
+
+    // hypnox
+    i_score?: number[];
+    p_score?: number[];
+  }
 }
