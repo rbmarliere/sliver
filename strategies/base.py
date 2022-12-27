@@ -1,7 +1,7 @@
+import pandas
 import peewee
 
 import core
-import pandas
 
 
 class BaseStrategy(core.db.BaseModel):
@@ -49,11 +49,11 @@ class BaseStrategy(core.db.BaseModel):
                         sells.append(idx)
                         curr_pos = False
             df.time = df.time.dt.strftime("%Y-%m-%d %H:%M")
-            df.open = df.open.apply(self.market.quote.format)
-            df.high = df.high.apply(self.market.quote.format)
-            df.low = df.low.apply(self.market.quote.format)
-            df.close = df.close.apply(self.market.quote.format)
-            df.volume = df.volume.apply(self.market.base.format)
+            df.open = df.open.apply(self.strategy.market.quote.format)
+            df.high = df.high.apply(self.strategy.market.quote.format)
+            df.low = df.low.apply(self.strategy.market.quote.format)
+            df.close = df.close.apply(self.strategy.market.quote.format)
+            df.volume = df.volume.apply(self.strategy.market.base.format)
             df["buys"] = df.open.where(df.index.isin(buys))
             df.buys = df.buys.replace({float("nan"): None})
             df["sells"] = df.open.where(df.index.isin(sells))
