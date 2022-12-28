@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
+import core
 from fetch_markets import fetch_markets
 
-import core
 
 if __name__ == "__main__":
     with core.db.connection.atomic():
@@ -57,7 +57,7 @@ if __name__ == "__main__":
                                   num_orders=6,
                                   bucket_interval=5,
                                   spread=0.01,
-                                  min_roi=5,
+                                  stop_gain=5,
                                   stop_loss=3)
         strat1.save()
 
@@ -72,7 +72,7 @@ if __name__ == "__main__":
                                   num_orders=12,
                                   bucket_interval=10,
                                   spread=1,
-                                  min_roi=3,
+                                  stop_gain=3,
                                   stop_loss=1.5)
         strat2.save()
 
