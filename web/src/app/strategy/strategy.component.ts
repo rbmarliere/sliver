@@ -7,8 +7,7 @@ import { Market } from '../market';
 import { StrategiesService } from '../strategies.service';
 import { Strategy } from '../strategy';
 import { StrategyService } from '../strategy.service';
-import { getStrategyTypes, StrategyType } from './strategy-types';
-import { mean, median, msToString } from './utils';
+import { backtest, getPlot, getStrategyTypes, StrategyType } from './strategy-types';
 
 @Component({
   selector: 'app-strategy',
@@ -52,25 +51,7 @@ export class StrategyComponent implements OnInit {
     },
   };
 
-  plot_layout = {
-    // width: 880,
-    height: 900,
-    showlegend: false,
-    title: '',
-    xaxis: {
-      rangeslider: { visible: false },
-      autorange: true,
-      type: 'date',
-    },
-    grid: { rows: 3, columns: 1 },
-  };
-
-  plot_config = {
-    modeBarButtonsToRemove: ['select2d', 'lasso2d', 'zoomIn2d', 'zoomOut2d'],
-  };
-
-  plot_data: any;
-
+  plot: any;
   backtest_log: any;
 
   loading: Boolean = true;
@@ -81,7 +62,7 @@ export class StrategyComponent implements OnInit {
 
   markets: Market[] = [];
 
-  types: StrategyType[] = getStrategyTypes();
+  strategyTypes: StrategyType[] = getStrategyTypes();
 
   set exchanges(exchanges: Exchange[]) {
     for (let exchange of exchanges) {
@@ -102,6 +83,7 @@ export class StrategyComponent implements OnInit {
   set strategy(strategy: Strategy) {
     this._strategy = strategy;
 
+    // TODO
     if (strategy.type == 2) {
       this.form.get('signal')?.disable();
       this.form.get('i_threshold')?.enable();
@@ -186,185 +168,26 @@ export class StrategyComponent implements OnInit {
   handleStrategy(strategy: Strategy) {
     this.strategy = strategy;
     this.loading = false;
-    this.plot_layout.title = this.strategy.symbol;
-    this.plot_data = [
-      {
-        name: 'price',
-        x: strategy.prices.time,
-        open: strategy.prices.open,
-        high: strategy.prices.high,
-        low: strategy.prices.low,
-        close: strategy.prices.close,
-        type: 'candlestick',
-        xaxis: 'x',
-        yaxis: 'y',
-      },
-      {
-        name: 'i_score',
-        x: strategy.prices.time,
-        y: strategy.prices.i_score,
-        type: 'line',
-        xaxis: 'x',
-        yaxis: 'y2',
-      },
-      {
-        name: 'p_score',
-        x: strategy.prices.time,
-        y: strategy.prices.p_score,
-        type: 'line',
-        xaxis: 'x',
-        yaxis: 'y3',
-      },
-      {
-        name: 'buy signal',
-        x: strategy.prices.time,
-        y: strategy.prices.buys,
-        type: 'scatter',
-        mode: 'markers',
-        marker: { color: 'green', size: 8 },
-        xaxis: 'x',
-        yaxis: 'y',
-      },
-      {
-        name: 'sell signal',
-        x: strategy.prices.time,
-        y: strategy.prices.sells,
-        type: 'scatter',
-        mode: 'markers',
-        marker: { color: 'red', size: 8 },
-        xaxis: 'x',
-        yaxis: 'y',
-      },
-    ];
+    this.plot = getPlot(strategy);
     this.zoom(0);
   }
 
   zoom(event: any): void {
+    if (this.strategy.prices.time === null) {
+      return;
+    }
+
     const start = event['xaxis.range[0]'];
     const end = event['xaxis.range[1]'];
+
     if (start) {
-      this.backtest(start, end);
+      this.backtest_log = backtest(this.strategy, start, end);
     } else {
-      this.backtest(
+      this.backtest_log = backtest(
+        this.strategy,
         this.strategy.prices.time[0],
         this.strategy.prices.time[this.strategy.prices.time.length - 1]
       );
-    }
-  }
-
-  backtest(_start: string, _end: string): void {
-    // filter data based on zoomed region
-    if (this.strategy.prices.i_score && this.strategy.prices.p_score) {
-      var start = new Date(_start);
-      var end = new Date(_end);
-      var times = this.strategy.prices.time;
-      var buys = this.strategy.prices.buys;
-      var sells = this.strategy.prices.sells;
-      var all_intensities = this.strategy.prices.i_score;
-      var all_polarities = this.strategy.prices.p_score;
-      var len = times.length;
-      var indexes = [];
-      for (var i = 0; i < len; i++) {
-        var element = this.strategy.prices.time[i];
-        if (new Date(element) >= start && new Date(element) <= end) {
-          indexes.push(i);
-        }
-      }
-
-      // get existing positions in filtered data
-      var intensities = [];
-      var polarities = [];
-      var positions = [];
-      var curr = false;
-      var currPos = {
-        entry_price: 0,
-        entry_time: new Date(0),
-        exit_price: 0,
-        exit_time: new Date(0),
-      };
-      for (i = 0; i < indexes.length; i++) {
-        var idx = indexes[i];
-        intensities.push(all_intensities[idx]);
-        polarities.push(all_polarities[idx]);
-        if (buys[idx] > 0) {
-          if (!curr) {
-            curr = true;
-            currPos.entry_price = buys[idx];
-            currPos.entry_time = new Date(times[idx]);
-          }
-        } else if (sells[idx] > 0) {
-          if (curr) {
-            curr = false;
-            currPos.exit_price = sells[idx];
-            currPos.exit_time = new Date(times[idx]);
-            positions.push({
-              entry_price: currPos.entry_price,
-              entry_time: currPos.entry_time,
-              exit_price: currPos.exit_price,
-              exit_time: currPos.exit_time,
-            });
-          }
-        }
-      }
-
-      var i_median = median(intensities);
-      var i_mean = mean(intensities);
-      var p_median = median(polarities);
-      var p_mean = mean(polarities);
-      this.backtest_log = `
-intensity median = ${i_median.toFixed(4)}
-intensity mean = ${i_mean.toFixed(4)}
-polarity median = ${p_median.toFixed(4)}
-polarity mean = ${p_mean.toFixed(4)}
-`;
-
-      if (positions.length == 0) {
-        this.backtest_log += 'no positions opened';
-        return;
-      }
-
-      // compute metrics based on found positions
-      var init_balance = 10000;
-      var balance = 10000;
-      var avg_time = 0;
-      var avg_roi = 0;
-      for (i = 0; i < positions.length; i++) {
-        var pos = positions[i];
-
-        var entry_amount = balance / pos.entry_price;
-        var pricedelta = pos.exit_price - pos.entry_price;
-        var pnl = pricedelta * entry_amount;
-        var timedelta = pos.exit_time.getTime() - pos.entry_time.getTime();
-
-        avg_time = (avg_time * i + timedelta) / (i + 1);
-
-        var new_balance = balance + pnl;
-        var roi = (new_balance / balance - 1) * 100;
-        avg_roi = (avg_roi * i + roi) / (i + 1);
-
-        balance = new_balance;
-      }
-
-      var init_bh_amount = init_balance / this.strategy.prices.open[indexes[0]];
-      var exit_bh_value =
-        init_bh_amount * this.strategy.prices.open[indexes[indexes.length - 1]];
-
-      var roi = (balance / init_balance - 1) * 100;
-      var roi_bh = (exit_bh_value / init_balance - 1) * 100;
-
-      this.backtest_log += `
-initial balance = ${init_balance.toFixed(2)}
-final balance = ${balance.toFixed(2)}
-pnl = ${(balance - init_balance).toFixed(2)}
-roi = ${roi.toFixed(2)}%
-total timedelta = ${msToString(end.getTime() - start.getTime())}
-number of trades = ${positions.length}
-average timedelta in position = ${msToString(avg_time)}
-average position roi = ${avg_roi.toFixed(2)}%
-buy and hold amount at first candle = ${init_bh_amount.toFixed(8)}
-buy and hold value at last candle = ${exit_bh_value.toFixed(2)}
-buy and hold roi = ${roi_bh.toFixed(2)}%
-`;
     }
   }
 
