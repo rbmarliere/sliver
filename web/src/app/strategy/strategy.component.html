@@ -11,23 +11,27 @@
       <form [formGroup]="form" (ngSubmit)="updateStrategy()">
         <div class="fields" *ngIf="strategy.id">
           <p>
+            <mat-slide-toggle formControlName="active">
+              Active
+            </mat-slide-toggle>
+
+            <mat-slider
+              formControlName="lm_ratio"
+              thumbLabel
+              [displayWith]="formatLabel"
+              min="0"
+              max="1"
+              step="0.01"
+            ></mat-slider>
+            <label>Market Orders</label>
+          </p>
+          <p>
             <mat-form-field appearance="fill" *ngIf="strategy.id">
               <mat-label>Signal</mat-label>
               <mat-select formControlName="signal">
                 <mat-option value="neutral"> neutral </mat-option>
                 <mat-option value="buy"> buy </mat-option>
                 <mat-option value="sell"> sell </mat-option>
-              </mat-select>
-            </mat-form-field>
-          </p>
-
-          <p>
-            <mat-form-field appearance="fill">
-              <mat-label>Market</mat-label>
-              <mat-select formControlName="market_id">
-                <mat-option *ngFor="let market of markets" [value]="market.id">
-                  {{ market.exchange_name }} - {{ market.symbol }}
-                </mat-option>
               </mat-select>
             </mat-form-field>
           </p>
@@ -47,6 +51,17 @@
           </p>
         </div>
         <div class="fields">
+          <p>
+            <mat-form-field appearance="fill">
+              <mat-label>Market</mat-label>
+              <mat-select formControlName="market_id">
+                <mat-option *ngFor="let market of markets" [value]="market.id">
+                  {{ market.exchange_name }} - {{ market.symbol }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </p>
+
           <p>
             <mat-form-field appearance="fill">
               <mat-label>Timeframe</mat-label>
@@ -207,19 +222,6 @@
           </p>
         </div>
 
-        <p>
-          <mat-slide-toggle formControlName="active"> Active </mat-slide-toggle>
-
-          <mat-slider
-            formControlName="lm_ratio"
-            thumbLabel
-            [displayWith]="formatLabel"
-            min="0"
-            max="1"
-            step="0.01"
-          ></mat-slider>
-          <label>Market Orders</label>
-        </p>
         <p>
           <button mat-raised-button color="primary">Save</button>
 
