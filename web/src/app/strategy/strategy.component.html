@@ -9,27 +9,9 @@
   <mat-card>
     <mat-card-content>
       <form [formGroup]="form" (ngSubmit)="updateStrategy()">
-        <div class="fields">
+        <div class="fields" *ngIf="strategy.id">
           <p>
-            <mat-slide-toggle formControlName="active">
-              Active
-            </mat-slide-toggle>
-          </p>
-
-          <p>
-            <mat-slider
-              formControlName="lm_ratio"
-              thumbLabel
-              [displayWith]="formatLabel"
-              min="0"
-              max="1"
-              step="0.01"
-            ></mat-slider>
-            <label>Market Orders</label>
-          </p>
-
-          <p>
-            <mat-form-field appearance="fill">
+            <mat-form-field appearance="fill" *ngIf="strategy.id">
               <mat-label>Signal</mat-label>
               <mat-select formControlName="signal">
                 <mat-option value="neutral"> neutral </mat-option>
@@ -63,7 +45,8 @@
               </mat-select>
             </mat-form-field>
           </p>
-
+        </div>
+        <div class="fields">
           <p>
             <mat-form-field appearance="fill">
               <mat-label>Timeframe</mat-label>
@@ -165,7 +148,9 @@
               />
             </mat-form-field>
           </p>
+        </div>
 
+        <div class="fields" *ngIf="strategy.type === 2">
           <p>
             <mat-form-field>
               <input
@@ -220,7 +205,22 @@
               />
             </mat-form-field>
           </p>
+        </div>
 
+        <p>
+          <mat-slide-toggle formControlName="active"> Active </mat-slide-toggle>
+
+          <mat-slider
+            formControlName="lm_ratio"
+            thumbLabel
+            [displayWith]="formatLabel"
+            min="0"
+            max="1"
+            step="0.01"
+          ></mat-slider>
+          <label>Market Orders</label>
+        </p>
+        <p>
           <button mat-raised-button color="primary">Save</button>
 
           <button
@@ -233,7 +233,7 @@
             <span *ngIf="!strategy.subscribed">Subscribe</span>
             <span *ngIf="strategy.subscribed">Unsubscribe</span>
           </button>
-        </div>
+        </p>
       </form>
     </mat-card-content>
   </mat-card>
