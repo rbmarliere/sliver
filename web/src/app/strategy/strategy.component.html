@@ -54,7 +54,10 @@
             <mat-form-field appearance="fill">
               <mat-label>Type</mat-label>
               <mat-select formControlName="type">
-                <mat-option *ngFor="let type of types" [value]="type.value">
+                <mat-option
+                  *ngFor="let type of strategyTypes"
+                  [value]="type.value"
+                >
                   {{ type.name }}
                 </mat-option>
               </mat-select>
@@ -225,7 +228,7 @@
             *ngIf="strategy.id > 0"
             type="button"
             color="primary"
-            (click)="subscribe(strategy)"
+            (click)="updateSubscription(strategy)"
           >
             <span *ngIf="!strategy.subscribed">Subscribe</span>
             <span *ngIf="strategy.subscribed">Unsubscribe</span>

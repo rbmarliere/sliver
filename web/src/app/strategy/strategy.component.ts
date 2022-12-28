@@ -177,7 +177,7 @@ export class StrategyComponent implements OnInit {
     }
   }
 
-  subscribe(strategy: Strategy): void {
+  updateSubscription(strategy: Strategy): void {
     this.strategyService.updateSubscription(strategy).subscribe({
       next: () => location.reload(),
     });
