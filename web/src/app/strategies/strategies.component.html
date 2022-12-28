@@ -3,6 +3,8 @@
 </div>
 
 <div *ngIf="!loading" class="main container">
+  <p *ngIf="strategies.length === 0" class="text-center">no strategies found</p>
+
   <table
     mat-table
     *ngIf="strategies.length > 0"
