@@ -92,7 +92,7 @@ class Strategy(Resource):
                             setattr(strategy, field, args[field])
                     except KeyError:
                         pass
-            strategy.save()
+                strategy.save()
 
             core.db.Indicator \
                 .delete() \
