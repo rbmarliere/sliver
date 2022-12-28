@@ -94,7 +94,7 @@ class HypnoxStrategy(BaseStrategy):
         intensities_q = HypnoxTweet.get_tweets_by_model(self.model_i).where(f)
         polarities_q = HypnoxTweet.get_tweets_by_model(self.model_p).where(f)
         if intensities_q.count() == 0 or polarities_q.count() == 0:
-            core.watchdog.info("indicator data is up to date")
+            core.watchdog.info("no tweets found for given regex")
             return 0
 
         intensities = pandas.DataFrame(intensities_q.dicts())
