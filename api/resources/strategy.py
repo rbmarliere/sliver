@@ -85,12 +85,13 @@ class Strategy(Resource):
             strategy.save()
 
             strategy = strategies.load(strategy)
-            for field in strategy._meta.sorted_field_names:
-                try:
-                    if args[field] is not None:
-                        setattr(strategy, field, args[field])
-                except KeyError:
-                    pass
+            if len([*strategy._meta.columns]) > 1:
+                for field in strategy._meta.sorted_field_names:
+                    try:
+                        if args[field] is not None:
+                            setattr(strategy, field, args[field])
+                    except KeyError:
+                        pass
             strategy.save()
 
             core.db.Indicator \
