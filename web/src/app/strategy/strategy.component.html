@@ -238,12 +238,13 @@
     </mat-card-content>
   </mat-card>
 
-  <div *ngIf="strategy.id && plot_data">
+  <div *ngIf="strategy.id && plot.data">
     <p>
       <plotly-plot
-        [config]="plot_config"
-        [data]="plot_data"
-        [layout]="plot_layout"
+        [config]="plot.config"
+        [data]="plot.data"
+        [layout]="plot.layout"
+        [updateOnlyWithRevision]="true"
         (relayout)="zoom($event)"
       ></plotly-plot>
     </p>
