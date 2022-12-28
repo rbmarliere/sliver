@@ -95,7 +95,7 @@ class Strategy(Resource):
 
             core.db.Indicator \
                 .delete() \
-                .where(core.db.Indicator.strategy_id == strategy.id) \
+                .where(core.db.Indicator.strategy_id == strategy_id) \
                 .execute()
 
         strategy = strategies.load(strategy, user=user)
