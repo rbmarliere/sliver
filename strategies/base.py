@@ -28,7 +28,7 @@ class BaseStrategy(core.db.BaseModel):
                   on=((core.db.Indicator.price_id == core.db.Price.id)
                       & (core.db.Indicator.strategy == self)))
 
-    def get_indicators_df(self, query):
+    def get_indicators_df(self, query=None):
         if query is None:
             query = self.get_indicators()
 
