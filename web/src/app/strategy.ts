@@ -15,7 +15,7 @@ export interface BaseStrategy {
   num_orders: number;
   bucket_interval: number;
   spread: number;
-  min_roi: number;
+  stop_gain: number;
   stop_loss: number;
   lm_ratio: number;
   subscribed: boolean;

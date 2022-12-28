@@ -77,8 +77,8 @@ class Strategy(Resource):
             args["id"] = int(strategy_id)
             if args["stop_loss"]:
                 args["stop_loss"] = abs(args.stop_loss)
-            if args["min_roi"]:
-                args["min_roi"] = abs(args.min_roi)
+            if args["stop_gain"]:
+                args["stop_gain"] = abs(args.stop_gain)
             args["market"] = old_strategy.market.id
             args["type"] = old_strategy.type
             strategy = core.db.Strategy(**args)
