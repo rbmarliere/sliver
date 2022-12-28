@@ -396,10 +396,11 @@ def refresh(position: core.db.Position):
     if position.entry_cost > 0 and position.is_open():
         roi = round(((last_price / position.entry_price) - 1) * 100, 2)
 
-        if (signal == "sell" or roi > strategy.min_roi
+        if (signal == "sell" or roi > strategy.stop_gain
                 or roi < strategy.stop_loss * -1):
             core.watchdog.info("roi = {r}%".format(r=roi))
-            core.watchdog.info("minimum roi = {r}%".format(r=strategy.min_roi))
+            core.watchdog.info(
+                "minimum roi = {r}%".format(r=strategy.stop_gain))
             core.watchdog.info("stoploss = -{r}%".format(r=strategy.stop_loss))
             core.watchdog.info("closing position")
             core.watchdog.notice(position.get_notice(prefix="closing "))

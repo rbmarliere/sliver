@@ -195,7 +195,7 @@ class Strategy(BaseModel):
     num_orders = peewee.IntegerField(default=1)
     bucket_interval = peewee.IntegerField(default=60)  # 1 hour
     spread = peewee.DecimalField(default=1)  # 1%
-    min_roi = peewee.DecimalField(default=5)  # 5%
+    stop_gain = peewee.DecimalField(default=5)  # 5%
     stop_loss = peewee.DecimalField(default=3)  # -3%
     lm_ratio = peewee.DecimalField(default=0)
 

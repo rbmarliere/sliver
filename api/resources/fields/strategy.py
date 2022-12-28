@@ -20,7 +20,7 @@ base_fields = {
     "num_orders": fields.Integer,
     "bucket_interval": fields.Integer,
     "spread": fields.Float,
-    "min_roi": fields.Float,
+    "stop_gain": fields.Float,
     "stop_loss": fields.Float,
     "lm_ratio": fields.Float,
     "subscribed": fields.Boolean,
@@ -86,7 +86,7 @@ base_parser.add_argument("next_refresh", type=inputs.datetime_from_iso8601)
 base_parser.add_argument("num_orders", type=int)
 base_parser.add_argument("bucket_interval", type=int)
 base_parser.add_argument("spread", type=float)
-base_parser.add_argument("min_roi", type=float)
+base_parser.add_argument("stop_gain", type=float)
 base_parser.add_argument("stop_loss", type=float)
 base_parser.add_argument("lm_ratio", type=float)
 
