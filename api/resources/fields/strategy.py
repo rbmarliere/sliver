@@ -55,6 +55,20 @@ hypnox_fields = {
     "prices": fields.Nested(hypnox_indicators),
 }
 
+dd3_indicators = {
+    **price_fields,
+    "ma1": fields.List(fields.Float),
+    "ma2": fields.List(fields.Float),
+    "ma3": fields.List(fields.Float),
+}
+dd3_fields = {
+    **base_fields,
+    "ma1_period": fields.Integer,
+    "ma2_period": fields.Integer,
+    "ma3_period": fields.Integer,
+    "prices": fields.Nested(dd3_indicators),
+}
+
 
 def get_fields(type=None):
     if type == strategies.Types.MANUAL.value:
@@ -65,6 +79,9 @@ def get_fields(type=None):
 
     elif type == strategies.Types.HYPNOX.value:
         return hypnox_fields
+
+    elif type == strategies.Types.DD3.value:
+        return dd3_fields
 
     return all_fields
 

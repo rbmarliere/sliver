@@ -30,6 +30,9 @@ def reset_tables(drop_tables=False):
         strategies.hypnox.HypnoxStrategy,
         strategies.hypnox.HypnoxScore,
         strategies.hypnox.HypnoxTweet,
+
+        strategies.dd3.DD3Indicator,
+        strategies.dd3.DD3Strategy,
     ]
 
     if drop_tables:
