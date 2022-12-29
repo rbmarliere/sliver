@@ -43,6 +43,12 @@ export class StrategyComponent implements OnInit {
     tweet_filter: '',
     model_i: '',
     model_p: '',
+
+    // dd3
+    ma1_period: 3,
+    ma2_period: 8,
+    ma3_period: 20,
+
     prices: {
       time: [],
       open: [],

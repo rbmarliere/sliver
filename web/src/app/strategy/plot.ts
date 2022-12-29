@@ -97,3 +97,32 @@ export function getHypnoxPlotLayout(): any {
   }
 }
 
+export function getDD3PlotData(data: any): any {
+  return [
+    {
+      name: 'ma1',
+      x: data.time,
+      y: data.ma1,
+      type: 'line',
+      xaxis: 'x',
+      yaxis: 'y',
+    },
+    {
+      name: 'ma2',
+      x: data.time,
+      y: data.ma2,
+      type: 'line',
+      xaxis: 'x',
+      yaxis: 'y',
+    },
+    {
+      name: 'ma3',
+      x: data.time,
+      y: data.ma3,
+      type: 'line',
+      xaxis: 'x',
+      yaxis: 'y',
+    },
+  ]
+}
+

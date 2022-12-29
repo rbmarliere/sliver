@@ -1,6 +1,6 @@
 import { Strategy } from "../strategy";
 import { getBaseBacktestLog, getHypnoxBacktestLog } from "./backtest";
-import { getBasePlot, getHypnoxPlotData, getHypnoxPlotLayout } from "./plot";
+import { getBasePlot, getDD3PlotData, getHypnoxPlotData, getHypnoxPlotLayout } from "./plot";
 
 export interface StrategyType {
   value: number;
@@ -20,6 +20,10 @@ export function getStrategyTypes(): StrategyType[] {
     {
       value: 2,
       name: 'HYPNOX',
+    },
+    {
+      value: 3,
+      name: 'DD3',
     }
   ];
 }
@@ -37,6 +41,9 @@ export function getPlot(strategy: Strategy): any {
     plot.layout = {
       ...plot.layout, ...getHypnoxPlotLayout(),
     }
+  } else if (strategy.type === 3) {
+    // DD3
+    plot.data = plot.data.concat(getDD3PlotData(strategy.prices));
   }
 
   return plot;
