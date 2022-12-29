@@ -14,7 +14,8 @@
             <mat-slide-toggle formControlName="active">
               Active
             </mat-slide-toggle>
-
+          </p>
+          <p>
             <mat-slider
               formControlName="lm_ratio"
               thumbLabel
@@ -35,11 +36,13 @@
               </mat-select>
             </mat-form-field>
           </p>
+        </div>
 
+        <div class="fields">
           <p>
             <mat-form-field appearance="fill">
               <mat-label>Type</mat-label>
-              <mat-select formControlName="type">
+              <mat-select formControlName="type" required>
                 <mat-option
                   *ngFor="let type of strategyTypes"
                   [value]="type.value"
@@ -49,12 +52,10 @@
               </mat-select>
             </mat-form-field>
           </p>
-        </div>
-        <div class="fields">
           <p>
             <mat-form-field appearance="fill">
               <mat-label>Market</mat-label>
-              <mat-select formControlName="market_id">
+              <mat-select formControlName="market_id" required>
                 <mat-option *ngFor="let market of markets" [value]="market.id">
                   {{ market.exchange_name }} - {{ market.symbol }}
                 </mat-option>
@@ -65,7 +66,7 @@
           <p>
             <mat-form-field appearance="fill">
               <mat-label>Timeframe</mat-label>
-              <mat-select formControlName="timeframe">
+              <mat-select formControlName="timeframe" required>
                 <mat-option
                   *ngFor="let timeframe of timeframes"
                   [value]="timeframe"
@@ -75,13 +76,16 @@
               </mat-select>
             </mat-form-field>
           </p>
+        </div>
 
+        <div class="fields">
           <p>
             <mat-form-field>
               <input
                 matInput
                 placeholder="description"
                 formControlName="description"
+                required
               />
             </mat-form-field>
           </p>
@@ -93,6 +97,7 @@
                 type="number"
                 placeholder="refresh interval in minutes"
                 formControlName="refresh_interval"
+                min="1"
               />
             </mat-form-field>
           </p>
@@ -116,6 +121,7 @@
                 type="number"
                 placeholder="number of orders to insert"
                 formControlName="num_orders"
+                min="1"
               />
             </mat-form-field>
           </p>
@@ -127,6 +133,7 @@
                 type="number"
                 placeholder="bucket interval in minutes"
                 formControlName="bucket_interval"
+                min="1"
               />
             </mat-form-field>
           </p>
@@ -136,8 +143,9 @@
               <input
                 matInput
                 type="number"
-                placeholder="spread (%) to insert orders from"
+                placeholder="spread (%) to insert limit orders from"
                 formControlName="spread"
+                min="0.01"
               />
             </mat-form-field>
           </p>
@@ -147,7 +155,7 @@
               <input
                 matInput
                 type="number"
-                placeholder="minimum ROI (%)"
+                placeholder="stop gain (%)"
                 formControlName="stop_gain"
               />
             </mat-form-field>

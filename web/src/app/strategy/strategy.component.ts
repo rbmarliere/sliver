@@ -16,27 +16,31 @@ import { backtest, getPlot, getStrategyTypes, StrategyType } from './strategy-ty
 })
 export class StrategyComponent implements OnInit {
   private empty_strat = {
+    id: 0,
     symbol: '',
     exchange: '',
-    market_id: 0,
-    id: 0,
-    subscribed: false,
-    active: false,
+    // creator_id: 0,
     description: '',
     type: 0,
-    timeframe: '',
+    active: false,
+    // deleted: false,
     signal: '',
-    refresh_interval: 0,
+    market_id: 0,
+    timeframe: '',
+    refresh_interval: 1,
     next_refresh: new Date().toISOString().slice(0, 16),
-    num_orders: 0,
-    bucket_interval: 0,
-    spread: 0,
+    num_orders: 1,
+    bucket_interval: 1,
+    spread: 0.01,
     stop_gain: 0,
     stop_loss: 0,
+    lm_ratio: 0,
+    subscribed: false,
+
+    // hypnox
     i_threshold: 0,
     p_threshold: 0,
     tweet_filter: '',
-    lm_ratio: 0,
     model_i: '',
     model_p: '',
     prices: {
@@ -99,7 +103,7 @@ export class StrategyComponent implements OnInit {
 
       this.form.get('market_id')?.enable();
       this.form.get('signal')?.enable();
-      this.form.get('type')?.disable();
+      this.form.get('type')?.enable();
     }
   }
 
