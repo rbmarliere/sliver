@@ -230,6 +230,39 @@
           </p>
         </div>
 
+        <div class="fields" *ngIf="strategy.type === 3">
+          <p>
+            <mat-form-field>
+              <input
+                matInput
+                type="number"
+                placeholder="ma1 period"
+                formControlName="ma1_period"
+              />
+            </mat-form-field>
+          </p>
+          <p>
+            <mat-form-field>
+              <input
+                matInput
+                type="number"
+                placeholder="ma2 period"
+                formControlName="ma2_period"
+              />
+            </mat-form-field>
+          </p>
+          <p>
+            <mat-form-field>
+              <input
+                matInput
+                type="number"
+                placeholder="ma3 period"
+                formControlName="ma3_period"
+              />
+            </mat-form-field>
+          </p>
+        </div>
+
         <p>
           <button mat-raised-button color="primary">Save</button>
 
