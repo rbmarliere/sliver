@@ -1,10 +1,7 @@
-import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
-import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { Credential } from '../credential';
 import { CredentialService } from '../credential.service';
-import { ErrorDialogComponent } from '../error-dialog/error-dialog.component';
 import { User } from '../user';
 import { UserService } from '../user.service';
 
@@ -29,20 +26,9 @@ export class DashboardComponent implements OnInit {
 
   credentials: Credential[] = [];
 
-  private handleError(error: HttpErrorResponse) {
-    const dialogConfig = new MatDialogConfig;
-
-    dialogConfig.data = {
-      msg: error.error.message
-    };
-
-    this.dialog.open(ErrorDialogComponent, dialogConfig);
-  }
-
   constructor(
     private userService: UserService,
     private credentialService: CredentialService,
-    private dialog: MatDialog,
     private formBuilder: FormBuilder
   ) { }
 
@@ -57,15 +43,13 @@ export class DashboardComponent implements OnInit {
 
   getUser(): void {
     this.userService.getUser().subscribe({
-      next: (res) => this.form.patchValue(res),
-      error: (err) => this.handleError(err)
+      next: (res) => this.form.patchValue(res)
     });
   }
 
   getCredentials(): void {
     this.credentialService.getCredentials().subscribe({
-      next: (res) => this.credentials = res,
-      error: (err) => this.handleError(err)
+      next: (res) => this.credentials = res
     });
   }
 
@@ -77,8 +61,7 @@ export class DashboardComponent implements OnInit {
     const user = this.form.value;
 
     this.userService.updateUser(user).subscribe({
-      next: () => location.reload(),
-      error: (err) => this.handleError(err)
+      next: () => location.reload()
     });
   }
 
