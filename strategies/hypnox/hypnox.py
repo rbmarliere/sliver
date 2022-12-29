@@ -59,8 +59,7 @@ class HypnoxStrategy(BaseStrategy):
             .join(HypnoxIndicator, peewee.JOIN.LEFT_OUTER)
 
     def get_indicators_df(self):
-        df = super().get_indicators_df(self.get_indicators())
-        return df
+        return super().get_indicators_df(self.get_indicators())
 
     def refresh(self):
         # update tweet scores
