@@ -48,8 +48,7 @@ total timedelta = ${msToString(end.getTime() - start.getTime())}
 number of trades = ${positions.length}
 average timedelta in position = ${msToString(avg_time)}
 average position roi = ${avg_roi.toFixed(2)}%
-buy and hold amount at first candle = ${init_bh_amount.toFixed(8)}
-buy and hold value at last candle = ${exit_bh_value.toFixed(2)}
+buy and hold final balance = ${exit_bh_value.toFixed(2)}
 buy and hold roi = ${roi_bh.toFixed(2)}%
 `;
 }
