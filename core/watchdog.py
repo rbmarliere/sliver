@@ -17,6 +17,8 @@ def send_telegram(message):
                          chat_id=core.config["TELEGRAM_CHANNEL"])
     except (KeyError, AssertionError):
         pass
+    except telegram.error.NetworkError:
+        time.sleep(30)
 
 
 def get_logger(name, suppress_output=False):
