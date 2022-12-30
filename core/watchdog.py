@@ -9,16 +9,19 @@ import core
 
 
 def send_telegram(message):
-    try:
-        assert core.config["TELEGRAM_KEY"]
-        assert core.config["TELEGRAM_CHANNEL"]
-        bot = telegram.Bot(core.config["TELEGRAM_KEY"])
-        bot.send_message(text=message,
-                         chat_id=core.config["TELEGRAM_CHANNEL"])
-    except (KeyError, AssertionError):
-        pass
-    except telegram.error.NetworkError:
-        time.sleep(30)
+    while True:
+        try:
+            assert core.config["TELEGRAM_KEY"]
+            assert core.config["TELEGRAM_CHANNEL"]
+            bot = telegram.Bot(core.config["TELEGRAM_KEY"])
+            bot.send_message(text=message,
+                             chat_id=core.config["TELEGRAM_CHANNEL"])
+        except (KeyError, AssertionError):
+            pass
+        except telegram.error.NetworkError:
+            time.sleep(30)
+            continue
+        break
 
 
 def get_logger(name, suppress_output=False):
