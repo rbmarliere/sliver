@@ -13,7 +13,7 @@ def save_market(ex_market, exchange: core.db.Exchange):
 
         try:
             amount_prec = ex_market["precision"]["amount"]
-            if amount_prec is None:
+            if amount_prec is None or amount_prec == 0:
                 print("using default amount_prec = 8")
                 amount_prec = 8
         except KeyError:
@@ -22,7 +22,7 @@ def save_market(ex_market, exchange: core.db.Exchange):
 
         try:
             price_prec = ex_market["precision"]["price"]
-            if price_prec is None:
+            if price_prec is None or price_prec == 0:
                 print("using default amount_prec = 2")
                 price_prec = 2
         except KeyError:
