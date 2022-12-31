@@ -7,6 +7,7 @@ import flask_bcrypt
 
 import core
 
+
 if __name__ == "__main__":
     argp = argparse.ArgumentParser()
     argp.add_argument("--email",
@@ -17,4 +18,4 @@ if __name__ == "__main__":
     passwd = getpass.getpass("enter user password: ")
     passwd = flask_bcrypt.generate_password_hash(passwd)
 
-    core.db.User.create(email=args.email, password=passwd)
+    core.db.User.create(email=args.email.lower(), password=passwd)
