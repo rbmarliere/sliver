@@ -31,7 +31,7 @@ def save_market(ex_market, exchange: core.db.Exchange):
 
         try:
             base_prec = ex_market["precision"]["base"]
-            if base_prec is None:
+            if base_prec is None or base_prec == 0:
                 print("using base_prec = amount_prec")
                 base_prec = amount_prec
         except KeyError:
@@ -40,7 +40,7 @@ def save_market(ex_market, exchange: core.db.Exchange):
 
         try:
             quote_prec = ex_market["precision"]["quote"]
-            if quote_prec is None:
+            if quote_prec is None or quote_prec == 0:
                 print("using quote_prec = price_prec")
                 quote_prec = price_prec
         except KeyError:
