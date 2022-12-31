@@ -8,6 +8,7 @@ from flask_restful import Resource, reqparse
 import api.errors
 import core
 
+
 argp = reqparse.RequestParser()
 argp.add_argument("email", type=str)
 argp.add_argument("password", type=str)
@@ -19,7 +20,7 @@ class Auth(Resource):
         args = argp.parse_args()
 
         try:
-            user = core.db.User.get(email=args.email)
+            user = core.db.User.get(email=args.email.lower())
         except peewee.DoesNotExist:
             raise api.errors.AuthenticationFailed
 
