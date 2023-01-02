@@ -64,10 +64,10 @@ class HypnoxStrategy(BaseStrategy):
     def refresh(self):
         # update tweet scores
         if self.model_i:
-            model_i = models.load(self.model_i)
+            model_i = models.load_model(self.model_i)
             replay(model_i)
         if self.model_p:
-            model_p = models.load(self.model_p)
+            model_p = models.load_model(self.model_p)
             replay(model_p)
 
         self.refresh_indicators()
