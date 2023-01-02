@@ -39,6 +39,7 @@ export class StrategyService {
   }
 
   updateStrategy(strategy: Strategy): Observable<Strategy> {
+    strategy.prices = {} as any;
     return this.http.put<Strategy>(this.url + '/' + strategy.id, strategy).pipe(
       map((st) => {
         st.next_refresh = st.next_refresh.slice(0, 16);
