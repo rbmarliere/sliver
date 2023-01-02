@@ -21,7 +21,7 @@ if __name__ == "__main__":
                       required=True)
     args = argp.parse_args()
 
-    model = models.get(args.model_name)
+    model = models.get_model(args.model_name)
 
     modelpath = core.config["MODELS_DIR"] + "/" + args.model_name
 

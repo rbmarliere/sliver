@@ -12,7 +12,7 @@ transformers.logging.set_verbosity_error()
 tensorflow.get_logger().setLevel("INFO")
 
 
-def get(model_name):
+def get_model(model_name):
     model_module = importlib.import_module("models." + model_name)
     model = model_module.get_model()
     model.config = model_module.config
@@ -20,12 +20,7 @@ def get(model_name):
     return model
 
 
-def load(model_name):
-    try:
-        return getattr(sys.modules[__name__], model_name)
-    except AttributeError:
-        pass
-
+def load_model(model_name):
     core.watchdog.info("loading model {m}".format(m=model_name))
 
     modelpath = pathlib.Path(core.config["MODELS_DIR"] + "/" +
@@ -36,6 +31,7 @@ def load(model_name):
         raise core.errors.ModelDoesNotExist
 
     model_module = importlib.import_module("models." + model_name)
+
     try:
         model = model_module.load_model(modelpath)
     except tensorflow.errors.ResourceExhaustedError:
@@ -44,6 +40,17 @@ def load(model_name):
         raise core.errors.ModelTooLarge
     model.config = model_module.config
     model.tokenizer = model_module.load_tokenizer(modelpath=modelpath)
+
+    return model
+
+
+def import_model(model_name):
+    try:
+        return getattr(sys.modules[__name__], model_name)
+    except AttributeError:
+        pass
+
+    model = load_model(model_name)
 
     setattr(sys.modules[__name__], model_name, model)
 
