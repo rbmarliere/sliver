@@ -33,6 +33,8 @@ class DD3Strategy(BaseStrategy):
 
     def refresh_indicators(self):
         indicators = pandas.DataFrame(self.get_indicators().dicts())
+        indicators.close = indicators.close.apply(
+            self.strategy.market.quote.format)
 
         indicators.ma1 = indicators.close.rolling(self.ma1_period).mean()
         indicators.ma1.fillna(method="bfill", inplace=True)
