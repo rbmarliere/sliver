@@ -1,60 +1,89 @@
 <div class="main">
-  <mat-card>
+  <mat-card appearance="outlined">
     <mat-card-content>
-
       <form [formGroup]="form" (ngSubmit)="updateUser()">
         <p>
           <mat-form-field>
-            <input matInput type="password" placeholder="old password" formControlName="old_password"/>
+            <input
+              matInput
+              type="password"
+              placeholder="old password"
+              formControlName="old_password"
+            />
           </mat-form-field>
         </p>
 
         <p>
           <mat-form-field>
-            <input matInput type="password" placeholder="new password" formControlName="password"/>
+            <input
+              matInput
+              type="password"
+              placeholder="new password"
+              formControlName="password"
+            />
           </mat-form-field>
         </p>
 
         <p>
           <mat-form-field>
-            <input matInput placeholder="telegram id" formControlName="telegram"/>
+            <input
+              matInput
+              placeholder="telegram id"
+              formControlName="telegram"
+            />
           </mat-form-field>
         </p>
 
         <p>
-          <mat-slider 
-            formControlName="max_risk"
-            thumbLabel [displayWith]="formatLabel"
-            min="0" max="1" step="0.01"></mat-slider>
+          <mat-slider
+            min="0"
+            max="1"
+            step="0.01"
+            discrete
+            [displayWith]="formatLabel"
+          >
+            <input matSliderThumb formControlName="max_risk" />
+          </mat-slider>
           <label>Maximum Risk Ratio</label>
         </p>
 
         <p>
-          <mat-slider 
-            formControlName="cash_reserve"
-            thumbLabel [displayWith]="formatLabel"
-            min="0" max="1" step="0.01"></mat-slider>
+          <mat-slider
+            min="0"
+            max="1"
+            step="0.01"
+            discrete
+            [displayWith]="formatLabel"
+          >
+            <input matSliderThumb formControlName="cash_reserve" />
+          </mat-slider>
           <label>Cash Reserve Ratio</label>
         </p>
 
         <p>
-          <mat-slider 
-            formControlName="target_factor"
-            thumbLabel [displayWith]="formatLabel"
-            min="0" max="1" step="0.01"></mat-slider>
+          <mat-slider
+            min="0"
+            max="1"
+            step="0.01"
+            discrete
+            [displayWith]="formatLabel"
+          >
+            <input matSliderThumb formControlName="target_factor" />
+          </mat-slider>
           <label>Target Factor</label>
         </p>
 
         <button mat-raised-button color="primary">Update</button>
-
       </form>
     </mat-card-content>
   </mat-card>
 
-  <mat-card>
+  <mat-card appearance="outlined">
     <mat-card-content>
-      <app-credential *ngFor="let credential of credentials" [credential]="credential"></app-credential>
+      <app-credential
+        *ngFor="let credential of credentials"
+        [credential]="credential"
+      ></app-credential>
     </mat-card-content>
   </mat-card>
-
 </div>
