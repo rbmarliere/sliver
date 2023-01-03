@@ -4,11 +4,11 @@ export interface BaseStrategy {
   exchange: string;
   // creator_id: number;
   description: string;
-  type: number;
+  type: number | null;
   active: boolean;
   // deleted: boolean;
   signal: string;
-  market_id: number;
+  market_id: number | null;
   timeframe: string;
   refresh_interval: number;
   next_refresh: string;
