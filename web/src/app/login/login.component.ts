@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
+import { ReCaptchaV3Service } from 'ng-recaptcha';
 
 import { AuthService } from '../auth.service';
 
@@ -15,6 +16,7 @@ export class LoginComponent implements OnInit {
   constructor(
     private authService: AuthService,
     private formBuilder: FormBuilder,
+    private recaptchaV3Service: ReCaptchaV3Service,
   ) { }
 
   ngOnInit(): void { }
@@ -22,13 +24,16 @@ export class LoginComponent implements OnInit {
   login() {
     const val = this.form.value;
 
-    if (val.email && val.password) {
-      this.authService
-        .login(val.email, val.password)
-        .subscribe({
-          next: (res) => this.authService.setSession(res),
-        });
-    }
+    this.recaptchaV3Service.execute('importantAction').subscribe((token) => {
+      console.log(token);
+      if (val.email && val.password) {
+        this.authService
+          .login(val.email, val.password)
+          .subscribe({
+            next: (res) => this.authService.setSession(res),
+          });
+      }
+    });
 
   }
 
