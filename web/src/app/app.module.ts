@@ -19,6 +19,8 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { PlotlyViaWindowModule } from 'angular-plotly.js';
+import { RecaptchaV3Module, RECAPTCHA_V3_SITE_KEY } from 'ng-recaptcha';
+import { environment } from 'src/environments/environment.prod';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { AuthInterceptor } from './auth.interceptor';
@@ -68,6 +70,7 @@ import { StrategyComponent } from './strategy/strategy.component';
     MatToolbarModule,
     PlotlyViaWindowModule,
     ReactiveFormsModule,
+    RecaptchaV3Module,
   ],
   providers: [
     {
@@ -80,6 +83,10 @@ import { StrategyComponent } from './strategy/strategy.component';
       useClass: HttpErrorInterceptor,
       multi: true,
     },
+    {
+      provide: RECAPTCHA_V3_SITE_KEY,
+      useValue: environment.recaptcha.siteKey,
+    }
   ],
   bootstrap: [AppComponent],
 })
