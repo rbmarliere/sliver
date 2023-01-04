@@ -166,8 +166,78 @@ def download_prices(strategy: core.db.Strategy):
         core.db.Price.insert_many(prices.to_dict("records")).execute()
 
 
+def sync_balance(cred: core.db.Credential):
+    value_ticker = "USDT"
+    value_asset, new = core.db.Asset.get_or_create(ticker=value_ticker)
+    if new:
+        core.watchdog.info("saved asset {a}".format(a=value_asset.ticker))
+
+    try:
+        ex_bal = core.exchange.api.fetch_balance()
+    except ccxt.ExchangeError as e:
+        core.watchdog.error("exchange error", e)
+        cred.disable()
+        return
+
+    ex_val_asset, new = core.db.ExchangeAsset.get_or_create(
+        exchange=cred.exchange, asset=value_asset)
+    if new:
+        core.watchdog.info("saved asset " + ex_val_asset.asset.ticker +
+                           " to exchange")
+
+    # for each exchange asset, update internal user balance
+    for ticker in ex_bal["free"]:
+        free = ex_bal["free"][ticker]
+        used = ex_bal["used"][ticker]
+        total = ex_bal["total"][ticker]
+
+        if not total:
+            continue
+
+        asset, new = core.db.Asset.get_or_create(ticker=ticker.upper())
+        if new:
+            core.watchdog.info("saved new asset {a}"
+                               .format(a=asset.ticker))
+
+        ex_asset, new = core.db.ExchangeAsset.get_or_create(
+            exchange=cred.exchange, asset=asset)
+        if new:
+            core.watchdog.info("saved asset {a}"
+                               .format(a=ex_asset.asset.ticker))
+
+        u_bal, new = core.db.Balance.get_or_create(
+            user=cred.user, asset=ex_asset, value_asset=ex_val_asset)
+        if new:
+            core.watchdog.info("saved new balance {b}"
+                               .format(b=u_bal.id))
+
+        u_bal.free = ex_asset.transform(free) if free else 0
+        u_bal.used = ex_asset.transform(used) if used else 0
+        u_bal.total = ex_asset.transform(total) if total else 0
+
+        try:
+            p = core.exchange.api.fetch_ticker(asset.ticker + "/" +
+                                               value_asset.ticker)
+
+            free_value = p["last"] * free if free else 0
+            used_value = p["last"] * used if used else 0
+            total_value = p["last"] * total if total else 0
+
+            u_bal.free_value = ex_val_asset.transform(free_value)
+            u_bal.used_value = ex_val_asset.transform(used_value)
+            u_bal.total_value = ex_val_asset.transform(total_value)
+
+        except ccxt.BadSymbol:
+            u_bal.free_value = u_bal.free
+            u_bal.used_value = u_bal.used
+            u_bal.total_value = u_bal.total
+
+        u_bal.save()
+
+
 def sync_limit_orders(position: core.db.Position) -> core.db.Position:
     market = position.user_strategy.strategy.market
+    symbol = market.get_symbol()
 
     # fetch internal open orders
     orders = position.get_open_orders()
@@ -177,26 +247,34 @@ def sync_limit_orders(position: core.db.Position) -> core.db.Position:
         core.watchdog.info("no open orders found")
         return
 
-    with core.db.connection.atomic():
-        for order in orders:
-            core.watchdog.info("updating {s} order {i}"
-                               .format(s=order.side,
-                                       i=order.exchange_order_id))
+    for order in orders:
+        core.watchdog.info("updating {s} order {i}"
+                           .format(s=order.side,
+                                   i=order.exchange_order_id))
 
-            # fetch each order to sync
+        # cancel order first
+        while True:
             try:
-                ex_order = api.cancel_order(order.exchange_order_id,
-                                            market.get_symbol())
+                ex_order = api.cancel_order(order.exchange_order_id, symbol)
+                break
             except ccxt.OrderNotFound:
-                pass
+                break
+            except ccxt.RequestTimeout as e:
+                core.watchdog.error("order cancellation request timeout", e)
+                # retry after 10 seconds
+                time.sleep(10)
 
-            # except ccxt.RequestTimeout:
-            #     # retry?
+        while True:
+            try:
+                # fetch order to ensure its data is up to date
+                ex_order = api.fetch_order(order.exchange_order_id, symbol)
+                break
+            except ccxt.RequestTimeout as e:
+                core.watchdog.error("order fetch request timeout", e)
+                # retry after 10 seconds
+                time.sleep(10)
 
-            ex_order = api.fetch_order(order.exchange_order_id,
-                                       market.get_symbol())
-
-            order.sync(ex_order, position)
+        order.sync(ex_order, position)
 
 
 def create_order(type: str,
@@ -204,44 +282,88 @@ def create_order(type: str,
                  position: core.db.Position,
                  amount: int,
                  price: int):
-    try:
-        market = position.user_strategy.strategy.market
+    market = position.user_strategy.strategy.market
+    symbol = market.get_symbol()
 
+    try:
         assert amount >= market.amount_min
         assert price >= market.price_min
         assert amount * price >= market.cost_min
+    except AssertionError:
+        core.watchdog.warning(
+            "order values are smaller than exchange minimum, skipping...")
+        return
 
-        new_order = api.create_order(market.get_symbol(),
+    amount = market.base.format(amount)
+    price = market.quote.format(price)
+
+    inserted = False
+
+    try:
+        new_order = api.create_order(symbol,
                                      type,
                                      side,
-                                     market.base.format(amount),
-                                     market.quote.format(price))
+                                     amount,
+                                     price)
+        inserted = True
+        new_order_id = new_order["id"]
 
+    except ccxt.InvalidOrder:
+        core.watchdog.warning(
+            "invalid order parameters, skipping...")
+        return
+
+    except ccxt.RequestTimeout as e:
+        core.watchdog.error("order creation request timeout", e)
+
+        time.sleep(10)
+
+        open_orders = core.exchange.api.fetchOpenOrders(symbol)
+        if open_orders:
+            last_order = open_orders[-1]
+            last_cost = int(last_order["price"] * last_order["amount"])
+            cost = int(price * amount)
+            trade_dt = datetime.datetime.strptime(last_order["datetime"],
+                                                  "%Y-%m-%dT%H:%M:%S.%fZ")
+            # check if trade was made within 2min
+            if trade_dt > (datetime.datetime.utcnow()
+                           - datetime.timedelta(minutes=2)) \
+                    and cost > last_cost*0.999 and cost < last_cost*1.001 \
+                    and int(price) == int(last_order["price"]):
+                core.watchdog.info("order was created and is open")
+                new_order_id = last_order["id"]
+                inserted = True
+
+        if not inserted:
+            closed_orders = core.exchange.api.fetchClosedOrders(symbol)
+            if closed_orders:
+                last_order = closed_orders[-1]
+                last_cost = int(last_order["price"] * last_order["amount"])
+                cost = int(price * amount)
+                trade_dt = datetime.datetime.strptime(last_order["datetime"],
+                                                      "%Y-%m-%dT%H:%M:%S.%fZ")
+                # check if trade was made within 2min
+                if trade_dt > (datetime.datetime.utcnow()
+                               - datetime.timedelta(minutes=2)) \
+                        and cost > last_cost*0.999 and cost < last_cost*1.001 \
+                        and int(price) == int(last_order["price"]):
+                    core.watchdog.info("order was created and is closed")
+                    new_order_id = last_order["id"]
+
+    if inserted:
         core.watchdog.info("created new {t} {s} order {i}"
                            .format(t=type,
                                    s=side,
                                    i=new_order["id"]))
-
-        ex_order = api.fetch_order(new_order["id"],
-                                   market.get_symbol())
-
-        core.db.Order.sync(core.db.Order(),
-                           ex_order,
-                           position)
-
-    except ccxt.OrderImmediatelyFillable as e:
-        core.watchdog.error(
-            "order would be immediately fillable, skipping...", e)
-
-    except (ccxt.InvalidOrder, AssertionError) as e:
-        core.watchdog.error(
-            "order values are smaller than exchange minimum, skipping...", e)
-
-    except ccxt.RequestTimeout as e:
-        core.watchdog.error("order request timeout", e)
-        # if a request to createOrder() fails with a RequestTimeout the user should:
-        # call fetchOrders(), fetchOpenOrders(), fetchClosedOrders() to check if the request to place the order has succeeded and the order is now open
-        # if the order is not 'open' the user should fetchBalance() to check if the balance has changed since the order was created on the first run and then was filled and closed by the time of the second check.
+        while True:
+            try:
+                ex_order = api.fetch_order(new_order_id, symbol)
+                core.db.Order.sync(core.db.Order(), ex_order, position)
+                break
+            except ccxt.NetworkError as e:
+                core.watchdog.error("order fetch: network error", e)
+                # retry after 10 seconds
+                time.sleep(10)
 
 
 def create_limit_buy_orders(total_cost: int,
@@ -296,19 +418,18 @@ def create_limit_buy_orders(total_cost: int,
                            .format(r=market.quote.print(cost_remainder)))
 
     # creates bucket orders if reached here, which normally it will
-    with core.db.connection.atomic():
-        for price in prices:
-            amount = market.base.div(unit_cost,
-                                     price,
-                                     trunc_precision=market.amount_precision)
+    for price in prices:
+        amount = market.base.div(unit_cost,
+                                 price,
+                                 trunc_precision=market.amount_precision)
 
-            if price == prices[-1]:
-                amount += market.base.div(
-                    cost_remainder,
-                    price,
-                    trunc_precision=market.amount_precision)
+        if price == prices[-1]:
+            amount += market.base.div(
+                cost_remainder,
+                price,
+                trunc_precision=market.amount_precision)
 
-            create_order("limit", "buy", position, amount, price)
+        create_order("limit", "buy", position, amount, price)
 
 
 def create_limit_sell_orders(total_amount: int,
@@ -363,12 +484,11 @@ def create_limit_sell_orders(total_amount: int,
                            .format(r=market.base.print(bucket_remainder)))
 
     # creates bucket orders if reached here, which normally it will
-    with core.db.connection.atomic():
-        for price in prices:
-            if price == prices[-1]:
-                unit_amount += bucket_remainder
+    for price in prices:
+        if price == prices[-1]:
+            unit_amount += bucket_remainder
 
-            create_order("limit", "sell", position, unit_amount, price)
+        create_order("limit", "sell", position, unit_amount, price)
 
 
 def refresh(position: core.db.Position):
@@ -437,7 +557,14 @@ def refresh(position: core.db.Position):
                            .format(r=strategy.lm_ratio))
         remaining = position.get_remaining(last_price)
         if strategy.lm_ratio > 0:
-            market_total = remaining * strategy.lm_ratio
+            if position.status == "opening":
+                market_total = market.quote.div(remaining * strategy.lm_ratio,
+                                                100,
+                                                trunc_precision=market.price_precision)
+            elif position.status == "closing":
+                market_total = market.base.div(remaining * strategy.lm_ratio,
+                                               100,
+                                               trunc_precision=market.amount_precision)
             limit_total = remaining - market_total
         else:
             market_total = 0

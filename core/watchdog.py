@@ -99,6 +99,10 @@ def watch():
                     try:
                         user_strat.refresh()
 
+                    except core.db.Credential.DoesNotExist as e:
+                        error("credential not found", e)
+                        user_strat.disable()
+
                     except ccxt.AuthenticationError as e:
                         error("authentication error", e)
                         user_strat.disable()
@@ -107,12 +111,15 @@ def watch():
                         error("insufficient funds", e)
                         user_strat.disable()
 
-                    except core.db.Credential.DoesNotExist as e:
-                        error("credential not found", e)
-                        user_strat.disable()
-
                     except ccxt.RateLimitExceeded as e:
                         error("rate limit exceeded, skipping user...", e)
+
+                    except ccxt.ExchangeError as e:
+                        error("exchange error", e)
+                        user_strat.disable()
+
+                    except ccxt.NetworkError as e:
+                        error("exchange api error, skipping user...", e)
 
             time.sleep(60)
 
