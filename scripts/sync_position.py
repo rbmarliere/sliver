@@ -5,6 +5,7 @@ import sys
 
 import core
 
+
 if __name__ == "__main__":
     argp = argparse.ArgumentParser()
     argp.add_argument("-p",
@@ -30,13 +31,14 @@ if __name__ == "__main__":
     pos.exit_amount = 0
     pos.exit_cost = 0
     pos.fee = 0
-    exchange = pos.user_strategy.strategy.market.quote.exchange
+    market = pos.user_strategy.strategy.market
+    exchange = market.quote.exchange
     cred = pos.user_strategy.user.get_active_credential(exchange).get()
     for order in pos.get_orders():
         if args.fetch_orders:
             core.exchange.set_api(cred=cred)
-            ex_order = core.exchange.api.fetch_order(order.exchange_order_id)
-
+            ex_order = core.exchange.api.fetch_order(order.exchange_order_id,
+                                                     market.get_symbol())
             order.sync(ex_order, pos)
         elif order.status != "open":
             pos.add_order(order)
