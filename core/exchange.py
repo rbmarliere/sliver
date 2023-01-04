@@ -290,7 +290,7 @@ def create_order(type: str,
         assert price >= market.price_min
         assert amount * price >= market.cost_min
     except AssertionError:
-        core.watchdog.warning(
+        core.watchdog.info(
             "order values are smaller than exchange minimum, skipping...")
         return
 
@@ -309,7 +309,7 @@ def create_order(type: str,
         new_order_id = new_order["id"]
 
     except ccxt.InvalidOrder:
-        core.watchdog.warning(
+        core.watchdog.info(
             "invalid order parameters, skipping...")
         return
 
