@@ -9,8 +9,6 @@
 # payoff ratio,
 # win days
 
-import ccxt
-
 import core
 
 
@@ -119,11 +117,6 @@ def get_target_cost(user_strat: core.db.UserStrategy):
 
 
 def sync_balances(user: core.db.User):
-    value_ticker = "USDT"
-    value_asset, new = core.db.Asset.get_or_create(ticker=value_ticker)
-    if new:
-        core.watchdog.info("saved asset {a}".format(a=value_asset.ticker))
-
     # backup current api
     curr_cred = None
     if hasattr(core.exchange, "credential"):
@@ -134,68 +127,9 @@ def sync_balances(user: core.db.User):
         core.watchdog.info("fetching user balance in exchange {e}"
                            .format(e=cred.exchange.name))
 
-        try:
-            core.exchange.set_api(cred=cred)
-            ex_bal = core.exchange.api.fetch_balance()
-        except ccxt.ExchangeError as e:
-            core.watchdog.error("exchange error", e)
-            cred.disable()
-            continue
+        core.exchange.set_api(cred=cred)
 
-        ex_val_asset, new = core.db.ExchangeAsset.get_or_create(
-            exchange=cred.exchange, asset=value_asset)
-        if new:
-            core.watchdog.info("saved asset " + ex_val_asset.asset.ticker +
-                               " to exchange")
-
-        # for each exchange asset, update internal user balance
-        for ticker in ex_bal["free"]:
-            free = ex_bal["free"][ticker]
-            used = ex_bal["used"][ticker]
-            total = ex_bal["total"][ticker]
-
-            if not total:
-                continue
-
-            asset, new = core.db.Asset.get_or_create(ticker=ticker.upper())
-            if new:
-                core.watchdog.info("saved new asset {a}"
-                                   .format(a=asset.ticker))
-
-            ex_asset, new = core.db.ExchangeAsset.get_or_create(
-                exchange=cred.exchange, asset=asset)
-            if new:
-                core.watchdog.info("saved asset {a}"
-                                   .format(a=ex_asset.asset.ticker))
-
-            u_bal, new = core.db.Balance.get_or_create(
-                user=user, asset=ex_asset, value_asset=ex_val_asset)
-            if new:
-                core.watchdog.info("saved new balance {b}"
-                                   .format(b=u_bal.id))
-
-            u_bal.free = ex_asset.transform(free) if free else 0
-            u_bal.used = ex_asset.transform(used) if used else 0
-            u_bal.total = ex_asset.transform(total) if total else 0
-
-            try:
-                p = core.exchange.api.fetch_ticker(asset.ticker + "/" +
-                                                   value_asset.ticker)
-
-                free_value = p["last"] * free if free else 0
-                used_value = p["last"] * used if used else 0
-                total_value = p["last"] * total if total else 0
-
-                u_bal.free_value = ex_val_asset.transform(free_value)
-                u_bal.used_value = ex_val_asset.transform(used_value)
-                u_bal.total_value = ex_val_asset.transform(total_value)
-
-            except ccxt.BadSymbol:
-                u_bal.free_value = u_bal.free
-                u_bal.used_value = u_bal.used
-                u_bal.total_value = u_bal.total
-
-            u_bal.save()
+        core.exchange.sync_balance(cred)
 
     # restore previous api
     if curr_cred:

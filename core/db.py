@@ -244,6 +244,8 @@ class Strategy(BaseModel):
         self.save()
 
     def subscribe(self, user, subscribed):
+        # TODO user can only subscribe to one strategy per market
+
         if subscribed is None:
             subscribed = False
 
@@ -325,9 +327,8 @@ class UserStrategy(BaseModel):
         credential = user.get_active_credential(exchange).get()
         core.exchange.set_api(cred=credential)
 
-        # get active position for current selfegy
+        # sync orders of active position
         position = self.get_active_position_or_none()
-
         if position:
             core.exchange.sync_limit_orders(position)
 
