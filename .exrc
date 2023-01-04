@@ -1,4 +1,19 @@
 lua << EOF
+require("lspconfig").pylsp.setup({
+  -- organizeImports requires pylsp-rope in mason env
+  on_attach = LSPAttach,
+  capabilities = LSPCapabilities,
+  settings = {
+    pylsp = {
+      plugins = {
+        mccabe = {
+          threshold = 20,
+        },
+      },
+    },
+  },
+})
+
 require("dap").adapters.chrome = {
   type = "executable",
   command = "node",
