@@ -246,10 +246,15 @@ class Strategy(BaseModel):
         self.save()
 
     def subscribe(self, user, subscribed):
-        # TODO user can only subscribe to one strategy per market
-
         if subscribed is None:
             subscribed = False
+
+        # user can only subscribe to one strategy per market
+        if subscribed:
+            for u_st in user.userstrategy_set:
+                if u_st.strategy.market == self.market \
+                        and u_st.strategy != self:
+                    raise core.errors.MarketAlreadySubscribed
 
         user_strat_exists = False
         for u_st in user.userstrategy_set:

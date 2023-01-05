@@ -67,6 +67,8 @@ class Strategy(Resource):
                 old_strategy.subscribe(user, args["subscribed"])
                 strategy = strategies.load(old_strategy, user=user)
                 return marshal(strategy, get_fields(strategy.type))
+        except core.errors.MarketAlreadySubscribed:
+            raise api.errors.MarketAlreadySubscribed
         except KeyError:
             pass
 
