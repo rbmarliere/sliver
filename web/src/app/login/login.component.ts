@@ -25,7 +25,6 @@ export class LoginComponent implements OnInit {
     const val = this.form.value;
 
     this.recaptchaV3Service.execute('importantAction').subscribe((token) => {
-      console.log(token);
       if (val.email && val.password) {
         this.authService
           .login(val.email, val.password)
