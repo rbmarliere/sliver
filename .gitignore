@@ -1,7 +1,7 @@
 *__pycache__*
 *egg-info
 .env
-.venv
+venv
 logs/
 models/saved/*
 scripts/*.csv

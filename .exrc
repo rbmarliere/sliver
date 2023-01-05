@@ -34,7 +34,7 @@ require("dap").configurations.typescript = {
 
 require("dap").adapters.python = {
   type = "executable";
-  command = vim.fn.getcwd() .. "/.venv/bin/python3";
+  command = vim.fn.getcwd() .. "/venv/bin/python3";
   args = { "-m", "debugpy.adapter" };
 }
 require("dap").configurations.python = {
@@ -42,19 +42,19 @@ require("dap").configurations.python = {
     type = "python",
     request = "launch",
     name = "Stream",
-    program = vim.fn.getcwd() .. "/.venv/bin/stream",
+    program = vim.fn.getcwd() .. "/venv/bin/stream",
   },
   {
     type = "python",
     request = "launch",
     name = "Watch",
-    program = vim.fn.getcwd() .. "/.venv/bin/watch",
+    program = vim.fn.getcwd() .. "/venv/bin/watch",
   },
   {
     type = "python",
     request = "launch",
     name = "Serve",
-    program = vim.fn.getcwd() .. "/.venv/bin/serve",
+    program = vim.fn.getcwd() .. "/venv/bin/serve",
   },
 }
 EOF
