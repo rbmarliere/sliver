@@ -17,7 +17,6 @@ core_deps = [
     "psycopg2-binary==2.9.5",
     "python-dotenv==0.21.0",
     "python-telegram-bot==13.14",
-    "debugpy"
 ]
 
 hypnox_deps = [
@@ -27,6 +26,10 @@ hypnox_deps = [
     "torch==1.12.1",
     "transformers==4.23.1",
     "tweepy==4.11.0"
+]
+
+dev_deps = [
+    "debugpy"
 ]
 
 entry_points = {
