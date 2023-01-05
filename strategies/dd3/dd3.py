@@ -26,7 +26,11 @@ class DD3Strategy(BaseStrategy):
             .join(DD3Indicator, peewee.JOIN.LEFT_OUTER)
 
     def get_indicators_df(self):
-        return super().get_indicators_df(self.get_indicators())
+        df = super().get_indicators_df(self.get_indicators())
+        df.ma1 = df.ma1.apply(self.strategy.market.quote.format)
+        df.ma2 = df.ma2.apply(self.strategy.market.quote.format)
+        df.ma3 = df.ma3.apply(self.strategy.market.quote.format)
+        return df
 
     def refresh(self):
         self.refresh_indicators()
