@@ -285,6 +285,11 @@ def create_order(type: str,
     market = position.user_strategy.strategy.market
     symbol = market.get_symbol()
 
+    core.watchdog.info("attempt to create {t} {s} order {a} {p}"
+                       .format(t=type,
+                               s=side,
+                               a=market.base.print(amount),
+                               p=market.quote.print(price)))
     try:
         assert amount >= market.amount_min
         assert price >= market.price_min
