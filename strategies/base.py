@@ -55,10 +55,10 @@ class BaseStrategy(core.db.BaseModel):
             df.low = df.low.apply(self.strategy.market.quote.format)
             df.close = df.close.apply(self.strategy.market.quote.format)
             df.volume = df.volume.apply(self.strategy.market.base.format)
-            df["buys"] = df.open.where(df.index.isin(buys))
+            df["buys"] = df.low.where(df.index.isin(buys))
             df.buys = df.buys * D("0.995")
             df.buys = df.buys.replace({float("nan"): None})
-            df["sells"] = df.open.where(df.index.isin(sells))
+            df["sells"] = df.high.where(df.index.isin(sells))
             df.sells = df.sells * D("1.005")
             df.sells = df.sells.replace({float("nan"): None})
 

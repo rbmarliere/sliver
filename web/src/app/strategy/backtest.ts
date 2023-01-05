@@ -101,13 +101,13 @@ function getPositions(data: any, indexes: number[]): any[] {
     if (data.buys[idx] > 0) {
       if (!curr) {
         curr = true;
-        currPos.entry_price = data.buys[idx];
+        currPos.entry_price = data.open[idx];
         currPos.entry_time = new Date(data.time[idx]);
       }
     } else if (data.sells[idx] > 0) {
       if (curr) {
         curr = false;
-        currPos.exit_price = data.sells[idx];
+        currPos.exit_price = data.open[idx];
         currPos.exit_time = new Date(data.time[idx]);
         positions.push({
           entry_price: currPos.entry_price,
