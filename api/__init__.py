@@ -25,6 +25,6 @@ def serve():
     core.watchdog.set_logger("api")
 
     if core.config["ENV_NAME"] == "development":
-        app.run(debug=True, port=5000)
+        app.run(port=5000)
     elif core.config["ENV_NAME"] == "production":
         waitress.serve(app, port=5000)
