@@ -7,6 +7,7 @@ from ccxt.base.decimal_to_precision import DECIMAL_PLACES, NO_PADDING
 
 import core
 
+
 # precision modes:
 # DECIMAL_PLACES,
 # SIGNIFICANT_DIGITS,
@@ -580,9 +581,8 @@ class Order(BaseModel):
 
         core.watchdog.info(msg)
 
-        if filled > 0:
-            core.watchdog.info("filled: {f}"
-                               .format(f=market.base.print(filled)))
+        core.watchdog.info("filled: {f}"
+                           .format(f=market.base.print(filled)))
 
         # check for fees
         if ex_order["fee"] is None:
