@@ -285,7 +285,7 @@ def create_order(type: str,
     market = position.user_strategy.strategy.market
     symbol = market.get_symbol()
 
-    core.watchdog.info("attempt to create {t} {s} order {a} {p}"
+    core.watchdog.info("attempt creation of {t} {s} order :: {a} @ {p}"
                        .format(t=type,
                                s=side,
                                a=market.base.print(amount),
