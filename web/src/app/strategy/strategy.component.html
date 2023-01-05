@@ -16,13 +16,7 @@
             </mat-slide-toggle>
           </p>
           <p>
-            <mat-slider
-              discrete
-              [displayWith]="formatLabel"
-              min="0"
-              max="1"
-              step="0.01"
-            >
+            <mat-slider discrete [displayWith]="formatLabel" min="0" max="1" step="0.01">
               <input matSliderThumb formControlName="lm_ratio" />
             </mat-slider>
             <label>Market Orders</label>
@@ -44,10 +38,7 @@
             <mat-form-field appearance="fill">
               <mat-label>Type</mat-label>
               <mat-select formControlName="type" required>
-                <mat-option
-                  *ngFor="let type of strategyTypes"
-                  [value]="type.value"
-                >
+                <mat-option *ngFor="let type of strategyTypes" [value]="type.value">
                   {{ type.name }}
                 </mat-option>
               </mat-select>
@@ -58,7 +49,7 @@
               <mat-label>Market</mat-label>
               <mat-select formControlName="market_id" required>
                 <mat-option *ngFor="let market of markets" [value]="market.id">
-                  {{ market.exchange_name }} - {{ market.symbol }}
+                  [{{ market.id }}] {{ market.exchange_name }} - {{ market.symbol }}
                 </mat-option>
               </mat-select>
             </mat-form-field>
@@ -68,10 +59,7 @@
             <mat-form-field appearance="fill">
               <mat-label>Timeframe</mat-label>
               <mat-select formControlName="timeframe" required>
-                <mat-option
-                  *ngFor="let timeframe of timeframes"
-                  [value]="timeframe"
-                >
+                <mat-option *ngFor="let timeframe of timeframes" [value]="timeframe">
                   {{ timeframe }}
                 </mat-option>
               </mat-select>
@@ -90,12 +78,7 @@
           <p>
             <mat-form-field>
               <mat-label>Refresh Interval</mat-label>
-              <input
-                matInput
-                type="number"
-                formControlName="refresh_interval"
-                min="1"
-              />
+              <input matInput type="number" formControlName="refresh_interval" min="1" />
               <mat-hint>in minutes</mat-hint>
             </mat-form-field>
           </p>
@@ -103,12 +86,7 @@
           <p>
             <mat-form-field>
               <mat-label>Next Refresh Time</mat-label>
-              <input
-                matInput
-                type="datetime-local"
-                step="any"
-                formControlName="next_refresh"
-              />
+              <input matInput type="date" step="any" formControlName="next_refresh" />
               <mat-hint>UTC</mat-hint>
             </mat-form-field>
           </p>
@@ -116,24 +94,14 @@
           <p>
             <mat-form-field>
               <mat-label>Number of Limit Orders</mat-label>
-              <input
-                matInput
-                type="number"
-                formControlName="num_orders"
-                min="1"
-              />
+              <input matInput type="number" formControlName="num_orders" min="1" />
             </mat-form-field>
           </p>
 
           <p>
             <mat-form-field>
               <mat-label>Bucket Interval</mat-label>
-              <input
-                matInput
-                type="number"
-                formControlName="bucket_interval"
-                min="1"
-              />
+              <input matInput type="number" formControlName="bucket_interval" min="1" />
               <mat-hint>in minutes</mat-hint>
             </mat-form-field>
           </p>
@@ -141,12 +109,7 @@
           <p>
             <mat-form-field>
               <mat-label>Price Spread for Limit Orders</mat-label>
-              <input
-                matInput
-                type="number"
-                formControlName="spread"
-                min="0.01"
-              />
+              <input matInput type="number" formControlName="spread" min="0.01" />
               <mat-hint>in %</mat-hint>
             </mat-form-field>
           </p>
@@ -162,12 +125,7 @@
           <p>
             <mat-form-field>
               <mat-label>Stop Loss</mat-label>
-              <input
-                matInput
-                type="number"
-                placeholder="stop loss (%)"
-                formControlName="stop_loss"
-              />
+              <input matInput type="number" placeholder="stop loss (%)" formControlName="stop_loss" />
               <mat-hint>in %</mat-hint>
             </mat-form-field>
           </p>
@@ -235,13 +193,8 @@
         <p>
           <button mat-raised-button color="primary">Save</button>
 
-          <button
-            mat-raised-button
-            *ngIf="strategy.id > 0"
-            type="button"
-            color="primary"
-            (click)="updateSubscription(strategy)"
-          >
+          <button mat-raised-button *ngIf="strategy.id > 0" type="button" color="primary"
+            (click)="updateSubscription(strategy)">
             <span *ngIf="!strategy.subscribed">Subscribe</span>
             <span *ngIf="strategy.subscribed">Unsubscribe</span>
           </button>
@@ -252,13 +205,8 @@
 
   <div *ngIf="strategy.id && plot.data">
     <p>
-      <plotly-plot
-        [config]="plot.config"
-        [data]="plot.data"
-        [layout]="plot.layout"
-        [updateOnlyWithRevision]="true"
-        (relayout)="zoom($event)"
-      ></plotly-plot>
+      <plotly-plot [config]="plot.config" [data]="plot.data" [layout]="plot.layout" [updateOnlyWithRevision]="true"
+        (relayout)="zoom($event)"></plotly-plot>
     </p>
 
     <!-- <p class="text-center"> -->
