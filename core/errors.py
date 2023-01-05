@@ -4,3 +4,7 @@ class ModelDoesNotExist(Exception):
 
 class ModelTooLarge(Exception):
     pass
+
+
+class MarketAlreadySubscribed(Exception):
+    pass
