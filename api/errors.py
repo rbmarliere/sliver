@@ -76,3 +76,10 @@ class ExchangeDoesNotExist(HTTPException):
     description = (
         "Exchange does not exist."
     )
+
+
+class MarketAlreadySubscribed(HTTPException):
+    code = 400
+    description = (
+        "Can only subscribe to one strategy per market."
+    )
