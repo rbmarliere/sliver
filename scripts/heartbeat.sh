@@ -3,8 +3,7 @@
 IP=""
 TELEGRAM_BOT_ID=""
 TELEGRAM_CHAT_ID=""
-
-TELEGRAM_API="https://api.telegram.org/bot$TELEGRAM_BOT_ID/sendMessage?chat_id=$TELEGRAM_CHAT_ID&text="
+TELEGRAM_API="https://api.telegram.org/bot$TELEGRAM_BOT_ID/sendMessage?chat_id=$TELEGRAM_CHAT_ID&text=$(hostname):%20"
 
 if [ -z "$IP" ]; then
     if [ -z "$1" ]; then
