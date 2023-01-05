@@ -7,7 +7,6 @@ from ccxt.base.decimal_to_precision import DECIMAL_PLACES, NO_PADDING
 
 import core
 
-
 # precision modes:
 # DECIMAL_PLACES,
 # SIGNIFICANT_DIGITS,

@@ -561,15 +561,20 @@ def refresh(position: core.db.Position):
         core.watchdog.info("limit to market ratio is {r}"
                            .format(r=strategy.lm_ratio))
         remaining = position.get_remaining(last_price)
-        if strategy.lm_ratio > 0:
+        if strategy.lm_ratio == 1:
+            market_total = remaining
+            limit_total = 0
+        elif strategy.lm_ratio > 0:
             if position.status == "opening":
-                market_total = market.quote.div(remaining * strategy.lm_ratio,
-                                                100,
-                                                trunc_precision=market.price_precision)
+                market_total = market.quote.div(
+                    remaining * strategy.lm_ratio,
+                    100,
+                    trunc_precision=market.price_precision)
             elif position.status == "closing":
-                market_total = market.base.div(remaining * strategy.lm_ratio,
-                                               100,
-                                               trunc_precision=market.amount_precision)
+                market_total = market.base.div(
+                    remaining * strategy.lm_ratio,
+                    100,
+                    trunc_precision=market.amount_precision)
             limit_total = remaining - market_total
         else:
             market_total = 0
