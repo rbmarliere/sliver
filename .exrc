@@ -33,11 +33,6 @@ require("dap").configurations.typescript = {
 }
 
 require("dap").adapters.python = {
-  type = "executable";
-  command = vim.fn.getcwd() .. "/venv/bin/python3";
-  args = { "-m", "debugpy.adapter" };
-}
-require("dap").adapters.serve = {
   type = "server";
   port = 33333;
   enrich_config = function(config, on_config)
@@ -49,21 +44,18 @@ require("dap").adapters.serve = {
 require("dap").configurations.python = {
   {
     type = "python",
-    request = "launch",
+    request = "attach",
     name = "Stream",
-    program = "${workspaceFolder}/venv/bin/stream",
   },
   {
     type = "python",
-    request = "launch",
+    request = "attach",
     name = "Watch",
-    program = "${workspaceFolder}/venv/bin/watch",
   },
   {
     type = "serve",
     request = "attach",
     name = "Serve",
-    program = "${workspaceFolder}/venv/bin/serve",
   },
 }
 EOF
