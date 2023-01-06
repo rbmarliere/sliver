@@ -32,30 +32,43 @@ require("dap").configurations.typescript = {
   },
 }
 
-require("dap").adapters.python = {
+local cfg = function(config, on_config)
+  local final_config = vim.deepcopy(config)
+  final_config.justMyCode = false
+  on_config(final_config)
+end;
+
+require("dap").adapters.serve = {
   type = "server";
   port = 33333;
-  enrich_config = function(config, on_config)
-    local final_config = vim.deepcopy(config)
-    final_config.justMyCode = false
-    on_config(final_config)
-  end;
+  enrich_config = cfg;
 }
+require("dap").adapters.stream = {
+  type = "server";
+  port = 33334;
+  enrich_config = cfg;
+}
+require("dap").adapters.watch = {
+  type = "server";
+  port = 33335;
+  enrich_config = cfg
+}
+
 require("dap").configurations.python = {
-  {
-    type = "python",
-    request = "attach",
-    name = "Stream",
-  },
-  {
-    type = "python",
-    request = "attach",
-    name = "Watch",
-  },
   {
     type = "serve",
     request = "attach",
     name = "Serve",
+  },
+  {
+    type = "stream",
+    request = "attach",
+    name = "Stream",
+  },
+  {
+    type = "watch",
+    request = "attach",
+    name = "Watch",
   },
 }
 EOF
