@@ -1,4 +1,3 @@
-lua << EOF
 require("lspconfig").pylsp.setup({
   -- organizeImports requires pylsp-rope in mason env
   on_attach = LSPAttach,
@@ -38,6 +37,11 @@ local cfg = function(config, on_config)
   on_config(final_config)
 end;
 
+require("dap").adapters.pyscript = {
+  type = "executable";
+  command = vim.fn.getcwd() .. "/venv/bin/python3";
+  args = { "-m", "debugpy.adapter" };
+}
 require("dap").adapters.serve = {
   type = "server";
   port = 33333;
@@ -56,6 +60,16 @@ require("dap").adapters.watch = {
 
 require("dap").configurations.python = {
   {
+    type = "pyscript",
+    request = "launch",
+    name = "Launch File",
+    program = "${file}";
+    args = function()
+      local argument_string = vim.fn.input('args: ')
+      return vim.fn.split(argument_string, " ", true)
+    end,
+  },
+  {
     type = "serve",
     request = "attach",
     name = "Serve",
@@ -71,4 +85,3 @@ require("dap").configurations.python = {
     name = "Watch",
   },
 }
-EOF
