@@ -34,7 +34,7 @@ dev_deps = [
 
 entry_points = {
     "console_scripts": [
-        "serve = api:serve",
+        "serve = api.__main__:main",
         "stream = strategies.hypnox.twitter:stream",
         "watch = core.watchdog:watch"
     ]
