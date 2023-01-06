@@ -37,24 +37,33 @@ require("dap").adapters.python = {
   command = vim.fn.getcwd() .. "/venv/bin/python3";
   args = { "-m", "debugpy.adapter" };
 }
+require("dap").adapters.serve = {
+  type = "server";
+  port = 33333;
+  enrich_config = function(config, on_config)
+    local final_config = vim.deepcopy(config)
+    final_config.justMyCode = false
+    on_config(final_config)
+  end;
+}
 require("dap").configurations.python = {
   {
     type = "python",
     request = "launch",
     name = "Stream",
-    program = vim.fn.getcwd() .. "/venv/bin/stream",
+    program = "${workspaceFolder}/venv/bin/stream",
   },
   {
     type = "python",
     request = "launch",
     name = "Watch",
-    program = vim.fn.getcwd() .. "/venv/bin/watch",
+    program = "${workspaceFolder}/venv/bin/watch",
   },
   {
-    type = "python",
-    request = "launch",
+    type = "serve",
+    request = "attach",
     name = "Serve",
-    program = vim.fn.getcwd() .. "/venv/bin/serve",
+    program = "${workspaceFolder}/venv/bin/serve",
   },
 }
 EOF
