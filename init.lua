@@ -13,6 +13,8 @@ require("lspconfig").pylsp.setup({
   },
 })
 
+-- require("dap").set_log_level("TRACE")
+
 require("dap").adapters.chrome = {
   type = "executable",
   command = "node",
@@ -47,6 +49,7 @@ require("dap").adapters.serve = {
   port = 33333;
   enrich_config = cfg;
 }
+require('dap').defaults.serve.exception_breakpoints = {}
 require("dap").adapters.stream = {
   type = "server";
   port = 33334;
