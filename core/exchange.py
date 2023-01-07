@@ -566,13 +566,9 @@ def refresh(position: core.db.Position):
             limit_total = 0
         elif strategy.lm_ratio > 0:
             if position.status == "opening":
-                market_total = market.quote.div(
-                    remaining * strategy.lm_ratio,
-                    100)
+                market_total = int(remaining * strategy.lm_ratio)
             elif position.status == "closing":
-                market_total = market.base.div(
-                    remaining * strategy.lm_ratio,
-                    100)
+                market_total = int(remaining * strategy.lm_ratio)
             limit_total = remaining - market_total
         else:
             market_total = 0
