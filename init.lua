@@ -44,6 +44,11 @@ require("dap").adapters.pyscript = {
   command = vim.fn.getcwd() .. "/venv/bin/python3";
   args = { "-m", "debugpy.adapter" };
 }
+require("dap").adapters.interpreter = {
+  type = "server";
+  port = 33332;
+  enrich_config = cfg
+}
 require("dap").adapters.serve = {
   type = "server";
   port = 33333;
@@ -71,6 +76,11 @@ require("dap").configurations.python = {
       local argument_string = vim.fn.input('args: ')
       return vim.fn.split(argument_string, " ", true)
     end,
+  },
+  {
+    type = "interpreter",
+    request = "attach",
+    name = "Attach to Interpreter",
   },
   {
     type = "serve",
