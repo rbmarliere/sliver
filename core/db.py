@@ -209,7 +209,8 @@ class Strategy(BaseModel):
 
         core.watchdog.info("===========================================")
         core.watchdog.info("refreshing strategy {s}".format(s=self))
-        core.watchdog.info("market is {m}".format(m=symbol))
+        core.watchdog.info("market is {m} ({i})".format(m=symbol,
+                                                        i=self.market.id))
         core.watchdog.info("timeframe is {T}".format(T=self.timeframe))
         core.watchdog.info("exchange is {e}"
                            .format(e=self.market.base.exchange.name))
