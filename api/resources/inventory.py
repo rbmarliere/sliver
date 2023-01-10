@@ -20,6 +20,8 @@ fields = {
     "total_value": fields.Float,
     "positions_reserved": fields.Float,
     "positions_value": fields.Float,
+    "net_liquid": fields.Float,
+    "max_risk": fields.Float,
     "balances": fields.List(fields.Nested(balance_fields)),
 }
 
