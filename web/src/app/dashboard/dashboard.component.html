@@ -67,7 +67,7 @@
     </mat-card-content>
   </mat-card>
 
-  <p>Exchange Credentials:</p>
+  <p>Exchange Credentials</p>
   <mat-card appearance="outlined">
     <mat-card-content>
       <div *ngIf="loadingCred" class="center" style="padding: 2vh">
@@ -122,12 +122,29 @@
           <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
         </table>
 
-        <div style="text-align: right; padding: 1vh">
-          <p>Total Inventory Value: {{ inventory.total_value | currency }}</p>
-          <p>Reserved in Positions: {{ inventory.positions_reserved | currency }}</p>
-          <p>Positions Current Value: {{ inventory.positions_value | currency }}</p>
-          <p>Net Liquid: {{ inventory.net_liquid | currency }}</p>
-          <p>Maximum Risk: {{ inventory.max_risk | currency }}</p>
+        <div class="user-balance">
+          <table>
+            <tr>
+              <td style="padding-right: 1vw">Total Value</td>
+              <td>{{ inventory.total_value | currency }}</td>
+            </tr>
+            <tr>
+              <td style="padding-right: 1vw">Reserved in Positions</td>
+              <td>{{ inventory.positions_reserved | currency }}</td>
+            </tr>
+            <tr>
+              <td style="padding-right: 1vw">Value in Positions</td>
+              <td>{{ inventory.positions_value | currency }}</td>
+            </tr>
+            <tr>
+              <td style="padding-right: 1vw">Net Liquid</td>
+              <td>{{ inventory.net_liquid | currency }}</td>
+            </tr>
+            <tr>
+              <td style="padding-right: 1vw">Maximum Risk</td>
+              <td>{{ inventory.max_risk | currency }}</td>
+            </tr>
+          </table>
         </div>
 
       </div>
