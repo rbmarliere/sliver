@@ -23,7 +23,6 @@ export class DashboardComponent implements OnInit {
     telegram: '',
     max_risk: 0,
     cash_reserve: 0,
-    target_factor: 0
   });
 
   displayedColumns: string[] = [
@@ -108,7 +107,6 @@ export class DashboardComponent implements OnInit {
     let user = {} as User;
     user.max_risk = form.max_risk;
     user.cash_reserve = form.cash_reserve;
-    user.target_factor = form.target_factor;
 
     this.userService.updateUser(user).subscribe({
       next: () => location.reload()

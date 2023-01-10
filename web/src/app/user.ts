@@ -7,5 +7,4 @@ export interface User {
   telegram: string
   max_risk: number
   cash_reserve: number
-  target_factor: number
 }

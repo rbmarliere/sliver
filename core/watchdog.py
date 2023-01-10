@@ -16,6 +16,8 @@ def send_telegram(message):
             bot = telegram.Bot(core.config["TELEGRAM_KEY"])
             bot.send_message(text=message,
                              chat_id=core.config["TELEGRAM_CHANNEL"])
+
+            # TODO: send to user
         except (KeyError, AssertionError):
             pass
         except telegram.error.NetworkError:

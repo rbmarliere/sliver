@@ -11,7 +11,6 @@ fields = {
     "telegram": fields.String,
     "max_risk": fields.Float,
     "cash_reserve": fields.Float,
-    "target_factor": fields.Float,
 }
 
 argp = reqparse.RequestParser()
@@ -20,7 +19,6 @@ argp.add_argument("password", type=str)
 argp.add_argument("telegram", type=str)
 argp.add_argument("max_risk", type=float)
 argp.add_argument("cash_reserve", type=float)
-argp.add_argument("target_factor", type=float)
 
 
 class User(Resource):
@@ -55,8 +53,6 @@ class User(Resource):
             user.max_risk = args.max_risk
         if args.cash_reserve:
             user.cash_reserve = args.cash_reserve
-        if args.target_factor:
-            user.target_factor = args.target_factor
 
         user.save()
 
