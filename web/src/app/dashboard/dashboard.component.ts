@@ -82,12 +82,36 @@ export class DashboardComponent implements OnInit {
     return Math.round(value * 100) + '%';
   }
 
-  updateUser(): void {
-    const user = this.form.value;
+  updatePassword(): void {
+    const form = this.form.value;
+    let user = {} as User;
+    user.old_password = form.old_password;
+    user.password = form.password;
 
     this.userService.updateUser(user).subscribe({
       next: () => location.reload()
     });
   }
 
+  updateAlert(): void {
+    const form = this.form.value;
+    let user = {} as User;
+    user.telegram = form.telegram;
+
+    this.userService.updateUser(user).subscribe({
+      next: () => location.reload()
+    });
+  }
+
+  updateRisk(): void {
+    const form = this.form.value;
+    let user = {} as User;
+    user.max_risk = form.max_risk;
+    user.cash_reserve = form.cash_reserve;
+    user.target_factor = form.target_factor;
+
+    this.userService.updateUser(user).subscribe({
+      next: () => location.reload()
+    });
+  }
 }
