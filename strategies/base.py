@@ -67,6 +67,9 @@ class BaseStrategy(core.db.BaseModel):
     def refresh(self):
         pass
 
+    def refresh_indicators(self):
+        pass
+
     def load_fields(self, user):
         self.id = self.strategy_id
         self.market_id = self.strategy.market_id
