@@ -50,7 +50,6 @@ class User(BaseModel):
     telegram = peewee.TextField(null=True)
     max_risk = peewee.DecimalField(default=0.1)
     cash_reserve = peewee.DecimalField(default=0.25)
-    target_factor = peewee.DecimalField(default=0.1)
 
     def get_exchange_credential(self, exchange: Exchange):
         return self \
