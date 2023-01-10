@@ -28,11 +28,11 @@ export class DashboardComponent implements OnInit {
 
   displayedColumns: string[] = [
     'ticker',
-    'free',
-    'used',
+    // 'free',
+    // 'used',
     'total',
-    'free_value',
-    'used_value',
+    // 'free_value',
+    // 'used_value',
     'total_value',
   ];
   inventory: Inventory = {} as Inventory;
