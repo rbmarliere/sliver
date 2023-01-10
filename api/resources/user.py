@@ -5,6 +5,7 @@ from flask_restful import Resource, fields, marshal_with, reqparse
 import api.errors
 import core
 
+
 fields = {
     "email": fields.String,
     "telegram": fields.String,
@@ -48,10 +49,14 @@ class User(Resource):
             else:
                 raise api.errors.WrongPassword
 
-        user.telegram = args.telegram
-        user.max_risk = args.max_risk
-        user.cash_reserve = args.cash_reserve
-        user.target_factor = args.target_factor
+        if args.telegram:
+            user.telegram = args.telegram
+        if args.max_risk:
+            user.max_risk = args.max_risk
+        if args.cash_reserve:
+            user.cash_reserve = args.cash_reserve
+        if args.target_factor:
+            user.target_factor = args.target_factor
 
         user.save()
 
