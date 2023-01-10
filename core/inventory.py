@@ -15,6 +15,7 @@ import core
 
 
 def get_balance_by_asset(user: core.db.User, asset: core.db.Asset):
+    # TODO: sort by value desc
     balance = {
         "ticker": asset.ticker,
         "free": 0,
@@ -113,8 +114,10 @@ def get_target_cost(user_strat: core.db.UserStrategy):
     available = min(cash_in_exch, cash_liquid) * (1 - user.cash_reserve)
     core.watchdog.info("available cash is {v}".format(v=print(available)))
 
-    target_cost = min(inventory["max_risk"], available * user.target_factor)
+    target_cost = min(inventory["max_risk"], available)
     core.watchdog.info("target cost is {v}".format(v=print(target_cost)))
+
+    # TODO must take into account number of strategies in the same exchange
 
     return target_cost
 
