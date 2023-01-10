@@ -14,10 +14,13 @@ class BaseStrategy(core.db.BaseModel):
         self.__dict__.update(self.strategy.__data__)
 
     def get_signal(self):
-        return self.strategy \
-            .indicator_set \
-            .order_by(core.db.Indicator.id.desc()) \
-            .get().signal
+        try:
+            return self.strategy \
+                .indicator_set \
+                .order_by(core.db.Indicator.id.desc()) \
+                .get().signal
+        except core.db.Indicator.DoesNotExist:
+            return None
 
     def get_indicators(self):
         return self.strategy.get_prices() \
