@@ -76,11 +76,31 @@ class User(BaseModel):
         return Position \
             .select() \
             .join(UserStrategy) \
-            .where(
-                (UserStrategy.user_id == self.id)
-                & ((Position.status == "open")
-                    | (Position.status == "opening")
-                    | (Position.status == "closing")))
+            .where(UserStrategy.user_id == self.id) \
+            .where((Position.status == "open")
+                   | (Position.status == "opening")
+                   | (Position.status == "closing"))
+
+    def get_exchange_open_positions(self, exchange: Exchange):
+        return self.get_open_positions() \
+            .join(Strategy) \
+            .join(Market) \
+            .join(ExchangeAsset,
+                  on=(Market.base_id == ExchangeAsset.id)) \
+            .join(Exchange) \
+            .where(Exchange.id == exchange.id)
+
+    def get_exchange_strategies(self, exchange: Exchange):
+        return self.userstrategy_set \
+            .join(Strategy) \
+            .join(Market) \
+            .join(ExchangeAsset,
+                  on=(Market.base_id == ExchangeAsset.id)) \
+            .join(Exchange) \
+            .where(Exchange.id == exchange.id) \
+            .where(UserStrategy.user_id == self.id) \
+            .where(UserStrategy.active) \
+            .where(Strategy.active)
 
     def get_positions(self):
         return Position \
