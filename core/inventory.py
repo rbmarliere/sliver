@@ -69,34 +69,33 @@ def get_inventory(user: core.db.User):
     inventory["positions_value"] = 0
     for pos in user.get_open_positions():
         pos_asset = pos.user_strategy.strategy.market.quote
+        # TODO positions_reserved could be other than USDT
         inventory["positions_reserved"] += pos_asset.format(pos.target_cost)
-        inventory["positions_value"] += pos_asset.format(pos.exit_cost -
-                                                         pos.entry_cost)
+        inventory["positions_value"] += pos_asset.format(pos.entry_cost -
+                                                         pos.exit_cost)
+
+    inventory["net_liquid"] = \
+        inventory["total_value"] - inventory["positions_reserved"]
+
+    inventory["max_risk"] = inventory["net_liquid"] * user.max_risk
 
     return inventory
 
 
 def get_target_cost(user_strat: core.db.UserStrategy):
     user = user_strat.user
+    # each exchange has a target_cost
     exchange = user_strat.strategy.market.base.exchange
     print = user_strat.strategy.market.quote.print
     transform = user_strat.strategy.market.quote.transform
 
     inventory = get_inventory(user)
 
-    net_liquid = transform(inventory["total_value"]
-                           - inventory["positions_value"])
-    core.watchdog.info("net liquid is {v}"
-                       .format(v=print(net_liquid)))
-
-    max_risk = net_liquid * user.max_risk
-    core.watchdog.info("max risk is {v}"
-                       .format(v=print(max_risk)))
-
-    q = (user
-         .get_balances_by_asset(user_strat.strategy.market.quote.asset)
-         .where(core.db.ExchangeAsset.exchange == exchange))
-    available_in_exch = [b for b in q]
+    # TODO currently, quote can only be USDT
+    available_in_exch = user \
+        .get_balances_by_asset(user_strat.strategy.market.quote.asset) \
+        .where(core.db.ExchangeAsset.exchange == exchange) \
+        .get_or_none()
     if not available_in_exch:
         available_in_exch = 0
     else:
@@ -109,15 +108,13 @@ def get_target_cost(user_strat: core.db.UserStrategy):
                                v=print(cash_in_exch)))
 
     usdt_balance = get_balance_by_asset(user, core.db.Asset.get(ticker="USDT"))
-    cash_liquid = transform(usdt_balance["total"]
-                            - inventory["positions_reserved"])
+    cash_liquid = transform(
+        usdt_balance["total"] - inventory["positions_reserved"])
     available = min(cash_in_exch, cash_liquid) * (1 - user.cash_reserve)
-    core.watchdog.info("available cash is {v}"
-                       .format(v=print(available)))
+    core.watchdog.info("available cash is {v}".format(v=print(available)))
 
-    target_cost = min(max_risk, available * user.target_factor)
-    core.watchdog.info("target cost is {v}"
-                       .format(v=print(target_cost)))
+    target_cost = min(inventory["max_risk"], available * user.target_factor)
+    core.watchdog.info("target cost is {v}".format(v=print(target_cost)))
 
     return target_cost
 
@@ -202,14 +199,19 @@ def sync_balances(user: core.db.User):
     if hasattr(core.exchange, "credential"):
         curr_cred = core.exchange.credential
 
+    active_exchanges = []
     # sync balance for each exchange the user has a key
     for cred in user.credential_set.where(core.db.Credential.active):
         core.watchdog.info("fetching user balance in exchange {e}"
                            .format(e=cred.exchange.name))
-
         core.exchange.set_api(cred=cred)
-
         sync_balance(cred)
+        active_exchanges.append(cred.exchange)
+
+    # delete inactive balances
+    for bal in user.balance_set:
+        if bal.asset.exchange not in active_exchanges:
+            bal.delete_instance()
 
     # restore previous api
     if curr_cred:
