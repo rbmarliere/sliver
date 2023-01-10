@@ -100,10 +100,10 @@ def get_target_cost(user_strat: core.db.UserStrategy):
     if not available_in_exch:
         available_in_exch = 0
     else:
-        if available_in_exch[0].free > 0:  # some exchanges dont use this
-            cash_in_exch = available_in_exch[0].free
+        if available_in_exch.free > 0:  # some exchanges dont use this
+            cash_in_exch = available_in_exch.free
         else:
-            cash_in_exch = available_in_exch[0].total
+            cash_in_exch = available_in_exch.total
     core.watchdog.info("available {a} in exchange is {v}"
                        .format(a=user_strat.strategy.market.quote.asset.ticker,
                                v=print(cash_in_exch)))
@@ -111,15 +111,23 @@ def get_target_cost(user_strat: core.db.UserStrategy):
     usdt_balance = get_balance_by_asset(user, core.db.Asset.get(ticker="USDT"))
     cash_liquid = transform(
         usdt_balance["total"] - inventory["positions_reserved"])
+
     available = min(cash_in_exch, cash_liquid) * (1 - user.cash_reserve)
     core.watchdog.info("available cash is {v}".format(v=print(available)))
 
-    target_cost = min(inventory["max_risk"], available)
+    active_strat_in_exch = user.get_exchange_strategies(exchange).count()
+    pos_reserves_in_exch = [p.target_cost for p in
+                            user.get_exchange_open_positions(exchange)]
+    available = (available + sum(pos_reserves_in_exch)) / active_strat_in_exch
+    core.watchdog.info(
+        "available for strategy is {v}".format(v=print(available)))
+
+    max_risk = transform(inventory["max_risk"])
+    target_cost = min(max_risk, available)
+    core.watchdog.info("max risk is {v}".format(v=print(max_risk)))
     core.watchdog.info("target cost is {v}".format(v=print(target_cost)))
 
-    # TODO must take into account number of strategies in the same exchange
-
-    return target_cost
+    return int(target_cost)
 
 
 # def refresh_targets(user):
