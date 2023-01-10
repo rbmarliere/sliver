@@ -1,4 +1,5 @@
 <div class="main container">
+
   <p>Change Password</p>
   <mat-card appearance="outlined">
     <mat-card-content>
@@ -24,12 +25,22 @@
   </mat-card>
 
 
-  <!--         <p> -->
-  <!--           <mat-form-field> -->
-  <!--             <mat-label>Telegram ID</mat-label> -->
-  <!--             <input matInput formControlName="telegram" /> -->
-  <!--           </mat-form-field> -->
-  <!--         </p> -->
+  <p>Configure Alerts</p>
+  <mat-card appearance="outlined">
+    <mat-card-content>
+      <form [formGroup]="form" (ngSubmit)="updateUser()">
+        <div class="fields">
+          <p>
+            <mat-form-field>
+              <mat-label>Telegram ID</mat-label>
+              <input matInput formControlName="telegram" />
+            </mat-form-field>
+          </p>
+          <button mat-raised-button color="primary">Update</button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
 
   <p>Risk Parameters</p>
   <mat-card appearance="outlined">
@@ -68,7 +79,10 @@
       <div *ngIf="loadingCred" class="center" style="padding: 2vh">
         <mat-spinner></mat-spinner>
       </div>
-      <app-credential *ngFor="let credential of credentials" [credential]="credential"></app-credential>
+      <div *ngIf="!loadingCred" class="credentials">
+        <app-credential class="credential" *ngFor="let credential of credentials" [credential]="credential">
+        </app-credential>
+      </div>
     </mat-card-content>
   </mat-card>
 
@@ -81,43 +95,39 @@
       </div>
 
       <div *ngIf="inventory.balances">
-        <p>Total Balances in Exchanges:</p>
-
         <table mat-table [dataSource]="inventory.balances" class="mat-elevation-z8 inventory-table">
           <ng-container matColumnDef="ticker">
             <th mat-header-cell *matHeaderCellDef>Asset</th>
             <td mat-cell *matCellDef="let element">{{ element.ticker }}</td>
           </ng-container>
-          <ng-container matColumnDef="free">
-            <th mat-header-cell *matHeaderCellDef>Free</th>
-            <td mat-cell *matCellDef="let element">{{ element.free }}</td>
-          </ng-container>
-          <ng-container matColumnDef="used">
-            <th mat-header-cell *matHeaderCellDef>Used</th>
-            <td mat-cell *matCellDef="let element">{{ element.used }}</td>
-          </ng-container>
+          <!-- <ng-container matColumnDef="free"> -->
+          <!--   <th mat-header-cell *matHeaderCellDef>Free</th> -->
+          <!--   <td mat-cell *matCellDef="let element">{{ element.free }}</td> -->
+          <!-- </ng-container> -->
+          <!-- <ng-container matColumnDef="used"> -->
+          <!--   <th mat-header-cell *matHeaderCellDef>Used</th> -->
+          <!--   <td mat-cell *matCellDef="let element">{{ element.used }}</td> -->
+          <!-- </ng-container> -->
           <ng-container matColumnDef="total">
-            <th mat-header-cell *matHeaderCellDef>Total</th>
+            <th mat-header-cell *matHeaderCellDef>Balance</th>
             <td mat-cell *matCellDef="let element">{{ element.total }}</td>
           </ng-container>
-          <ng-container matColumnDef="free_value">
-            <th mat-header-cell *matHeaderCellDef>Free Value</th>
-            <td mat-cell *matCellDef="let element">{{ element.free_value | currency }}</td>
-          </ng-container>
-          <ng-container matColumnDef="used_value">
-            <th mat-header-cell *matHeaderCellDef>Used Value</th>
-            <td mat-cell *matCellDef="let element">{{ element.used_value | currency }}</td>
-          </ng-container>
+          <!-- <ng-container matColumnDef="free_value"> -->
+          <!--   <th mat-header-cell *matHeaderCellDef>Free Value</th> -->
+          <!--   <td mat-cell *matCellDef="let element">{{ element.free_value | currency }}</td> -->
+          <!-- </ng-container> -->
+          <!-- <ng-container matColumnDef="used_value"> -->
+          <!--   <th mat-header-cell *matHeaderCellDef>Used Value</th> -->
+          <!--   <td mat-cell *matCellDef="let element">{{ element.used_value | currency }}</td> -->
+          <!-- </ng-container> -->
           <ng-container matColumnDef="total_value">
-            <th mat-header-cell *matHeaderCellDef>Total Value</th>
+            <th mat-header-cell *matHeaderCellDef>Value (USDT)</th>
             <td mat-cell *matCellDef="let element">{{ element.total_value | currency }}</td>
           </ng-container>
           <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
           <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
         </table>
 
-        <p>Free Inventory Value: {{ inventory.free_value | currency }}</p>
-        <p>Used Inventory Value: {{ inventory.used_value | currency }}</p>
         <p>Total Inventory Value: {{ inventory.total_value | currency }}</p>
         <p>Reserved in Positions: {{ inventory.positions_reserved | currency }}</p>
         <p>Positions Current Value: {{ inventory.positions_value | currency }}</p>
