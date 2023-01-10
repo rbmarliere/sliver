@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { Credential } from '../credential';
 import { CredentialService } from '../credential.service';
+import { Inventory } from '../inventory';
+import { InventoryService } from '../inventory.service';
 import { User } from '../user';
 import { UserService } from '../user.service';
 
@@ -24,16 +26,30 @@ export class DashboardComponent implements OnInit {
     target_factor: 0
   });
 
+  displayedColumns: string[] = [
+    'ticker',
+    'free',
+    'used',
+    'total',
+    'free_value',
+    'used_value',
+    'total_value',
+  ];
+  inventory: Inventory = {} as Inventory;
+
+  loadingCred = true;
   credentials: Credential[] = [];
 
   constructor(
     private userService: UserService,
     private credentialService: CredentialService,
+    private inventoryService: InventoryService,
     private formBuilder: FormBuilder
   ) { }
 
   ngOnInit(): void {
     this.getUser();
+    this.getInventory();
     this.getCredentials();
   }
 
@@ -47,9 +63,18 @@ export class DashboardComponent implements OnInit {
     });
   }
 
+  getInventory(): void {
+    this.inventoryService.getInventory().subscribe({
+      next: (res) => this.inventory = res
+    });
+  }
+
   getCredentials(): void {
     this.credentialService.getCredentials().subscribe({
-      next: (res) => this.credentials = res
+      next: (res) => {
+        this.credentials = res;
+        this.loadingCred = false;
+      }
     });
   }
 

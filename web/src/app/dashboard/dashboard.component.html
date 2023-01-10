@@ -1,89 +1,130 @@
-<div class="main">
+<div class="main container">
+  <p>Change Password</p>
   <mat-card appearance="outlined">
     <mat-card-content>
       <form [formGroup]="form" (ngSubmit)="updateUser()">
-        <p>
-          <mat-form-field>
-            <input
-              matInput
-              type="password"
-              placeholder="old password"
-              formControlName="old_password"
-            />
-          </mat-form-field>
-        </p>
+        <div class="fields">
+          <p>
+            <mat-form-field>
+              <mat-label>Old Password</mat-label>
+              <input matInput type=" password" formControlName="old_password" />
+            </mat-form-field>
+          </p>
 
-        <p>
-          <mat-form-field>
-            <input
-              matInput
-              type="password"
-              placeholder="new password"
-              formControlName="password"
-            />
-          </mat-form-field>
-        </p>
-
-        <p>
-          <mat-form-field>
-            <input
-              matInput
-              placeholder="telegram id"
-              formControlName="telegram"
-            />
-          </mat-form-field>
-        </p>
-
-        <p>
-          <mat-slider
-            min="0"
-            max="1"
-            step="0.01"
-            discrete
-            [displayWith]="formatLabel"
-          >
-            <input matSliderThumb formControlName="max_risk" />
-          </mat-slider>
-          <label>Maximum Risk Ratio</label>
-        </p>
-
-        <p>
-          <mat-slider
-            min="0"
-            max="1"
-            step="0.01"
-            discrete
-            [displayWith]="formatLabel"
-          >
-            <input matSliderThumb formControlName="cash_reserve" />
-          </mat-slider>
-          <label>Cash Reserve Ratio</label>
-        </p>
-
-        <p>
-          <mat-slider
-            min="0"
-            max="1"
-            step="0.01"
-            discrete
-            [displayWith]="formatLabel"
-          >
-            <input matSliderThumb formControlName="target_factor" />
-          </mat-slider>
-          <label>Target Factor</label>
-        </p>
-
-        <button mat-raised-button color="primary">Update</button>
+          <p>
+            <mat-form-field>
+              <mat-label>New Password</mat-label>
+              <input matInput type="password" formControlName="password" />
+            </mat-form-field>
+          </p>
+          <button mat-raised-button color="primary">Update</button>
+        </div>
       </form>
     </mat-card-content>
   </mat-card>
 
+
+  <!--         <p> -->
+  <!--           <mat-form-field> -->
+  <!--             <mat-label>Telegram ID</mat-label> -->
+  <!--             <input matInput formControlName="telegram" /> -->
+  <!--           </mat-form-field> -->
+  <!--         </p> -->
+
+  <p>Risk Parameters</p>
   <mat-card appearance="outlined">
     <mat-card-content>
-      <app-credential
-        *ngFor="let credential of credentials"
-        [credential]="credential"
-      ></app-credential>
+      <form [formGroup]="form" (ngSubmit)="updateUser()">
+        <div class="fields">
+          <p>
+            <mat-label>Maximum Risk</mat-label>
+            <mat-slider min="0" max="1" step="0.01" discrete [displayWith]="formatLabel">
+              <input matSliderThumb formControlName="max_risk" />
+            </mat-slider>
+          </p>
+
+          <p>
+            <mat-label>Cash Reserve</mat-label>
+            <mat-slider min="0" max="1" step="0.01" discrete [displayWith]="formatLabel">
+              <input matSliderThumb formControlName="cash_reserve" />
+            </mat-slider>
+          </p>
+
+          <p>
+            <mat-label>Target Factor</mat-label>
+            <mat-slider min="0" max="1" step="0.01" discrete [displayWith]="formatLabel">
+              <input matSliderThumb formControlName="target_factor" />
+            </mat-slider>
+          </p>
+          <button mat-raised-button color="primary">Update</button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <p>Exchange Credentials:</p>
+  <mat-card appearance="outlined">
+    <mat-card-content>
+      <div *ngIf="loadingCred" class="center" style="padding: 2vh">
+        <mat-spinner></mat-spinner>
+      </div>
+      <app-credential *ngFor="let credential of credentials" [credential]="credential"></app-credential>
+    </mat-card-content>
+  </mat-card>
+
+  <p>Inventory</p>
+  <mat-card appearance="outlined">
+    <mat-card-content>
+
+      <div *ngIf="!inventory.balances" class="center" style="padding: 2vh">
+        <mat-spinner></mat-spinner>
+      </div>
+
+      <div *ngIf="inventory.balances">
+        <p>Total Balances in Exchanges:</p>
+
+        <table mat-table [dataSource]="inventory.balances" class="mat-elevation-z8 inventory-table">
+          <ng-container matColumnDef="ticker">
+            <th mat-header-cell *matHeaderCellDef>Asset</th>
+            <td mat-cell *matCellDef="let element">{{ element.ticker }}</td>
+          </ng-container>
+          <ng-container matColumnDef="free">
+            <th mat-header-cell *matHeaderCellDef>Free</th>
+            <td mat-cell *matCellDef="let element">{{ element.free }}</td>
+          </ng-container>
+          <ng-container matColumnDef="used">
+            <th mat-header-cell *matHeaderCellDef>Used</th>
+            <td mat-cell *matCellDef="let element">{{ element.used }}</td>
+          </ng-container>
+          <ng-container matColumnDef="total">
+            <th mat-header-cell *matHeaderCellDef>Total</th>
+            <td mat-cell *matCellDef="let element">{{ element.total }}</td>
+          </ng-container>
+          <ng-container matColumnDef="free_value">
+            <th mat-header-cell *matHeaderCellDef>Free Value</th>
+            <td mat-cell *matCellDef="let element">{{ element.free_value | currency }}</td>
+          </ng-container>
+          <ng-container matColumnDef="used_value">
+            <th mat-header-cell *matHeaderCellDef>Used Value</th>
+            <td mat-cell *matCellDef="let element">{{ element.used_value | currency }}</td>
+          </ng-container>
+          <ng-container matColumnDef="total_value">
+            <th mat-header-cell *matHeaderCellDef>Total Value</th>
+            <td mat-cell *matCellDef="let element">{{ element.total_value | currency }}</td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+        </table>
+
+        <p>Free Inventory Value: {{ inventory.free_value | currency }}</p>
+        <p>Used Inventory Value: {{ inventory.used_value | currency }}</p>
+        <p>Total Inventory Value: {{ inventory.total_value | currency }}</p>
+        <p>Reserved in Positions: {{ inventory.positions_reserved | currency }}</p>
+        <p>Positions Current Value: {{ inventory.positions_value | currency }}</p>
+        <p>Net. Liquid: {{ inventory.net_liquid | currency }}</p>
+
+      </div>
+
     </mat-card-content>
   </mat-card>
 </div>
