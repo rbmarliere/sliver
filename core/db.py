@@ -146,16 +146,23 @@ class ExchangeAsset(BaseModel):
         if not trunc_precision:
             trunc_precision = self.precision
 
+        # for BTC:
+        # 5000000000 / 120000000000 [cost/price]
+        # 4166666
+        # 194751313964 / 2 [cost/num_orders]
+        # 97375656982
+        # 20353282988 / 96900000 [cost/price]
+        # 21004420008
+
         div = D(str(num)) / D(str(den))
 
-        if abs(num) > abs(den):
-            div = int(div)
+        if abs(num) <= abs(den) or den < self.transform(1):
+            trunc = core.utils.truncate(div, trunc_precision)
+
+        if trunc == div:
+            return int(trunc)
         else:
-            div = self.transform(div)
-
-        div = core.utils.truncate(self.format(div), trunc_precision)
-
-        return self.transform(div)
+            return self.transform(div)
 
     def format(self, value, prec=None):
         if value is None:
