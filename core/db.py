@@ -352,7 +352,7 @@ class UserStrategy(BaseModel):
         user = self.user
 
         i("...........................................")
-        i("refreshing {u}'s strategy {s}".format(u=self.user.email, s=self))
+        i("refreshing {u}'s strategy {s}".format(u=self.user, s=self))
 
         # set api to current exchange
         credential = user.get_active_credential(exchange).get()
@@ -433,14 +433,45 @@ class Position(BaseModel):
 
         return position
 
+    def close(self):
+        strategy = self.user_strategy.strategy
+
+        i("closing position {i}".format(i=self.id))
+        core.watchdog.notice(self.get_notice(prefix="closing "))
+
+        # when selling, bucket_max becomes an amount instead of cost
+        self.bucket_max = strategy.market.base.div(
+            self.entry_amount,
+            strategy.num_orders,
+            trunc_precision=strategy.market.amount_precision)
+        self.bucket = 0
+        self.status = "closing"
+
+    def check_stops(self, last_price=None):
+        strategy = self.user_strategy.strategy
+        market = strategy.market
+
+        if last_price is None:
+            core.exchange.set_api(exchange=market.base.exchange)
+            p = core.exchange.api.fetch_ticker(market.get_symbol())
+            last_price = market.quote.transform(p["last"])
+
+        roi = round(((last_price / self.entry_price) - 1) * 100, 2)
+
+        i("checking stops for position {p}".format(p=self))
+        if (roi > strategy.stop_gain or roi < strategy.stop_loss * -1):
+            i("roi = {r}%".format(r=roi))
+            i("stopgain = {r}%".format(r=strategy.stop_gain))
+            i("stoploss = -{r}%".format(r=strategy.stop_loss))
+            self.close()
+
     def get_notice(self, prefix="", suffix=""):
         return ("{p}position for user {u} with strategy {s} in market {m} {su}"
-                .format(
-                    p=prefix,
-                    u=self.user_strategy.user.email,
-                    s=self.user_strategy.strategy,
-                    m=self.user_strategy.strategy.market.get_symbol(),
-                    su=suffix))
+                .format(p=prefix,
+                        u=self.user_strategy.user,
+                        s=self.user_strategy.strategy,
+                        m=self.user_strategy.strategy.market.get_symbol(),
+                        su=suffix))
 
     def get_timedelta(self):
         if self.is_pending():
@@ -467,7 +498,7 @@ class Position(BaseModel):
         return [order for order in query]
 
     def is_open(self):
-        return self.status != "closing" and self.status != "closed"
+        return self.status == "open" or self.status == "opening"
 
     def is_pending(self):
         return self.status == "opening" or self.status == "closing"
@@ -663,9 +694,7 @@ class Indicator(BaseModel):
 
 
 def get_active_positions():
-    # should return only open|opening?
-    # no need to check for stoploss if already closing...
-    pass
+    return Position.select().where(Position.status << ["open", "opening"])
 
 
 def get_active_strategies():

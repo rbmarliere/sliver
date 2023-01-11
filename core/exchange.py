@@ -51,7 +51,7 @@ def check_latency():
 
     i("api latency is {l} ms".format(l=elapsed_in_ms))
 
-    if elapsed_in_ms > 1500:
+    if elapsed_in_ms > 1800:
         core.watchdog.error("latency above threshold (1500)", None)
         raise ccxt.NetworkError
 
@@ -230,11 +230,7 @@ def create_order(type: str,
     inserted = False
 
     try:
-        new_order = api.create_order(symbol,
-                                     type,
-                                     side,
-                                     amount,
-                                     price)
+        new_order = api.create_order(symbol, type, side, amount, price)
         inserted = True
         new_oid = new_order["id"]
 
@@ -418,51 +414,33 @@ def refresh(position: core.db.Position):
     last_price = market.quote.transform(p["last"])
 
     i("___________________________________________")
-    i("refreshing '{s}' position {i} for market {m}"
-      .format(s=position.status,
-              i=position.id,
-              m=market.get_symbol()))
+    i("refreshing '{s}' position {i}".format(s=position.status, i=position.id))
     i("last price is {p}".format(p=strategy.market.quote.print(last_price)))
     i("target cost is {t}".format(t=market.quote.print(position.target_cost)))
     i("entry cost is {t}".format(t=market.quote.print(position.entry_cost)))
     i("exit cost is {t}".format(t=market.quote.print(position.exit_cost)))
 
-    # if entry_cost is non-zero, check if position has to be closed
-    if position.entry_cost > 0 and position.is_open():
-        roi = round(((last_price / position.entry_price) - 1) * 100, 2)
+    position.check_stops(last_price)
 
-        if (signal == "sell" or roi > strategy.stop_gain
-                or roi < strategy.stop_loss * -1):
-            i("roi = {r}%".format(r=roi))
-            i("minimum roi = {r}%".format(r=strategy.stop_gain))
-            i("stoploss = -{r}%".format(r=strategy.stop_loss))
-            i("closing position")
-            core.watchdog.notice(position.get_notice(prefix="closing "))
-
-            # when selling, bucket_max becomes an amount instead of cost
-            position.bucket_max = market.base.div(
-                position.entry_amount,
-                strategy.num_orders,
-                trunc_precision=market.amount_precision)
-            position.bucket = 0
-            position.status = "closing"
+    # check if position has to be closed
+    if position.entry_cost > 0 and position.is_open() and signal == "sell":
+        position.close()
 
     # close position if entry_cost is zero while closing it or got sell signal
-    elif (position.entry_cost == 0
-          and (position.status == "closing" or signal == "sell")):
+    if position.entry_cost == 0 \
+            and (position.status == "closing" or signal == "sell"):
         i("entry_cost is 0, position is now closed")
         position.status = "closed"
 
     if position.is_pending():
         now = datetime.datetime.utcnow()
-        next_bucket = now + datetime.timedelta(
-            minutes=strategy.bucket_interval)
+        nxt_bucket = now + datetime.timedelta(minutes=strategy.bucket_interval)
         i("next bucket starts at {t}".format(t=position.next_bucket))
 
         # check if current bucket needs to be reset
         if now > position.next_bucket:
             i("moving on to next bucket")
-            position.next_bucket = next_bucket
+            position.next_bucket = nxt_bucket
             position.bucket = 0
 
         # compute limit and market orders amounts or costs

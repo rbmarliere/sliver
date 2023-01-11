@@ -89,11 +89,15 @@ def watch():
     notice("init")
 
     while (True):
-        try:
-            core.db.connection.connect()
+        core.db.connection.connect()
 
-            # for position in core.db.get_active_positions():
-            # TODO check SL/SG
+        try:
+            for position in core.db.get_active_positions():
+                position.check_stops()
+        except ccxt.BaseError:
+            pass
+
+        try:
 
             for strategy in core.db.get_pending_strategies():
                 # download price data, update indicators and signal
@@ -152,7 +156,6 @@ def watch():
             error("crashed", e)
             break
 
-        finally:
-            core.db.connection.close()
+        core.db.connection.close()
 
     notice("shutdown")
