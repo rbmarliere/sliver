@@ -61,7 +61,9 @@ def get_inventory(user: core.db.User):
         inv_total_val += balance["total_value"]
 
     inventory = {}
-    inventory["balances"] = balances
+    inventory["balances"] = sorted(balances,
+                                   key=lambda k: k["total_value"],
+                                   reverse=True)
     inventory["free_value"] = inv_free_val
     inventory["used_value"] = inv_used_val
     inventory["total_value"] = inv_total_val
