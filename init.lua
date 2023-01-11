@@ -6,7 +6,7 @@ require("lspconfig").pylsp.setup({
     pylsp = {
       plugins = {
         mccabe = {
-          threshold = 20,
+          threshold = 25,
         },
       },
     },
