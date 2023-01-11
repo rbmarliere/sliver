@@ -413,22 +413,21 @@ class Position(BaseModel):
     # position profit or loss
     pnl = peewee.BigIntegerField(default=0)
 
-    def open(u_st: UserStrategy, tcost: int):
+    def open(u_st: UserStrategy, t_cost: int):
         strategy = u_st.strategy
         now = datetime.datetime.utcnow()
-        next_bucket = now + datetime.timedelta(
-            minutes=strategy.bucket_interval)
+        nxt_bucket = now + datetime.timedelta(minutes=strategy.bucket_interval)
 
         bucket_max = strategy.market.quote.div(
-            tcost,
-            strategy.num_orders,
+            t_cost,
+            strategy.num_steps,
             trunc_precision=strategy.market.price_precision)
 
         position = Position(user_strategy=u_st,
-                            next_bucket=next_bucket,
+                            next_bucket=nxt_bucket,
                             bucket_max=bucket_max,
                             status="opening",
-                            target_cost=tcost)
+                            target_cost=t_cost)
         position.save()
 
         i("opening position {i}".format(i=position.id))
@@ -450,6 +449,8 @@ class Position(BaseModel):
         self.bucket = 0
         self.status = "closing"
 
+        self.save()
+
     def check_stops(self, last_price=None):
         strategy = self.user_strategy.strategy
         market = strategy.market
@@ -459,14 +460,14 @@ class Position(BaseModel):
             p = core.exchange.api.fetch_ticker(market.get_symbol())
             last_price = market.quote.transform(p["last"])
 
-        roi = round(((last_price / self.entry_price) - 1) * 100, 2)
-
-        i("checking stops for position {p}".format(p=self))
-        if (roi > strategy.stop_gain or roi < strategy.stop_loss * -1):
-            i("roi = {r}%".format(r=roi))
-            i("stopgain = {r}%".format(r=strategy.stop_gain))
-            i("stoploss = -{r}%".format(r=strategy.stop_loss))
-            self.close()
+        if self.entry_price > 0:
+            roi = round(((last_price / self.entry_price) - 1) * 100, 2)
+            i("checking stops for position {p}".format(p=self))
+            if (roi > strategy.stop_gain or roi < strategy.stop_loss * -1):
+                i("roi = {r}%".format(r=roi))
+                i("stopgain = {r}%".format(r=strategy.stop_gain))
+                i("stoploss = -{r}%".format(r=strategy.stop_loss))
+                self.close()
 
     def get_notice(self, prefix="", suffix=""):
         return ("{p}position for user {u} with strategy {s} in market {m} {su}"
