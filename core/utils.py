@@ -66,7 +66,7 @@ def get_timeframe_freq(timeframe):
     return timeframes[timeframe]
 
 
-def get_timeframe_delta(timeframe):
+def get_timeframe_in_seconds(timeframe):
     timeframes = {
         "1m": 1 * 60,
         "3m": 3 * 60,
@@ -86,7 +86,11 @@ def get_timeframe_delta(timeframe):
 
     assert timeframe in timeframes, "timeframe not supported"
 
-    return datetime.timedelta(seconds=timeframes[timeframe])
+    return timeframes[timeframe]
+
+
+def get_timeframe_delta(timeframe):
+    return datetime.timedelta(seconds=get_timeframe_in_seconds(timeframe))
 
 
 def truncate(f, n):
