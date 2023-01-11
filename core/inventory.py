@@ -190,26 +190,32 @@ def sync_balance(cred: core.db.Credential):
             p = core.exchange.api.fetch_ticker(asset.ticker + "/" +
                                                value_asset.ticker)
 
-            free_value = p["last"] * free if free else 0
-            used_value = p["last"] * used if used else 0
-            total_value = p["last"] * total if total else 0
+            free_value = (ex_val_asset.transform(p["last"] * free)
+                          if free else 0)
+            used_value = (ex_val_asset.transform(p["last"] * used)
+                          if used else 0)
+            total_value = (ex_val_asset.transform(p["last"] * total)
+                           if total else 0)
 
         except ccxt.BadSymbol:
             try:
                 p = core.exchange.api.fetch_ticker(value_asset.ticker + "/" +
                                                    asset.ticker)
 
-                free_value = free / p["last"] if free else 0
-                used_value = used / p["last"] if used else 0
-                total_value = total / p["last"] if total else 0
+                free_value = (ex_val_asset.transform(free / p["last"])
+                              if free else 0)
+                used_value = (ex_val_asset.transform(used / p["last"])
+                              if used else 0)
+                total_value = (ex_val_asset.transform(total / p["last"])
+                               if total else 0)
             except ccxt.BadSymbol:
                 free_value = u_bal.free
                 used_value = u_bal.used
                 total_value = u_bal.total
 
-        u_bal.free_value = ex_val_asset.transform(free_value)
-        u_bal.used_value = ex_val_asset.transform(used_value)
-        u_bal.total_value = ex_val_asset.transform(total_value)
+        u_bal.free_value = free_value
+        u_bal.used_value = used_value
+        u_bal.total_value = total_value
 
         u_bal.save()
 
