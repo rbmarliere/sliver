@@ -6,6 +6,7 @@ import peewee
 from ccxt.base.decimal_to_precision import DECIMAL_PLACES, NO_PADDING
 
 import core
+from core.watchdog import info as i
 
 
 # precision modes:
@@ -131,7 +132,7 @@ class Credential(BaseModel):
         constraints = [peewee.SQL("UNIQUE (user_id, exchange_id)")]
 
     def disable(self):
-        core.watchdog.info("disabling credential {s}...".format(s=self))
+        i("disabling credential {s}...".format(s=self))
         self.active = False
         self.save()
 
@@ -225,15 +226,12 @@ class Strategy(BaseModel):
     def refresh(self):
         symbol = self.market.get_symbol()
 
-        core.watchdog.info("===========================================")
-        core.watchdog.info("refreshing strategy {s}".format(s=self))
-        core.watchdog.info("market is {m} ({i})".format(m=symbol,
-                                                        i=self.market.id))
-        core.watchdog.info("timeframe is {T}".format(T=self.timeframe))
-        core.watchdog.info("exchange is {e}"
-                           .format(e=self.market.base.exchange.name))
-        core.watchdog.info("type is {m}".format(
-            m=core.strategies.Types(self.type).name))
+        i("===========================================")
+        i("refreshing strategy {s}".format(s=self))
+        i("market is {m} ({i})".format(m=symbol, i=self.market.id))
+        i("timeframe is {T}".format(T=self.timeframe))
+        i("exchange is {e}".format(e=self.market.base.exchange.name))
+        i("type is {m}".format(m=core.strategies.Types(self.type).name))
 
         # ideas:
         # - reset num_orders, spread and refresh_interval dynamically
@@ -245,12 +243,12 @@ class Strategy(BaseModel):
 
         core.strategies.load(self).refresh()
 
-        core.watchdog.info("signal is {s}".format(s=self.get_signal()))
+        i("signal is {s}".format(s=self.get_signal()))
 
         self.postpone()
 
     def disable(self):
-        core.watchdog.info("disabling strategy {s}...".format(s=self))
+        i("disabling strategy {s}...".format(s=self))
         self.active = False
         self.save()
 
@@ -261,7 +259,7 @@ class Strategy(BaseModel):
 
     def postpone(self):
         self.next_refresh = self.get_next_refresh()
-        core.watchdog.info("next refresh at {n}".format(n=self.next_refresh))
+        i("next refresh at {n}".format(n=self.next_refresh))
         self.save()
 
     def subscribe(self, user, subscribed):
@@ -331,7 +329,7 @@ class UserStrategy(BaseModel):
         constraints = [peewee.SQL("UNIQUE (user_id, strategy_id)")]
 
     def disable(self):
-        core.watchdog.info("disabling user's strategy {s}...".format(s=self))
+        i("disabling user's strategy {s}...".format(s=self))
         self.active = False
         self.save()
 
@@ -353,10 +351,8 @@ class UserStrategy(BaseModel):
         exchange = strategy.market.base.exchange
         user = self.user
 
-        core.watchdog.info("...........................................")
-        core.watchdog.info("refreshing {u}'s strategy {s}"
-                           .format(u=self.user.email,
-                                   s=self))
+        i("...........................................")
+        i("refreshing {u}'s strategy {s}".format(u=self.user.email, s=self))
 
         # set api to current exchange
         credential = user.get_active_credential(exchange).get()
@@ -371,7 +367,7 @@ class UserStrategy(BaseModel):
         core.inventory.sync_balances(self.user)
 
         if position is None:
-            core.watchdog.info("no active position")
+            i("no active position")
 
             # create position if apt
             if strategy.get_signal() == "buy":
@@ -379,8 +375,7 @@ class UserStrategy(BaseModel):
                     self)
 
                 if (t_cost == 0 or t_cost < strategy.market.cost_min):
-                    core.watchdog.info("target cost less than minimums, "
-                                       "skipping position creation...")
+                    i("invalid target_cost, could not create position")
 
                 if t_cost > 0:
                     position = core.db.Position.open(self, t_cost)
@@ -433,7 +428,7 @@ class Position(BaseModel):
                             target_cost=tcost)
         position.save()
 
-        core.watchdog.info("opening position {i}".format(i=position.id))
+        i("opening position {i}".format(i=position.id))
         core.watchdog.notice(position.get_notice(prefix="opening "))
 
         return position
@@ -493,13 +488,9 @@ class Position(BaseModel):
         if self.status == "opening":
             # remaining is a cost
             remaining = self.get_remaining_to_open()
-
-            core.watchdog.info(
-                "bucket cost is {a}"
-                .format(a=market.quote.print(self.bucket)))
-            core.watchdog.info(
-                "remaining to fill in bucket is {r}"
-                .format(r=market.quote.print(remaining)))
+            rf_formatted = market.quote.print(remaining)
+            i("bucket cost is {a}".format(a=market.quote.print(self.bucket)))
+            i("remaining to fill in bucket is {r}".format(r=rf_formatted))
 
             return remaining
 
@@ -508,15 +499,12 @@ class Position(BaseModel):
             remaining_to_fill = self.get_remaining_to_fill()
             remaining_to_exit = self.get_remaining_to_exit()
             remaining = min(remaining_to_fill, remaining_to_exit)
-            core.watchdog.info(
-                "bucket amount is {a}"
-                .format(a=market.base.print(self.bucket)))
-            core.watchdog.info(
-                "remaining to fill in bucket is {r}"
-                .format(r=market.base.print(remaining_to_fill)))
-            core.watchdog.info(
-                "remaining to exit position is {r}"
-                .format(r=market.base.print(remaining_to_exit)))
+
+            i("bucket amount is {a}".format(a=market.base.print(self.bucket)))
+            rf_formatted = market.base.print(remaining_to_fill)
+            i("remaining to fill in bucket is {r}".format(r=rf_formatted))
+            re_formatted = market.base.print(remaining_to_exit)
+            i("remaining to exit position is {r}".format(r=re_formatted))
 
             # avoid position rounding errors by exiting early
             r = remaining_to_exit - remaining_to_fill
@@ -524,8 +512,7 @@ class Position(BaseModel):
             if (position_remainder > 0
                     and
                     position_remainder * last_price <= market.cost_min):
-                core.watchdog.info("position remainder is {r}"
-                                   .format(r=market.base.print(r)))
+                i("position remainder is {r}".format(r=market.base.print(r)))
                 remaining = remaining_to_exit
 
             return remaining
@@ -609,15 +596,12 @@ class Order(BaseModel):
         cost = market.quote.transform(cost)
         filled = market.base.transform(filled)
 
-        msg = "{a} @ {p} ({c})" \
-            .format(a=market.base.print(amount),
-                    p=market.quote.print(price),
-                    c=market.quote.print(market.base.format(amount)*price))
+        implicit_cost = market.base.format(amount)*price
+        i("{a} @ {p} ({c})".format(a=market.base.print(amount),
+                                   p=market.quote.print(price),
+                                   c=market.quote.print(implicit_cost)))
 
-        core.watchdog.info(msg)
-
-        core.watchdog.info("filled: {f}"
-                           .format(f=market.base.print(filled)))
+        i("filled: {f}".format(f=market.base.print(filled)))
 
         # check for fees
         if ex_order["fee"] is None:
