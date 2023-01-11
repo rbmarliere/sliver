@@ -78,4 +78,12 @@ export class CredentialComponent implements OnInit {
     });
   }
 
+  deactivateCredential(): void {
+    const cred = this.form.value;
+    cred.active = false;
+
+    this.credentialService.updateCredential(cred).subscribe({
+      next: () => location.reload(),
+    });
+  }
 }
