@@ -238,6 +238,12 @@ def create_order(type: str,
         i("invalid order parameters, skipping...")
         return
 
+    except ccxt.AuthenticationError as e:
+        core.watchdog.error("authentication error", e)
+        if "credential" in globals():
+            credential.disable()
+        return
+
     except ccxt.RequestTimeout as e:
         core.watchdog.error("order creation request timeout", e)
 
