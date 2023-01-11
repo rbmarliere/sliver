@@ -92,13 +92,16 @@ def watch():
         try:
             core.db.connection.connect()
 
-            # TODO check stop losses
+            # for position in core.db.get_active_positions():
+            # TODO check SL/SG
 
             for strategy in core.db.get_pending_strategies():
+                # download price data, update indicators and signal
                 strategy.refresh()
 
                 for user_strat in strategy.get_active_users():
                     try:
+                        # sync orders and balances, update or create position
                         user_strat.refresh()
 
                     except core.db.Credential.DoesNotExist as e:
