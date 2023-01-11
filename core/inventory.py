@@ -12,6 +12,7 @@
 import ccxt
 
 import core
+from core.watchdog import info as i
 
 
 def get_balance_by_asset(user: core.db.User, asset: core.db.Asset):
@@ -106,28 +107,27 @@ def get_target_cost(user_strat: core.db.UserStrategy):
             cash_in_exch = available_in_exch.free
         else:
             cash_in_exch = available_in_exch.total
-    core.watchdog.info("available {a} in exchange is {v}"
-                       .format(a=user_strat.strategy.market.quote.asset.ticker,
-                               v=print(cash_in_exch)))
+    i("available {a} in exchange is {v}"
+      .format(a=user_strat.strategy.market.quote.asset.ticker,
+              v=print(cash_in_exch)))
 
     usdt_balance = get_balance_by_asset(user, core.db.Asset.get(ticker="USDT"))
     cash_liquid = transform(
         usdt_balance["total"] - inventory["positions_reserved"])
 
     available = min(cash_in_exch, cash_liquid) * (1 - user.cash_reserve)
-    core.watchdog.info("available cash is {v}".format(v=print(available)))
+    i("available cash is {v}".format(v=print(available)))
 
     active_strat_in_exch = user.get_exchange_strategies(exchange).count()
     pos_reserves_in_exch = [p.target_cost for p in
                             user.get_exchange_open_positions(exchange)]
     available = (available + sum(pos_reserves_in_exch)) / active_strat_in_exch
-    core.watchdog.info(
-        "available for strategy is {v}".format(v=print(available)))
+    i("available for strategy is {v}".format(v=print(available)))
 
     max_risk = transform(inventory["max_risk"])
     target_cost = min(max_risk, available)
-    core.watchdog.info("max risk is {v}".format(v=print(max_risk)))
-    core.watchdog.info("target cost is {v}".format(v=print(target_cost)))
+    i("max risk is {v}".format(v=print(max_risk)))
+    i("target cost is {v}".format(v=print(target_cost)))
 
     return int(target_cost)
 
@@ -141,7 +141,7 @@ def sync_balance(cred: core.db.Credential):
     value_ticker = "USDT"
     value_asset, new = core.db.Asset.get_or_create(ticker=value_ticker)
     if new:
-        core.watchdog.info("saved asset {a}".format(a=value_asset.ticker))
+        i("saved asset {a}".format(a=value_asset.ticker))
 
     try:
         ex_bal = core.exchange.api.fetch_balance()
@@ -153,8 +153,7 @@ def sync_balance(cred: core.db.Credential):
     ex_val_asset, new = core.db.ExchangeAsset.get_or_create(
         exchange=cred.exchange, asset=value_asset)
     if new:
-        core.watchdog.info("saved asset " + ex_val_asset.asset.ticker +
-                           " to exchange")
+        i("saved asset {a} to exchange".format(a=ex_val_asset.asset.ticker))
 
     # for each exchange asset, update internal user balance
     for ticker in ex_bal["free"]:
@@ -167,20 +166,17 @@ def sync_balance(cred: core.db.Credential):
 
         asset, new = core.db.Asset.get_or_create(ticker=ticker.upper())
         if new:
-            core.watchdog.info("saved new asset {a}"
-                               .format(a=asset.ticker))
+            i("saved new asset {a}".format(a=asset.ticker))
 
         ex_asset, new = core.db.ExchangeAsset.get_or_create(
             exchange=cred.exchange, asset=asset)
         if new:
-            core.watchdog.info("saved asset {a}"
-                               .format(a=ex_asset.asset.ticker))
+            i("saved asset {a}".format(a=ex_asset.asset.ticker))
 
         u_bal, new = core.db.Balance.get_or_create(
             user=cred.user, asset=ex_asset, value_asset=ex_val_asset)
         if new:
-            core.watchdog.info("saved new balance {b}"
-                               .format(b=u_bal.id))
+            i("saved new balance {b}".format(b=u_bal.id))
 
         u_bal.free = ex_asset.transform(free) if free else 0
         u_bal.used = ex_asset.transform(used) if used else 0
@@ -229,8 +225,7 @@ def sync_balances(user: core.db.User):
     active_exchanges = []
     # sync balance for each exchange the user has a key
     for cred in user.credential_set.where(core.db.Credential.active):
-        core.watchdog.info("fetching user balance in exchange {e}"
-                           .format(e=cred.exchange.name))
+        i("fetching user balance in exchange {e}".format(e=cred.exchange.name))
         core.exchange.set_api(cred=cred)
         sync_balance(cred)
         active_exchanges.append(cred.exchange)
