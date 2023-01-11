@@ -302,15 +302,24 @@ class Strategy(BaseModel):
 
     def get_next_refresh(self):
         now = datetime.datetime.utcnow()
-        try:
-            freq = "{i}T".format(i=self.refresh_interval)
-            last = now.replace(minute=0, second=0, microsecond=0)
-            range = pandas.date_range(last, periods=61, freq=freq)
-            series = range.to_series().asfreq(freq)
-            next_refresh = series.loc[series > now].iloc[0]
-            return next_refresh
-        except ValueError:
-            return now + core.utils.get_timeframe_delta(self.timeframe)
+        tf_interval = core.utils.get_timeframe_delta(self.timeframe) / 60
+        if self.refresh_interval < tf_interval:
+            # refresh interval is smaller than timeframe,
+            # therefore its safe to use it,
+            # otherwise its possible to miss signals
+            # i.e. 120 refresh_interval and 1h timeframe
+            # there's always gonna be a signal in between
+            try:
+                freq = "{i}T".format(i=self.refresh_interval)
+                last = now.replace(minute=0, second=0, microsecond=0)
+                range = pandas.date_range(last, periods=61, freq=freq)
+                series = range.to_series().asfreq(freq)
+                next_refresh = series.loc[series > now].iloc[0]
+                return next_refresh
+            except ValueError:
+                return now + core.utils.get_timeframe_delta(self.timeframe)
+
+        return now + core.utils.get_timeframe_delta(self.timeframe)
 
 
 class UserStrategy(BaseModel):
