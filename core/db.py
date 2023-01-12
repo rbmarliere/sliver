@@ -469,7 +469,7 @@ class Position(BaseModel):
 
         if self.entry_price > 0:
             roi = round(((last_price / self.entry_price) - 1) * 100, 2)
-            i("checking stops for position {p}".format(p=self))
+            # i("checking stops for position {p}".format(p=self))
             if (roi > strategy.stop_gain or roi < strategy.stop_loss * -1):
                 i("roi = {r}%".format(r=roi))
                 i("stopgain = {r}%".format(r=strategy.stop_gain))
