@@ -224,6 +224,7 @@ class Strategy(BaseModel):
     refresh_interval = peewee.IntegerField(default=1)  # 1 minute
     next_refresh = peewee.DateTimeField(default=datetime.datetime.utcnow())
     num_orders = peewee.IntegerField(default=1)
+    # min_buckets = peewee.IntegerField(default=1)
     bucket_interval = peewee.IntegerField(default=60)  # 1 hour
     spread = peewee.DecimalField(default=1)  # 1%
     stop_gain = peewee.DecimalField(default=5)  # 5%
@@ -391,7 +392,7 @@ class UserStrategy(BaseModel):
                     position = core.db.Position.open(self, t_cost)
 
         if position:
-            core.exchange.refresh(position)
+            position.refresh()
 
 
 class Position(BaseModel):
@@ -530,9 +531,9 @@ class Position(BaseModel):
         if self.status == "opening":
             # remaining is a cost
             remaining = self.get_remaining_to_open()
-            rf_formatted = market.quote.print(remaining)
             i("bucket cost is {a}".format(a=market.quote.print(self.bucket)))
-            i("remaining to fill in bucket is {r}".format(r=rf_formatted))
+            i("remaining to fill in bucket is {r}"
+              .format(r=market.quote.print(remaining)))
 
             return remaining
 
@@ -543,10 +544,10 @@ class Position(BaseModel):
             remaining = min(remaining_to_fill, remaining_to_exit)
 
             i("bucket amount is {a}".format(a=market.base.print(self.bucket)))
-            rf_formatted = market.base.print(remaining_to_fill)
-            i("remaining to fill in bucket is {r}".format(r=rf_formatted))
-            re_formatted = market.base.print(remaining_to_exit)
-            i("remaining to exit position is {r}".format(r=re_formatted))
+            i("remaining to fill in bucket is {r}"
+              .format(r=market.base.print(remaining_to_fill)))
+            i("remaining to exit position is {r}"
+              .format(r=market.base.print(remaining_to_exit)))
 
             # avoid position rounding errors by exiting early
             r = remaining_to_exit - remaining_to_fill
@@ -586,6 +587,158 @@ class Position(BaseModel):
                     self.exit_cost / self.exit_amount)
 
         self.save()
+
+    def refresh(self):
+        strategy = self.user_strategy.strategy
+        signal = strategy.get_signal()
+        market = strategy.market
+        p = core.exchange.api.fetch_ticker(market.get_symbol())
+        last_p = market.quote.transform(p["last"])
+
+        i("___________________________________________")
+        i("refreshing '{s}' self {i}".format(s=self.status, i=self.id))
+        i("last price is {p}".format(p=strategy.market.quote.print(last_p)))
+        i("target cost is {t}".format(t=market.quote.print(self.target_cost)))
+        i("entry cost is {t}".format(t=market.quote.print(self.entry_cost)))
+        i("exit cost is {t}".format(t=market.quote.print(self.exit_cost)))
+
+        self.check_stops(last_p)
+
+        # check if position has to be closed
+        if self.entry_cost > 0 and self.is_open() and signal == "sell":
+            self.close()
+
+        # handle special case of hanging position
+        if self.entry_cost == 0 \
+                and (self.status == "closing" or signal == "sell"):
+            i("entry_cost is 0, position is now closed")
+            self.status = "closed"
+
+        if self.is_pending():
+            market_total, limit_total = self.refresh_bucket(last_p)
+            self.refresh_orders(market_total, limit_total, last_p)
+
+        self.refresh_status()
+
+        self.save()
+
+    def refresh_bucket(self, last_p):
+        strategy = self.user_strategy.strategy
+        market = strategy.market
+
+        now = datetime.datetime.utcnow()
+        nxt_bucket = now + datetime.timedelta(minutes=strategy.bucket_interval)
+        i("next bucket starts at {t}".format(t=self.next_bucket))
+
+        # check if current bucket needs to be reset
+        if now > self.next_bucket:
+            i("moving on to next bucket")
+            self.next_bucket = nxt_bucket
+            self.bucket = 0
+
+        # compute limit and market orders amounts or costs
+        i("limit to market ratio is {r}".format(r=strategy.lm_ratio))
+        remaining = self.get_remaining(last_p)
+        if strategy.lm_ratio == 1:
+            market_total = remaining
+            limit_total = 0
+        elif strategy.lm_ratio > 0:
+            market_total = int(remaining * strategy.lm_ratio)
+            limit_total = remaining - market_total
+        else:
+            market_total = 0
+            limit_total = remaining
+
+        # check if theyre amounts or costs
+        if self.status == "opening":
+            remaining_cost = remaining
+            market_total_cost = market_total
+            limit_total_cost = limit_total
+        elif self.status == "closing":
+            remaining_cost = market.base.format(remaining) * last_p
+            market_total_cost = market.base.format(market_total) * last_p
+            limit_total_cost = market.base.format(limit_total) * last_p
+
+        # check if current bucket is filled
+        if datetime.datetime.utcnow() < self.next_bucket \
+                and remaining_cost < market.cost_min:
+            i("bucket is full")
+            return 0, 0
+
+        # if bucket is not full but can't insert new orders, fill at market
+        if strategy.lm_ratio > 0 \
+            and (market_total_cost < market.cost_min
+                 or limit_total_cost < market.cost_min):
+            market_total = remaining
+            limit_total = 0
+
+        return market_total, limit_total
+
+    def refresh_orders(self, market_total, limit_total, last_p):
+        strategy = self.user_strategy.strategy
+        market = strategy.market
+
+        # create buy orders for an opening position
+        if self.status == "opening":
+            if market_total > 0:
+                # market_total is a cost
+                market_total = market.base.div(market_total, last_p)
+                core.exchange.create_order("market",
+                                           "buy",
+                                           self,
+                                           market_total,
+                                           last_p)
+
+            if limit_total > 0:
+                core.exchange.create_limit_buy_orders(limit_total,
+                                                      self,
+                                                      last_p,
+                                                      strategy.num_orders,
+                                                      strategy.spread)
+
+        # create sell orders for a closing position or close
+        elif self.status == "closing":
+            if market_total > 0:
+                # market_total is an amount
+                core.exchange.create_order("market",
+                                           "sell",
+                                           self,
+                                           market_total,
+                                           last_p)
+
+            if limit_total > 0:
+                core.exchange.create_limit_sell_orders(limit_total,
+                                                       self,
+                                                       last_p,
+                                                       strategy.num_orders,
+                                                       strategy.spread)
+
+    def refresh_status(self):
+        strategy = self.user_strategy.strategy
+        market = strategy.market
+
+        # position finishes closing when exit equals entry
+        amount_diff = self.entry_amount - self.exit_amount
+        cost_diff = int(market.quote.format(amount_diff * self.exit_price))
+        if self.exit_cost > 0 \
+                and self.status == "closing" \
+                and cost_diff < market.cost_min:
+            self.status = "closed"
+            self.pnl = (self.exit_cost
+                        - self.entry_cost
+                        - self.fee)
+            i("position is now closed, pnl: {r}"
+              .format(r=market.quote.print(self.pnl)))
+            core.watchdog.notice(self.get_notice(prefix="closed "))
+
+        # position finishes opening when it reaches target
+        cost_diff = self.target_cost - self.entry_cost
+        if self.status == "opening" \
+                and self.entry_cost > 0 \
+                and cost_diff < market.cost_min:
+            self.status = "open"
+            i("self is now open")
+            core.watchdog.notice(self.get_notice(suffix="is now open"))
 
 
 class Order(BaseModel):
