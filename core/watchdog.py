@@ -94,6 +94,7 @@ def watch():
         try:
             for position in core.db.get_active_positions():
                 position.check_stops()
+                # TODO: actually set orders if closed!
         except ccxt.BaseError:
             pass
 
