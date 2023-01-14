@@ -6,8 +6,7 @@ import peewee
 from ccxt.base.decimal_to_precision import DECIMAL_PLACES, NO_PADDING
 
 import core
-from core.watchdog import info as i
-from core.watchdog import notice as n
+from core.watchdog import info as i, notice as n
 
 
 # precision modes:
@@ -155,8 +154,8 @@ class ExchangeAsset(BaseModel):
             return self.transform(div, prec=(self.precision - prec))
 
     def format(self, value, prec=None):
-        if value is None:
-            return
+        if not value:
+            return 0
         if prec is None:
             prec = self.precision
         precision = D("10") ** D(str(-1 * prec))
@@ -164,8 +163,8 @@ class ExchangeAsset(BaseModel):
         return value.quantize(precision)
 
     def transform(self, value, prec=None):
-        if value is None:
-            return
+        if not value:
+            return 0
         if prec is None:
             prec = self.precision
         precision = D("10") ** D(str(prec))
