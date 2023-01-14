@@ -219,7 +219,7 @@ class Strategy(BaseModel):
     refresh_interval = peewee.IntegerField(default=1)  # 1 minute
     next_refresh = peewee.DateTimeField(default=datetime.datetime.utcnow())
     num_orders = peewee.IntegerField(default=1)
-    # min_buckets = peewee.IntegerField(default=1)
+    min_buckets = peewee.IntegerField(default=1)
     bucket_interval = peewee.IntegerField(default=60)  # 1 hour
     spread = peewee.DecimalField(default=1)  # 1%
     stop_gain = peewee.DecimalField(default=5)  # 5%
@@ -523,7 +523,7 @@ class Position(BaseModel):
 
         bucket_max = \
             market.quote.div(t_cost,
-                             market.quote.transform(strategy.num_orders),
+                             market.quote.transform(strategy.min_buckets),
                              prec=strategy.market.price_precision)
 
         position = Position(user_strategy=u_st,
@@ -548,7 +548,7 @@ class Position(BaseModel):
         # when selling, bucket_max becomes an amount instead of cost
         self.bucket_max = \
             market.base.div(self.entry_amount,
-                            market.base.transform(strategy.num_orders),
+                            market.base.transform(strategy.min_buckets),
                             prec=strategy.market.amount_precision)
         self.bucket = 0
         self.status = "closing"
