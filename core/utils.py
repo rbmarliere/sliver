@@ -93,16 +93,6 @@ def get_timeframe_delta(timeframe):
     return datetime.timedelta(seconds=get_timeframe_in_seconds(timeframe))
 
 
-def truncate(f, n):
-    '''Truncates/pads a float f to n decimal places without rounding'''
-    # https://stackoverflow.com/questions/783897/how-to-truncate-float-values
-    s = '{}'.format(f)
-    if 'e' in s or 'E' in s:
-        return float('{0:.{1}f}'.format(f, n))
-    i, p, d = s.partition('.')
-    return float('.'.join([i, (d + '0' * n)[:n]]))
-
-
 def get_mean_var(series: pandas.DataFrame,
                  n: int,
                  old_mean: decimal.Decimal,
