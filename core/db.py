@@ -309,7 +309,7 @@ class Strategy(BaseModel):
     def get_next_refresh(self):
         now = datetime.datetime.utcnow()
         tf_interval = core.utils.get_timeframe_in_seconds(self.timeframe) / 60
-        if self.refresh_interval < tf_interval:
+        if self.refresh_interval <= tf_interval:
             # refresh interval is smaller than timeframe,
             # therefore its safe to use it,
             # otherwise its possible to miss signals
