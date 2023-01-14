@@ -788,7 +788,7 @@ class Order(BaseModel):
         if not time:
             time = datetime.datetime.now()
 
-        price = ex_order["price"]
+        price = ex_order["average"]
         amount = ex_order["amount"]
         filled = ex_order["filled"]
         if not filled:
