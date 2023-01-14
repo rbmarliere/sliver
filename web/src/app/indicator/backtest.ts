@@ -1,6 +1,26 @@
+import { Indicator } from '../indicator';
+import { Strategy } from '../strategy';
 import { mean, median, msToString } from './utils';
 
-export function getBaseBacktestLog(data: any, start: Date, end: Date): string {
+export function backtest(strategy: Strategy, indicators: Indicator, _start: string, _end: string): string {
+  let start = new Date(_start);
+  let end = new Date(_end);
+
+  let backtest_log = getBaseBacktestLog(indicators, start, end);
+
+  if (strategy.type === 0) {
+    // MANUAL
+  } else if (strategy.type === 1) {
+    // RANDOM
+  } else if (strategy.type === 2) {
+    // HYPNOX
+    backtest_log = backtest_log.concat(getHypnoxBacktestLog(indicators, start, end));
+  }
+
+  return backtest_log;
+}
+
+function getBaseBacktestLog(data: any, start: Date, end: Date): string {
   let indexes = getIndexes(data, start, end);
   let positions = getPositions(data, indexes);
 
@@ -53,7 +73,7 @@ buy and hold roi = ${roi_bh.toFixed(2)}%
 `;
 }
 
-export function getHypnoxBacktestLog(data: any, start: Date, end: Date): string {
+function getHypnoxBacktestLog(data: any, start: Date, end: Date): string {
   if (data.i_score.length == 0 || data.p_score.length == 0) {
     return ``;
   }

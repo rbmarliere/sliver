@@ -28,6 +28,7 @@ import { CredentialComponent } from './credential/credential.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { ErrorDialogComponent } from './error-dialog/error-dialog.component';
 import { HttpErrorInterceptor } from './http-error.interceptor';
+import { IndicatorComponent } from './indicator/indicator.component';
 import { LoginComponent } from './login/login.component';
 import { NavbarComponent } from './navbar/navbar.component';
 import { OrderComponent } from './order/order.component';
@@ -47,6 +48,7 @@ import { StrategyComponent } from './strategy/strategy.component';
     PositionComponent,
     StrategiesComponent,
     StrategyComponent,
+    IndicatorComponent,
   ],
   imports: [
     AppRoutingModule,

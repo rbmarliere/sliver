@@ -1,18 +1,41 @@
+import { Indicator } from "../indicator";
 import { Strategy } from "../strategy";
 
-export function getBasePlot(strategy: Strategy): any {
+
+export function getPlot(strategy: Strategy, indicators: Indicator): any {
+  let plot = getBasePlot(indicators);
+
+  if (strategy.type === 0) {
+    // MANUAL
+  } else if (strategy.type === 1) {
+    // RANDOM
+  } else if (strategy.type === 2) {
+    // HYPNOX
+    plot.data = plot.data.concat(getHypnoxPlotData(indicators));
+    plot.layout = {
+      ...plot.layout, ...getHypnoxPlotLayout(),
+    }
+  } else if (strategy.type === 3) {
+    // DD3
+    plot.data = plot.data.concat(getDD3PlotData(indicators));
+  }
+
+  return plot;
+}
+
+function getBasePlot(indicators: Indicator): any {
   return {
     config: getPlotConfig(),
-    data: getPlotData(strategy.prices),
-    layout: getPlotLayout(strategy.symbol),
+    data: getPlotData(indicators),
+    layout: getPlotLayout(),
   }
 }
 
-function getPlotLayout(title: string): any {
+function getPlotLayout(): any {
   return {
     height: 1100,
     showlegend: false,
-    title: title,
+    // title: title,
     xaxis: {
       rangeslider: { visible: false },
       autorange: true,
@@ -63,7 +86,7 @@ function getPlotData(data: any): any {
   ];
 }
 
-export function getHypnoxPlotData(data: any): any {
+function getHypnoxPlotData(data: any): any {
   return [
     {
       name: 'i_score',
@@ -84,7 +107,7 @@ export function getHypnoxPlotData(data: any): any {
   ]
 }
 
-export function getHypnoxPlotLayout(): any {
+function getHypnoxPlotLayout(): any {
   return {
     showlegend: false,
     xaxis: {
@@ -97,7 +120,7 @@ export function getHypnoxPlotLayout(): any {
   }
 }
 
-export function getDD3PlotData(data: any): any {
+function getDD3PlotData(data: any): any {
   return [
     {
       name: 'ma1',
