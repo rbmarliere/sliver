@@ -462,17 +462,15 @@ class Position(BaseModel):
     def get_remaining_to_exit(self):
         return self.entry_amount - self.exit_amount
 
-    def get_remaining_to_open(self):
-        return min(self.target_cost - self.entry_cost,
-                   self.bucket_max - self.bucket)
-
-    def get_remaining_cost(self, last_price):
+    def get_remaining_cost(self):
         market = self.user_strategy.strategy.market
 
         # if self.status != "opening":
         #     return
 
-        remaining = self.get_remaining_to_open()
+        remaining = min(self.target_cost - self.entry_cost,
+                        self.bucket_max - self.bucket)
+
         i("bucket cost is {a}".format(a=market.quote.print(self.bucket)))
         i("remaining to fill in bucket is {r}"
             .format(r=market.quote.print(remaining)))
@@ -486,7 +484,6 @@ class Position(BaseModel):
         # if self.status != "closing":
         #     return
 
-        # remaining is an amount
         remaining_to_fill = self.get_remaining_to_fill()
         remaining_to_exit = self.get_remaining_to_exit()
         remaining = min(remaining_to_fill, remaining_to_exit)
