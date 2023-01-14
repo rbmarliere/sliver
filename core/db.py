@@ -736,9 +736,11 @@ class Position(BaseModel):
             self.pnl = (self.exit_cost
                         - self.entry_cost
                         - self.fee)
+            roi = round(((self.exit_price / self.entry_price) - 1) * 100, 2)
             i("position is now closed, pnl: {r}"
               .format(r=market.quote.print(self.pnl)))
-            n(self.get_notice(prefix="closed "))
+            n(self.get_notice(prefix="closed ",
+                              suffix=" ROI: {r}".format(r=roi)))
 
         # position finishes opening when it reaches target
         cost_diff = self.target_cost - self.entry_cost
