@@ -7,7 +7,7 @@ import { Market } from '../market';
 import { StrategiesService } from '../strategies.service';
 import { Strategy } from '../strategy';
 import { StrategyService } from '../strategy.service';
-import { backtest, getPlot, getStrategyTypes, StrategyType } from './strategy-types';
+import { getStrategyTypes, StrategyType } from './strategy-types';
 
 @Component({
   selector: 'app-strategy',
@@ -49,21 +49,7 @@ export class StrategyComponent implements OnInit {
     ma1_period: 3,
     ma2_period: 8,
     ma3_period: 20,
-
-    prices: {
-      time: [],
-      open: [],
-      high: [],
-      low: [],
-      close: [],
-      volume: [],
-      buys: [],
-      sells: [],
-    },
   };
-
-  plot: any;
-  backtest_log: any;
 
   loading: Boolean = true;
 
@@ -135,7 +121,10 @@ export class StrategyComponent implements OnInit {
       this.strategy = this.empty_strat;
     } else {
       this.strategyService.getStrategy(strategy_id).subscribe({
-        next: (res) => this.handleStrategy(res),
+        next: (res) => {
+          this.strategy = res;
+          this.loading = false;
+        }
       });
     }
   }
@@ -172,32 +161,6 @@ export class StrategyComponent implements OnInit {
     this.strategyService.updateSubscription(strategy).subscribe({
       next: () => location.reload(),
     });
-  }
-
-  handleStrategy(strategy: Strategy) {
-    this.strategy = strategy;
-    this.loading = false;
-    this.plot = getPlot(strategy);
-    this.zoom(0);
-  }
-
-  zoom(event: any): void {
-    if (this.strategy.prices.time === null) {
-      return;
-    }
-
-    const start = event['xaxis.range[0]'];
-    const end = event['xaxis.range[1]'];
-
-    if (start) {
-      this.backtest_log = backtest(this.strategy, start, end);
-    } else {
-      this.backtest_log = backtest(
-        this.strategy,
-        this.strategy.prices.time[0],
-        this.strategy.prices.time[this.strategy.prices.time.length - 1]
-      );
-    }
   }
 
 }
