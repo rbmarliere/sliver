@@ -478,7 +478,7 @@ class Position(BaseModel):
         i("bucket cost is {a}".format(a=market.quote.print(self.bucket)))
         i("remaining to fill in bucket is {r}"
             .format(r=market.quote.print(remaining)))
-        i("balance is {r}".format(r=balance.total))
+        i("balance is {r}".format(r=market.quote.print(balance.total)))
 
         # remaining is a COST
         return remaining
@@ -502,7 +502,7 @@ class Position(BaseModel):
             .format(r=market.base.print(remaining_to_fill)))
         i("remaining to exit position is {r}"
             .format(r=market.base.print(remaining_to_exit)))
-        i("balance is {r}".format(r=balance.total))
+        i("balance is {r}".format(r=market.base.print(balance.total)))
 
         # avoid position rounding errors by exiting early
         r = remaining_to_exit - remaining_to_fill
