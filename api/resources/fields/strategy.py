@@ -18,6 +18,7 @@ base_fields = {
     "refresh_interval": fields.Integer,
     "next_refresh": fields.DateTime(dt_format="iso8601"),
     "num_orders": fields.Integer,
+    "min_buckets": fields.Integer,
     "bucket_interval": fields.Integer,
     "spread": fields.Float,
     "stop_gain": fields.Float,
@@ -101,6 +102,7 @@ base_parser.add_argument("timeframe", type=str)
 base_parser.add_argument("refresh_interval", type=int)
 base_parser.add_argument("next_refresh", type=inputs.datetime_from_iso8601)
 base_parser.add_argument("num_orders", type=int)
+base_parser.add_argument("min_buckets", type=int)
 base_parser.add_argument("bucket_interval", type=int)
 base_parser.add_argument("spread", type=float)
 base_parser.add_argument("stop_gain", type=float)
