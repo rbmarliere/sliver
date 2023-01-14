@@ -467,12 +467,18 @@ class Position(BaseModel):
         # if self.status != "opening":
         #     return
 
-        remaining = min(self.target_cost - self.entry_cost,
-                        self.bucket_max - self.bucket)
+        remaining_to_fill = self.bucket_max - self.bucket
+        remaining_to_open = self.target_cost - self.entry_cost
+        remaining = min(abs(remaining_to_fill), abs(remaining_to_open))
+
+        balance = Balance.get(user_id=self.user_strategy.user_id,
+                              asset_id=market.quote.id)
+        remaining = min(remaining, balance.total)
 
         i("bucket cost is {a}".format(a=market.quote.print(self.bucket)))
         i("remaining to fill in bucket is {r}"
             .format(r=market.quote.print(remaining)))
+        i("balance is {r}".format(r=balance.total))
 
         # remaining is a COST
         return remaining
@@ -485,13 +491,18 @@ class Position(BaseModel):
 
         remaining_to_fill = self.get_remaining_to_fill()
         remaining_to_exit = self.get_remaining_to_exit()
-        remaining = min(remaining_to_fill, remaining_to_exit)
+        remaining = min(abs(remaining_to_fill), abs(remaining_to_exit))
+
+        balance = Balance.get(user_id=self.user_strategy.user_id,
+                              asset_id=market.base.id)
+        remaining = min(remaining, balance.total)
 
         i("bucket amount is {a}".format(a=market.base.print(self.bucket)))
         i("remaining to fill in bucket is {r}"
             .format(r=market.base.print(remaining_to_fill)))
         i("remaining to exit position is {r}"
             .format(r=market.base.print(remaining_to_exit)))
+        i("balance is {r}".format(r=balance.total))
 
         # avoid position rounding errors by exiting early
         r = remaining_to_exit - remaining_to_fill
@@ -689,7 +700,6 @@ class Position(BaseModel):
 
     def refresh_orders(self, market_total, limit_total, last_p):
         strategy = self.user_strategy.strategy
-        # market = strategy.market
 
         if self.status == "opening":
             if market_total > 0:
