@@ -4,7 +4,7 @@ import argparse
 import sys
 
 import core
-
+import ccxt
 
 if __name__ == "__main__":
     argp = argparse.ArgumentParser()
@@ -29,6 +29,19 @@ if __name__ == "__main__":
     exchange = market.quote.exchange
     cred = pos.user_strategy.user.get_active_credential(exchange).get()
     core.exchange.set_api(cred=cred)
-    ex_order = core.exchange.api.fetch_order(args.order_id,
-                                             market.get_symbol())
-    core.db.Order.sync(core.db.Order(), ex_order, pos)
+
+    try:
+        ex_order = core.exchange.api.fetch_order(args.order_id,
+                                                 market.get_symbol())
+
+        order = core.db.Order.get_or_create(exchange_order_id=args.order_id)[0]
+
+        core.db.Order.sync(order,
+                           ex_order,
+                           pos)
+    except ccxt.OrderNotFound:
+        print("order not found")
+        sys.exit(1)
+    except ccxt.BaseError as e:
+        print(e)
+        sys.exit(1)
