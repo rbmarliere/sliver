@@ -421,62 +421,6 @@ class Position(BaseModel):
     # position profit or loss
     pnl = peewee.BigIntegerField(default=0)
 
-    def open(u_st: UserStrategy, t_cost: int):
-        strategy = u_st.strategy
-        now = datetime.datetime.utcnow()
-        nxt_bucket = now + datetime.timedelta(minutes=strategy.bucket_interval)
-
-        bucket_max = strategy.market.quote.div(
-            t_cost,
-            strategy.num_orders,
-            trunc_precision=strategy.market.price_precision)
-
-        position = Position(user_strategy=u_st,
-                            next_bucket=nxt_bucket,
-                            bucket_max=bucket_max,
-                            status="opening",
-                            target_cost=t_cost)
-        position.save()
-
-        i("opening position {i}".format(i=position.id))
-        core.watchdog.notice(position.get_notice(prefix="opening "))
-
-        return position
-
-    def close(self):
-        strategy = self.user_strategy.strategy
-
-        i("closing position {i}".format(i=self.id))
-        core.watchdog.notice(self.get_notice(prefix="closing "))
-
-        # when selling, bucket_max becomes an amount instead of cost
-        self.bucket_max = strategy.market.base.div(
-            self.entry_amount,
-            strategy.num_orders,
-            trunc_precision=strategy.market.amount_precision)
-        self.bucket = 0
-        self.status = "closing"
-
-        self.save()
-
-    def check_stops(self, last_price=None):
-        strategy = self.user_strategy.strategy
-        market = strategy.market
-
-        if last_price is None:
-            core.exchange.set_api(exchange=market.base.exchange)
-            p = core.exchange.api.fetch_ticker(market.get_symbol())
-            last_price = market.quote.transform(p["last"])
-
-        if self.entry_price > 0:
-            roi = round(((last_price / self.entry_price) - 1) * 100, 2)
-            # i("checking stops for position {p}".format(p=self))
-            if (roi > strategy.stop_gain or roi < strategy.stop_loss * -1):
-                i("roi = {r}%".format(r=roi))
-                i("stopgain = {r}%".format(r=strategy.stop_gain))
-                i("stoploss = -{r}%".format(r=strategy.stop_loss))
-                self.close()
-
     def get_notice(self, prefix="", suffix=""):
         return ("{p}position for user {u} with strategy {s} in market {m} {su}"
                 .format(p=prefix,
@@ -525,40 +469,107 @@ class Position(BaseModel):
         return min(self.target_cost - self.entry_cost,
                    self.bucket_max - self.bucket)
 
-    def get_remaining(self, last_price):
+    def get_remaining_cost(self, last_price):
         market = self.user_strategy.strategy.market
 
-        if self.status == "opening":
-            # remaining is a cost
-            remaining = self.get_remaining_to_open()
-            i("bucket cost is {a}".format(a=market.quote.print(self.bucket)))
-            i("remaining to fill in bucket is {r}"
-              .format(r=market.quote.print(remaining)))
+        # if self.status != "opening":
+        #     return
 
-            return remaining
+        remaining = self.get_remaining_to_open()
+        i("bucket cost is {a}".format(a=market.quote.print(self.bucket)))
+        i("remaining to fill in bucket is {r}"
+            .format(r=market.quote.print(remaining)))
 
-        elif self.status == "closing":
-            # remaining is an amount
-            remaining_to_fill = self.get_remaining_to_fill()
-            remaining_to_exit = self.get_remaining_to_exit()
-            remaining = min(remaining_to_fill, remaining_to_exit)
+        # remaining is a COST
+        return remaining
 
-            i("bucket amount is {a}".format(a=market.base.print(self.bucket)))
-            i("remaining to fill in bucket is {r}"
-              .format(r=market.base.print(remaining_to_fill)))
-            i("remaining to exit position is {r}"
-              .format(r=market.base.print(remaining_to_exit)))
+    def get_remaining_amount(self, last_price):
+        market = self.user_strategy.strategy.market
 
-            # avoid position rounding errors by exiting early
-            r = remaining_to_exit - remaining_to_fill
-            position_remainder = market.base.format(r)
-            if (position_remainder > 0
-                    and
-                    position_remainder * last_price <= market.cost_min):
-                i("position remainder is {r}".format(r=market.base.print(r)))
-                remaining = remaining_to_exit
+        # if self.status != "closing":
+        #     return
 
-            return remaining
+        # remaining is an amount
+        remaining_to_fill = self.get_remaining_to_fill()
+        remaining_to_exit = self.get_remaining_to_exit()
+        remaining = min(remaining_to_fill, remaining_to_exit)
+
+        i("bucket amount is {a}".format(a=market.base.print(self.bucket)))
+        i("remaining to fill in bucket is {r}"
+            .format(r=market.base.print(remaining_to_fill)))
+        i("remaining to exit position is {r}"
+            .format(r=market.base.print(remaining_to_exit)))
+
+        # avoid position rounding errors by exiting early
+        r = remaining_to_exit - remaining_to_fill
+        position_remainder = market.base.format(r)
+        if position_remainder > 0 \
+                and position_remainder * last_price <= market.cost_min:
+            i("position remainder is {r}".format(r=market.base.print(r)))
+            remaining = remaining_to_exit
+
+        # remaining is an AMOUNT
+        return remaining
+
+    def open(u_st: UserStrategy, t_cost: int):
+        strategy = u_st.strategy
+        market = strategy.market
+        now = datetime.datetime.utcnow()
+        nxt_bucket = now + datetime.timedelta(minutes=strategy.bucket_interval)
+
+        bucket_max = \
+            market.quote.div(t_cost,
+                             market.quote.transform(strategy.num_orders),
+                             prec=strategy.market.price_precision)
+
+        position = Position(user_strategy=u_st,
+                            next_bucket=nxt_bucket,
+                            bucket_max=bucket_max,
+                            status="opening",
+                            target_cost=t_cost)
+        position.save()
+
+        i("opening position {i}".format(i=position.id))
+        core.watchdog.notice(position.get_notice(prefix="opening "))
+
+        return position
+
+    def close(self):
+        strategy = self.user_strategy.strategy
+        market = strategy.market
+
+        i("closing position {i}".format(i=self.id))
+        core.watchdog.notice(self.get_notice(prefix="closing "))
+
+        # when selling, bucket_max becomes an amount instead of cost
+        self.bucket_max = \
+            market.base.div(self.entry_amount,
+                            market.base.transform(strategy.num_orders),
+                            prec=strategy.market.amount_precision)
+        self.bucket = 0
+        self.status = "closing"
+
+        self.save()
+
+    def check_stops(self, last_price=None):
+        strategy = self.user_strategy.strategy
+        market = strategy.market
+
+        if last_price is None:
+            core.exchange.set_api(exchange=market.base.exchange)
+            p = core.exchange.api.fetch_ticker(market.get_symbol())
+            last_price = market.quote.transform(p["last"])
+
+        if self.entry_price > 0:
+            roi = round(((last_price / self.entry_price) - 1) * 100, 2)
+            # i("checking stops for position {p}".format(p=self))
+            if (roi > strategy.stop_gain or roi < strategy.stop_loss * -1):
+                i("roi = {r}%".format(r=roi))
+                i("stopgain = {r}%".format(r=strategy.stop_gain))
+                i("stoploss = -{r}%".format(r=strategy.stop_loss))
+                self.close()
+
+        # TODO trailing_stops
 
     def add_order(self, order):
         market = self.user_strategy.strategy.market
@@ -636,53 +647,52 @@ class Position(BaseModel):
             self.next_bucket = nxt_bucket
             self.bucket = 0
 
-        # compute limit and market orders amounts or costs
-        i("limit to market ratio is {r}".format(r=strategy.lm_ratio))
-        remaining = self.get_remaining(last_p)
-        if strategy.lm_ratio == 1:
-            market_total = remaining
-            limit_total = 0
-        elif strategy.lm_ratio > 0:
-            market_total = int(remaining * strategy.lm_ratio)
-            limit_total = remaining - market_total
-        else:
-            market_total = 0
-            limit_total = remaining
-
-        # check if theyre amounts or costs
         if self.status == "opening":
-            remaining_cost = remaining
-            market_total_cost = market_total
-            limit_total_cost = limit_total
+            remaining_cost = self.get_remaining_cost(last_p)
+            remaining_amount = \
+                market.base.div(remaining_cost,
+                                last_p,
+                                prec=market.amount_precision)
+
+            m_total_cost = int(strategy.lm_ratio * remaining_cost)
+            l_total_cost = remaining_cost - m_total_cost
+
+            m_total_amount = \
+                market.base.div(m_total_cost,
+                                last_p,
+                                prec=market.amount_precision)
+            l_total = l_total_cost
+
         elif self.status == "closing":
-            remaining_cost = market.base.format(remaining) * last_p
-            market_total_cost = market.base.format(market_total) * last_p
-            limit_total_cost = market.base.format(limit_total) * last_p
+            remaining_amount = self.get_remaining_amount(last_p)
+            remaining_cost = market.base.format(remaining_amount) * last_p
+
+            m_total_cost = int(strategy.lm_ratio * remaining_cost)
+            l_total_cost = remaining_cost - m_total_cost
+
+            m_total_amount = int(strategy.lm_ratio * remaining_amount)
+            l_total = remaining_amount - m_total_amount
 
         # check if current bucket is filled
-        if datetime.datetime.utcnow() < self.next_bucket \
-                and remaining_cost < market.cost_min:
+        if now < self.next_bucket and remaining_cost < market.cost_min:
             i("bucket is full")
             return 0, 0
 
-        # if bucket is not full but can't insert new orders, fill at market
-        if strategy.lm_ratio > 0 \
-            and (market_total_cost < market.cost_min
-                 or limit_total_cost < market.cost_min):
-            market_total = remaining
-            limit_total = 0
+        # compute limit and market orders amounts or costs
+        i("limit to market ratio is {r}".format(r=strategy.lm_ratio))
 
-        return market_total, limit_total
+        # if bucket is not full but can't insert new orders, fill at market
+        if m_total_cost < market.cost_min or l_total_cost < market.cost_min:
+            return remaining_amount, 0
+
+        return m_total_amount, l_total
 
     def refresh_orders(self, market_total, limit_total, last_p):
         strategy = self.user_strategy.strategy
-        market = strategy.market
+        # market = strategy.market
 
-        # create buy orders for an opening position
         if self.status == "opening":
             if market_total > 0:
-                # market_total is a cost
-                market_total = market.base.div(market_total, last_p)
                 core.exchange.create_order("market",
                                            "buy",
                                            self,
