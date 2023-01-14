@@ -142,37 +142,32 @@ class ExchangeAsset(BaseModel):
     asset = peewee.ForeignKeyField(Asset)
     precision = peewee.IntegerField(default=1)
 
-    def div(self, num, den, trunc_precision=None):
-        if not trunc_precision:
-            trunc_precision = self.precision
+    def div(self, num, den, prec=None):
+        if prec is None:
+            prec = self.precision
 
-        # for BTC:
-        # 5000000000 / 120000000000 [cost/price]
-        # 4166666
-        # 194751313964 / 2 [cost/num_orders]
-        # 97375656982
-        # 20353282988 / 96900000 [cost/price]
-        # 21004420008
+        div = int(D(str(num)) / D(str(den)) * 10**prec)
 
-        div = D(str(num)) / D(str(den))
-
-        if abs(num) <= abs(den) or den < self.transform(1):
-            trunc = core.utils.truncate(div, trunc_precision)
-
-        if trunc == div:
-            return int(trunc)
+        if prec == self.precision:
+            return div
         else:
-            return self.transform(div)
+            return self.transform(div, prec=(self.precision - prec))
 
     def format(self, value, prec=None):
         if value is None:
             return
-        precision = D("10") ** D(-1 * self.precision)
+        if prec is None:
+            prec = self.precision
+        precision = D("10") ** D(str(-1 * prec))
         value = D(str(value)) * precision
         return value.quantize(precision)
 
-    def transform(self, value):
-        precision = D(10) ** D(self.precision)
+    def transform(self, value, prec=None):
+        if value is None:
+            return
+        if prec is None:
+            prec = self.precision
+        precision = D("10") ** D(str(prec))
         return int(D(str(value)) * precision)
 
     def print(self, value):
@@ -281,7 +276,8 @@ class Strategy(BaseModel):
         if subscribed:
             for u_st in user.userstrategy_set:
                 if u_st.strategy.market == self.market \
-                        and u_st.strategy != self:
+                        and u_st.strategy != self \
+                        and u_st.active:
                     raise core.errors.MarketAlreadySubscribed
 
         user_strat_exists = False
@@ -363,7 +359,7 @@ class UserStrategy(BaseModel):
         user = self.user
 
         i("...........................................")
-        i("refreshing {u}'s strategy {s}".format(u=self.user, s=self))
+        i("refreshing user {u} strategy {s}".format(u=self.user, s=self))
 
         # set api to current exchange
         credential = user.get_active_credential(exchange).get()
@@ -607,7 +603,7 @@ class Position(BaseModel):
         last_p = market.quote.transform(p["last"])
 
         i("___________________________________________")
-        i("refreshing '{s}' self {i}".format(s=self.status, i=self.id))
+        i("refreshing {s} position {i}".format(s=self.status, i=self.id))
         i("last price is {p}".format(p=strategy.market.quote.print(last_p)))
         i("target cost is {t}".format(t=market.quote.print(self.target_cost)))
         i("entry cost is {t}".format(t=market.quote.print(self.entry_cost)))
@@ -706,10 +702,8 @@ class Position(BaseModel):
                                                       strategy.num_orders,
                                                       strategy.spread)
 
-        # create sell orders for a closing position or close
         elif self.status == "closing":
             if market_total > 0:
-                # market_total is an amount
                 core.exchange.create_order("market",
                                            "sell",
                                            self,

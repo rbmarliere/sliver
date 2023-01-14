@@ -218,7 +218,7 @@ def create_order(type: str,
     market = position.user_strategy.strategy.market
     symbol = market.get_symbol()
 
-    i("attempt creation of {t} {s} order :: {a} @ {p}"
+    i("inserting {t} {s} order :: {a} @ {p}"
       .format(t=type,
               s=side,
               a=market.base.print(amount),
@@ -289,7 +289,7 @@ def create_order(type: str,
                     new_oid = last_order["id"]
 
     if inserted:
-        i("created new {t} {s} order {i}".format(t=type, s=side, i=new_oid))
+        i("inserted {t} {s} order {i}".format(t=type, s=side, i=new_oid))
         while True:
             try:
                 ex_order = api.fetch_order(new_oid, symbol)
@@ -311,19 +311,20 @@ def create_limit_buy_orders(total_cost: int,
 
     # compute price delta based on given spread
     delta = market.quote.div(last_price * spread_pct,
-                             100,
-                             trunc_precision=market.price_precision)
+                             market.quote.transform(100),
+                             prec=market.price_precision)
+
     init_price = last_price - delta
 
     # compute cost for each order given a number of orders to create
     unit_cost = market.quote.div(total_cost,
-                                 num_orders,
-                                 trunc_precision=market.price_precision)
+                                 market.quote.transform(num_orders),
+                                 prec=market.price_precision)
 
     # compute prices for each order
     unit_spread = market.quote.div(delta,
-                                   num_orders,
-                                   trunc_precision=market.price_precision)
+                                   market.quote.transform(num_orders),
+                                   prec=market.price_precision)
     spreads = [init_price] + [unit_spread] * num_orders
     prices = [sum(spreads[:i]) for i in range(1, len(spreads))]
 
@@ -335,11 +336,12 @@ def create_limit_buy_orders(total_cost: int,
 
         # get average price for single order
         avg_price = market.quote.div(sum(prices),
-                                     len(prices),
-                                     trunc_precision=market.price_precision)
+                                     market.quote.transform(len(prices)),
+                                     prec=market.price_precision,
+                                     format_den=False)
         total_amount = market.base.div(total_cost,
                                        avg_price,
-                                       trunc_precision=market.amount_precision)
+                                       prec=market.amount_precision)
         create_order("limit", "buy", position, total_amount, avg_price)
         return
 
@@ -352,13 +354,12 @@ def create_limit_buy_orders(total_cost: int,
     for price in prices:
         amount = market.base.div(unit_cost,
                                  price,
-                                 trunc_precision=market.amount_precision)
+                                 prec=market.amount_precision)
 
         if price == prices[-1]:
-            amount += market.base.div(
-                cost_remainder,
-                price,
-                trunc_precision=market.amount_precision)
+            amount += market.base.div(cost_remainder,
+                                      price,
+                                      prec=market.amount_precision)
 
         create_order("limit", "buy", position, amount, price)
 
@@ -373,21 +374,21 @@ def create_limit_sell_orders(total_amount: int,
 
     # compute price delta based on given spread
     delta = market.quote.div(last_price * spread_pct,
-                             100,
-                             trunc_precision=market.price_precision)
+                             market.quote.transform(100),
+                             prec=market.price_precision)
     init_price = last_price + delta
 
     # compute prices for each order
     unit_spread = market.quote.div(-delta,
-                                   num_orders,
-                                   trunc_precision=market.price_precision)
+                                   market.quote.transform(num_orders),
+                                   prec=market.price_precision)
     spreads = [init_price] + [unit_spread] * num_orders
     prices = [sum(spreads[:i]) for i in range(1, len(spreads))]
 
     # compute amount for each order given a number of orders to create
     unit_amount = market.base.div(total_amount,
-                                  num_orders,
-                                  trunc_precision=market.amount_precision)
+                                  market.base.transform(num_orders),
+                                  prec=market.amount_precision)
 
     # compute costs
     amount_in_decimal = market.base.format(unit_amount)
@@ -395,8 +396,8 @@ def create_limit_sell_orders(total_amount: int,
 
     # get average price for single order
     avg_price = market.quote.div(sum(prices),
-                                 len(prices),
-                                 trunc_precision=market.price_precision)
+                                 market.quote.transform(len(prices)),
+                                 prec=market.price_precision)
 
     i("unit amount is {a}".format(a=market.base.print(unit_amount)))
 
