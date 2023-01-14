@@ -36,10 +36,6 @@ price_fields = {
     "buys": fields.List(fields.Float),
     "sells": fields.List(fields.Float),
 }
-all_fields = {
-    **base_fields,
-    "prices": fields.Nested(price_fields),
-}
 
 hypnox_indicators = {
     **price_fields,
@@ -53,7 +49,6 @@ hypnox_fields = {
     "tweet_filter": fields.String,
     "model_i": fields.String,
     "model_p": fields.String,
-    "prices": fields.Nested(hypnox_indicators),
 }
 
 dd3_indicators = {
@@ -67,11 +62,10 @@ dd3_fields = {
     "ma1_period": fields.Integer,
     "ma2_period": fields.Integer,
     "ma3_period": fields.Integer,
-    "prices": fields.Nested(dd3_indicators),
 }
 
 
-def get_fields(type=None):
+def get_fields(type=None, all=True):
     if type == strategies.Types.MANUAL.value:
         pass
 
@@ -79,12 +73,12 @@ def get_fields(type=None):
         pass
 
     elif type == strategies.Types.HYPNOX.value:
-        return hypnox_fields
+        return hypnox_fields if all else hypnox_indicators
 
     elif type == strategies.Types.DD3.value:
-        return dd3_fields
+        return dd3_fields if all else dd3_indicators
 
-    return all_fields
+    return base_fields if all else price_fields
 
 
 base_parser = reqparse.RequestParser()

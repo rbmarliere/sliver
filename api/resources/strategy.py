@@ -21,10 +21,6 @@ class Strategy(Resource):
             raise api.errors.StrategyDoesNotExist
 
         strategy = strategies.load(strategy, user=user)
-        strategy.refresh_indicators()
-
-        ind = strategy.get_indicators_df()
-        strategy.prices = ind.to_dict("list")
 
         return marshal(strategy, get_fields(strategy.type))
 
