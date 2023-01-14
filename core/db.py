@@ -741,7 +741,7 @@ class Position(BaseModel):
                 and self.entry_cost > 0 \
                 and cost_diff < market.cost_min:
             self.status = "open"
-            i("self is now open")
+            i("position is now open")
             core.watchdog.notice(self.get_notice(suffix="is now open"))
 
 
