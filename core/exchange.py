@@ -337,8 +337,7 @@ def create_limit_buy_orders(total_cost: int,
         # get average price for single order
         avg_price = market.quote.div(sum(prices),
                                      market.quote.transform(len(prices)),
-                                     prec=market.price_precision,
-                                     format_den=False)
+                                     prec=market.price_precision)
         total_amount = market.base.div(total_cost,
                                        avg_price,
                                        prec=market.amount_precision)
