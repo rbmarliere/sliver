@@ -13,6 +13,7 @@ export interface BaseStrategy {
   refresh_interval: number;
   next_refresh: string;
   num_orders: number;
+  min_buckets: number;
   bucket_interval: number;
   spread: number;
   stop_gain: number;
