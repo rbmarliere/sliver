@@ -1,0 +1,27 @@
+<div class="main container">
+
+  <p>INDICATORS</p>
+
+  <mat-card appearance="outlined">
+    <mat-card-content>
+
+      <div *ngIf="loading" class="main" style="padding: 2vh">
+        <mat-spinner></mat-spinner>
+      </div>
+
+      <div *ngIf="!loading">
+        <plotly-plot [config]="plot.config" [data]="plot.data" [layout]="plot.layout" [updateOnlyWithRevision]="true"
+          (relayout)="zoom($event)"></plotly-plot>
+
+        <p class="text-center">
+          -- BACKTEST --
+        </p>
+        <pre class="text-center">
+          {{ backtest_log }}
+        </pre>
+      </div>
+
+    </mat-card-content>
+  </mat-card>
+
+</div>
