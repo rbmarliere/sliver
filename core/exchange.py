@@ -178,12 +178,15 @@ def sync_limit_orders(position: core.db.Position) -> core.db.Position:
         oid = order.exchange_order_id
         i("updating {s} order {i}".format(s=order.side, i=oid))
 
+        ex_order = None
+
         # cancel order first
         while True:
             try:
-                ex_order = api.cancel_order(order.exchange_order_id, symbol)
+                ex_order = api.cancel_order(oid, symbol)
                 break
             except ccxt.OrderNotFound:
+                # order.status = 'missing' ?
                 break
             except ccxt.RequestTimeout as e:
                 core.watchdog.error("order cancellation request timeout", e)
@@ -193,14 +196,18 @@ def sync_limit_orders(position: core.db.Position) -> core.db.Position:
         while True:
             try:
                 # fetch order to ensure its data is up to date
-                ex_order = api.fetch_order(order.exchange_order_id, symbol)
+                ex_order = api.fetch_order(oid, symbol)
+                break
+            except ccxt.OrderNotFound:
+                # order.status = 'missing' ?
                 break
             except ccxt.RequestTimeout as e:
                 core.watchdog.error("order fetch request timeout", e)
                 # retry after 10 seconds
                 time.sleep(10)
 
-        order.sync(ex_order, position)
+        if ex_order:
+            order.sync(ex_order, position)
 
 
 def create_order(type: str,
