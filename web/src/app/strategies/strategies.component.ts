@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { StrategiesService } from '../strategies.service';
-import { BaseStrategy } from '../strategy';
+import { BaseStrategy, Strategy } from '../strategy';
 import { StrategyService } from '../strategy.service';
 import { getStrategyTypes } from '../strategy/strategy-types';
 
@@ -13,6 +13,8 @@ export class StrategiesComponent implements OnInit {
   displayedColumns: string[] = [
     'id',
     'active',
+    'subscribed',
+    'timeframe',
     'type',
     'description',
     'symbol',
@@ -57,5 +59,11 @@ export class StrategiesComponent implements OnInit {
     });
 
     return name;
+  }
+
+  updateSubscription(strategy: Strategy): void {
+    this.strategyService.updateSubscription(strategy).subscribe({
+      next: () => location.reload(),
+    });
   }
 }

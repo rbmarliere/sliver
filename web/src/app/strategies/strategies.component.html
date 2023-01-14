@@ -5,12 +5,7 @@
 <div *ngIf="!loading" class="main container">
   <p *ngIf="strategies.length === 0" class="text-center">no strategies found</p>
 
-  <table
-    mat-table
-    *ngIf="strategies.length > 0"
-    [dataSource]="strategies"
-    class="mat-elevation-z8 strategies-table"
-  >
+  <table mat-table *ngIf="strategies.length > 0" [dataSource]="strategies" class="mat-elevation-z8 strategies-table">
     <ng-container matColumnDef="id">
       <th mat-header-cell *matHeaderCellDef>id</th>
       <td mat-cell *matCellDef="let element">{{ element.id }}</td>
@@ -18,6 +13,14 @@
     <ng-container matColumnDef="active">
       <th mat-header-cell *matHeaderCellDef>Active</th>
       <td mat-cell *matCellDef="let element">{{ element.active }}</td>
+    </ng-container>
+    <ng-container matColumnDef="subscribed">
+      <th mat-header-cell *matHeaderCellDef>Subscribed</th>
+      <td mat-cell *matCellDef="let element">{{ element.subscribed }}</td>
+    </ng-container>
+    <ng-container matColumnDef="timeframe">
+      <th mat-header-cell *matHeaderCellDef>Timeframe</th>
+      <td mat-cell *matCellDef="let element">{{ element.timeframe }}</td>
     </ng-container>
     <ng-container matColumnDef="type">
       <th mat-header-cell *matHeaderCellDef>Type</th>
@@ -40,10 +43,14 @@
     <ng-container matColumnDef="actions">
       <th mat-header-cell *matHeaderCellDef>Actions</th>
       <td mat-cell *matCellDef="let element">
-        <button routerLink="/strategy/{{ element.id }}">
+        <button mat-icon-button type="button" (click)="updateSubscription(element)">
+          <mat-icon *ngIf="element.subscribed" class="icon-display" fontIcon="heart_broken"></mat-icon>
+          <mat-icon *ngIf="!element.subscribed" class="icon-display" fontIcon="favorite"></mat-icon>
+        </button>
+        <button mat-icon-button routerLink="/strategy/{{ element.id }}">
           <mat-icon class="icon-display" fontIcon="info"></mat-icon>
         </button>
-        <button type="button" (click)="deleteStrategy(element.id)">
+        <button mat-icon-button type="button" (click)="deleteStrategy(element.id)">
           <mat-icon class="icon-display" fontIcon="delete"></mat-icon>
         </button>
       </td>
