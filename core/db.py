@@ -659,7 +659,7 @@ class Position(BaseModel):
             self.bucket = 0
 
         if self.status == "opening":
-            remaining_cost = self.get_remaining_cost(last_p)
+            remaining_cost = self.get_remaining_cost()
             remaining_amount = \
                 market.base.div(remaining_cost,
                                 last_p,
