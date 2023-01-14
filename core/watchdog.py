@@ -93,43 +93,15 @@ def watch():
 
         try:
             for position in core.db.get_active_positions():
-                position.check_stops()
-                # TODO: actually set orders if closed!
-        except ccxt.BaseError:
-            pass
-
-        try:
+                stopped = position.check_stops()
+                if stopped:
+                    watch_user_strat(position.user_strategy)
 
             for strategy in core.db.get_pending_strategies():
-                # download price data, update indicators and signal
                 strategy.refresh()
 
                 for user_strat in strategy.get_active_users():
-                    try:
-                        # sync orders and balances, update or create position
-                        user_strat.refresh()
-
-                    except core.db.Credential.DoesNotExist as e:
-                        error("credential not found", e)
-                        user_strat.disable()
-
-                    except ccxt.AuthenticationError as e:
-                        error("authentication error", e)
-                        user_strat.disable()
-
-                    except ccxt.InsufficientFunds as e:
-                        error("insufficient funds", e)
-                        user_strat.disable()
-
-                    except ccxt.RateLimitExceeded as e:
-                        error("rate limit exceeded, skipping user...", e)
-
-                    except ccxt.ExchangeError as e:
-                        error("exchange error", e)
-                        user_strat.disable()
-
-                    except ccxt.NetworkError as e:
-                        error("exchange api error, skipping user...", e)
+                    watch_user_strat(user_strat)
 
             time.sleep(60)
 
@@ -160,3 +132,30 @@ def watch():
         core.db.connection.close()
 
     notice("shutdown")
+
+
+def watch_user_strat(user_strat):
+    try:
+        user_strat.refresh()
+
+    except core.db.Credential.DoesNotExist as e:
+        error("credential not found", e)
+        user_strat.disable()
+
+    except ccxt.AuthenticationError as e:
+        error("authentication error", e)
+        user_strat.disable()
+
+    except ccxt.InsufficientFunds as e:
+        error("insufficient funds", e)
+        user_strat.disable()
+
+    except ccxt.RateLimitExceeded as e:
+        error("rate limit exceeded", e)
+
+    except ccxt.ExchangeError as e:
+        error("exchange error", e)
+        user_strat.disable()
+
+    except ccxt.NetworkError as e:
+        error("exchange api error", e)

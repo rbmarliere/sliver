@@ -7,6 +7,7 @@ from ccxt.base.decimal_to_precision import DECIMAL_PLACES, NO_PADDING
 
 import core
 from core.watchdog import info as i
+from core.watchdog import notice as n
 
 
 # precision modes:
@@ -526,7 +527,7 @@ class Position(BaseModel):
         position.save()
 
         i("opening position {i}".format(i=position.id))
-        core.watchdog.notice(position.get_notice(prefix="opening "))
+        n(position.get_notice(prefix="opening "))
 
         return position
 
@@ -535,7 +536,7 @@ class Position(BaseModel):
         market = strategy.market
 
         i("closing position {i}".format(i=self.id))
-        core.watchdog.notice(self.get_notice(prefix="closing "))
+        n(self.get_notice(prefix="closing "))
 
         # when selling, bucket_max becomes an amount instead of cost
         self.bucket_max = \
@@ -548,6 +549,9 @@ class Position(BaseModel):
         self.save()
 
     def check_stops(self, last_price=None):
+        if not self.is_open():
+            return False
+
         strategy = self.user_strategy.strategy
         market = strategy.market
 
@@ -560,10 +564,14 @@ class Position(BaseModel):
             roi = round(((last_price / self.entry_price) - 1) * 100, 2)
             # i("checking stops for position {p}".format(p=self))
             if (roi > strategy.stop_gain or roi < strategy.stop_loss * -1):
+                n(self.get_notice(prefix="stopped "))
                 i("roi = {r}%".format(r=roi))
                 i("stopgain = {r}%".format(r=strategy.stop_gain))
                 i("stoploss = -{r}%".format(r=strategy.stop_loss))
                 self.close()
+                return True
+
+        return False
 
         # TODO trailing_stops
 
@@ -733,7 +741,7 @@ class Position(BaseModel):
                         - self.fee)
             i("position is now closed, pnl: {r}"
               .format(r=market.quote.print(self.pnl)))
-            core.watchdog.notice(self.get_notice(prefix="closed "))
+            n(self.get_notice(prefix="closed "))
 
         # position finishes opening when it reaches target
         cost_diff = self.target_cost - self.entry_cost
@@ -742,7 +750,7 @@ class Position(BaseModel):
                 and cost_diff < market.cost_min:
             self.status = "open"
             i("position is now open")
-            core.watchdog.notice(self.get_notice(suffix="is now open"))
+            n(self.get_notice(suffix="is now open"))
 
 
 class Order(BaseModel):
@@ -804,6 +812,7 @@ class Order(BaseModel):
 
         # check for fees
         if ex_order["fee"] is None:
+            # TODO maybe fetch from difference between insertion & filled
             fee = 0
         else:
             try:
