@@ -45,7 +45,7 @@
     <ng-container matColumnDef="actions">
       <th mat-header-cell *matHeaderCellDef>Actions</th>
       <td mat-cell *matCellDef="let element">
-        <button routerLink="/position/{{ element.id }}">
+        <button mat-icon-button routerLink="/position/{{ element.id }}">
           <mat-icon class="icon-display" fontIcon="info"></mat-icon>
         </button>
       </td>
