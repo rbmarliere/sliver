@@ -12,14 +12,14 @@
         <div class="fields" *ngIf="strategy.id">
           <p>
             <mat-slide-toggle formControlName="active">
-              Active
             </mat-slide-toggle>
+            <mat-label style="padding: 1vh">Active</mat-label>
           </p>
           <p>
             <mat-slider discrete [displayWith]="formatLabel" min="0" max="1" step="0.01">
               <input matSliderThumb formControlName="lm_ratio" />
             </mat-slider>
-            <label>Market Orders</label>
+            <mat-label style="padding: 1vh">Market Orders</mat-label>
           </p>
           <p>
             <mat-form-field appearance="fill" *ngIf="strategy.id">
@@ -65,13 +65,20 @@
               </mat-select>
             </mat-form-field>
           </p>
+
+          <p>
+            <mat-form-field>
+              <mat-label>Description</mat-label>
+              <input matInput formControlName="description" required />
+            </mat-form-field>
+          </p>
         </div>
 
         <div class="fields">
           <p>
             <mat-form-field>
-              <mat-label>Description</mat-label>
-              <input matInput formControlName="description" required />
+              <mat-label>Minimum Number of Buckets</mat-label>
+              <input matInput type="number" formControlName="min_buckets" min="1" />
             </mat-form-field>
           </p>
 

@@ -30,6 +30,7 @@ export class StrategyComponent implements OnInit {
     refresh_interval: 1,
     next_refresh: new Date().toISOString().slice(0, 16),
     num_orders: 1,
+    min_buckets: 1,
     bucket_interval: 1,
     spread: 0.01,
     stop_gain: 0,
