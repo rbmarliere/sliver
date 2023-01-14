@@ -19,7 +19,7 @@ class RandomStrategy(BaseStrategy):
             core.watchdog.info("indicator data is up to date")
             return
 
-        indicators.strategy = self.strategy.id
+        indicators["strategy"] = self.strategy.id
 
         indicators = indicators.rename(columns={
             "id": "price_id",
