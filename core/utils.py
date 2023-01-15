@@ -119,12 +119,22 @@ def get_mean_var(series: pandas.DataFrame,
 
 def qformat(x, column):
     strat = core.db.Strategy.get_by_id(x.strategy_id)
-    return strat.market.quote.format(x[column])
+
+    prec = None
+    if strat.market.price_precision > 0:
+        prec = strat.market.price_precision
+
+    return strat.market.quote.format(x[column], prec=prec)
 
 
 def bformat(x, column):
     strat = core.db.Strategy.get_by_id(x.strategy_id)
-    return strat.market.base.format(x[column])
+
+    prec = None
+    if strat.market.amount_precision > 0:
+        prec = strat.market.amount_precision
+
+    return strat.market.base.format(x[column], prec=prec)
 
 
 def sformat(x):
