@@ -4,7 +4,7 @@ export interface User {
   password: string
   access_key: string
   expires_at: number
-  telegram: string
   max_risk: number
   cash_reserve: number
+  telegram_username: string
 }

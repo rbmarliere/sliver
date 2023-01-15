@@ -20,9 +20,9 @@ export class DashboardComponent implements OnInit {
     password: '',
     access_key: '',
     expires_at: 0,
-    telegram: '',
     max_risk: 0,
     cash_reserve: 0,
+    telegram_username: '',
   });
 
   displayedColumns: string[] = [
@@ -95,7 +95,7 @@ export class DashboardComponent implements OnInit {
   updateAlert(): void {
     const form = this.form.value;
     let user = {} as User;
-    user.telegram = form.telegram;
+    user.telegram_username = form.telegram_username;
 
     this.userService.updateUser(user).subscribe({
       next: () => location.reload()
