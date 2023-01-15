@@ -571,6 +571,9 @@ class Position(BaseModel):
         market = strategy.market
         user = self.user_strategy.user
 
+        if self.stop_loss <= 0 or self.stop_gain <= 0:
+            return False
+
         if last_price is None:
             core.exchange.set_api(exchange=market.base.exchange)
             p = core.exchange.api.fetch_ticker(market.get_symbol())
