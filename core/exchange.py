@@ -295,8 +295,8 @@ def create_order(type: str,
                 ex_order = api.fetch_order(new_oid, symbol)
                 core.db.Order.sync(core.db.Order(), ex_order, position)
                 break
-            except ccxt.NetworkError as e:
-                core.watchdog.error("order fetch: network error", e)
+            except ccxt.BaseError as e:
+                core.watchdog.error("order fetch: ccxt error", e)
                 # retry after 10 seconds
                 time.sleep(10)
 
