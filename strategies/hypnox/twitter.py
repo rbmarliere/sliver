@@ -105,7 +105,7 @@ class Stream(tweepy.Stream):
                     core.db.connection.connect(reuse_if_open=True)
                     tweet.save()
                 except peewee.OperationalError:
-                    core.watchdog.notice(
+                    core.watchdog.warning(
                         "couldn't reestablish connection to database!")
 
                     # log to cache csv
@@ -158,7 +158,7 @@ def stream():
                           core.config["TWITTER_ACCESS_SECRET"])
     api = tweepy.API(auth)
 
-    core.watchdog.notice("init")
+    core.watchdog.warning("init")
     stream = Stream(core.config["TWITTER_CONSUMER_KEY"],
                     core.config["TWITTER_CONSUMER_SECRET"],
                     core.config["TWITTER_ACCESS_KEY"],
@@ -189,4 +189,4 @@ def stream():
             core.watchdog.info("got keyboard interrupt")
             break
 
-    core.watchdog.notice("shutting down...")
+    core.watchdog.warning("shutting down...")

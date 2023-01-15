@@ -48,9 +48,10 @@ class User(BaseModel):
     email = peewee.TextField(unique=True)
     password = peewee.TextField()
     access_key = peewee.TextField(unique=True, null=True)
-    telegram = peewee.TextField(null=True)
     max_risk = peewee.DecimalField(default=0.1)
     cash_reserve = peewee.DecimalField(default=0.25)
+    telegram_username = peewee.TextField(null=True)
+    telegram_chat_id = peewee.TextField(null=True)
 
     def get_exchange_credential(self, exchange: Exchange):
         return self \
@@ -518,6 +519,8 @@ class Position(BaseModel):
     def open(u_st: UserStrategy, t_cost: int):
         strategy = u_st.strategy
         market = strategy.market
+        user = u_st.user
+
         now = datetime.datetime.utcnow()
         nxt_bucket = now + datetime.timedelta(minutes=strategy.bucket_interval)
 
@@ -534,16 +537,17 @@ class Position(BaseModel):
         position.save()
 
         i("opening position {i}".format(i=position.id))
-        n(position.get_notice(prefix="opening "))
+        n(user, position.get_notice(prefix="opening "))
 
         return position
 
     def close(self):
         strategy = self.user_strategy.strategy
         market = strategy.market
+        user = self.user_strategy.user
 
         i("closing position {i}".format(i=self.id))
-        n(self.get_notice(prefix="closing "))
+        n(user, self.get_notice(prefix="closing "))
 
         # when selling, bucket_max becomes an amount instead of cost
         self.bucket_max = \
@@ -561,6 +565,7 @@ class Position(BaseModel):
 
         strategy = self.user_strategy.strategy
         market = strategy.market
+        user = self.user_strategy.user
 
         if last_price is None:
             core.exchange.set_api(exchange=market.base.exchange)
@@ -571,7 +576,7 @@ class Position(BaseModel):
             roi = round(((last_price / self.entry_price) - 1) * 100, 2)
             # i("checking stops for position {p}".format(p=self))
             if (roi > strategy.stop_gain or roi < strategy.stop_loss * -1):
-                n(self.get_notice(prefix="stopped "))
+                n(user, self.get_notice(prefix="stopped "))
                 i("roi = {r}%".format(r=roi))
                 i("stopgain = {r}%".format(r=strategy.stop_gain))
                 i("stoploss = -{r}%".format(r=strategy.stop_loss))
@@ -734,6 +739,7 @@ class Position(BaseModel):
     def refresh_status(self):
         strategy = self.user_strategy.strategy
         market = strategy.market
+        user = self.user_strategy.user
 
         # position finishes closing when exit equals entry
         amount_diff = self.entry_amount - self.exit_amount
@@ -748,9 +754,9 @@ class Position(BaseModel):
             roi = D(str(((self.exit_price / self.entry_price) - 1) * 100))
             i("position is now closed, pnl: {r}"
               .format(r=market.quote.print(self.pnl)))
-            n(self.get_notice(prefix="closed ",
-                              suffix=" ROI: {r}%"
-                              .format(r=roi.quantize(D("0.01")))))
+            n(user, self.get_notice(prefix="closed ",
+                                    suffix=" ROI: {r}%"
+                                    .format(r=roi.quantize(D("0.01")))))
 
         # position finishes opening when it reaches target
         cost_diff = self.target_cost - self.entry_cost
@@ -759,7 +765,7 @@ class Position(BaseModel):
                 and cost_diff < market.cost_min:
             self.status = "open"
             i("position is now open")
-            n(self.get_notice(suffix="is now open"))
+            n(user, self.get_notice(suffix="is now open"))
 
 
 class Order(BaseModel):

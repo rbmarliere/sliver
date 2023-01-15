@@ -8,21 +8,52 @@ import telegram
 import core
 
 
+def send_user_telegram(user, msg):
+    while True:
+        try:
+            assert core.config["TELEGRAM_KEY"]
+            assert user.telegram_username
+
+            bot = telegram.Bot(core.config["TELEGRAM_KEY"])
+
+            if user.telegram_chat_id is None:
+                updates = bot.get_updates()
+                for update in updates:
+                    if update.message.chat.username == user.telegram_username:
+                        user.telegram_chat_id = update.message.chat.id
+                        user.save()
+
+            bot.send_message(text=msg,
+                             chat_id=user.telegram_chat_id)
+
+        except (KeyError, AssertionError):
+            pass
+
+        except telegram.error.NetworkError:
+            time.sleep(30)
+            continue
+
+        break
+
+
 def send_telegram(message):
     while True:
         try:
             assert core.config["TELEGRAM_KEY"]
             assert core.config["TELEGRAM_CHANNEL"]
+
             bot = telegram.Bot(core.config["TELEGRAM_KEY"])
+
             bot.send_message(text=message,
                              chat_id=core.config["TELEGRAM_CHANNEL"])
 
-            # TODO: send to user
         except (KeyError, AssertionError):
             pass
+
         except telegram.error.NetworkError:
             time.sleep(30)
             continue
+
         break
 
 
@@ -76,17 +107,25 @@ def error(msg, exception):
         send_telegram(msg)
 
 
-def notice(msg):
-    log.info(msg)
+def warning(msg):
+    log.warning(msg)
 
     if log.name == "watchdog" or log.name == "stream":
         msg = "{l}: {m}".format(l=log.name, m=msg)
         send_telegram(msg)
 
 
+def notice(user, msg):
+    log.info(msg)
+
+    if log.name == "watchdog" or log.name == "stream":
+        msg = "{l}: {m}".format(l=log.name, m=msg)
+        send_user_telegram(user, msg)
+
+
 def watch():
     set_logger("watchdog")
-    notice("init")
+    warning("init")
 
     while (True):
         core.db.connection.connect()
@@ -131,7 +170,7 @@ def watch():
 
         core.db.connection.close()
 
-    notice("shutdown")
+    warning("shutdown")
 
 
 def watch_user_strat(user_strat):
