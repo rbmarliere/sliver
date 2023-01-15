@@ -159,9 +159,13 @@ class ExchangeAsset(BaseModel):
             return 0
         if prec is None:
             prec = self.precision
-        precision = D("10") ** D(str(-1 * prec))
+        precision = D("10") ** D(str(-1 * self.precision))
         value = D(str(value)) * precision
-        return value.quantize(precision)
+        if prec == self.precision:
+            return value.quantize(precision)
+        else:
+            trunc_precision = D("10") ** D(str(-1 * prec))
+            return value.quantize(trunc_precision)
 
     def transform(self, value, prec=None):
         if not value:
