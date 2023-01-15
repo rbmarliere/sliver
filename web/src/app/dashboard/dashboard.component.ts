@@ -34,9 +34,11 @@ export class DashboardComponent implements OnInit {
     // 'used_value',
     'total_value',
   ];
+
+  loadingInv: Boolean = false;
   inventory: Inventory = {} as Inventory;
 
-  loadingCred = true;
+  loadingCred: Boolean = true;
   credentials: Credential[] = [];
 
   constructor(
@@ -48,7 +50,6 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.getUser();
-    this.getInventory();
     this.getCredentials();
   }
 
@@ -63,8 +64,12 @@ export class DashboardComponent implements OnInit {
   }
 
   getInventory(): void {
+    this.loadingInv = true;
     this.inventoryService.getInventory().subscribe({
-      next: (res) => this.inventory = res
+      next: (res) => {
+        this.inventory = res
+        this.loadingInv = false;
+      }
     });
   }
 
