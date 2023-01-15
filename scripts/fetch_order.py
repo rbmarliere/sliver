@@ -3,8 +3,10 @@
 import argparse
 import sys
 
-import core
 import ccxt
+
+import core
+
 
 if __name__ == "__main__":
     argp = argparse.ArgumentParser()
@@ -34,7 +36,9 @@ if __name__ == "__main__":
         ex_order = core.exchange.api.fetch_order(args.order_id,
                                                  market.get_symbol())
 
-        order = core.db.Order.get_or_create(exchange_order_id=args.order_id)[0]
+        order = core.db.Order.get_or_none(exchange_order_id=args.order_id)
+        if order is None:
+            order = core.db.Order()
 
         core.db.Order.sync(order,
                            ex_order,
