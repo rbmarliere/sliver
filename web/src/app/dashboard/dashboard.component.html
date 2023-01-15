@@ -81,15 +81,25 @@
     </mat-card-content>
   </mat-card>
 
-  <p>Inventory</p>
+  <p></p>
+  <div style="display: inline-block">
+    Inventory
+    <div *ngIf="!loadingInv" style="display: inline-block">
+      <button mat-icon-button color="primary" (click)="getInventory()">
+        <mat-icon fontIcon="refresh"></mat-icon>
+      </button>
+    </div>
+  </div>
+  <p></p>
+
   <mat-card appearance="outlined">
     <mat-card-content>
 
-      <div *ngIf="!inventory.balances" class="center" style="padding: 2vh">
+      <div *ngIf="loadingInv" class="center" style="padding: 2vh">
         <mat-spinner></mat-spinner>
       </div>
 
-      <div *ngIf="inventory.balances">
+      <div *ngIf="!loadingInv && inventory.balances">
         <table mat-table [dataSource]="inventory.balances" class="mat-elevation-z8 inventory-table">
           <ng-container matColumnDef="ticker">
             <th mat-header-cell *matHeaderCellDef>Asset</th>
