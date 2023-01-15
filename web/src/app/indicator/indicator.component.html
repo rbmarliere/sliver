@@ -1,6 +1,17 @@
-<div class="main container">
+<p></p>
 
-  <p>INDICATORS</p>
+<div style="display: inline-block">
+  Indicators
+  <div *ngIf="!loading" style="display: inline-block">
+    <button mat-icon-button color="primary" (click)="getIndicators()">
+      <mat-icon fontIcon="refresh"></mat-icon>
+    </button>
+  </div>
+</div>
+
+<p></p>
+
+<div class="main container">
 
   <mat-card appearance="outlined">
     <mat-card-content>
@@ -9,7 +20,7 @@
         <mat-spinner></mat-spinner>
       </div>
 
-      <div *ngIf="!loading">
+      <div *ngIf="!loading && indicators">
         <plotly-plot [config]="plot.config" [data]="plot.data" [layout]="plot.layout" [updateOnlyWithRevision]="true"
           (relayout)="zoom($event)"></plotly-plot>
 

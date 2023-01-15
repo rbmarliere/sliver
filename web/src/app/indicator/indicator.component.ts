@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { Indicator } from '../indicator';
 import { IndicatorService } from '../indicator.service';
 import { Strategy } from '../strategy';
@@ -10,24 +10,22 @@ import { getPlot } from './plot';
   templateUrl: './indicator.component.html',
   styleUrls: ['./indicator.component.less']
 })
-export class IndicatorComponent implements OnInit {
+export class IndicatorComponent {
 
   @Input() strategy!: Strategy;
 
   backtest_log: any;
-  private indicators?: Indicator;
-  loading: Boolean = true;
   plot: any;
+
+  loading: Boolean = false;
+  indicators?: Indicator;
 
   constructor(
     private indicatorService: IndicatorService,
   ) { }
 
-  ngOnInit(): void {
-    this.getIndicators();
-  }
-
   getIndicators(): void {
+    this.loading = true;
     this.indicatorService.getIndicators(this.strategy).subscribe({
       next: (res) => {
         this.indicators = res;

@@ -3,8 +3,8 @@
 </div>
 
 <div *ngIf="!loading" class="main container">
-  <p *ngIf="!strategy.id">NEW STRATEGY</p>
-  <p *ngIf="strategy.id">EDIT STRATEGY (id={{ strategy.id }})</p>
+  <p *ngIf="!strategy.id">New Strategy</p>
+  <p *ngIf="strategy.id">Edit Strategy ({{ strategy.id }})</p>
 
   <mat-card appearance="outlined">
     <mat-card-content>
