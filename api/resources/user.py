@@ -8,15 +8,15 @@ import core
 
 fields = {
     "email": fields.String,
-    "telegram": fields.String,
     "max_risk": fields.Float,
     "cash_reserve": fields.Float,
+    "telegram_username": fields.String,
 }
 
 argp = reqparse.RequestParser()
 argp.add_argument("old_password", type=str)
 argp.add_argument("password", type=str)
-argp.add_argument("telegram", type=str)
+argp.add_argument("telegram_username", type=str)
 argp.add_argument("max_risk", type=float)
 argp.add_argument("cash_reserve", type=float)
 
@@ -47,8 +47,8 @@ class User(Resource):
             else:
                 raise api.errors.WrongPassword
 
-        if args.telegram:
-            user.telegram = args.telegram
+        if args.telegram_username:
+            user.telegram_username = args.telegram_username
         if args.max_risk:
             user.max_risk = args.max_risk
         if args.cash_reserve:
