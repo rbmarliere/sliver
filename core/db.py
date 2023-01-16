@@ -597,17 +597,15 @@ class Position(BaseModel):
     def add_order(self, order):
         market = self.user_strategy.strategy.market
 
-        # update self info
         if order.side == "buy":
             self.bucket += order.cost
             self.entry_cost += order.cost
             self.entry_amount += order.filled
             self.fee += order.fee
 
-            # update entry price if entry_amount is non zero
             if self.entry_amount > 0:
-                self.entry_price = market.quote.transform(
-                    self.entry_cost / self.entry_amount)
+                self.entry_price = \
+                    market.quote.div(self.entry_cost, self.entry_amount)
 
         elif order.side == "sell":
             self.bucket += order.filled
@@ -615,10 +613,9 @@ class Position(BaseModel):
             self.exit_cost += order.cost
             self.fee += order.fee
 
-            # update exit price if exit_amount is non zero
             if self.exit_amount > 0:
-                self.exit_price = market.base.transform(
-                    self.exit_cost / self.exit_amount)
+                self.exit_price = \
+                    market.quote.div(self.exit_cost, self.exit_amount)
 
         self.save()
 
