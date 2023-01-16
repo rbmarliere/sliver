@@ -184,6 +184,7 @@ def sync_limit_orders(position: core.db.Position) -> core.db.Position:
         while True:
             try:
                 ex_order = api.cancel_order(oid, symbol)
+                oid = ex_order["id"]
                 break
             except ccxt.OrderNotFound:
                 # order.status = 'missing' ?
@@ -199,11 +200,9 @@ def sync_limit_orders(position: core.db.Position) -> core.db.Position:
                 ex_order = api.fetch_order(oid, symbol)
                 break
             except ccxt.OrderNotFound:
-                # order.status = 'missing' ?
-                break
+                time.sleep(10)
             except ccxt.RequestTimeout as e:
                 core.watchdog.error("order fetch request timeout", e)
-                # retry after 10 seconds
                 time.sleep(10)
 
         if ex_order:
