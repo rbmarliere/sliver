@@ -571,7 +571,7 @@ class Position(BaseModel):
         market = strategy.market
         user = self.user_strategy.user
 
-        if self.stop_loss <= 0 or self.stop_gain <= 0:
+        if strategy.stop_loss <= 0 or strategy.stop_gain <= 0:
             return False
 
         if last_price is None:
