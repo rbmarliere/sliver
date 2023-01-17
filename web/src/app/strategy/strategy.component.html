@@ -15,12 +15,7 @@
             </mat-slide-toggle>
             <mat-label style="padding: 1vh">Active</mat-label>
           </p>
-          <p>
-            <mat-slider discrete [displayWith]="formatLabel" min="0" max="1" step="0.01">
-              <input matSliderThumb formControlName="lm_ratio" />
-            </mat-slider>
-            <mat-label style="padding: 1vh">Market Orders</mat-label>
-          </p>
+
           <p>
             <mat-form-field appearance="fill" *ngIf="strategy.id">
               <mat-label>Signal</mat-label>
@@ -77,24 +72,9 @@
         <div class="fields">
           <p>
             <mat-form-field>
-              <mat-label>Minimum Number of Buckets</mat-label>
-              <input matInput type="number" formControlName="min_buckets" min="1" />
-            </mat-form-field>
-          </p>
-
-          <p>
-            <mat-form-field>
-              <mat-label>Refresh Interval</mat-label>
-              <input matInput type="number" formControlName="refresh_interval" min="1" />
+              <mat-label>Order Refresh Interval</mat-label>
+              <input matInput type="number" formControlName="orders_interval" min="1" />
               <mat-hint>in minutes</mat-hint>
-            </mat-form-field>
-          </p>
-
-          <p>
-            <mat-form-field>
-              <mat-label>Next Refresh Time</mat-label>
-              <input matInput type="datetime-local" step="any" formControlName="next_refresh" />
-              <mat-hint>UTC</mat-hint>
             </mat-form-field>
           </p>
 
@@ -107,20 +87,38 @@
 
           <p>
             <mat-form-field>
-              <mat-label>Bucket Interval</mat-label>
-              <input matInput type="number" formControlName="bucket_interval" min="1" />
-              <mat-hint>in minutes</mat-hint>
-            </mat-form-field>
-          </p>
-
-          <p>
-            <mat-form-field>
               <mat-label>Price Spread for Limit Orders</mat-label>
               <input matInput type="number" formControlName="spread" min="0.01" />
               <mat-hint>in %</mat-hint>
             </mat-form-field>
           </p>
 
+          <div style="display: flex; flex-direction: column;">
+            <mat-slider discrete [displayWith]="formatLabel" min="0" max="1" step="0.01">
+              <input matSliderThumb formControlName="lm_ratio" />
+            </mat-slider>
+            <mat-label style="padding-right: 3vh; padding-left: 3vh">Use Market Orders</mat-label>
+          </div>
+        </div>
+        <div class="fields">
+          <p>
+            <mat-form-field>
+              <mat-label>Minimum Number of Buckets</mat-label>
+              <input matInput type="number" formControlName="min_buckets" min="1" />
+            </mat-form-field>
+          </p>
+
+          <p>
+            <mat-form-field>
+              <mat-label>Bucket Interval</mat-label>
+              <input matInput type="number" formControlName="bucket_interval" min="1" />
+              <mat-hint>in minutes</mat-hint>
+            </mat-form-field>
+          </p>
+
+        </div>
+
+        <div class="fields">
           <p>
             <mat-form-field>
               <mat-label>Stop Gain</mat-label>
