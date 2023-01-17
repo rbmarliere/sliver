@@ -709,6 +709,11 @@ class Position(BaseModel):
 
     def refresh_orders(self, market_total, limit_total, last_p):
         strategy = self.user_strategy.strategy
+        user = self.user_strategy.user
+        exchange = strategy.market.base.exchange
+
+        credential = user.get_active_credential(exchange).get()
+        core.exchange.set_api(cred=credential)
 
         if self.status == "opening":
             if market_total > 0:
