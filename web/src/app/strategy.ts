@@ -10,8 +10,8 @@ export interface BaseStrategy {
   signal: string;
   market_id: number | null;
   timeframe: string;
-  refresh_interval: number;
-  next_refresh: string;
+  // next_refresh: string;
+  orders_interval: number;
   num_orders: number;
   min_buckets: number;
   bucket_interval: number;

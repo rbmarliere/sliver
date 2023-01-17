@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { map, Observable } from 'rxjs';
+import { Observable } from 'rxjs';
 import { BaseStrategy } from './strategy';
 
 @Injectable({
@@ -16,11 +16,6 @@ export class StrategiesService {
   }
 
   createStrategy(strategy: BaseStrategy): Observable<BaseStrategy> {
-    return this.http.post<BaseStrategy>(this.url, strategy).pipe(
-      map((st) => {
-        st.next_refresh = st.next_refresh.slice(0, 16);
-        return st;
-      })
-    );
+    return this.http.post<BaseStrategy>(this.url, strategy);
   }
 }
