@@ -134,7 +134,7 @@ def watch():
             for position in core.db.get_active_positions():
                 stopped = position.check_stops()
                 if stopped:
-                    watch_user_strat(position.user_strategy)
+                    position.refresh()
 
             for strategy in core.db.get_pending_strategies():
                 strategy.refresh()
