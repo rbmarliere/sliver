@@ -51,6 +51,8 @@ def get_balance_by_asset(user: core.db.User, asset: core.db.Asset):
 
 
 def get_inventory(user: core.db.User):
+    sync_balances(user)
+
     balances = []
     inv_free_val = inv_used_val = inv_total_val = 0
 
