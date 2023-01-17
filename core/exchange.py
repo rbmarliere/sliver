@@ -57,10 +57,11 @@ def check_latency():
 
 
 def download_prices(strategy: core.db.Strategy):
+    set_api(exchange=strategy.market.base.exchange)
+
     now = datetime.datetime.utcnow()
     timeframe = strategy.timeframe
     market = strategy.market
-    set_api(exchange=strategy.market.base.exchange)
 
     # check if symbol is supported by exchange
     symbols = [pair["symbol"] for pair in api.fetch_markets()]
@@ -163,6 +164,12 @@ def download_prices(strategy: core.db.Strategy):
 
 
 def sync_limit_orders(position: core.db.Position) -> core.db.Position:
+    # set user credential api
+    user = position.user_strategy.user
+    exchange = position.user_strategy.strategy.market.base.exchange
+    credential = user.get_active_credential(exchange).get()
+    set_api(cred=credential)
+
     market = position.user_strategy.strategy.market
     symbol = market.get_symbol()
 
@@ -214,6 +221,12 @@ def create_order(type: str,
                  position: core.db.Position,
                  amount: int,
                  price: int):
+    # set user credential api
+    user = position.user_strategy.user
+    exchange = position.user_strategy.strategy.market.base.exchange
+    credential = user.get_active_credential(exchange).get()
+    set_api(cred=credential)
+
     market = position.user_strategy.strategy.market
     symbol = market.get_symbol()
 
@@ -306,6 +319,12 @@ def create_limit_buy_orders(total_cost: int,
                             num_orders: int,
                             spread_pct: decimal.Decimal):
 
+    # set user credential api
+    user = position.user_strategy.user
+    exchange = position.user_strategy.strategy.market.base.exchange
+    credential = user.get_active_credential(exchange).get()
+    set_api(cred=credential)
+
     market = position.user_strategy.strategy.market
 
     # compute price delta based on given spread
@@ -367,6 +386,12 @@ def create_limit_sell_orders(total_amount: int,
                              last_price: int,
                              num_orders: int,
                              spread_pct: decimal.Decimal):
+
+    # set user credential api
+    user = position.user_strategy.user
+    exchange = position.user_strategy.strategy.market.base.exchange
+    credential = user.get_active_credential(exchange).get()
+    set_api(cred=credential)
 
     market = position.user_strategy.strategy.market
 
