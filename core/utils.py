@@ -93,6 +93,17 @@ def get_timeframe_delta(timeframe):
     return datetime.timedelta(seconds=get_timeframe_in_seconds(timeframe))
 
 
+def get_next_refresh(interval_in_minutes):
+    now = datetime.datetime.utcnow()
+    freq = "{i}T".format(i=interval_in_minutes)
+    last = now.replace(minute=0, second=0, microsecond=0)
+    range = pandas.date_range(last, periods=61, freq=freq)
+    series = range.to_series().asfreq(freq)
+    next_refresh = series.loc[series > now].iloc[0]
+
+    return next_refresh
+
+
 def get_mean_var(series: pandas.DataFrame,
                  n: int,
                  old_mean: decimal.Decimal,
