@@ -75,17 +75,11 @@ class User(BaseModel):
             .order_by(Asset.ticker)
 
     def get_open_positions(self):
-        return Position \
-            .select() \
-            .join(UserStrategy) \
-            .where(UserStrategy.user_id == self.id) \
-            .where((Position.status == "open")
-                   | (Position.status == "opening")
-                   | (Position.status == "closing"))
+        return get_open_positions() \
+            .where(UserStrategy.user_id == self.id)
 
     def get_exchange_open_positions(self, exchange: Exchange):
         return self.get_open_positions() \
-            .join(Strategy) \
             .join(Market) \
             .join(ExchangeAsset,
                   on=(Market.base_id == ExchangeAsset.id)) \
@@ -325,16 +319,9 @@ class UserStrategy(BaseModel):
         self.save()
 
     def get_active_position_or_none(self):
-        return Position \
-            .select() \
-            .join(UserStrategy) \
-            .join(Strategy) \
-            .join(Market) \
+        return get_open_positions() \
             .where(UserStrategy.user_id == self.user_id) \
             .where(UserStrategy.strategy_id == self.strategy_id) \
-            .where((Position.status == "open")
-                   | (Position.status == "opening")
-                   | (Position.status == "closing")) \
             .get_or_none()
 
     def refresh(self):
@@ -863,16 +850,31 @@ class Indicator(BaseModel):
 
 
 def get_active_positions():
-    return Position.select().where(Position.status << ["open", "opening"])
-
-
-def get_active_strategies():
-    return Strategy \
-        .select() \
+    return Position.select() \
+        .join(UserStrategy) \
+        .join(Strategy) \
         .where(Strategy.active) \
-        .order_by(Strategy.next_refresh)
+        .where(UserStrategy.active)
+
+
+def get_opening_positions():
+    return get_active_positions() \
+        .where(Position.status << ["open", "opening"])
+
+
+def get_open_positions():
+    return get_active_positions() \
+        .where(Position.status << ["open", "opening", "closing"])
+
+
+def get_pending_positions():
+    return get_open_positions() \
+        .where(Position.next_refresh < datetime.datetime.utcnow())
 
 
 def get_pending_strategies():
-    now = datetime.datetime.utcnow()
-    return get_active_strategies().where((now > Strategy.next_refresh))
+    return Strategy \
+        .select() \
+        .where(Strategy.active) \
+        .where(Strategy.next_refresh < datetime.datetime.utcnow()) \
+        .order_by(Strategy.next_refresh)
