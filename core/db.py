@@ -343,7 +343,7 @@ class UserStrategy(BaseModel):
                 if t_cost > 0:
                     position = core.db.Position.open(self, t_cost)
 
-        elif strategy.get_signal() == "sell":
+        elif position.is_open() and strategy.get_signal() == "sell":
             position.next_refresh = datetime.datetime.utcnow()
             position.save()
 
