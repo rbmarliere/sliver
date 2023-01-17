@@ -131,7 +131,7 @@ def watch():
         core.db.connection.connect()
 
         try:
-            for position in core.db.get_active_positions():
+            for position in core.db.get_opening_positions():
                 stopped = position.check_stops()
                 if stopped:
                     position.refresh()
@@ -142,7 +142,11 @@ def watch():
                 for user_strat in strategy.get_active_users():
                     watch_user_strat(user_strat)
 
-            time.sleep(60)
+            for position in core.db.get_pending_positions():
+                # TODO error handling wrapper
+                position.refresh()
+
+            time.sleep(10)
 
         except (core.errors.ModelTooLarge,
                 core.errors.ModelDoesNotExist):

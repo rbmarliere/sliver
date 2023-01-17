@@ -1,7 +1,6 @@
 import datetime
 from decimal import Decimal as D
 
-import pandas
 import peewee
 from ccxt.base.decimal_to_precision import DECIMAL_PLACES, NO_PADDING
 
@@ -215,11 +214,11 @@ class Strategy(BaseModel):
     deleted = peewee.BooleanField(default=False)
     market = peewee.ForeignKeyField(Market)
     timeframe = peewee.TextField(default="1d")
-    refresh_interval = peewee.IntegerField(default=1)  # 1 minute
     next_refresh = peewee.DateTimeField(default=datetime.datetime.utcnow())
+    orders_interval = peewee.IntegerField(default=1)  # 1 minute
     num_orders = peewee.IntegerField(default=1)
-    min_buckets = peewee.IntegerField(default=1)
     bucket_interval = peewee.IntegerField(default=60)  # 1 hour
+    min_buckets = peewee.IntegerField(default=1)
     spread = peewee.DecimalField(default=1)  # 1%
     stop_gain = peewee.DecimalField(default=5)  # 5%
     stop_loss = peewee.DecimalField(default=3)  # -3%
@@ -263,7 +262,8 @@ class Strategy(BaseModel):
         self.save()
 
     def postpone(self):
-        self.next_refresh = self.get_next_refresh()
+        interval = core.utils.get_timeframe_in_seconds(self.timeframe) / 60
+        self.next_refresh = core.utils.get_next_refresh(interval)
         i("next refresh at {n}".format(n=self.next_refresh))
         self.save()
 
@@ -332,19 +332,10 @@ class UserStrategy(BaseModel):
 
         # sync orders of active position
         position = self.get_active_position_or_none()
-        if position:
-            core.exchange.sync_limit_orders(position)
-
-        # sync user's balances across all exchanges
-        core.inventory.sync_balances(self.user)
 
         if position is None:
-            i("no active position")
-
-            # create position if apt
             if strategy.get_signal() == "buy":
-                t_cost = core.inventory.get_target_cost(
-                    self)
+                t_cost = core.inventory.get_target_cost(self)
 
                 if (t_cost == 0 or t_cost < strategy.market.cost_min):
                     i("invalid target_cost, could not create position")
@@ -352,12 +343,15 @@ class UserStrategy(BaseModel):
                 if t_cost > 0:
                     position = core.db.Position.open(self, t_cost)
 
-        if position:
-            position.refresh()
+        elif strategy.get_signal() == "sell":
+            position.next_refresh = datetime.datetime.utcnow()
+            position.save()
 
 
 class Position(BaseModel):
     user_strategy = peewee.ForeignKeyField(UserStrategy)
+    # based on user_strategy.strategy.orders_interval
+    next_refresh = peewee.DateTimeField(default=datetime.datetime.utcnow())
     # time limit on each buy/sell step for DCA
     next_bucket = peewee.DateTimeField(default=datetime.datetime.utcnow())
     # maximum cost|amount for any time period
@@ -436,6 +430,7 @@ class Position(BaseModel):
         remaining_to_open = self.target_cost - self.entry_cost
         remaining = min(abs(remaining_to_fill), abs(remaining_to_open))
 
+        core.inventory.sync_balances(self.user_strategy.user)
         balance = Balance.get(user_id=self.user_strategy.user_id,
                               asset_id=market.quote.id)
         remaining = min(remaining, balance.total)
@@ -458,6 +453,7 @@ class Position(BaseModel):
         remaining_to_exit = self.get_remaining_to_exit()
         remaining = min(abs(remaining_to_fill), abs(remaining_to_exit))
 
+        core.inventory.sync_balances(self.user_strategy.user)
         balance = Balance.get(user_id=self.user_strategy.user_id,
                               asset_id=market.base.id)
         remaining = min(remaining, balance.total)
@@ -485,8 +481,7 @@ class Position(BaseModel):
         market = strategy.market
         user = u_st.user
 
-        now = datetime.datetime.utcnow()
-        nxt_bucket = now + datetime.timedelta(minutes=strategy.bucket_interval)
+        next_bucket = core.utils.get_next_refresh(strategy.bucket_interval)
 
         bucket_max = \
             market.quote.div(t_cost,
@@ -494,7 +489,7 @@ class Position(BaseModel):
                              prec=strategy.market.price_precision)
 
         position = Position(user_strategy=u_st,
-                            next_bucket=nxt_bucket,
+                            next_bucket=next_bucket,
                             bucket_max=bucket_max,
                             status="opening",
                             target_cost=t_cost)
@@ -521,6 +516,12 @@ class Position(BaseModel):
         self.bucket = 0
         self.status = "closing"
 
+        self.save()
+
+    def postpone(self):
+        interval = self.user_strategy.strategy.orders_interval
+        self.next_refresh = core.utils.get_next_refresh(interval)
+        i("next refresh at {n}".format(n=self.next_refresh))
         self.save()
 
     def check_stops(self, last_price=None):
@@ -583,6 +584,8 @@ class Position(BaseModel):
         strategy = self.user_strategy.strategy
         signal = strategy.get_signal()
         market = strategy.market
+
+        core.exchange.set_api(exchange=market.base.exchange)
         p = core.exchange.api.fetch_ticker(market.get_symbol())
         last_p = market.quote.transform(p["last"])
 
@@ -611,6 +614,8 @@ class Position(BaseModel):
 
         self.refresh_status()
 
+        self.postpone()
+
         self.save()
 
     def refresh_bucket(self, last_p):
@@ -618,14 +623,17 @@ class Position(BaseModel):
         market = strategy.market
 
         now = datetime.datetime.utcnow()
-        nxt_bucket = now + datetime.timedelta(minutes=strategy.bucket_interval)
-        i("next bucket starts at {t}".format(t=self.next_bucket))
+        next_bucket = core.utils.get_next_refresh(strategy.bucket_interval)
 
         # check if current bucket needs to be reset
         if now > self.next_bucket:
             i("moving on to next bucket")
-            self.next_bucket = nxt_bucket
+            self.next_bucket = next_bucket
             self.bucket = 0
+
+        i("next bucket at {t}".format(t=self.next_bucket))
+
+        core.exchange.sync_limit_orders(self)
 
         if self.status == "opening":
             remaining_cost = self.get_remaining_cost()
@@ -765,7 +773,7 @@ class Order(BaseModel):
         side = ex_order["side"]
         time = ex_order["datetime"]
         if not time:
-            time = datetime.datetime.now()
+            time = datetime.datetime.utcnow()
 
         price = ex_order["average"]
         amount = ex_order["amount"]
