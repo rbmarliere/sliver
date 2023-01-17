@@ -1,3 +1,4 @@
+import peewee
 from flask_jwt_extended import jwt_required
 from flask_restful import Resource, marshal
 
@@ -18,7 +19,10 @@ class Indicator(Resource):
             raise api.errors.StrategyDoesNotExist
 
         strategy = strategies.load(strategy)
-        strategy.refresh_indicators()
+        try:
+            strategy.refresh_indicators()
+        except peewee.IntegrityError:
+            pass
 
         ind = strategy.get_indicators_df()
 
