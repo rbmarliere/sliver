@@ -360,15 +360,9 @@ class UserStrategy(BaseModel):
 
     def refresh(self):
         strategy = self.strategy
-        exchange = strategy.market.base.exchange
-        user = self.user
 
         i("...........................................")
         i("refreshing user {u} strategy {s}".format(u=self.user, s=self))
-
-        # set api to current exchange
-        credential = user.get_active_credential(exchange).get()
-        core.exchange.set_api(cred=credential)
 
         # sync orders of active position
         position = self.get_active_position_or_none()
