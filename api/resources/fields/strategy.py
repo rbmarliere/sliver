@@ -1,4 +1,4 @@
-from flask_restful import fields, reqparse, inputs
+from flask_restful import fields, reqparse
 
 import strategies
 
@@ -15,8 +15,8 @@ base_fields = {
     "signal": fields.String,
     "market_id": fields.Integer,
     "timeframe": fields.String,
-    "refresh_interval": fields.Integer,
-    "next_refresh": fields.DateTime(dt_format="iso8601"),
+    # "next_refresh": fields.DateTime(dt_format="iso8601"),
+    "orders_interval": fields.Integer,
     "num_orders": fields.Integer,
     "min_buckets": fields.Integer,
     "bucket_interval": fields.Integer,
@@ -93,8 +93,8 @@ base_parser.add_argument("active", type=bool)
 # base_parser.add_argument("deleted", type=bool)
 base_parser.add_argument("market_id", type=int)
 base_parser.add_argument("timeframe", type=str)
-base_parser.add_argument("refresh_interval", type=int)
-base_parser.add_argument("next_refresh", type=inputs.datetime_from_iso8601)
+# base_parser.add_argument("next_refresh", type=inputs.datetime_from_iso8601)
+base_parser.add_argument("orders_interval", type=int)
 base_parser.add_argument("num_orders", type=int)
 base_parser.add_argument("min_buckets", type=int)
 base_parser.add_argument("bucket_interval", type=int)
