@@ -219,11 +219,6 @@ def sync_balance(cred: core.db.Credential):
 
 
 def sync_balances(user: core.db.User):
-    # backup current api
-    curr_cred = None
-    if hasattr(core.exchange, "credential"):
-        curr_cred = core.exchange.credential
-
     active_exchanges = []
     # sync balance for each exchange the user has a key
     for cred in user.credential_set.where(core.db.Credential.active):
@@ -236,7 +231,3 @@ def sync_balances(user: core.db.User):
     for bal in user.balance_set:
         if bal.asset.exchange not in active_exchanges:
             bal.delete_instance()
-
-    # restore previous api
-    if curr_cred:
-        core.exchange.set_api(cred=curr_cred)
