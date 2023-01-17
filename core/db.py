@@ -621,17 +621,16 @@ class Position(BaseModel):
     def refresh_bucket(self, last_p):
         strategy = self.user_strategy.strategy
         market = strategy.market
-
         now = datetime.datetime.utcnow()
-        next_bucket = core.utils.get_next_refresh(strategy.bucket_interval)
+
+        i("next bucket at {t}".format(t=self.next_bucket))
 
         # check if current bucket needs to be reset
         if now > self.next_bucket:
-            i("moving on to next bucket")
+            next_bucket = core.utils.get_next_refresh(strategy.bucket_interval)
             self.next_bucket = next_bucket
+            i("moving on to next bucket at {b}".format(b=self.next_bucket))
             self.bucket = 0
-
-        i("next bucket at {t}".format(t=self.next_bucket))
 
         core.exchange.sync_limit_orders(self)
 
