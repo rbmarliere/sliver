@@ -164,7 +164,8 @@ def watch():
 
         except (core.errors.ModelTooLarge,
                 core.errors.ModelDoesNotExist):
-            strategy.disable()
+            if "strategy" in locals():
+                strategy.disable()
 
         except ccxt.RateLimitExceeded as e:
             error("rate limit exceeded", e)
