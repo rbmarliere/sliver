@@ -80,6 +80,7 @@ export class StrategyComponent implements OnInit {
   set strategy(strategy: Strategy) {
     this._strategy = strategy;
 
+    this.form.get('timeframe')?.disable();
     this.form.get('signal')?.disable();
     this.form.get('market_id')?.disable();
     this.form.get('type')?.disable();
@@ -94,6 +95,7 @@ export class StrategyComponent implements OnInit {
     } else {
       this.form.patchValue(this.empty_strat);
 
+      this.form.get('timeframe')?.enable();
       this.form.get('market_id')?.enable();
       this.form.get('signal')?.enable();
       this.form.get('type')?.enable();
