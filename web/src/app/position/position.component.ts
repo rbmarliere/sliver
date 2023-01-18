@@ -21,6 +21,7 @@ export class PositionComponent implements OnInit {
     'exit_price',
     'exit_amount',
     'pnl',
+    'roi',
     'actions'
   ];
 
