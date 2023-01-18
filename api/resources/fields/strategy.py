@@ -22,7 +22,9 @@ base_fields = {
     "bucket_interval": fields.Integer,
     "spread": fields.Float,
     "stop_gain": fields.Float,
+    "trailing_gain": fields.Boolean,
     "stop_loss": fields.Float,
+    "trailing_loss": fields.Boolean,
     "lm_ratio": fields.Float,
     "subscribed": fields.Boolean,
 }
@@ -101,7 +103,9 @@ base_parser.add_argument("min_buckets", type=int)
 base_parser.add_argument("bucket_interval", type=int)
 base_parser.add_argument("spread", type=float)
 base_parser.add_argument("stop_gain", type=float)
+base_parser.add_argument("trailing_gain", type=bool)
 base_parser.add_argument("stop_loss", type=float)
+base_parser.add_argument("trailing_loss", type=bool)
 base_parser.add_argument("lm_ratio", type=float)
 
 base_parser.add_argument("subscribe", type=bool)
