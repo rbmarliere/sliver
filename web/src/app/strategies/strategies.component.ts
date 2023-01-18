@@ -12,8 +12,8 @@ import { getStrategyTypes } from '../strategy/strategy-types';
 export class StrategiesComponent implements OnInit {
   displayedColumns: string[] = [
     'id',
-    'active',
-    'subscribed',
+    // 'active',
+    // 'subscribed',
     'timeframe',
     'type',
     'description',
@@ -63,6 +63,12 @@ export class StrategiesComponent implements OnInit {
 
   updateSubscription(strategy: Strategy): void {
     this.strategyService.updateSubscription(strategy).subscribe({
+      next: () => location.reload(),
+    });
+  }
+
+  updateActive(strategy: Strategy): void {
+    this.strategyService.updateActive(strategy).subscribe({
       next: () => location.reload(),
     });
   }
