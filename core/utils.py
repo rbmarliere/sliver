@@ -5,6 +5,7 @@ import re
 import pandas
 
 import core
+from decimal import Decimal as D
 
 
 def standardize(text):
@@ -151,3 +152,7 @@ def bformat(x, column):
 def sformat(x):
     strat = core.db.Strategy.get_by_id(x.strategy_id)
     return strat.market.get_symbol()
+
+
+def get_roi(entry_price, exit_price):
+    return D(str(((exit_price / entry_price) - 1) * 100)).quantize(D("0.0001"))
