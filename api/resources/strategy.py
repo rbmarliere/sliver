@@ -1,3 +1,5 @@
+import datetime
+
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from flask_restful import Resource, marshal
 
@@ -61,6 +63,18 @@ class Strategy(Resource):
         try:
             if args["subscribe"]:
                 old_strategy.subscribe(user, args["subscribed"])
+                strategy = strategies.load(old_strategy, user=user)
+                return marshal(strategy, get_fields(strategy.type))
+        except core.errors.MarketAlreadySubscribed:
+            raise api.errors.MarketAlreadySubscribed
+        except KeyError:
+            pass
+
+        try:
+            if args["activate"]:
+                old_strategy.active = args["active"]
+                old_strategy.next_refresh = datetime.datetime.utcnow()
+                old_strategy.save()
                 strategy = strategies.load(old_strategy, user=user)
                 return marshal(strategy, get_fields(strategy.type))
         except core.errors.MarketAlreadySubscribed:
