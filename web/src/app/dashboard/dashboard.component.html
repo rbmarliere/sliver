@@ -5,22 +5,23 @@
     <mat-card-content>
       <form [formGroup]="form" (ngSubmit)="updatePassword()">
         <div class="fields">
-          <p>
-            <mat-form-field>
-              <mat-label>Old Password</mat-label>
-              <input matInput type="password" name="old_password" formControlName="old_password"
-                autocomplete="current-password" />
-            </mat-form-field>
-          </p>
+          <mat-form-field>
+            <mat-label>Old Password</mat-label>
+            <input matInput type="password" name="old_password" formControlName="old_password"
+              autocomplete="current-password" />
+          </mat-form-field>
 
-          <p>
-            <mat-form-field>
-              <mat-label>New Password</mat-label>
-              <input matInput type="password" name="password" formControlName="password" autocomplete="new-password" />
-            </mat-form-field>
-          </p>
+          <mat-form-field>
+            <mat-label>New Password</mat-label>
+            <input matInput type="password" name="password" formControlName="password" autocomplete="new-password" />
+          </mat-form-field>
+
+        </div>
+
+        <div class="button">
           <button mat-raised-button color="primary">Update</button>
         </div>
+
       </form>
     </mat-card-content>
   </mat-card>
@@ -31,15 +32,17 @@
     <mat-card-content>
       <form [formGroup]="form" (ngSubmit)="updateAlert()">
         <div class="fields">
-          <p>
-            <mat-form-field>
-              <mat-label>Telegram ID</mat-label>
-              <input matInput name="telegram_username" formControlName="telegram_username"
-                autocomplete="current-password" />
-            </mat-form-field>
-          </p>
+          <mat-form-field>
+            <mat-label>Telegram Username</mat-label>
+            <input matInput name="telegram_username" formControlName="telegram_username"
+              autocomplete="current-password" />
+          </mat-form-field>
+        </div>
+
+        <div class="button">
           <button mat-raised-button color="primary">Update</button>
         </div>
+
       </form>
     </mat-card-content>
   </mat-card>
@@ -49,19 +52,22 @@
     <mat-card-content>
       <form [formGroup]="form" (ngSubmit)="updateRisk()">
         <div class="fields">
-          <p>
+          <p class="pad-right">
             <mat-label>Maximum Risk</mat-label>
             <mat-slider min="0" max="1" step="0.01" discrete [displayWith]="formatLabel">
               <input matSliderThumb formControlName="max_risk" />
             </mat-slider>
           </p>
 
-          <p>
+          <p class="pad-right">
             <mat-label>Cash Reserve</mat-label>
             <mat-slider min="0" max="1" step="0.01" discrete [displayWith]="formatLabel">
               <input matSliderThumb formControlName="cash_reserve" />
             </mat-slider>
           </p>
+        </div>
+
+        <div class="button">
           <button mat-raised-button color="primary">Update</button>
         </div>
       </form>
@@ -85,7 +91,7 @@
   <div style="display: inline-block">
     Inventory
     <div *ngIf="!loadingInv" style="display: inline-block">
-      <button mat-icon-button color="primary" (click)="getInventory()">
+      <button mat-icon-button color="primary" (click)="getInventory()" title="Refresh Balances">
         <mat-icon fontIcon="refresh"></mat-icon>
       </button>
     </div>
