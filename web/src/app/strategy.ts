@@ -17,7 +17,9 @@ export interface BaseStrategy {
   bucket_interval: number;
   spread: number;
   stop_gain: number;
+  trailing_gain: boolean;
   stop_loss: number;
+  trailing_loss: boolean;
   lm_ratio: number;
   subscribed: boolean;
 }
