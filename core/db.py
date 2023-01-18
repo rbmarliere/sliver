@@ -423,16 +423,13 @@ class Position(BaseModel):
     def get_remaining_cost(self):
         market = self.user_strategy.strategy.market
 
-        # if self.status != "opening":
-        #     return
-
         remaining_to_fill = self.bucket_max - self.bucket
         remaining_to_open = self.target_cost - self.entry_cost
         remaining = min(abs(remaining_to_fill), abs(remaining_to_open))
 
-        core.inventory.sync_balances(self.user_strategy.user)
-        balance = Balance.get(user_id=self.user_strategy.user_id,
-                              asset_id=market.quote.id)
+        balance = core.inventory \
+            .get_balance_by_exchange_asset(user=self.user_strategy.user,
+                                           asset=market.quote)
         remaining = min(remaining, balance.total)
 
         i("bucket cost is {a}".format(a=market.quote.print(self.bucket)))
@@ -440,22 +437,18 @@ class Position(BaseModel):
             .format(r=market.quote.print(remaining)))
         i("balance is {r}".format(r=market.quote.print(balance.total)))
 
-        # remaining is a COST
         return remaining
 
     def get_remaining_amount(self, last_price):
         market = self.user_strategy.strategy.market
 
-        # if self.status != "closing":
-        #     return
-
         remaining_to_fill = self.get_remaining_to_fill()
         remaining_to_exit = self.get_remaining_to_exit()
         remaining = min(abs(remaining_to_fill), abs(remaining_to_exit))
 
-        core.inventory.sync_balances(self.user_strategy.user)
-        balance = Balance.get(user_id=self.user_strategy.user_id,
-                              asset_id=market.base.id)
+        balance = core.inventory \
+            .get_balance_by_exchange_asset(user=self.user_strategy.user,
+                                           asset=market.base)
         remaining = min(remaining, balance.total)
 
         i("bucket amount is {a}".format(a=market.base.print(self.bucket)))
@@ -473,7 +466,6 @@ class Position(BaseModel):
             i("position remainder is {r}".format(r=market.base.print(r)))
             remaining = remaining_to_exit
 
-        # remaining is an AMOUNT
         return remaining
 
     def open(u_st: UserStrategy, t_cost: int):
@@ -591,6 +583,7 @@ class Position(BaseModel):
 
         i("___________________________________________")
         i("refreshing {s} position {i}".format(s=self.status, i=self.id))
+        i("strategy is {s}".format(s=self.user_strategy.strategy.id))
         i("last price is {p}".format(p=strategy.market.quote.print(last_p)))
         i("target cost is {t}".format(t=market.quote.print(self.target_cost)))
         i("entry cost is {t}".format(t=market.quote.print(self.entry_cost)))
@@ -634,6 +627,8 @@ class Position(BaseModel):
 
         core.exchange.sync_limit_orders(self)
 
+        i("limit to market ratio is {r}".format(r=strategy.lm_ratio))
+
         if self.status == "opening":
             remaining_cost = self.get_remaining_cost()
             remaining_amount = \
@@ -665,11 +660,8 @@ class Position(BaseModel):
             i("bucket is full")
             return 0, 0
 
-        # compute limit and market orders amounts or costs
-        i("limit to market ratio is {r}".format(r=strategy.lm_ratio))
-
         # if bucket is not full but can't insert new orders, fill at market
-        if m_total_cost < market.cost_min or l_total_cost < market.cost_min:
+        if m_total_cost < market.cost_min and l_total_cost < market.cost_min:
             return remaining_amount, 0
 
         return m_total_amount, l_total
