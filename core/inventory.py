@@ -15,8 +15,14 @@ import core
 from core.watchdog import info as i
 
 
+def get_balance_by_exchange_asset(user: core.db.User,
+                                  asset: core.db.ExchangeAsset):
+    cred = user.get_active_credential(asset.exchange).get()
+    sync_balance(cred)
+    return core.db.Balance.get(user_id=user.id, asset_id=asset.id)
+
+
 def get_balance_by_asset(user: core.db.User, asset: core.db.Asset):
-    # TODO: sort by value desc
     balance = {
         "ticker": asset.ticker,
         "free": 0,
