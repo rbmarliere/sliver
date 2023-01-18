@@ -9,15 +9,16 @@ fields = {
     "market": fields.String,
     "strategy_id": fields.Integer,
     "status": fields.String,
-    "target_cost": fields.String,
-    "entry_cost": fields.String,
-    "entry_amount": fields.String,
-    "entry_price": fields.String,
-    "exit_price": fields.String,
-    "exit_amount": fields.String,
-    "exit_cost": fields.String,
-    "fee": fields.String,
-    "pnl": fields.String,
+    "target_cost": fields.Float,
+    "entry_cost": fields.Float,
+    "entry_amount": fields.Float,
+    "entry_price": fields.Float,
+    "exit_price": fields.Float,
+    "exit_amount": fields.Float,
+    "exit_cost": fields.Float,
+    "fee": fields.Float,
+    "pnl": fields.Float,
+    "roi": fields.String,
 }
 
 
@@ -53,5 +54,6 @@ class Position(Resource):
             lambda x: core.utils.qformat(x, "fee"), axis=1)
         positions.pnl = positions.apply(
             lambda x: core.utils.qformat(x, "pnl"), axis=1)
+        positions.roi = positions.roi.apply(lambda x: f"{x:.2f}%")
 
         return positions.to_dict("records")
