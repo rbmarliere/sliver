@@ -377,9 +377,8 @@ class Position(BaseModel):
     pnl = peewee.BigIntegerField(default=0)
 
     def get_notice(self, prefix="", suffix=""):
-        return ("{p}position for user {u} with strategy {s} in market {m} {su}"
+        return ("{p}position with strategy {s} in market {m} {su}"
                 .format(p=prefix,
-                        u=self.user_strategy.user,
                         s=self.user_strategy.strategy,
                         m=self.user_strategy.strategy.market.get_symbol(),
                         su=suffix))
