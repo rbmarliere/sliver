@@ -221,7 +221,9 @@ class Strategy(BaseModel):
     min_buckets = peewee.IntegerField(default=1)
     spread = peewee.DecimalField(default=1)  # 1%
     stop_gain = peewee.DecimalField(default=5)  # 5%
+    trailing_gain = peewee.BooleanField(default=False)
     stop_loss = peewee.DecimalField(default=3)  # -3%
+    trailing_loss = peewee.BooleanField(default=False)
     lm_ratio = peewee.DecimalField(default=0)
 
     def get_signal(self):
@@ -375,9 +377,13 @@ class Position(BaseModel):
     fee = peewee.BigIntegerField(default=0)
     # position profit or loss
     pnl = peewee.BigIntegerField(default=0)
+    roi = peewee.FloatField(default=0)
+    # peak prices for trailing stop calc.
+    last_high = peewee.BigIntegerField(default=0)
+    last_low = peewee.BigIntegerField(default=0)
 
     def get_notice(self, prefix="", suffix=""):
-        return ("{p}position with strategy {s} in market {m} {su}"
+        return ("{p}position of strategy {s} in market {m} {su}"
                 .format(p=prefix,
                         s=self.user_strategy.strategy,
                         m=self.user_strategy.strategy.market.get_symbol(),
@@ -526,25 +532,47 @@ class Position(BaseModel):
         if strategy.stop_loss <= 0 or strategy.stop_gain <= 0:
             return False
 
+        if self.entry_price == 0:
+            return False
+
         if last_price is None:
             core.exchange.set_api(exchange=market.base.exchange)
             p = core.exchange.api.fetch_ticker(market.get_symbol())
             last_price = market.quote.transform(p["last"])
 
-        if self.entry_price > 0:
-            roi = round(((last_price / self.entry_price) - 1) * 100, 2)
-            # i("checking stops for position {p}".format(p=self))
-            if (roi > strategy.stop_gain or roi < strategy.stop_loss * -1):
-                n(user, self.get_notice(prefix="stopped "))
-                i("roi = {r}%".format(r=roi))
-                i("stopgain = {r}%".format(r=strategy.stop_gain))
-                i("stoploss = -{r}%".format(r=strategy.stop_loss))
-                self.close()
-                return True
+        if last_price > self.last_high:
+            self.last_high = last_price
+            self.save()
+        if last_price < self.last_low:
+            self.last_low = last_price
+            self.save()
+
+        if strategy.trailing_gain:
+            curr_gain = core.utils.get_roi(self.last_high, last_price) * -1
+        else:
+            curr_gain = core.utils.get_roi(self.entry_price, last_price)
+
+        if strategy.trailing_loss:
+            curr_loss = core.utils.get_roi(self.last_low, last_price)
+        else:
+            curr_loss = core.utils.get_roi(self.entry_price, last_price) * -1
+
+        if curr_gain > strategy.stop_gain or curr_loss > strategy.stop_loss:
+            i("last price is {p}, high was {h} and low was {l}"
+              .format(p=market.quote.print(last_price),
+                      h=market.quote.print(self.last_high),
+                      l=market.quote.print(self.last_low)))
+            i("stop gain is {g}, trailing is {gt}"
+              .format(g=strategy.stop_gain,
+                      gt=strategy.trailing_gain))
+            i("stop loss is {l}, trailing is {lt}"
+              .format(l=strategy.stop_loss,
+                      lt=strategy.trailing_loss))
+            n(user, self.get_notice(prefix="stopped "))
+            self.close()
+            return True
 
         return False
-
-        # TODO trailing_stops
 
     def add_order(self, order):
         market = self.user_strategy.strategy.market
@@ -713,12 +741,12 @@ class Position(BaseModel):
             self.pnl = (self.exit_cost
                         - self.entry_cost
                         - self.fee)
-            roi = D(str(((self.exit_price / self.entry_price) - 1) * 100))
+            self.roi = core.utils.get_roi(self.entry_price, self.exit_price)
             i("position is now closed, pnl: {r}"
               .format(r=market.quote.print(self.pnl)))
             n(user, self.get_notice(prefix="closed ",
                                     suffix=" ROI: {r}%"
-                                    .format(r=roi.quantize(D("0.01")))))
+                                    .format(r=self.roi)))
 
         # position finishes opening when it reaches target
         cost_diff = self.target_cost - self.entry_cost
