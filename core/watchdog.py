@@ -145,7 +145,7 @@ def watch():
             for position in core.db.get_pending_positions():
                 position.refresh()
 
-            time.sleep(10)
+            time.sleep(int(core.config["WATCHDOG_INTERVAL"]))
 
         except core.db.Credential.DoesNotExist as e:
             error("credential not found", e)
@@ -184,7 +184,7 @@ def watch():
 
         except peewee.OperationalError as e:
             error("database error", e)
-            time.sleep(60)
+            time.sleep(10)
 
         except KeyboardInterrupt:
             info("got keyboard interrupt")
