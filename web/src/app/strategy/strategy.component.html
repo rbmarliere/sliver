@@ -3,95 +3,73 @@
 </div>
 
 <div *ngIf="!loading" class="main container">
-  <p *ngIf="!strategy.id">New Strategy</p>
-  <p *ngIf="strategy.id">Edit Strategy ({{ strategy.id }})</p>
 
   <mat-card appearance="outlined">
     <mat-card-content>
       <form [formGroup]="form" (ngSubmit)="updateStrategy()">
+
         <div class="fields" *ngIf="strategy.id">
-          <p>
-            <mat-slide-toggle formControlName="active">
-            </mat-slide-toggle>
-            <mat-label style="padding: 1vh">Active</mat-label>
-          </p>
-
-          <p>
-            <mat-form-field appearance="fill" *ngIf="strategy.id">
-              <mat-label>Signal</mat-label>
-              <mat-select formControlName="signal">
-                <mat-option value="neutral"> neutral </mat-option>
-                <mat-option value="buy"> buy </mat-option>
-                <mat-option value="sell"> sell </mat-option>
-              </mat-select>
-            </mat-form-field>
-          </p>
+          <mat-form-field>
+            <mat-label>Description</mat-label>
+            <input matInput formControlName="description" required />
+          </mat-form-field>
         </div>
 
         <div class="fields">
-          <p>
-            <mat-form-field appearance="fill">
-              <mat-label>Type</mat-label>
-              <mat-select formControlName="type" required>
-                <mat-option *ngFor="let type of strategyTypes" [value]="type.value">
-                  {{ type.name }}
-                </mat-option>
-              </mat-select>
-            </mat-form-field>
-          </p>
-          <p>
-            <mat-form-field appearance="fill">
-              <mat-label>Market</mat-label>
-              <mat-select formControlName="market_id" required>
-                <mat-option *ngFor="let market of markets" [value]="market.id">
-                  [{{ market.id }}] {{ market.exchange_name }} - {{ market.symbol }}
-                </mat-option>
-              </mat-select>
-            </mat-form-field>
-          </p>
+          <mat-form-field appearance="fill" *ngIf="strategy.id">
+            <mat-label>Signal</mat-label>
+            <mat-select formControlName="signal">
+              <mat-option value="neutral"> neutral </mat-option>
+              <mat-option value="buy"> buy </mat-option>
+              <mat-option value="sell"> sell </mat-option>
+            </mat-select>
+          </mat-form-field>
 
-          <p>
-            <mat-form-field appearance="fill">
-              <mat-label>Timeframe</mat-label>
-              <mat-select formControlName="timeframe" required>
-                <mat-option *ngFor="let timeframe of timeframes" [value]="timeframe">
-                  {{ timeframe }}
-                </mat-option>
-              </mat-select>
-            </mat-form-field>
-          </p>
+          <mat-form-field appearance="fill">
+            <mat-label>Type</mat-label>
+            <mat-select formControlName="type" required>
+              <mat-option *ngFor="let type of strategyTypes" [value]="type.value">
+                {{ type.name }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
 
-          <p>
-            <mat-form-field>
-              <mat-label>Description</mat-label>
-              <input matInput formControlName="description" required />
-            </mat-form-field>
-          </p>
+          <mat-form-field appearance="fill">
+            <mat-label>Market</mat-label>
+            <mat-select formControlName="market_id" required>
+              <mat-option *ngFor="let market of markets" [value]="market.id">
+                [{{ market.id }}] {{ market.exchange_name }} - {{ market.symbol }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="fill">
+            <mat-label>Timeframe</mat-label>
+            <mat-select formControlName="timeframe" required>
+              <mat-option *ngFor="let timeframe of timeframes" [value]="timeframe">
+                {{ timeframe }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
         </div>
 
         <div class="fields">
-          <p>
-            <mat-form-field>
-              <mat-label>Order Refresh Interval</mat-label>
-              <input matInput type="number" formControlName="orders_interval" min="1" />
-              <mat-hint>in minutes</mat-hint>
-            </mat-form-field>
-          </p>
+          <mat-form-field>
+            <mat-label>Order Refresh Interval</mat-label>
+            <input matInput type="number" formControlName="orders_interval" min="1" />
+            <mat-hint>in minutes</mat-hint>
+          </mat-form-field>
 
-          <p>
-            <mat-form-field>
-              <mat-label>Number of Limit Orders</mat-label>
-              <input matInput type="number" formControlName="num_orders" min="1" />
-            </mat-form-field>
-          </p>
+          <mat-form-field>
+            <mat-label>Number of Limit Orders</mat-label>
+            <input matInput type="number" formControlName="num_orders" min="1" />
+          </mat-form-field>
 
-          <p>
-            <mat-form-field>
-              <mat-label>Price Spread for Limit Orders</mat-label>
-              <input matInput type="number" formControlName="spread" min="0.01" />
-              <mat-hint>in %</mat-hint>
-            </mat-form-field>
-          </p>
+          <mat-form-field>
+            <mat-label>Price Spread for Limit Orders</mat-label>
+            <input matInput type="number" formControlName="spread" min="0.01" />
+            <mat-hint>in %</mat-hint>
+          </mat-form-field>
 
           <div style="display: flex; flex-direction: column;">
             <mat-slider discrete [displayWith]="formatLabel" min="0" max="1" step="0.01">
@@ -100,102 +78,78 @@
             <mat-label style="padding-right: 3vh; padding-left: 3vh">Use Market Orders</mat-label>
           </div>
         </div>
+
         <div class="fields">
-          <p>
-            <mat-form-field>
-              <mat-label>Minimum Number of Buckets</mat-label>
-              <input matInput type="number" formControlName="min_buckets" min="1" />
-            </mat-form-field>
-          </p>
+          <mat-form-field>
+            <mat-label>Minimum Number of Buckets</mat-label>
+            <input matInput type="number" formControlName="min_buckets" min="1" />
+          </mat-form-field>
 
-          <p>
-            <mat-form-field>
-              <mat-label>Bucket Interval</mat-label>
-              <input matInput type="number" formControlName="bucket_interval" min="1" />
-              <mat-hint>in minutes</mat-hint>
-            </mat-form-field>
-          </p>
-
+          <mat-form-field>
+            <mat-label>Bucket Interval</mat-label>
+            <input matInput type="number" formControlName="bucket_interval" min="1" />
+            <mat-hint>in minutes</mat-hint>
+          </mat-form-field>
         </div>
 
         <div class="fields">
-          <p>
-            <mat-form-field>
-              <mat-label>Stop Gain</mat-label>
-              <input matInput type="number" formControlName="stop_gain" />
-              <mat-hint>in %</mat-hint>
-            </mat-form-field>
-          </p>
+          <mat-form-field>
+            <mat-label>Stop Gain</mat-label>
+            <input matInput type="number" formControlName="stop_gain" />
+            <mat-hint>in %</mat-hint>
+          </mat-form-field>
 
-          <p>
-            <mat-form-field>
-              <mat-label>Stop Loss</mat-label>
-              <input matInput type="number" placeholder="stop loss (%)" formControlName="stop_loss" />
-              <mat-hint>in %</mat-hint>
-            </mat-form-field>
-          </p>
+          <mat-form-field>
+            <mat-label>Stop Loss</mat-label>
+            <input matInput type="number" placeholder="stop loss (%)" formControlName="stop_loss" />
+            <mat-hint>in %</mat-hint>
+          </mat-form-field>
         </div>
 
         <div class="fields" *ngIf="strategy.type === 2">
-          <p>
-            <mat-form-field>
-              <mat-label>Intensity Threshold</mat-label>
-              <input matInput type="number" formControlName="i_threshold" />
-            </mat-form-field>
-          </p>
+          <mat-form-field>
+            <mat-label>Intensity Threshold</mat-label>
+            <input matInput type="number" formControlName="i_threshold" />
+          </mat-form-field>
 
-          <p>
-            <mat-form-field>
-              <mat-label>Polarity Threshold</mat-label>
-              <input matInput type="number" formControlName="p_threshold" />
-            </mat-form-field>
-          </p>
+          <mat-form-field>
+            <mat-label>Polarity Threshold</mat-label>
+            <input matInput type="number" formControlName="p_threshold" />
+          </mat-form-field>
 
-          <p>
-            <mat-form-field>
-              <mat-label>Tweet Filter</mat-label>
-              <input matInput type="text" formControlName="tweet_filter" />
-              <mat-hint>regex</mat-hint>
-            </mat-form-field>
-          </p>
+          <mat-form-field>
+            <mat-label>Tweet Filter</mat-label>
+            <input matInput type="text" formControlName="tweet_filter" />
+            <mat-hint>regex</mat-hint>
+          </mat-form-field>
 
-          <p>
-            <mat-form-field>
-              <mat-label>Intensity Model</mat-label>
-              <input matInput type="text" formControlName="model_i" />
-            </mat-form-field>
-          </p>
+          <mat-form-field>
+            <mat-label>Intensity Model</mat-label>
+            <input matInput type="text" formControlName="model_i" />
+          </mat-form-field>
 
-          <p>
-            <mat-form-field>
-              <mat-label>Polarity Model</mat-label>
-              <input matInput type="text" formControlName="model_p" />
-            </mat-form-field>
-          </p>
+          <mat-form-field>
+            <mat-label>Polarity Model</mat-label>
+            <input matInput type="text" formControlName="model_p" />
+          </mat-form-field>
         </div>
 
         <div class="fields" *ngIf="strategy.type === 3">
-          <p>
-            <mat-form-field>
-              <mat-label>MA1 Period</mat-label>
-              <input matInput type="number" formControlName="ma1_period" />
-            </mat-form-field>
-          </p>
-          <p>
-            <mat-form-field>
-              <mat-label>MA2 Period</mat-label>
-              <input matInput type="number" formControlName="ma2_period" />
-            </mat-form-field>
-          </p>
-          <p>
-            <mat-form-field>
-              <mat-label>MA3 Period</mat-label>
-              <input matInput type="number" formControlName="ma3_period" />
-            </mat-form-field>
-          </p>
+          <mat-form-field>
+            <mat-label>MA1 Period</mat-label>
+            <input matInput type="number" formControlName="ma1_period" />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>MA2 Period</mat-label>
+            <input matInput type="number" formControlName="ma2_period" />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>MA3 Period</mat-label>
+            <input matInput type="number" formControlName="ma3_period" />
+          </mat-form-field>
         </div>
 
-        <p>
+        <div class="button">
           <button mat-raised-button color="primary">Save</button>
 
           <button mat-raised-button *ngIf="strategy.id > 0" type="button" color="primary"
@@ -203,7 +157,7 @@
             <span *ngIf="!strategy.subscribed">Subscribe</span>
             <span *ngIf="strategy.subscribed">Unsubscribe</span>
           </button>
-        </p>
+        </div>
       </form>
     </mat-card-content>
   </mat-card>

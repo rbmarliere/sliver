@@ -27,4 +27,9 @@ export class StrategyService {
   deleteStrategy(strategy_id: number): Observable<any> {
     return this.http.delete<any>(this.url + '/' + strategy_id);
   }
+
+  updateActive(strategy: Strategy): Observable<Strategy> {
+    const req = { activate: true, active: !strategy.active };
+    return this.http.put<Strategy>(this.url + '/' + strategy.id, req);
+  }
 }
