@@ -25,6 +25,7 @@ config = [
     "TWITTER_ACCESS_SECRET",
     "TWITTER_CONSUMER_KEY",
     "TWITTER_CONSUMER_SECRET",
+    "WATCHDOG_INTERVAL"
 ]
 
 error = False
