@@ -93,17 +93,25 @@
         </div>
 
         <div class="fields">
-          <mat-form-field>
-            <mat-label>Stop Gain</mat-label>
-            <input matInput type="number" formControlName="stop_gain" />
-            <mat-hint>in %</mat-hint>
-          </mat-form-field>
+          <p>
+            <mat-form-field>
+              <mat-label>Stop Gain</mat-label>
+              <input matInput type="number" formControlName="stop_gain" min="0" />
+              <mat-hint>in % (0 to disable)</mat-hint>
+            </mat-form-field>
+            <mat-slide-toggle formControlName="trailing_gain">
+            </mat-slide-toggle>
+            <mat-label style="padding: 1vh">Trailing?</mat-label>
 
-          <mat-form-field>
-            <mat-label>Stop Loss</mat-label>
-            <input matInput type="number" placeholder="stop loss (%)" formControlName="stop_loss" />
-            <mat-hint>in %</mat-hint>
-          </mat-form-field>
+            <mat-form-field>
+              <mat-label>Stop Loss</mat-label>
+              <input matInput type="number" placeholder="stop loss (%)" formControlName="stop_loss" min="0" />
+              <mat-hint>in -% (0 to disable)</mat-hint>
+            </mat-form-field>
+            <mat-slide-toggle formControlName="trailing_loss">
+            </mat-slide-toggle>
+            <mat-label style="padding: 1vh">Trailing?</mat-label>
+          </p>
         </div>
 
         <div class="fields" *ngIf="strategy.type === 2">

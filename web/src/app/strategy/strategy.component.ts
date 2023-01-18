@@ -34,7 +34,9 @@ export class StrategyComponent implements OnInit {
     bucket_interval: 1,
     spread: 0.01,
     stop_gain: 0,
+    trailing_gain: false,
     stop_loss: 0,
+    trailing_loss: false,
     lm_ratio: 0,
     subscribed: false,
 
