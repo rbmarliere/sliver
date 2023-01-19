@@ -502,16 +502,15 @@ class Position(BaseModel):
         market = strategy.market
         user = self.user_strategy.user
 
-        i("closing position {i}".format(i=self.id))
-        n(user, self.get_notice(prefix="closing "))
-
-        # when selling, bucket_max becomes an amount instead of cost
         self.bucket_max = \
             market.base.div(self.entry_amount,
                             market.base.transform(strategy.min_buckets),
                             prec=strategy.market.amount_precision)
         self.bucket = 0
         self.status = "closing"
+
+        i("closing position {i}".format(i=self.id))
+        n(user, self.get_notice(prefix="closing "))
 
         self.save()
 
@@ -547,14 +546,23 @@ class Position(BaseModel):
             self.last_low = last_price
             self.save()
 
+        curr_gain = 0
+        curr_loss = 0
+
         if strategy.trailing_gain:
-            curr_gain = core.utils.get_roi(self.last_high, last_price) * -1
+            # multiply by -1 because when taken from the high, it is negative
+            # if price is lower than entry, there are no gains to stop
+            if last_price > self.entry_price:
+                curr_gain = core.utils.get_roi(self.last_high, last_price) * -1
         else:
             curr_gain = core.utils.get_roi(self.entry_price, last_price)
 
         if strategy.trailing_loss:
-            curr_loss = core.utils.get_roi(self.last_low, last_price)
+            # if price is higher than entry, there are no losses to stop
+            if last_price < self.entry_price:
+                curr_loss = core.utils.get_roi(self.last_low, last_price)
         else:
+            # multiply by -1 because strategy.stop_loss is stored as positive
             curr_loss = core.utils.get_roi(self.entry_price, last_price) * -1
 
         if curr_gain > strategy.stop_gain or curr_loss > strategy.stop_loss:
