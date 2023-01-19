@@ -543,7 +543,7 @@ class Position(BaseModel):
         if last_price > self.last_high:
             self.last_high = last_price
             self.save()
-        if last_price < self.last_low:
+        if last_price < self.last_low or self.last_low == 0:
             self.last_low = last_price
             self.save()
 
