@@ -377,7 +377,7 @@ class Position(BaseModel):
     fee = peewee.BigIntegerField(default=0)
     # position profit or loss
     pnl = peewee.BigIntegerField(default=0)
-    roi = peewee.FloatField(default=0)
+    roi = peewee.DecimalField(default=0)
     # peak prices for trailing stop calc.
     last_high = peewee.BigIntegerField(default=0)
     last_low = peewee.BigIntegerField(default=0)
