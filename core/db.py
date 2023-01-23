@@ -877,7 +877,7 @@ class Price(BaseModel):
 class Indicator(BaseModel):
     strategy = peewee.ForeignKeyField(Strategy)
     price = peewee.ForeignKeyField(Price)
-    signal = peewee.TextField()
+    signal = peewee.DecimalField(default=0)
 
     class Meta:
         constraints = [peewee.SQL("UNIQUE (price_id, strategy_id)")]
