@@ -24,7 +24,7 @@ export class StrategyComponent implements OnInit {
     type: null,
     active: false,
     // deleted: false,
-    signal: '',
+    signal: 0,
     market_id: null,
     timeframe: '',
     // next_refresh: new Date().toISOString().slice(0, 16),
