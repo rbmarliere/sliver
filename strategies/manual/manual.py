@@ -1,10 +1,11 @@
 import peewee
 
+import core
 from ..base import BaseStrategy
 
 
 class ManualStrategy(BaseStrategy):
-    signal = peewee.TextField(null=True)
+    signal = peewee.DecimalField(default=0)
 
     def refresh(self, signal=None):
         if signal:
@@ -12,4 +13,4 @@ class ManualStrategy(BaseStrategy):
             self.save()
 
     def get_signal(self):
-        return self.signal
+        return core.strategies.Signal(self.signal)

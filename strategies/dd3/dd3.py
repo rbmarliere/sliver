@@ -36,6 +36,10 @@ class DD3Strategy(BaseStrategy):
         self.refresh_indicators()
 
     def refresh_indicators(self):
+        BUY = core.strategies.Signal.BUY.value
+        NEUTRAL = core.strategies.Signal.NEUTRAL.value
+        SELL = core.strategies.Signal.SELL.value
+
         indicators = pandas.DataFrame(self.get_indicators().dicts())
 
         indicators.ma1 = indicators.close.rolling(self.ma1_period).mean()
@@ -56,9 +60,9 @@ class DD3Strategy(BaseStrategy):
             (indicators.ma3 > indicators.close) &
             (indicators.ma1 < indicators.open))
 
-        indicators.signal = "neutral"
-        indicators.loc[buy_rule, "signal"] = "buy"
-        indicators.loc[sell_rule, "signal"] = "sell"
+        indicators.signal = NEUTRAL
+        indicators.loc[buy_rule, "signal"] = BUY
+        indicators.loc[sell_rule, "signal"] = SELL
 
         indicators.strategy = self.strategy.id
         indicators.price = indicators.id

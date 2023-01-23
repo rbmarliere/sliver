@@ -249,7 +249,7 @@ class Strategy(BaseModel):
 
         core.strategies.load(self).refresh()
 
-        i("signal is {s}".format(s=self.get_signal()))
+        i("signal is {s}".format(s=self.get_signal().name))
 
         self.postpone()
 
@@ -328,6 +328,8 @@ class UserStrategy(BaseModel):
 
     def refresh(self):
         strategy = self.strategy
+        BUY = core.strategies.Signal.BUY
+        SELL = core.strategies.Signal.SELL
 
         i("...........................................")
         i("refreshing user {u} strategy {s}".format(u=self.user, s=self))
@@ -336,7 +338,7 @@ class UserStrategy(BaseModel):
         position = self.get_active_position_or_none()
 
         if position is None:
-            if strategy.get_signal() == "buy":
+            if strategy.get_signal() == BUY:
                 t_cost = core.inventory.get_target_cost(self)
 
                 if (t_cost == 0 or t_cost < strategy.market.cost_min):
@@ -345,7 +347,7 @@ class UserStrategy(BaseModel):
                 if t_cost > 0:
                     position = core.db.Position.open(self, t_cost)
 
-        elif position.is_open() and strategy.get_signal() == "sell":
+        elif position.is_open() and strategy.get_signal() == SELL:
             position.next_refresh = datetime.datetime.utcnow()
             position.save()
 
@@ -584,8 +586,10 @@ class Position(BaseModel):
 
     def add_order(self, order):
         market = self.user_strategy.strategy.market
+        BUY = core.strategies.Signal.BUY.value
+        SELL = core.strategies.Signal.SELL.value
 
-        if order.side == "buy":
+        if order.side == BUY:
             self.bucket += order.cost
             self.entry_cost += order.cost
             self.entry_amount += order.filled
@@ -595,7 +599,7 @@ class Position(BaseModel):
                 self.entry_price = \
                     market.quote.div(self.entry_cost, self.entry_amount)
 
-        elif order.side == "sell":
+        elif order.side == SELL:
             self.bucket += order.filled
             self.exit_amount += order.filled
             self.exit_cost += order.cost
@@ -611,6 +615,7 @@ class Position(BaseModel):
         strategy = self.user_strategy.strategy
         signal = strategy.get_signal()
         market = strategy.market
+        SELL = core.strategies.Signal.SELL
 
         core.exchange.set_api(exchange=market.base.exchange)
         p = core.exchange.api.fetch_ticker(market.get_symbol())
@@ -627,12 +632,12 @@ class Position(BaseModel):
         self.check_stops(last_p)
 
         # check if position has to be closed
-        if self.entry_cost > 0 and self.is_open() and signal == "sell":
+        if self.entry_cost > 0 and self.is_open() and signal == SELL:
             self.close()
 
         # handle special case of hanging position
         if self.entry_cost == 0 \
-                and (self.status == "closing" or signal == "sell"):
+                and (self.status == "closing" or signal == SELL):
             i("entry_cost is 0, position is now closed")
             self.status = "closed"
 

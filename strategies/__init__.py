@@ -13,6 +13,12 @@ class Types(enum.Enum):
     DD3 = 3
 
 
+class Signal(enum.Enum):
+    SELL = -1
+    NEUTRAL = 0
+    BUY = 1
+
+
 def load(strategy, user=None):
     if strategy.type == Types.MANUAL.value:
         stt = ManualStrategy.get_or_create(strategy=strategy)[0]
