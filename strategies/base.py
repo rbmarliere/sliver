@@ -15,10 +15,11 @@ class BaseStrategy(core.db.BaseModel):
 
     def get_signal(self):
         try:
-            return self.strategy \
+            signal = self.strategy \
                 .indicator_set \
                 .order_by(core.db.Indicator.id.desc()) \
                 .get().signal
+            return core.strategies.Signal(signal)
         except core.db.Indicator.DoesNotExist:
             return None
 
@@ -31,6 +32,9 @@ class BaseStrategy(core.db.BaseModel):
                       & (core.db.Indicator.strategy == self)))
 
     def get_indicators_df(self, query=None):
+        BUY = core.strategies.Signal.BUY.value
+        SELL = core.strategies.Signal.SELL.value
+
         if query is None:
             query = self.get_indicators()
 
@@ -41,11 +45,11 @@ class BaseStrategy(core.db.BaseModel):
             sells = []
             curr_pos = False
             for idx, row in df.iterrows():
-                if row.signal == "buy":
+                if row.signal == BUY:
                     if not curr_pos:
                         buys.append(idx)
                         curr_pos = True
-                elif row.signal == "sell":
+                elif row.signal == SELL:
                     if curr_pos:
                         sells.append(idx)
                         curr_pos = False
@@ -75,7 +79,7 @@ class BaseStrategy(core.db.BaseModel):
         self.id = self.strategy_id
         self.market_id = self.strategy.market_id
         self.subscribed = user.is_subscribed(self.id)
-        self.signal = self.get_signal()
+        self.signal = self.get_signal().value
         self.symbol = self.strategy.market.get_symbol()
         self.exchange = self.strategy.market.quote.exchange.name
 
