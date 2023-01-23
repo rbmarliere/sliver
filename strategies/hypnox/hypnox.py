@@ -73,6 +73,10 @@ class HypnoxStrategy(BaseStrategy):
         self.refresh_indicators()
 
     def refresh_indicators(self):
+        BUY = core.strategies.Signal.BUY.value
+        NEUTRAL = core.strategies.Signal.NEUTRAL.value
+        SELL = core.strategies.Signal.SELL.value
+
         # grab indicators
         indicators_q = self.get_indicators()
         indicators = pandas.DataFrame(indicators_q.dicts())
@@ -163,13 +167,13 @@ class HypnoxStrategy(BaseStrategy):
         indicators.p_variance = p_variance
 
         # compute signals
-        indicators["signal"] = "neutral"
+        indicators["signal"] = NEUTRAL
         buy_rule = ((indicators["i_score"] > self.i_threshold) &
                     (indicators["p_score"] > self.p_threshold))
-        indicators.loc[buy_rule, "signal"] = "buy"
+        indicators.loc[buy_rule, "signal"] = BUY
         sell_rule = ((indicators["i_score"] > self.i_threshold) &
                      (indicators["p_score"] < self.p_threshold))
-        indicators.loc[sell_rule, "signal"] = "sell"
+        indicators.loc[sell_rule, "signal"] = SELL
 
         # reset index
         indicators = indicators.reset_index()

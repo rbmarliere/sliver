@@ -11,6 +11,10 @@ class RandomStrategy(BaseStrategy):
         self.refresh_indicators()
 
     def refresh_indicators(self):
+        BUY = core.strategies.Signal.BUY.value
+        NEUTRAL = core.strategies.Signal.NEUTRAL.value
+        SELL = core.strategies.Signal.SELL.value
+
         indicators = pandas.DataFrame(self.get_indicators().dicts())
 
         # remove non-empty rows
@@ -27,7 +31,7 @@ class RandomStrategy(BaseStrategy):
         })
 
         indicators.signal = indicators.signal.apply(
-            lambda x: random.choice(["buy", "sell", "neutral"]))
+            lambda x: random.choice([BUY, NEUTRAL, SELL]))
 
         indicators = indicators[["price_id", "strategy_id", "signal"]]
 
