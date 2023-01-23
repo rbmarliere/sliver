@@ -12,7 +12,7 @@ base_fields = {
     "type": fields.Integer,
     "active": fields.Boolean,
     # "deleted": fields.Boolean,
-    "signal": fields.String,
+    "signal": fields.Float,
     "market_id": fields.Integer,
     "timeframe": fields.String,
     # "next_refresh": fields.DateTime(dt_format="iso8601"),
@@ -114,7 +114,7 @@ base_parser.add_argument("subscribed", type=bool)
 
 def get_parser(type=None):
     if type == strategies.Types.MANUAL.value:
-        base_parser.add_argument("signal", type=str)
+        base_parser.add_argument("signal", type=float)
 
     elif type == strategies.Types.RANDOM.value:
         pass
