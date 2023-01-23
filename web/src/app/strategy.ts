@@ -7,7 +7,7 @@ export interface BaseStrategy {
   type: number | null;
   active: boolean;
   // deleted: boolean;
-  signal: string;
+  signal: number;
   market_id: number | null;
   timeframe: string;
   // next_refresh: string;

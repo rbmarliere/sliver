@@ -19,9 +19,9 @@
           <mat-form-field appearance="fill" *ngIf="strategy.id">
             <mat-label>Signal</mat-label>
             <mat-select formControlName="signal">
-              <mat-option value="neutral"> neutral </mat-option>
-              <mat-option value="buy"> buy </mat-option>
-              <mat-option value="sell"> sell </mat-option>
+              <mat-option [value]="-1"> Sell </mat-option>
+              <mat-option [value]="0"> Neutral </mat-option>
+              <mat-option [value]="1"> Buy </mat-option>
             </mat-select>
           </mat-form-field>
 
