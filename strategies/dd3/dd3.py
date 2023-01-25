@@ -64,15 +64,15 @@ class DD3Strategy(BaseStrategy):
         indicators.loc[buy_rule, "signal"] = BUY
         indicators.loc[sell_rule, "signal"] = SELL
 
-        indicators.strategy = self.strategy.id
-        indicators.price = indicators.id
-
         # insert only new indicators
         indicators = indicators.loc[indicators.indicator.isnull()]
         if indicators.empty:
             return
 
         with core.db.connection.atomic():
+            indicators.strategy = self.strategy.id
+            indicators.price = indicators.id
+
             core.db.Indicator.insert_many(
                 indicators[["strategy", "price", "signal"]]
                 .to_dict("records")
