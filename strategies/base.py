@@ -17,11 +17,13 @@ class BaseStrategy(core.db.BaseModel):
         try:
             signal = self.strategy \
                 .indicator_set \
+                .where(core.db.Indicator.signal
+                       != core.strategies.Signal.NEUTRAL.value) \
                 .order_by(core.db.Indicator.id.desc()) \
                 .get().signal
             return core.strategies.Signal(signal)
         except core.db.Indicator.DoesNotExist:
-            return None
+            return core.strategies.Signal.NEUTRAL
 
     def get_indicators(self):
         return self.strategy.get_prices() \
