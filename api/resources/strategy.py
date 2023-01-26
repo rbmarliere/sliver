@@ -6,7 +6,10 @@ from flask_restful import Resource, marshal
 import api
 import core
 import strategies
-from api.resources.fields.strategy import get_fields, get_parser
+from api.resources.fields.strategy import (get_fields,
+                                           get_base_parser,
+                                           get_subscription_parser,
+                                           get_activation_parser)
 
 
 class Strategy(Resource):
@@ -58,9 +61,8 @@ class Strategy(Resource):
         if old_strategy.deleted:
             raise api.errors.StrategyDoesNotExist
 
-        args = get_parser(old_strategy.type).parse_args()
-
         try:
+            args = get_subscription_parser().parse_args()
             if args["subscribe"]:
                 old_strategy.subscribe(user, args["subscribed"])
                 strategy = strategies.load(old_strategy, user=user)
@@ -71,6 +73,7 @@ class Strategy(Resource):
             pass
 
         try:
+            args = get_activation_parser().parse_args()
             if args["activate"]:
                 old_strategy.active = args["active"]
                 old_strategy.next_refresh = datetime.datetime.utcnow()
@@ -81,6 +84,8 @@ class Strategy(Resource):
             raise api.errors.MarketAlreadySubscribed
         except KeyError:
             pass
+
+        args = get_base_parser(old_strategy.type).parse_args()
 
         if old_strategy.creator != user:
             raise api.errors.StrategyNotEditable
