@@ -26,8 +26,8 @@ class MixerStrategy(BaseStrategy):
         return super().get_indicators_df(self.get_indicators())
 
     def refresh(self):
-        for mixin in self.mixins:
-            mixin["strategy"].refresh()
+        for mixin in self.strategy.mixins:
+            core.db.Strategy.get_by_id(mixin.strategy_id).refresh()
 
         self.refresh_indicators()
 
@@ -40,10 +40,11 @@ class MixerStrategy(BaseStrategy):
         indicators.drop("signal", axis=1, inplace=True)
         indicators["weighted_signal"] = NEUTRAL
 
-        for mixin in self.mixins:
-            mixind = pandas.DataFrame(
-                mixin["strategy"].get_indicators().dicts())
-            mixind["weight"] = mixin["weight"]
+        for mixin in self.strategy.mixins:
+            strategy = core.strategies.load(
+                core.db.Strategy.get_by_id(mixin.strategy_id))
+            mixind = pandas.DataFrame(strategy.get_indicators().dicts())
+            mixind["weight"] = mixin.weight
             mixind["weighted_signal"] = mixind["signal"] * mixind["weight"]
             indicators["weighted_signal"] += mixind["weighted_signal"]
 
