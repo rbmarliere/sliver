@@ -98,12 +98,13 @@ class Strategy(Resource):
 
             if strategy.type == strategies.Types.MIXER.value \
                     and args["strategies"] and args["weights"]:
+
                 if len(args["strategies"]) != len(args["weights"]):
                     raise api.errors.InvalidArgument
+
                 mixin = strategies.mixer.MixedStrategies
-                mixin.delete().where(
-                    mixin.mixer_id == strategy_id
-                ).execute()
+                mixin.delete().where(mixin.mixer_id == strategy_id).execute()
+
                 for s, w in zip(args["strategies"], args["weights"]):
                     mixin.create(
                         mixer_id=strategy_id,
