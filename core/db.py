@@ -385,11 +385,19 @@ class Position(BaseModel):
     last_low = peewee.BigIntegerField(default=0)
 
     def get_notice(self, prefix="", suffix=""):
-        return ("{p}position of strategy {s} in market {m} {su}"
+        try:
+            market = self.user_strategy.strategy.market
+            p = core.exchange.api.fetch_ticker(market.get_symbol())
+        except:  # noqa
+            pass
+
+        return ("{p}position of strategy {s} in market {m} {su}, "
+                "last price is {lp}"
                 .format(p=prefix,
                         s=self.user_strategy.strategy,
                         m=self.user_strategy.strategy.market.get_symbol(),
-                        su=suffix))
+                        su=suffix,
+                        lp=p["last"]))
 
     def get_timedelta(self):
         if self.is_pending():
