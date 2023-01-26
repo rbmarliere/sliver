@@ -249,6 +249,11 @@ class Strategy(BaseModel):
 
         self.postpone()
 
+    def enable(self):
+        self.active = True
+        self.next_refresh = datetime.datetime.utcnow()
+        self.save()
+
     def disable(self):
         i("disabling strategy {s}...".format(s=self))
         self.active = False
