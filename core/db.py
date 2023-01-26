@@ -127,6 +127,8 @@ class Credential(BaseModel):
 
     def disable(self):
         i("disabling credential {s}...".format(s=self))
+        n(self.user,
+          "disabled credential for exchange {e}".format(e=self.exchange.name))
         self.active = False
         self.save()
 
@@ -317,6 +319,8 @@ class UserStrategy(BaseModel):
 
     def disable(self):
         i("disabling user's strategy {s}...".format(s=self))
+        n(self.user,
+          "disabled strategy {s}".format(s=self.strategy.id))
         self.active = False
         self.save()
 
