@@ -1,6 +1,5 @@
 import enum
 
-import core
 from .dd3 import DD3Strategy
 from .hypnox import HypnoxStrategy
 from .manual import ManualStrategy
@@ -37,12 +36,8 @@ def load(strategy, user=None):
 
     elif strategy.type == Types.MIXER.value:
         stt = MixerStrategy.get_or_create(strategy=strategy)[0]
-        mixins = []
-        for st in strategy.mixins:
-            mixins.append(
-                {"strategy": load(core.db.Strategy.get_by_id(st.strategy_id)),
-                 "weight": st.weight})
-        stt.mixins = mixins
+        stt.strategies = [m.strategy_id.id for m in strategy.mixins]
+        stt.weights = [m.weight for m in strategy.mixins]
 
     else:
         raise ValueError("invalid strategy type")
