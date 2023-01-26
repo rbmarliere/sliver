@@ -767,7 +767,7 @@ class Position(BaseModel):
 
         if not inserted_orders:
             n(self.user_strategy.user,
-              self.get_notice(prefix="could not insert any orders for"))
+              self.get_notice(prefix="could not insert any orders for "))
 
     def refresh_status(self):
         strategy = self.user_strategy.strategy

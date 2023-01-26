@@ -116,7 +116,6 @@ def warning(msg):
 
 
 def notice(user, msg):
-    log.info(msg)
     send_user_telegram(user, msg)
 
 
