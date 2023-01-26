@@ -180,6 +180,14 @@ def watch():
             error("rate limit exceeded", e)
             # TODO check flow
 
+        except ccxt.OnMaintenance as e:
+            error("exchange in maintenance", e)
+            if "position" in locals():
+                user_strat = position.user_strategy
+                position.postpone()
+            if "user_strat" in locals():
+                user_strat.disable()
+
         except ccxt.ExchangeError as e:
             error("exchange error", e)
             if "strategy" in locals():
