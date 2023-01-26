@@ -241,7 +241,7 @@ def create_order(type: str,
         assert amount * price >= market.cost_min
     except AssertionError:
         i("order values are smaller than exchange minimum, skipping...")
-        return
+        return False
 
     amount = market.base.format(amount)
     price = market.quote.format(price)
@@ -255,13 +255,13 @@ def create_order(type: str,
 
     except ccxt.InvalidOrder:
         i("invalid order parameters, skipping...")
-        return
+        return False
 
     except ccxt.AuthenticationError as e:
         core.watchdog.error("authentication error", e)
         if "credential" in globals():
             credential.disable()
-        return
+        return False
 
     except ccxt.RequestTimeout as e:
         core.watchdog.error("order creation request timeout", e)
@@ -312,6 +312,8 @@ def create_order(type: str,
                 # retry after 10 seconds
                 time.sleep(10)
 
+    return True
+
 
 def create_limit_buy_orders(total_cost: int,
                             position: core.db.Position,
@@ -359,8 +361,7 @@ def create_limit_buy_orders(total_cost: int,
         total_amount = market.base.div(total_cost,
                                        avg_price,
                                        prec=market.amount_precision)
-        create_order("limit", "buy", position, total_amount, avg_price)
-        return
+        return create_order("limit", "buy", position, total_amount, avg_price)
 
     # avoid rounding errors
     cost_remainder = total_cost - sum([unit_cost] * num_orders)
@@ -378,7 +379,7 @@ def create_limit_buy_orders(total_cost: int,
                                       price,
                                       prec=market.amount_precision)
 
-        create_order("limit", "buy", position, amount, price)
+        return create_order("limit", "buy", position, amount, price)
 
 
 def create_limit_sell_orders(total_amount: int,
@@ -427,8 +428,7 @@ def create_limit_sell_orders(total_amount: int,
     # send a single order if any of the costs is lower than market minimum
     if any(cost < market.cost_min for cost in costs):
         i("unitary cost is less than exchange minimum, creating single order")
-        create_order("limit", "sell", position, total_amount, avg_price)
-        return
+        return create_order("limit", "sell", position, total_amount, avg_price)
 
     # avoid bucket rounding errors
     bucket_remainder = total_amount - sum([unit_amount] * num_orders)
@@ -440,4 +440,4 @@ def create_limit_sell_orders(total_amount: int,
         if price == prices[-1]:
             unit_amount += bucket_remainder
 
-        create_order("limit", "sell", position, unit_amount, price)
+        return create_order("limit", "sell", position, unit_amount, price)
