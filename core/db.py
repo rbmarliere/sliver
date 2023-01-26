@@ -694,23 +694,16 @@ class Position(BaseModel):
                                 prec=market.amount_precision)
 
             m_total_cost = int(strategy.lm_ratio * remaining_cost)
-            l_total_cost = remaining_cost - m_total_cost
-
             m_total_amount = \
                 market.base.div(m_total_cost,
                                 last_p,
                                 prec=market.amount_precision)
-            l_total = l_total_cost
 
         elif self.status == "closing":
             remaining_amount = self.get_remaining_amount(last_p)
             remaining_cost = market.base.format(remaining_amount) * last_p
 
-            m_total_cost = int(strategy.lm_ratio * remaining_cost)
-            l_total_cost = remaining_cost - m_total_cost
-
             m_total_amount = int(strategy.lm_ratio * remaining_amount)
-            l_total = remaining_amount - m_total_amount
 
         # check if current bucket is filled
         if now < self.next_bucket and remaining_cost < market.cost_min:
@@ -730,6 +723,7 @@ class Position(BaseModel):
                                   m_total_amount,
                                   last_p)
 
+            l_total = self.get_remaining_cost()
             if l_total > 0:
                 inserted_orders = core.exchange \
                     .create_limit_buy_orders(l_total,
@@ -749,6 +743,7 @@ class Position(BaseModel):
                                   m_total_amount,
                                   last_p)
 
+            l_total = self.get_remaining_amount(last_p)
             if l_total > 0:
                 inserted_orders = core.exchange \
                     .create_limit_sell_orders(l_total,
