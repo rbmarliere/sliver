@@ -239,8 +239,9 @@ def create_order(type: str,
         assert amount >= market.amount_min
         assert price >= market.price_min
         assert amount * price >= market.cost_min
-    except AssertionError:
-        i("order values are smaller than exchange minimum, skipping...")
+    except AssertionError as e:
+        core.watchdog.error(
+            "order values are smaller than exchange minimum, skipping...", e)
         return False
 
     amount = market.base.format(amount)
