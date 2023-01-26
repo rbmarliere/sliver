@@ -126,6 +126,9 @@ class Strategy(Resource):
                     if mixed_st.type == strategies.Types.MIXER.value:
                         raise api.errors.InvalidArgument(
                             "Mixed strategies cannot be of type MIXER")
+                    if mixed_st.type == strategies.Types.MANUAL.value:
+                        raise api.errors.InvalidArgument(
+                            "Mixed strategies cannot be of type MANUAL")
 
                     mixed_st.enable()
                     mixin.create(
