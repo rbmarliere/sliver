@@ -622,6 +622,9 @@ class Position(BaseModel):
         self.save()
 
     def refresh(self):
+        if not self.user_strategy.active:
+            return
+
         strategy = self.user_strategy.strategy
         signal = strategy.get_signal()
         market = strategy.market
