@@ -120,6 +120,7 @@ def notice(user, msg):
 
 
 def watch():
+    # TODO refactor error handling
     set_logger("watchdog")
     warning("init")
 
@@ -178,15 +179,15 @@ def watch():
 
         except ccxt.RateLimitExceeded as e:
             error("rate limit exceeded", e)
-            # TODO check flow
+            if "position" in locals():
+                position.postpone(interval_in_minutes=5)
+            if "strategy" in locals():
+                strategy.postpone(interval_in_minutes=5)
 
         except ccxt.OnMaintenance as e:
             error("exchange in maintenance", e)
             if "position" in locals():
-                user_strat = position.user_strategy
-                position.postpone(interval_in_minutes=10)
-            if "user_strat" in locals():
-                user_strat.disable()
+                position.postpone(interval_in_minutes=5)
 
         except ccxt.ExchangeError as e:
             error("exchange error", e)
@@ -199,7 +200,10 @@ def watch():
 
         except ccxt.NetworkError as e:
             error("exchange api error", e)
-            # strategy.postpone()
+            if "position" in locals():
+                position.postpone(interval_in_minutes=5)
+            if "strategy" in locals():
+                strategy.postpone(interval_in_minutes=5)
 
         except peewee.OperationalError as e:
             error("database error", e)

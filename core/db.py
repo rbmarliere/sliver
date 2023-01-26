@@ -241,12 +241,6 @@ class Strategy(BaseModel):
         i("exchange is {e}".format(e=self.market.base.exchange.name))
         i("type is {m}".format(m=core.strategies.Types(self.type).name))
 
-        # ideas:
-        # - reset num_orders, spread and refresh_interval dynamically
-        # - base decision over price data and inventory
-        #   (amount opened, risk, etc)
-
-        # download historical price ohlcv data
         core.exchange.download_prices(self)
 
         core.strategies.load(self).refresh()
@@ -531,8 +525,9 @@ class Position(BaseModel):
 
         self.save()
 
-    def postpone(self):
-        interval = self.user_strategy.strategy.orders_interval
+    def postpone(self, interval_in_minutes=None):
+        if interval_in_minutes is None:
+            interval = self.user_strategy.strategy.orders_interval
         self.next_refresh = core.utils.get_next_refresh(interval)
         i("next refresh at {n}".format(n=self.next_refresh))
         self.save()
