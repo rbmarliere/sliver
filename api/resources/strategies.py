@@ -5,7 +5,7 @@ from flask_restful import Resource, marshal_with
 import api
 import core
 import strategies
-from api.resources.fields.strategy import base_fields, get_parser
+from api.resources.fields.strategy import base_fields, get_base_parser
 
 
 class Strategies(Resource):
@@ -27,7 +27,7 @@ class Strategies(Resource):
     @marshal_with(base_fields)
     @jwt_required()
     def post(self):
-        args = get_parser().parse_args()
+        args = get_base_parser().parse_args()
 
         uid = int(get_jwt_identity())
         user = core.db.User.get_by_id(uid)

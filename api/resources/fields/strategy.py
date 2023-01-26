@@ -98,35 +98,44 @@ def get_fields(type=None, all=True):
     return base_fields if all else price_fields
 
 
-base_parser = reqparse.RequestParser()
-# base_parser.add_argument("id", type=int, required=False)
-# base_parser.add_argument("symbol", type=str, required=True)
-# base_parser.add_argument("exchange", type=str, required=True)
-# base_parser.add_argument("signal", type=str, required=True)
-# base_parser.add_argument("creator_id", type=int, required=True)
-base_parser.add_argument("description", type=str, required=True)
-base_parser.add_argument("type", type=int, required=True)
-base_parser.add_argument("activate", type=bool, required=False)
-base_parser.add_argument("active", type=bool, required=False)
-# base_parser.add_argument("deleted", type=bool, required=True)
-base_parser.add_argument("market_id", type=int, required=True)
-base_parser.add_argument("timeframe", type=str, required=True)
-# base_parser.add_argument("next_refresh", type=inputs.datetime_from_iso8601, required=True)
-base_parser.add_argument("orders_interval", type=int, required=True)
-base_parser.add_argument("num_orders", type=int, required=True)
-base_parser.add_argument("min_buckets", type=int, required=True)
-base_parser.add_argument("bucket_interval", type=int, required=True)
-base_parser.add_argument("spread", type=float, required=True)
-base_parser.add_argument("stop_gain", type=float, required=True)
-base_parser.add_argument("trailing_gain", type=bool, required=True)
-base_parser.add_argument("stop_loss", type=float, required=True)
-base_parser.add_argument("trailing_loss", type=bool, required=True)
-base_parser.add_argument("lm_ratio", type=float, required=True)
-base_parser.add_argument("subscribe", type=bool, required=False)
-base_parser.add_argument("subscribed", type=bool, required=False)
+def get_subscription_parser():
+    parser = reqparse.RequestParser()
+    parser.add_argument("subscribe", type=bool, required=False)
+    parser.add_argument("subscribed", type=bool, required=False)
+    return parser
 
 
-def get_parser(type=None):
+def get_activation_parser():
+    parser = reqparse.RequestParser()
+    parser.add_argument("activate", type=bool, required=False)
+    parser.add_argument("active", type=bool, required=False)
+    return parser
+
+
+def get_base_parser(type=None):
+    base_parser = reqparse.RequestParser()
+    # ("id", type=int, required=False)
+    # ("symbol", type=str, required=True)
+    # ("exchange", type=str, required=True)
+    # ("signal", type=str, required=True)
+    # ("creator_id", type=int, required=True)
+    base_parser.add_argument("description", type=str, required=True)
+    base_parser.add_argument("type", type=int, required=True)
+    # ("deleted", type=bool, required=True)
+    base_parser.add_argument("market_id", type=int, required=True)
+    base_parser.add_argument("timeframe", type=str, required=True)
+    # ("next_refresh", type=inputs.datetime_from_iso8601, required=True)
+    base_parser.add_argument("orders_interval", type=int, required=True)
+    base_parser.add_argument("num_orders", type=int, required=True)
+    base_parser.add_argument("min_buckets", type=int, required=True)
+    base_parser.add_argument("bucket_interval", type=int, required=True)
+    base_parser.add_argument("spread", type=float, required=True)
+    base_parser.add_argument("stop_gain", type=float, required=True)
+    base_parser.add_argument("trailing_gain", type=bool, required=True)
+    base_parser.add_argument("stop_loss", type=float, required=True)
+    base_parser.add_argument("trailing_loss", type=bool, required=True)
+    base_parser.add_argument("lm_ratio", type=float, required=True)
+
     if type == strategies.Types.MANUAL.value:
         base_parser.add_argument("signal", type=float)
 
