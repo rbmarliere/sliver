@@ -66,6 +66,18 @@ dd3_fields = {
     "ma3_period": fields.Integer,
 }
 
+mixer_indicators = {
+    **price_fields,
+    "weighted_signal": fields.List(fields.Float),
+}
+mixer_fields = {
+    **base_fields,
+    "buy_threshold": fields.Float,
+    "sell_threshold": fields.Float,
+    "strategies": fields.List(fields.Integer),
+    "weights": fields.List(fields.Float),
+}
+
 
 def get_fields(type=None, all=True):
     if type == strategies.Types.MANUAL.value:
@@ -80,36 +92,38 @@ def get_fields(type=None, all=True):
     elif type == strategies.Types.DD3.value:
         return dd3_fields if all else dd3_indicators
 
+    elif type == strategies.Types.MIXER.value:
+        return mixer_fields if all else mixer_indicators
+
     return base_fields if all else price_fields
 
 
 base_parser = reqparse.RequestParser()
-base_parser.add_argument("id", type=int)
-# base_parser.add_argument("symbol", type=str)
-# base_parser.add_argument("exchange", type=str)
-# base_parser.add_argument("signal", type=str)
-# base_parser.add_argument("creator_id", type=int)
-base_parser.add_argument("description", type=str)
-base_parser.add_argument("type", type=int)
-base_parser.add_argument("activate", type=bool)
-base_parser.add_argument("active", type=bool)
-# base_parser.add_argument("deleted", type=bool)
-base_parser.add_argument("market_id", type=int)
-base_parser.add_argument("timeframe", type=str)
-# base_parser.add_argument("next_refresh", type=inputs.datetime_from_iso8601)
-base_parser.add_argument("orders_interval", type=int)
-base_parser.add_argument("num_orders", type=int)
-base_parser.add_argument("min_buckets", type=int)
-base_parser.add_argument("bucket_interval", type=int)
-base_parser.add_argument("spread", type=float)
-base_parser.add_argument("stop_gain", type=float)
-base_parser.add_argument("trailing_gain", type=bool)
-base_parser.add_argument("stop_loss", type=float)
-base_parser.add_argument("trailing_loss", type=bool)
-base_parser.add_argument("lm_ratio", type=float)
-
-base_parser.add_argument("subscribe", type=bool)
-base_parser.add_argument("subscribed", type=bool)
+# base_parser.add_argument("id", type=int, required=False)
+# base_parser.add_argument("symbol", type=str, required=True)
+# base_parser.add_argument("exchange", type=str, required=True)
+# base_parser.add_argument("signal", type=str, required=True)
+# base_parser.add_argument("creator_id", type=int, required=True)
+base_parser.add_argument("description", type=str, required=True)
+base_parser.add_argument("type", type=int, required=True)
+base_parser.add_argument("activate", type=bool, required=False)
+base_parser.add_argument("active", type=bool, required=False)
+# base_parser.add_argument("deleted", type=bool, required=True)
+base_parser.add_argument("market_id", type=int, required=True)
+base_parser.add_argument("timeframe", type=str, required=True)
+# base_parser.add_argument("next_refresh", type=inputs.datetime_from_iso8601, required=True)
+base_parser.add_argument("orders_interval", type=int, required=True)
+base_parser.add_argument("num_orders", type=int, required=True)
+base_parser.add_argument("min_buckets", type=int, required=True)
+base_parser.add_argument("bucket_interval", type=int, required=True)
+base_parser.add_argument("spread", type=float, required=True)
+base_parser.add_argument("stop_gain", type=float, required=True)
+base_parser.add_argument("trailing_gain", type=bool, required=True)
+base_parser.add_argument("stop_loss", type=float, required=True)
+base_parser.add_argument("trailing_loss", type=bool, required=True)
+base_parser.add_argument("lm_ratio", type=float, required=True)
+base_parser.add_argument("subscribe", type=bool, required=False)
+base_parser.add_argument("subscribed", type=bool, required=False)
 
 
 def get_parser(type=None):
@@ -120,11 +134,27 @@ def get_parser(type=None):
         pass
 
     elif type == strategies.Types.HYPNOX.value:
-        base_parser.add_argument("i_threshold", type=float)
-        base_parser.add_argument("p_threshold", type=float)
-        base_parser.add_argument("tweet_filter", type=str)
-        base_parser.add_argument("lm_ratio", type=float)
-        base_parser.add_argument("model_i", type=str)
-        base_parser.add_argument("model_p", type=str)
+        base_parser.add_argument("i_threshold", type=float, required=True)
+        base_parser.add_argument("p_threshold", type=float, required=True)
+        base_parser.add_argument("tweet_filter", type=str, required=True)
+        base_parser.add_argument("model_i", type=str, required=True)
+        base_parser.add_argument("model_p", type=str, required=True)
+
+    elif type == strategies.Types.DD3.value:
+        base_parser.add_argument("ma1", type=int, required=True)
+        base_parser.add_argument("ma2", type=int, required=True)
+        base_parser.add_argument("ma3", type=int, required=True)
+
+    elif type == strategies.Types.MIXER.value:
+        base_parser.add_argument("buy_threshold", type=float, required=True)
+        base_parser.add_argument("sell_threshold", type=float, required=True)
+        base_parser.add_argument("strategies",
+                                 type=list,
+                                 required=True,
+                                 location="json")
+        base_parser.add_argument("weights",
+                                 type=list,
+                                 required=True,
+                                 location="json")
 
     return base_parser

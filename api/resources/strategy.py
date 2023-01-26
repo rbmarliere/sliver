@@ -96,6 +96,20 @@ class Strategy(Resource):
             strategy = core.db.Strategy(**args)
             strategy.save()
 
+            if strategy.type == strategies.Types.MIXER.value \
+                    and args["strategies"] and args["weights"]:
+                if len(args["strategies"]) != len(args["weights"]):
+                    raise api.errors.InvalidArgument
+                mixin = strategies.mixer.MixedStrategies
+                mixin.delete().where(
+                    mixin.mixer_id == strategy_id
+                ).execute()
+                for s, w in zip(args["strategies"], args["weights"]):
+                    mixin.create(
+                        mixer_id=strategy_id,
+                        strategy_id=s,
+                        weight=w)
+
             strategy = strategies.load(strategy)
             if len([*strategy._meta.columns]) > 1:
                 for field in strategy._meta.sorted_field_names:
@@ -111,6 +125,7 @@ class Strategy(Resource):
                 .where(core.db.Indicator.strategy_id == strategy_id) \
                 .execute()
 
-        strategy = strategies.load(strategy, user=user)
+        strategy = strategies.load(core.db.Strategy.get_by_id(strategy_id),
+                                   user=user)
 
         return marshal(strategy, get_fields(strategy.type))
