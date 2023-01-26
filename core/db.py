@@ -265,8 +265,9 @@ class Strategy(BaseModel):
         self.active = False
         self.save()
 
-    def postpone(self):
-        interval = core.utils.get_timeframe_in_seconds(self.timeframe) / 60
+    def postpone(self, interval_in_minutes=None):
+        if interval_in_minutes is None:
+            interval = core.utils.get_timeframe_in_seconds(self.timeframe) / 60
         self.next_refresh = core.utils.get_next_refresh(interval)
         i("next refresh at {n}".format(n=self.next_refresh))
         self.save()
