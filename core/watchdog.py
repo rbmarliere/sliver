@@ -184,7 +184,7 @@ def watch():
             error("exchange in maintenance", e)
             if "position" in locals():
                 user_strat = position.user_strategy
-                position.postpone()
+                position.postpone(interval_in_minutes=10)
             if "user_strat" in locals():
                 user_strat.disable()
 
