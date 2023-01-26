@@ -192,7 +192,6 @@ def sync_limit_orders(position: core.db.Position) -> core.db.Position:
         while True:
             try:
                 ex_order = api.cancel_order(oid, symbol)
-                oid = ex_order["id"]
                 break
             except ccxt.OrderNotFound:
                 # order.status = 'missing' ?
