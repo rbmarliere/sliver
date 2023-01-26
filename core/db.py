@@ -718,36 +718,57 @@ class Position(BaseModel):
 
     def refresh_orders(self, market_total, limit_total, last_p):
         strategy = self.user_strategy.strategy
+        inserted = False
 
         if self.status == "opening":
+            side = "buy"
+
             if market_total > 0:
-                core.exchange.create_order("market",
-                                           "buy",
-                                           self,
-                                           market_total,
-                                           last_p)
+                inserted = core.exchange \
+                    .create_order("market",
+                                  side,
+                                  self,
+                                  market_total,
+                                  last_p)
 
             if limit_total > 0:
-                core.exchange.create_limit_buy_orders(limit_total,
-                                                      self,
-                                                      last_p,
-                                                      strategy.num_orders,
-                                                      strategy.spread)
+                inserted = core.exchange \
+                    .create_limit_buy_orders(limit_total,
+                                             self,
+                                             last_p,
+                                             strategy.num_orders,
+                                             strategy.spread)
 
         elif self.status == "closing":
+            side = "sell"
+
             if market_total > 0:
-                core.exchange.create_order("market",
-                                           "sell",
-                                           self,
-                                           market_total,
-                                           last_p)
+                inserted = core.exchange \
+                    .create_order("market",
+                                  side,
+                                  self,
+                                  market_total,
+                                  last_p)
 
             if limit_total > 0:
-                core.exchange.create_limit_sell_orders(limit_total,
-                                                       self,
-                                                       last_p,
-                                                       strategy.num_orders,
-                                                       strategy.spread)
+                inserted = core.exchange \
+                    .create_limit_sell_orders(limit_total,
+                                              self,
+                                              last_p,
+                                              strategy.num_orders,
+                                              strategy.spread)
+
+        if not inserted:
+            inserted = core.exchange \
+                .create_order("market",
+                              side,
+                              self,
+                              market_total + limit_total,
+                              last_p)
+
+        if not inserted:
+            n(self.user_strategy.user,
+              self.get_notice(prefix="could not insert any orders for"))
 
     def refresh_status(self):
         strategy = self.user_strategy.strategy
