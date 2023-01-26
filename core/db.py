@@ -659,8 +659,7 @@ class Position(BaseModel):
             self.status = "closed"
 
         if self.is_pending():
-            market_total, limit_total = self.refresh_bucket(last_p)
-            self.refresh_orders(market_total, limit_total, last_p)
+            self.refresh_bucket(last_p)
 
         self.refresh_status()
 
@@ -715,32 +714,24 @@ class Position(BaseModel):
         # check if current bucket is filled
         if now < self.next_bucket and remaining_cost < market.cost_min:
             i("bucket is full")
-            return 0, 0
+            return
 
-        # if bucket is not full but can't insert new orders, fill at market
-        if m_total_cost < market.cost_min and l_total_cost < market.cost_min:
-            return remaining_amount, 0
-
-        return m_total_amount, l_total
-
-    def refresh_orders(self, market_total, limit_total, last_p):
-        strategy = self.user_strategy.strategy
-        inserted = False
+        inserted_orders = False
 
         if self.status == "opening":
             side = "buy"
 
-            if market_total > 0:
-                inserted = core.exchange \
+            if m_total_amount > 0:
+                inserted_orders = core.exchange \
                     .create_order("market",
                                   side,
                                   self,
-                                  market_total,
+                                  m_total_amount,
                                   last_p)
 
-            if limit_total > 0:
-                inserted = core.exchange \
-                    .create_limit_buy_orders(limit_total,
+            if l_total > 0:
+                inserted_orders = core.exchange \
+                    .create_limit_buy_orders(l_total,
                                              self,
                                              last_p,
                                              strategy.num_orders,
@@ -749,31 +740,32 @@ class Position(BaseModel):
         elif self.status == "closing":
             side = "sell"
 
-            if market_total > 0:
-                inserted = core.exchange \
+            if m_total_amount > 0:
+                inserted_orders = core.exchange \
                     .create_order("market",
                                   side,
                                   self,
-                                  market_total,
+                                  m_total_amount,
                                   last_p)
 
-            if limit_total > 0:
-                inserted = core.exchange \
-                    .create_limit_sell_orders(limit_total,
+            if l_total > 0:
+                inserted_orders = core.exchange \
+                    .create_limit_sell_orders(l_total,
                                               self,
                                               last_p,
                                               strategy.num_orders,
                                               strategy.spread)
 
-        if not inserted:
-            inserted = core.exchange \
+        # if bucket is not full but can't insert new orders, fill at market
+        if not inserted_orders:
+            inserted_orders = core.exchange \
                 .create_order("market",
                               side,
                               self,
-                              market_total + limit_total,
+                              remaining_amount,
                               last_p)
 
-        if not inserted:
+        if not inserted_orders:
             n(self.user_strategy.user,
               self.get_notice(prefix="could not insert any orders for"))
 
