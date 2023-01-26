@@ -153,16 +153,22 @@ def watch():
 
         except core.db.Credential.DoesNotExist as e:
             error("credential not found", e)
+            if "position" in locals():
+                user_strat = position.user_strategy
             if "user_strat" in locals():
                 user_strat.disable()
 
         except ccxt.AuthenticationError as e:
             error("authentication error", e)
+            if "position" in locals():
+                user_strat = position.user_strategy
             if "user_strat" in locals():
                 user_strat.disable()
 
         except ccxt.InsufficientFunds as e:
             error("insufficient funds", e)
+            if "position" in locals():
+                user_strat = position.user_strategy
             if "user_strat" in locals():
                 user_strat.disable()
 
@@ -179,6 +185,8 @@ def watch():
             error("exchange error", e)
             if "strategy" in locals():
                 strategy.disable()
+            if "position" in locals():
+                user_strat = position.user_strategy
             if "user_strat" in locals():
                 user_strat.disable()
 
