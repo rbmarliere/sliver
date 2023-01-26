@@ -117,10 +117,7 @@ def warning(msg):
 
 def notice(user, msg):
     log.info(msg)
-
-    if log.name == "watchdog" or log.name == "stream":
-        msg = "{l}: {m}".format(l=log.name, m=msg)
-        send_user_telegram(user, msg)
+    send_user_telegram(user, msg)
 
 
 def watch():
@@ -131,6 +128,13 @@ def watch():
         core.db.connection.connect()
 
         try:
+            # TODO risk assessment:
+            # - red flag -- exit all positions
+            # - yellow flag -- new buy signals ignored & reduce curr. positions
+            # - green flag -- all signals are respected
+            # in general, account for overall market risk and volatility
+            # maybe use GARCH to model volatility, or a machine learning model
+
             for position in core.db.get_opening_positions():
                 stopped = position.check_stops()
                 if stopped:
