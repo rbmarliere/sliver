@@ -1,5 +1,3 @@
-import datetime
-
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from flask_restful import Resource, marshal
 
@@ -75,9 +73,10 @@ class Strategy(Resource):
         try:
             args = get_activation_parser().parse_args()
             if args["activate"]:
-                old_strategy.active = args["active"]
-                old_strategy.next_refresh = datetime.datetime.utcnow()
-                old_strategy.save()
+                if args["active"]:
+                    old_strategy.enable()
+                else:
+                    old_strategy.disable()
                 strategy = strategies.load(old_strategy, user=user)
                 return marshal(strategy, get_fields(strategy.type))
         except core.errors.MarketAlreadySubscribed:
@@ -97,6 +96,7 @@ class Strategy(Resource):
             if args["stop_gain"]:
                 args["stop_gain"] = abs(args.stop_gain)
             args["market"] = old_strategy.market.id
+            args["timeframe"] = old_strategy.timeframe
             args["type"] = old_strategy.type
             strategy = core.db.Strategy(**args)
             strategy.save()
@@ -108,12 +108,29 @@ class Strategy(Resource):
                     raise api.errors.InvalidArgument
 
                 mixin = strategies.mixer.MixedStrategies
-                mixin.delete().where(mixin.mixer_id == strategy_id).execute()
+                mixin.delete() \
+                    .where(mixin.mixer_id == strategy_id) \
+                    .execute()
 
                 for s, w in zip(args["strategies"], args["weights"]):
+                    mixed_st = core.db.Strategy.get_by_id(s)
+
+                    if mixed_st.deleted:
+                        raise api.errors.StrategyDoesNotExist
+                    if mixed_st.timeframe != strategy.timeframe:
+                        raise api.errors.InvalidArgument(
+                            "Mixed strategies must have the same timeframe")
+                    if mixed_st.market != strategy.market:
+                        raise api.errors.InvalidArgument(
+                            "Mixed strategies must have the same market")
+                    if mixed_st.type == strategies.Types.MIXER.value:
+                        raise api.errors.InvalidArgument(
+                            "Mixed strategies cannot be of type MIXER")
+
+                    mixed_st.enable()
                     mixin.create(
                         mixer_id=strategy_id,
-                        strategy_id=s,
+                        strategy_id=mixed_st.id,
                         weight=w)
 
             strategy = strategies.load(strategy)
