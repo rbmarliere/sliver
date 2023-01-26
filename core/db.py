@@ -391,11 +391,12 @@ class Position(BaseModel):
         except:  # noqa
             pass
 
-        return ("{p}position of strategy {s} in market {m} {su}, "
+        return ("{p}position of strategy {s} in market {m} ({e}) {su}, "
                 "last price is {lp}"
                 .format(p=prefix,
                         s=self.user_strategy.strategy,
-                        m=self.user_strategy.strategy.market.get_symbol(),
+                        m=market.get_symbol(),
+                        e=market.quote.exchange.name,
                         su=suffix,
                         lp=p["last"]))
 
