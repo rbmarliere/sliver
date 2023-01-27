@@ -150,9 +150,9 @@ def get_base_parser(type=None):
         base_parser.add_argument("model_p", type=str, required=True)
 
     elif type == strategies.Types.DD3.value:
-        base_parser.add_argument("ma1", type=int, required=True)
-        base_parser.add_argument("ma2", type=int, required=True)
-        base_parser.add_argument("ma3", type=int, required=True)
+        base_parser.add_argument("ma1_period", type=int, required=True)
+        base_parser.add_argument("ma2_period", type=int, required=True)
+        base_parser.add_argument("ma3_period", type=int, required=True)
 
     elif type == strategies.Types.MIXER.value:
         base_parser.add_argument("buy_threshold", type=float, required=True)
