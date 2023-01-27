@@ -49,3 +49,43 @@ class Strategies(Resource):
                 raise api.errors.InvalidArgument
 
         return strategy
+
+
+class StrategiesByMarket(Resource):
+    @marshal_with(base_fields)
+    @jwt_required()
+    def get(self, market_id):
+        uid = int(get_jwt_identity())
+        user = core.db.User.get_by_id(uid)
+
+        strat_list = []
+        for strategy in [s for s in
+                         core.db.Strategy.select()
+                         .where(core.db.Strategy.deleted == False)
+                         .order_by(core.db.Strategy.id.desc())]:
+            if strategy.market_id == int(market_id) \
+                    and strategy.type != strategies.Types.MIXER.value \
+                    and strategy.type != strategies.Types.MANUAL.value:
+                strat_list.append(strategies.load(strategy, user=user))
+
+        return strat_list
+
+
+class StrategiesByTimeframe(Resource):
+    @marshal_with(base_fields)
+    @jwt_required()
+    def get(self, timeframe):
+        uid = int(get_jwt_identity())
+        user = core.db.User.get_by_id(uid)
+
+        strat_list = []
+        for strategy in [s for s in
+                         core.db.Strategy.select()
+                         .where(core.db.Strategy.deleted == False)
+                         .order_by(core.db.Strategy.id.desc())]:
+            if strategy.timeframe == timeframe \
+                    and strategy.type != strategies.Types.MIXER.value \
+                    and strategy.type != strategies.Types.MANUAL.value:
+                strat_list.append(strategies.load(strategy, user=user))
+
+        return strat_list
