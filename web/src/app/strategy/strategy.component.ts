@@ -51,6 +51,12 @@ export class StrategyComponent implements OnInit {
     ma1_period: 3,
     ma2_period: 8,
     ma3_period: 20,
+
+    // mixer
+    buy_threshold: 1,
+    sell_threshold: -1,
+    strategies: [],
+    weights: []
   };
 
   loading: Boolean = true;
@@ -60,6 +66,19 @@ export class StrategyComponent implements OnInit {
   timeframes: String[] = [];
 
   markets: Market[] = [];
+
+  private _mixins: Strategy[] = [];
+  set available_mixins(strategies: Strategy[]) {
+    if (this._mixins.length == 0) {
+      this._mixins = strategies;
+    } else {
+      // intersect this._mixins with strategies
+      this._mixins = this._mixins.filter((m) => strategies.some((s) => s.id == m.id));
+    }
+  }
+  get available_mixins(): Strategy[] {
+    return this._mixins;
+  }
 
   strategyTypes: StrategyType[] = getStrategyTypes();
 
@@ -92,6 +111,15 @@ export class StrategyComponent implements OnInit {
 
       if (strategy.type === 0) {
         this.form.get('signal')?.enable();
+      } else if (strategy.type === 4) {
+        this.strategiesService.getStrategiesByTimeframe(strategy.timeframe).subscribe({
+          next: (strategies) => this.available_mixins = strategies
+        });
+        if (strategy.market_id) {
+          this.strategiesService.getStrategiesByMarketId(strategy.market_id).subscribe({
+            next: (strategies) => this.available_mixins = strategies
+          });
+        }
       }
 
     } else {

@@ -21,7 +21,11 @@ export function getStrategyTypes(): StrategyType[] {
     {
       value: 3,
       name: 'DD3',
-    }
+    },
+    {
+      value: 4,
+      name: 'MIXER',
+    },
   ];
 }
 

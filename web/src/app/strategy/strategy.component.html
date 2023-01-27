@@ -157,6 +157,26 @@
           </mat-form-field>
         </div>
 
+        <div class="fields" *ngIf="strategy.type === 4">
+          <mat-form-field>
+            <mat-label>Buy Threshold</mat-label>
+            <input matInput type="number" formControlName="buy_threshold" />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Sell Threshold</mat-label>
+            <input matInput type="number" formControlName="sell_threshold" />
+          </mat-form-field>
+          <mat-form-field appearance="fill">
+            <mat-label>Mix-in Strategy</mat-label>
+            <mat-select formControlName="strategies" required>
+              <mat-option *ngFor="let mixin of available_mixins" [value]="mixin.id">
+                [{{ mixin.id }}] {{ mixin.symbol }} - {{ mixin.exchange }}
+              </mat-option>
+            </mat-select>
+            <!-- TODO: add button and remove button -->
+          </mat-form-field>
+        </div>
+
         <div class="button">
           <button mat-raised-button color="primary">Save</button>
 
