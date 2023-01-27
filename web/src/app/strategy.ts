@@ -36,4 +36,10 @@ export interface Strategy extends BaseStrategy {
   ma1_period?: number;
   ma2_period?: number;
   ma3_period?: number;
+
+  // mixer
+  buy_threshold?: number;
+  sell_threshold?: number;
+  strategies?: number[];
+  weights?: number[];
 }
