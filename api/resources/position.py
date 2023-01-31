@@ -48,7 +48,7 @@ def get_positions_df(query):
 
     positions.entry_amount = positions.entry_amount * base_precision
     positions.entry_amount = positions.apply(
-        lambda x: core.utils.quantize(x, "entry_amount", "base_precision"),
+        lambda x: core.utils.quantize(x, "entry_amount", "amount_precision"),
         axis=1)
 
     positions.entry_price = positions.entry_price * quote_precision
@@ -63,7 +63,7 @@ def get_positions_df(query):
 
     positions.exit_amount = positions.exit_amount * base_precision
     positions.exit_amount = positions.apply(
-        lambda x: core.utils.quantize(x, "exit_amount", "base_precision"),
+        lambda x: core.utils.quantize(x, "exit_amount", "amount_precision"),
         axis=1)
 
     positions.exit_cost = positions.exit_cost * quote_precision
