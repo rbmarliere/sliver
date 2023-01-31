@@ -48,7 +48,10 @@ class MixerStrategy(BaseStrategy):
             mixind["weighted_signal"] = mixind["signal"] * mixind["weight"]
             indicators["weighted_signal"] += mixind["weighted_signal"]
 
-        indicators["signal"] = indicators["weighted_signal"].apply(
+        indicators.weighted_signal = \
+            indicators.weighted_signal.replace({float("nan"): 0})
+
+        indicators["signal"] = indicators.weighted_signal.apply(
             lambda x: BUY if x >= self.buy_threshold else
             SELL if x <= self.sell_threshold else NEUTRAL)
 
@@ -83,3 +86,6 @@ class MixedStrategies(core.db.BaseModel):
     strategy_id = peewee.ForeignKeyField(core.db.Strategy,
                                          on_delete="CASCADE")
     weight = peewee.DecimalField(default=1)
+
+    class Meta:
+        constraints = [peewee.SQL("UNIQUE (mixer_id, strategy_id)")]
