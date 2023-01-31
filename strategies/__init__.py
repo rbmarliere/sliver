@@ -36,7 +36,7 @@ def load(strategy, user=None):
 
     elif strategy.type == Types.MIXER.value:
         stt = MixerStrategy.get_or_create(strategy=strategy)[0]
-        stt.strategies = [m.strategy_id.id for m in strategy.mixins]
+        stt.strategies = [m.strategy_id for m in strategy.mixins]
         stt.weights = [m.weight for m in strategy.mixins]
 
     else:
