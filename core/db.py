@@ -98,13 +98,32 @@ class User(BaseModel):
             .where(Strategy.active)
 
     def get_positions(self):
+        base = Asset.alias()
+        base_exchange_asset = ExchangeAsset.alias()
+        quote = Asset.alias()
+        quote_exchange_asset = ExchangeAsset.alias()
         return Position \
             .select(Position,
                     Strategy.id.alias("strategy_id"),
-                    Market.id.alias("market_id")) \
+                    Market.id.alias("market_id"),
+                    base.ticker.alias("base_ticker"),
+                    base_exchange_asset.precision.alias("base_precision"),
+                    quote.ticker.alias("quote_ticker"),
+                    quote_exchange_asset.precision.alias("quote_precision"),
+                    Market.amount_precision,
+                    Market.price_precision) \
             .join(UserStrategy) \
             .join(Strategy) \
             .join(Market) \
+            .join(base_exchange_asset,
+                  on=(Market.base_id == base_exchange_asset.id)) \
+            .join(base,
+                  on=(base_exchange_asset.asset_id == base.id)) \
+            .switch(Market) \
+            .join(quote_exchange_asset,
+                  on=(Market.quote_id == quote_exchange_asset.id)) \
+            .join(quote,
+                  on=(quote_exchange_asset.asset_id == quote.id)) \
             .where(UserStrategy.user_id == self.id) \
             .order_by(Position.id.desc())
 
