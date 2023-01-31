@@ -29,8 +29,8 @@ def quantize(row, col, prec_col):
     return row[col].quantize(D("10") ** (D("-1") * row[prec_col]))
 
 
-def get_positions_df(user):
-    positions = pandas.DataFrame(user.get_positions().dicts())
+def get_positions_df(query):
+    positions = pandas.DataFrame(query.dicts())
 
     if positions.empty:
         return positions
@@ -87,5 +87,17 @@ class Position(Resource):
     def get(self):
         uid = int(get_jwt_identity())
         user = core.db.User.get_by_id(uid)
+        pos_q = user.get_positions()
 
-        return get_positions_df(user).to_dict("records")
+        return get_positions_df(pos_q).to_dict("records")
+
+
+class PositionsByStrategy(Resource):
+    @marshal_with(fields)
+    @jwt_required()
+    def get(self, strategy_id):
+        uid = int(get_jwt_identity())
+        user = core.db.User.get_by_id(uid)
+        pos_q = user.get_positions().where(core.db.Strategy.id == strategy_id)
+
+        return get_positions_df(pos_q).to_dict("records")
