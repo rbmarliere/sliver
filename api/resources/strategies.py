@@ -16,10 +16,7 @@ class Strategies(Resource):
         user = core.db.User.get_by_id(uid)
 
         strat_list = []
-        for strategy in [s for s in
-                         core.db.Strategy.select()
-                         .where(core.db.Strategy.deleted == False)
-                         .order_by(core.db.Strategy.id.desc())]:
+        for strategy in [s for s in core.db.get_strategies()]:
             strat_list.append(strategies.load(strategy, user=user))
 
         return strat_list
@@ -59,10 +56,7 @@ class StrategiesByMarket(Resource):
         user = core.db.User.get_by_id(uid)
 
         strat_list = []
-        for strategy in [s for s in
-                         core.db.Strategy.select()
-                         .where(core.db.Strategy.deleted == False)
-                         .order_by(core.db.Strategy.id.desc())]:
+        for strategy in [s for s in core.db.get_strategies()]:
             if strategy.market_id == int(market_id) \
                     and strategy.type != strategies.Types.MIXER.value \
                     and strategy.type != strategies.Types.MANUAL.value:
@@ -79,10 +73,7 @@ class StrategiesByTimeframe(Resource):
         user = core.db.User.get_by_id(uid)
 
         strat_list = []
-        for strategy in [s for s in
-                         core.db.Strategy.select()
-                         .where(core.db.Strategy.deleted == False)
-                         .order_by(core.db.Strategy.id.desc())]:
+        for strategy in [s for s in core.db.get_strategies()]:
             if strategy.timeframe == timeframe \
                     and strategy.type != strategies.Types.MIXER.value \
                     and strategy.type != strategies.Types.MANUAL.value:
