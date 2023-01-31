@@ -446,6 +446,32 @@ class Position(BaseModel):
             .where(Position.id == self.id) \
             .order_by(Order.time.desc())
 
+    def get_orders_full(self):
+        base = Asset.alias()
+        base_exchange_asset = ExchangeAsset.alias()
+        quote = Asset.alias()
+        quote_exchange_asset = ExchangeAsset.alias()
+        return self.get_orders() \
+            .select(Order,
+                    Strategy.id.alias("strategy_id"),
+                    base.ticker.alias("base_ticker"),
+                    base_exchange_asset.precision.alias("base_precision"),
+                    quote.ticker.alias("quote_ticker"),
+                    quote_exchange_asset.precision.alias("quote_precision"),
+                    Market.amount_precision,
+                    Market.price_precision) \
+            .join(Market) \
+            .join(base_exchange_asset,
+                  on=(Market.base_id == base_exchange_asset.id)) \
+            .join(base,
+                  on=(base_exchange_asset.asset_id == base.id)) \
+            .switch(Market) \
+            .join(quote_exchange_asset,
+                  on=(Market.quote_id == quote_exchange_asset.id)) \
+            .join(quote,
+                  on=(quote_exchange_asset.asset_id == quote.id)) \
+            .order_by(Order.time.desc())
+
     def get_open_orders(self):
         query = self.get_orders().where(Order.status == "open")
         return [order for order in query]
