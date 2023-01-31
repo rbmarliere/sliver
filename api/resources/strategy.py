@@ -98,6 +98,7 @@ class Strategy(Resource):
             args["market"] = old_strategy.market.id
             args["timeframe"] = old_strategy.timeframe
             args["type"] = old_strategy.type
+            args["active"] = old_strategy.active
             strategy = core.db.Strategy(**args)
             strategy.save()
 
