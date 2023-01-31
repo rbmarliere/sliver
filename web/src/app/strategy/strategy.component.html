@@ -8,7 +8,7 @@
     <mat-card-content>
       <form [formGroup]="form" (ngSubmit)="updateStrategy()">
 
-        <div class="fields" *ngIf="strategy.id">
+        <div class="fields">
           <mat-form-field>
             <mat-label>Description</mat-label>
             <input matInput formControlName="description" required />
@@ -159,22 +159,39 @@
 
         <div class="fields" *ngIf="strategy.type === 4">
           <mat-form-field>
-            <mat-label>Buy Threshold</mat-label>
+            <mat-label>Mixed Buy Signal Threshold</mat-label>
             <input matInput type="number" formControlName="buy_threshold" />
           </mat-form-field>
           <mat-form-field>
-            <mat-label>Sell Threshold</mat-label>
+            <mat-label>Mixed Sell Signal Threshold</mat-label>
             <input matInput type="number" formControlName="sell_threshold" />
           </mat-form-field>
-          <mat-form-field appearance="fill">
-            <mat-label>Mix-in Strategy</mat-label>
-            <mat-select formControlName="strategies" required>
-              <mat-option *ngFor="let mixin of available_mixins" [value]="mixin.id">
-                [{{ mixin.id }}] {{ mixin.symbol }} - {{ mixin.exchange }}
-              </mat-option>
-            </mat-select>
-            <!-- TODO: add button and remove button -->
-          </mat-form-field>
+        </div>
+        <div *ngIf="strategy.type === 4" style="display: flex; flex-direction: column;">
+          <ng-container formArrayName="mixins">
+            <ng-container *ngFor="let mixinForm of mixins.controls; let i = index">
+              <form [formGroupName]="i">
+                <mat-form-field>
+                  <mat-label>Strategy {{ i + 1 }}</mat-label>
+                  <mat-select formControlName="strategy_id" required>
+                    <mat-option *ngFor="let available_mixin of available_mixins" [value]="available_mixin.id">
+                      {{ available_mixin.id }} - {{ available_mixin.symbol }}
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+                <mat-form-field>
+                  <mat-label>Weight</mat-label>
+                  <input matInput type="number" formControlName="weight" />
+                </mat-form-field>
+                <button mat-icon-button type="button" color="primary" (click)="removeMixin(i)" title="Remove Strategy">
+                  <mat-icon fontIcon="delete"></mat-icon>
+                </button>
+              </form>
+            </ng-container>
+          </ng-container>
+          <button mat-icon-button type="button" color="primary" (click)="addMixin(0, 0)" title="Add Strategy">
+            <mat-icon fontIcon="add"></mat-icon>
+          </button>
         </div>
 
         <div class="button">
