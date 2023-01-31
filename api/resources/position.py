@@ -25,10 +25,6 @@ fields = {
 }
 
 
-def quantize(row, col, prec_col):
-    return row[col].quantize(D("10") ** (D("-1") * row[prec_col]))
-
-
 def get_positions_df(query):
     positions = pandas.DataFrame(query.dicts())
 
@@ -42,39 +38,48 @@ def get_positions_df(query):
 
     positions.target_cost = positions.target_cost * quote_precision
     positions.target_cost = positions.apply(
-        lambda x: quantize(x, "target_cost", "price_precision"), axis=1)
+        lambda x: core.utils.quantize(x, "target_cost", "price_precision"),
+        axis=1)
 
     positions.entry_cost = positions.entry_cost * quote_precision
     positions.entry_cost = positions.apply(
-        lambda x: quantize(x, "entry_cost", "price_precision"), axis=1)
+        lambda x: core.utils.quantize(x, "entry_cost", "price_precision"),
+        axis=1)
 
     positions.entry_amount = positions.entry_amount * base_precision
     positions.entry_amount = positions.apply(
-        lambda x: quantize(x, "entry_amount", "base_precision"), axis=1)
+        lambda x: core.utils.quantize(x, "entry_amount", "base_precision"),
+        axis=1)
 
     positions.entry_price = positions.entry_price * quote_precision
     positions.entry_price = positions.apply(
-        lambda x: quantize(x, "entry_price", "price_precision"), axis=1)
+        lambda x: core.utils.quantize(x, "entry_price", "price_precision"),
+        axis=1)
 
     positions.exit_price = positions.exit_price * quote_precision
     positions.exit_price = positions.apply(
-        lambda x: quantize(x, "exit_price", "price_precision"), axis=1)
+        lambda x: core.utils.quantize(x, "exit_price", "price_precision"),
+        axis=1)
 
     positions.exit_amount = positions.exit_amount * base_precision
     positions.exit_amount = positions.apply(
-        lambda x: quantize(x, "exit_amount", "base_precision"), axis=1)
+        lambda x: core.utils.quantize(x, "exit_amount", "base_precision"),
+        axis=1)
 
     positions.exit_cost = positions.exit_cost * quote_precision
     positions.exit_cost = positions.apply(
-        lambda x: quantize(x, "exit_cost", "price_precision"), axis=1)
+        lambda x: core.utils.quantize(x, "exit_cost", "price_precision"),
+        axis=1)
 
     positions.fee = positions.fee * quote_precision
     positions.fee = positions.apply(
-        lambda x: quantize(x, "fee", "price_precision"), axis=1)
+        lambda x: core.utils.quantize(x, "fee", "price_precision"),
+        axis=1)
 
     positions.pnl = positions.pnl * quote_precision
     positions.pnl = positions.apply(
-        lambda x: quantize(x, "pnl", "price_precision"), axis=1)
+        lambda x: core.utils.quantize(x, "pnl", "price_precision"),
+        axis=1)
 
     positions.roi = positions.roi.apply(lambda x: f"{x:.2f}%")
 
