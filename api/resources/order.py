@@ -1,9 +1,12 @@
+from decimal import Decimal as D
+
+import pandas
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from flask_restful import Resource, fields, marshal_with
 
-import pandas
 import api.errors
 import core
+
 
 fields = {
     "exchange_order_id": fields.String,
@@ -32,20 +35,37 @@ class Order(Resource):
         if position.user_strategy.user.id != uid:
             raise api.errors.PositionDoesNotExist
 
-        orders = pandas.DataFrame(position.get_orders().dicts())
+        orders = pandas.DataFrame(position.get_orders_full().dicts())
 
         if orders.empty:
-            return
+            return orders.to_dict("records")
 
+        base_precision = D("10") ** (D("-1") * orders.base_precision)
+        quote_precision = D("10") ** (D("-1") * orders.quote_precision)
+
+        orders.price = orders.price * quote_precision
         orders.price = orders.apply(
-            lambda x: core.utils.qformat(x, "price"), axis=1)
+            lambda x: core.utils.quantize(x, "price", "price_precision"),
+            axis=1)
+
+        orders.amount = orders.amount * base_precision
         orders.amount = orders.apply(
-            lambda x: core.utils.bformat(x, "amount"), axis=1)
+            lambda x: core.utils.quantize(x, "amount", "base_precision"),
+            axis=1)
+
+        orders.cost = orders.cost * quote_precision
         orders.cost = orders.apply(
-            lambda x: core.utils.qformat(x, "cost"), axis=1)
+            lambda x: core.utils.quantize(x, "cost", "price_precision"),
+            axis=1)
+
+        orders.filled = orders.filled * base_precision
         orders.filled = orders.apply(
-            lambda x: core.utils.bformat(x, "filled"), axis=1)
+            lambda x: core.utils.quantize(x, "filled", "base_precision"),
+            axis=1)
+
+        orders.fee = orders.fee * quote_precision
         orders.fee = orders.apply(
-            lambda x: core.utils.qformat(x, "fee"), axis=1)
+            lambda x: core.utils.quantize(x, "fee", "price_precision"),
+            axis=1)
 
         return orders.to_dict("records")
