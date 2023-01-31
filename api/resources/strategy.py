@@ -102,40 +102,43 @@ class Strategy(Resource):
             strategy = core.db.Strategy(**args)
             strategy.save()
 
-            if strategy.type == strategies.Types.MIXER.value \
-                    and args["strategies"] and args["weights"]:
-
-                if len(args["strategies"]) != len(args["weights"]):
-                    raise api.errors.InvalidArgument
-
+            if strategy.type == strategies.Types.MIXER.value:
                 mixin = strategies.mixer.MixedStrategies
                 mixin.delete() \
                     .where(mixin.mixer_id == strategy_id) \
                     .execute()
 
-                for s, w in zip(args["strategies"], args["weights"]):
-                    mixed_st = core.db.Strategy.get_by_id(s)
+                if args["strategies"] and args["weights"]:
+                    if len(args["strategies"]) != len(args["weights"]):
+                        raise api.errors.InvalidArgument
 
-                    if mixed_st.deleted:
-                        raise api.errors.StrategyDoesNotExist
-                    if mixed_st.timeframe != strategy.timeframe:
+                    if len(args["strategies"]) != len(set(args["strategies"])):
                         raise api.errors.InvalidArgument(
-                            "Mixed strategies must have the same timeframe")
-                    if mixed_st.market != strategy.market:
-                        raise api.errors.InvalidArgument(
-                            "Mixed strategies must have the same market")
-                    if mixed_st.type == strategies.Types.MIXER.value:
-                        raise api.errors.InvalidArgument(
-                            "Mixed strategies cannot be of type MIXER")
-                    if mixed_st.type == strategies.Types.MANUAL.value:
-                        raise api.errors.InvalidArgument(
-                            "Mixed strategies cannot be of type MANUAL")
+                            "Mixed strategies must be unique")
 
-                    mixed_st.enable()
-                    mixin.create(
-                        mixer_id=strategy_id,
-                        strategy_id=mixed_st.id,
-                        weight=w)
+                    for s, w in zip(args["strategies"], args["weights"]):
+                        mixed_st = core.db.Strategy.get_by_id(s)
+
+                        if mixed_st.deleted:
+                            raise api.errors.StrategyDoesNotExist
+                        if mixed_st.timeframe != strategy.timeframe:
+                            raise api.errors.InvalidArgument(
+                                "Mixed strategies must have same timeframe")
+                        if mixed_st.market != strategy.market:
+                            raise api.errors.InvalidArgument(
+                                "Mixed strategies must have same market")
+                        if mixed_st.type == strategies.Types.MIXER.value:
+                            raise api.errors.InvalidArgument(
+                                "Mixed strategies cannot be of type MIXER")
+                        if mixed_st.type == strategies.Types.MANUAL.value:
+                            raise api.errors.InvalidArgument(
+                                "Mixed strategies cannot be of type MANUAL")
+
+                        mixed_st.enable()
+                        mixin.create(
+                            mixer_id=strategy_id,
+                            strategy_id=mixed_st.id,
+                            weight=w)
 
             strategy = strategies.load(strategy)
             if len([*strategy._meta.columns]) > 1:
