@@ -77,11 +77,11 @@ class MixerStrategy(BaseStrategy):
 
 
 class MixedStrategies(core.db.BaseModel):
-    mixer_id = peewee.ForeignKeyField(core.db.Strategy,
-                                      on_delete="CASCADE",
-                                      backref="mixins")
-    strategy_id = peewee.ForeignKeyField(core.db.Strategy,
-                                         on_delete="CASCADE")
+    mixer = peewee.ForeignKeyField(core.db.Strategy,
+                                   on_delete="CASCADE",
+                                   backref="mixins")
+    strategy = peewee.ForeignKeyField(core.db.Strategy,
+                                      on_delete="CASCADE")
     weight = peewee.DecimalField(default=1)
 
     class Meta:
