@@ -601,10 +601,8 @@ class Position(BaseModel):
 
     def add_order(self, order):
         market = self.user_strategy.strategy.market
-        BUY = core.strategies.Signal.BUY.value
-        SELL = core.strategies.Signal.SELL.value
 
-        if order.side == BUY:
+        if order.side == "buy":
             self.bucket += order.cost
             self.entry_cost += order.cost
             self.entry_amount += order.filled
@@ -614,7 +612,7 @@ class Position(BaseModel):
                 self.entry_price = \
                     market.quote.div(self.entry_cost, self.entry_amount)
 
-        elif order.side == SELL:
+        elif order.side == "sell":
             self.bucket += order.filled
             self.exit_amount += order.filled
             self.exit_cost += order.cost
