@@ -26,9 +26,6 @@ class MixerStrategy(BaseStrategy):
         return super().get_indicators_df(self.get_indicators())
 
     def refresh(self):
-        for mixin in self.strategy.mixins:
-            core.db.Strategy.get_by_id(mixin.strategy_id).refresh()
-
         self.refresh_indicators()
 
     def refresh_indicators(self):
