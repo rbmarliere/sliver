@@ -1,3 +1,5 @@
+import { FormArray } from "@angular/forms";
+
 export interface BaseStrategy {
   id: number;
   symbol: string;
@@ -42,4 +44,5 @@ export interface Strategy extends BaseStrategy {
   sell_threshold?: number;
   strategies?: number[];
   weights?: number[];
+  mixins?: FormArray;
 }

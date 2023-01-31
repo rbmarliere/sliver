@@ -1,5 +1,5 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Exchange } from '../exchange';
 import { ExchangeService } from '../exchange.service';
@@ -56,7 +56,8 @@ export class StrategyComponent implements OnInit {
     buy_threshold: 1,
     sell_threshold: -1,
     strategies: [],
-    weights: []
+    weights: [],
+    mixins: this.formBuilder.array([]),
   };
 
   loading: Boolean = true;
@@ -66,6 +67,10 @@ export class StrategyComponent implements OnInit {
   timeframes: String[] = [];
 
   markets: Market[] = [];
+
+  get mixins() {
+    return this.form.controls["mixins"] as FormArray;
+  }
 
   private _mixins: Strategy[] = [];
   set available_mixins(strategies: Strategy[]) {
@@ -107,6 +112,11 @@ export class StrategyComponent implements OnInit {
     this.form.get('type')?.disable();
 
     if (strategy.id > 0) {
+      if (strategy.strategies && strategy.weights) {
+        for (let i = 0; i < strategy.strategies.length; i++) {
+          this.addMixin(strategy.strategies[i], strategy.weights[i]);
+        }
+      }
       this.form.patchValue(strategy);
 
       if (strategy.type === 0) {
@@ -123,8 +133,6 @@ export class StrategyComponent implements OnInit {
       }
 
     } else {
-      this.form.patchValue(this.empty_strat);
-
       this.form.get('timeframe')?.enable();
       this.form.get('market_id')?.enable();
       this.form.get('signal')?.enable();
@@ -179,6 +187,9 @@ export class StrategyComponent implements OnInit {
     const strategy = this.form.getRawValue();
 
     if (strategy.id > 0) {
+      strategy.strategies = this.mixins.controls.map((m) => m.value.strategy_id);
+      strategy.weights = this.mixins.controls.map((m) => m.value.weight);
+
       this.strategyService.updateStrategy(strategy).subscribe({
         next: () => location.reload(),
       });
@@ -193,6 +204,19 @@ export class StrategyComponent implements OnInit {
     this.strategyService.updateSubscription(strategy).subscribe({
       next: () => location.reload(),
     });
+  }
+
+  addMixin(strategy_id: number, weight: number) {
+    const group = this.formBuilder.group({
+      strategy_id: [strategy_id, Validators.required],
+      weight: [weight, Validators.required],
+    });
+
+    this.mixins.push(group);
+  }
+
+  removeMixin(index: number) {
+    this.mixins.removeAt(index);
   }
 
 }
