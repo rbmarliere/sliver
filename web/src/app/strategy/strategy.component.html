@@ -175,7 +175,7 @@
                   <mat-label>Strategy {{ i + 1 }}</mat-label>
                   <mat-select formControlName="strategy_id" required>
                     <mat-option *ngFor="let available_mixin of available_mixins" [value]="available_mixin.id">
-                      {{ available_mixin.id }} - {{ available_mixin.symbol }}
+                      {{ available_mixin.id }} - {{ available_mixin.description }}
                     </mat-option>
                   </mat-select>
                 </mat-form-field>
