@@ -433,9 +433,7 @@ class Position(BaseModel):
         return self.status == "open" or self.status == "opening"
 
     def is_pending(self):
-        return self.status == "opening" \
-            or self.status == "closing" \
-            or len(self.get_open_orders()) > 0
+        return self.status == "opening" or self.status == "closing"
 
     def get_remaining_to_fill(self):
         return self.bucket_max - self.bucket
@@ -659,6 +657,8 @@ class Position(BaseModel):
             i("entry_cost is 0, position is now closed")
             self.status = "closed"
 
+        core.exchange.sync_limit_orders(self)
+
         if self.is_pending():
             self.refresh_bucket(last_p)
 
@@ -681,8 +681,6 @@ class Position(BaseModel):
             self.next_bucket = next_bucket
             i("moving on to next bucket at {b}".format(b=self.next_bucket))
             self.bucket = 0
-
-        core.exchange.sync_limit_orders(self)
 
         i("limit to market ratio is {r}".format(r=strategy.lm_ratio))
 
