@@ -12,6 +12,8 @@ def init(api: flask_restful.Api):
     api.add_resource(resources.Inventory, "/inventory")
     api.add_resource(resources.Order, "/orders/<position_id>")
     api.add_resource(resources.Position, "/positions")
+    api.add_resource(resources.PositionsByStrategy,
+                     "/positions/strategy/<strategy_id>")
     api.add_resource(resources.Strategies, "/strategies")
     api.add_resource(resources.StrategiesByMarket,
                      "/strategies/market/<market_id>")
