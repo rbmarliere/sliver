@@ -256,6 +256,8 @@ class Strategy(BaseModel):
 
     def disable(self):
         i("disabling strategy {s}...".format(s=self))
+        for dep in self.mixedstrategies_set:
+            dep.mixer.disable()
         self.active = False
         self.save()
 
