@@ -15,6 +15,10 @@ export function backtest(strategy: Strategy, indicators: Indicator, _start: stri
   } else if (strategy.type === 2) {
     // HYPNOX
     backtest_log = backtest_log.concat(getHypnoxBacktestLog(indicators, start, end));
+  } else if (strategy.type === 3) {
+    // DD3
+  } else if (strategy.type === 4) {
+    // MIXER
   }
 
   return backtest_log;
