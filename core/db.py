@@ -433,7 +433,9 @@ class Position(BaseModel):
         return self.status == "open" or self.status == "opening"
 
     def is_pending(self):
-        return self.status == "opening" or self.status == "closing"
+        return self.status == "opening" \
+            or self.status == "closing" \
+            or len(self.get_open_orders()) > 0
 
     def get_remaining_to_fill(self):
         return self.bucket_max - self.bucket
