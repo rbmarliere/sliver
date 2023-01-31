@@ -940,4 +940,5 @@ def get_pending_strategies():
         .select() \
         .where(Strategy.active) \
         .where(Strategy.next_refresh < datetime.datetime.utcnow()) \
-        .order_by(Strategy.next_refresh)
+        .order_by(Strategy.next_refresh) \
+        .order_by(Strategy.type == core.strategies.Types.MIXER.value)
