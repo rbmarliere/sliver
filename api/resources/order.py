@@ -50,7 +50,7 @@ class Order(Resource):
 
         orders.amount = orders.amount * base_precision
         orders.amount = orders.apply(
-            lambda x: core.utils.quantize(x, "amount", "base_precision"),
+            lambda x: core.utils.quantize(x, "amount", "amount_precision"),
             axis=1)
 
         orders.cost = orders.cost * quote_precision
@@ -60,7 +60,7 @@ class Order(Resource):
 
         orders.filled = orders.filled * base_precision
         orders.filled = orders.apply(
-            lambda x: core.utils.quantize(x, "filled", "base_precision"),
+            lambda x: core.utils.quantize(x, "filled", "amount_precision"),
             axis=1)
 
         orders.fee = orders.fee * quote_precision
