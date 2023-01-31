@@ -18,6 +18,11 @@ export function getPlot(strategy: Strategy, indicators: Indicator): any {
   } else if (strategy.type === 3) {
     // DD3
     plot.data = plot.data.concat(getDD3PlotData(indicators));
+  } else if (strategy.type === 4) {
+    plot.data = plot.data.concat(getMixerPlotData(indicators));
+    plot.layout = {
+      ...plot.layout, ...getMixerPlotLayout(),
+    }
   }
 
   return plot;
@@ -83,7 +88,7 @@ function getPlotData(data: any): any {
       xaxis: 'x',
       yaxis: 'y',
     },
-  ];
+  ]
 }
 
 function getHypnoxPlotData(data: any): any {
@@ -147,5 +152,31 @@ function getDD3PlotData(data: any): any {
       yaxis: 'y',
     },
   ]
+}
+
+function getMixerPlotData(data: any): any {
+  return [
+    {
+      name: 'weighted_signal',
+      x: data.time,
+      y: data.weighted_signal,
+      type: 'line',
+      xaxis: 'x',
+      yaxis: 'y2',
+    },
+  ]
+}
+
+function getMixerPlotLayout(): any {
+  return {
+    showlegend: false,
+    xaxis: {
+      rangeslider: { visible: false },
+      autorange: true,
+      type: 'date',
+    },
+    yaxis: { domain: [0.33, 1] },
+    yaxis2: { domain: [0, 0.33] },
+  }
 }
 
