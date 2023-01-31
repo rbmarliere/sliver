@@ -1,11 +1,9 @@
 import datetime
 import decimal
 import re
+from decimal import Decimal as D
 
 import pandas
-
-import core
-from decimal import Decimal as D
 
 
 def standardize(text):
@@ -129,30 +127,9 @@ def get_mean_var(series: pandas.DataFrame,
     return new_mean, new_var
 
 
-def qformat(x, column):
-    strat = core.db.Strategy.get_by_id(x.strategy_id)
-
-    prec = None
-    if strat.market.price_precision > 0:
-        prec = strat.market.price_precision
-
-    return strat.market.quote.format(x[column], prec=prec)
-
-
-def bformat(x, column):
-    strat = core.db.Strategy.get_by_id(x.strategy_id)
-
-    prec = None
-    if strat.market.amount_precision > 0:
-        prec = strat.market.amount_precision
-
-    return strat.market.base.format(x[column], prec=prec)
-
-
-def sformat(x):
-    strat = core.db.Strategy.get_by_id(x.strategy_id)
-    return strat.market.get_symbol()
-
-
 def get_roi(entry_price, exit_price):
     return D(str(((exit_price / entry_price) - 1) * 100)).quantize(D("0.0001"))
+
+
+def quantize(row, col, prec_col):
+    return row[col].quantize(D("10") ** (D("-1") * row[prec_col]))
