@@ -935,9 +935,15 @@ def get_pending_positions():
         .where(Position.next_refresh < datetime.datetime.utcnow())
 
 
-def get_pending_strategies():
+def get_strategies():
     return Strategy \
         .select() \
+        .where(~Strategy.deleted) \
+        .order_by(Strategy.id.desc())
+
+
+def get_pending_strategies():
+    return get_strategies() \
         .where(Strategy.active) \
         .where(Strategy.next_refresh < datetime.datetime.utcnow()) \
         .order_by(Strategy.next_refresh) \
