@@ -28,6 +28,11 @@ export class DialogService {
 
       default:
         message = error.error.message;
+
+        if (message === undefined) {
+          message = error.error.error.message;
+        }
+
         if (typeof message === 'object') {
           message = JSON.stringify(message);
         }
