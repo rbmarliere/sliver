@@ -21,7 +21,7 @@ fields = {
     "exit_cost": fields.Float,
     "fee": fields.Float,
     "pnl": fields.Float,
-    "roi": fields.String,
+    "roi": fields.Float,
 }
 
 
@@ -81,7 +81,7 @@ def get_positions_df(query):
         lambda x: core.utils.quantize(x, "pnl", "price_precision"),
         axis=1)
 
-    positions.roi = positions.roi.apply(lambda x: f"{x:.2f}%")
+    positions.roi = positions.roi.apply(lambda x: f"{x:.4f}")
 
     return positions
 
