@@ -59,9 +59,9 @@ no positions found
     balance = new_balance;
   }
 
-  let init_bh_amount = init_balance / data.open[indexes[0]];
+  let init_bh_amount = init_balance / data.close[indexes[0]];
   let exit_bh_value =
-    init_bh_amount * data.open[indexes[indexes.length - 1]];
+    init_bh_amount * data.close[indexes[indexes.length - 1]];
 
   let roi = (balance / init_balance - 1) * 100;
   let roi_bh = (exit_bh_value / init_balance - 1) * 100;
@@ -132,13 +132,13 @@ function getPositions(data: any, indexes: number[]): any[] {
     if (data.buys[idx] > 0) {
       if (!curr) {
         curr = true;
-        currPos.entry_price = data.open[idx];
+        currPos.entry_price = data.close[idx];
         currPos.entry_time = new Date(data.time[idx]);
       }
     } else if (data.sells[idx] > 0) {
       if (curr) {
         curr = false;
-        currPos.exit_price = data.open[idx];
+        currPos.exit_price = data.close[idx];
         currPos.exit_time = new Date(data.time[idx]);
         positions.push({
           entry_price: currPos.entry_price,
