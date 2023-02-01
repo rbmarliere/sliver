@@ -62,9 +62,9 @@ function getPlotConfig(): any {
 function getPlotData(data: any): any {
   return [
     {
-      name: 'opening price',
+      name: 'closing price',
       x: data.time,
-      y: data.open,
+      y: data.close,
       // high: data.high,
       // low: data.low,
       // close: data.close,
