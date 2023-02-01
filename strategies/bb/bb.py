@@ -53,8 +53,8 @@ class BBStrategy(BaseStrategy):
         indicators.bolu = indicators.ma + self.num_std * std
         indicators.bold = indicators.ma - self.num_std * std
 
-        buy_rule = indicators.close < indicators.bold
-        sell_rule = indicators.close > indicators.bolu
+        buy_rule = indicators.close > indicators.bold
+        sell_rule = indicators.close < indicators.bolu
 
         indicators.signal = NEUTRAL
         indicators.loc[buy_rule, "signal"] = BUY
