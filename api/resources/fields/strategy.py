@@ -30,7 +30,7 @@ base_fields = {
 }
 price_fields = {
     "time": fields.List(fields.String),
-    # "open": fields.List(fields.Float),
+    "open": fields.List(fields.Float),
     # "high": fields.List(fields.Float),
     # "low": fields.List(fields.Float),
     "close": fields.List(fields.Float),
