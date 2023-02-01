@@ -19,10 +19,14 @@ export function getPlot(strategy: Strategy, indicators: Indicator): any {
     // DD3
     plot.data = plot.data.concat(getDD3PlotData(indicators));
   } else if (strategy.type === 4) {
+    // MIXER
     plot.data = plot.data.concat(getMixerPlotData(indicators));
     plot.layout = {
       ...plot.layout, ...getMixerPlotLayout(),
     }
+  } else if (strategy.type === 5) {
+    // BB
+    plot.data = plot.data.concat(getBBPlotData(indicators));
   }
 
   return plot;
@@ -180,3 +184,31 @@ function getMixerPlotLayout(): any {
   }
 }
 
+function getBBPlotData(data: any): any {
+  return [
+    {
+      name: 'ma',
+      x: data.time,
+      y: data.ma,
+      type: 'line',
+      xaxis: 'x',
+      yaxis: 'y',
+    },
+    {
+      name: 'upper band',
+      x: data.time,
+      y: data.bolu,
+      type: 'line',
+      xaxis: 'x',
+      yaxis: 'y',
+    },
+    {
+      name: 'lower band',
+      x: data.time,
+      y: data.bold,
+      type: 'line',
+      xaxis: 'x',
+      yaxis: 'y',
+    },
+  ]
+}

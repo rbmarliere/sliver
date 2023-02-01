@@ -58,6 +58,11 @@ export class StrategyComponent implements OnInit {
     strategies: [],
     weights: [],
     mixins: this.formBuilder.array([]),
+
+    // bb
+    use_ema: false,
+    ma_period: 20,
+    num_std: 2,
   };
 
   loading: Boolean = true;
