@@ -67,13 +67,13 @@ no positions found
 initial balance = ${init_balance.toFixed(2)}
 final balance = ${balance.toFixed(2)}
 pnl = ${(balance - init_balance).toFixed(2)}
-roi = ${roi.toFixed(2)}%
+roi = ${roi.toFixed(4)}%
 total timedelta = ${msToString(end.getTime() - start.getTime())}
 number of trades = ${positions.length}
 average timedelta in position = ${msToString(avg_time)}
-average position roi = ${avg_roi.toFixed(2)}%
+average position roi = ${avg_roi.toFixed(4)}%
 buy and hold final balance = ${exit_bh_value.toFixed(2)}
-buy and hold roi = ${roi_bh.toFixed(2)}%
+buy and hold roi = ${roi_bh.toFixed(4)}%
 `;
 }
 
