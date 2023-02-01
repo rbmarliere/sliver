@@ -22,7 +22,7 @@ class DD3Strategy(BaseStrategy):
     def get_indicators(self):
         return super() \
             .get_indicators() \
-            .select(core.db.Price, core.db.Indicator, DD3Indicator) \
+            .select(*[*self.select_fields, DD3Indicator]) \
             .join(DD3Indicator, peewee.JOIN.LEFT_OUTER)
 
     def get_indicators_df(self):
