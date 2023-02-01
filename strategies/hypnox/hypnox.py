@@ -55,7 +55,7 @@ class HypnoxStrategy(BaseStrategy):
     def get_indicators(self):
         return super() \
             .get_indicators() \
-            .select(core.db.Price, core.db.Indicator, HypnoxIndicator) \
+            .select(*[*self.select_fields, HypnoxIndicator]) \
             .join(HypnoxIndicator, peewee.JOIN.LEFT_OUTER)
 
     def get_indicators_df(self):

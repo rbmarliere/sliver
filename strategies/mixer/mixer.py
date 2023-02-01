@@ -19,7 +19,7 @@ class MixerStrategy(BaseStrategy):
     def get_indicators(self):
         return super() \
             .get_indicators() \
-            .select(core.db.Price, core.db.Indicator, MixerIndicator) \
+            .select(*[*self.select_fields, MixerIndicator]) \
             .join(MixerIndicator, peewee.JOIN.LEFT_OUTER)
 
     def get_indicators_df(self):
@@ -37,6 +37,8 @@ class MixerStrategy(BaseStrategy):
         indicators.drop("signal", axis=1, inplace=True)
         indicators["weighted_signal"] = NEUTRAL
 
+        # TODO buy_mixins vs sell_mixins
+        # idea is to use different strategies for buy and sell signals
         for mixin in self.strategy.mixins:
             strategy = core.strategies.load(
                 core.db.Strategy.get_by_id(mixin.strategy_id))

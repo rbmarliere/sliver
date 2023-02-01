@@ -1,5 +1,6 @@
 from decimal import Decimal as D
 
+import numpy
 import pandas
 import peewee
 
@@ -12,6 +13,13 @@ class BaseStrategy(core.db.BaseModel):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.__dict__.update(self.strategy.__data__)
+
+        self.select_fields = [
+            core.db.Price,
+            core.db.Indicator,
+            peewee.Value(self.strategy.market.quote.precision).alias("qprec"),
+            peewee.Value(self.strategy.market.base.precision).alias("bprec"),
+        ]
 
     def get_signal(self):
         try:
@@ -27,7 +35,7 @@ class BaseStrategy(core.db.BaseModel):
 
     def get_indicators(self):
         return self.strategy.get_prices() \
-            .select(core.db.Price, core.db.Indicator) \
+            .select(*self.select_fields) \
             .join(core.db.Indicator,
                   peewee.JOIN.LEFT_OUTER,
                   on=((core.db.Indicator.price_id == core.db.Price.id)
@@ -42,34 +50,29 @@ class BaseStrategy(core.db.BaseModel):
 
         df = pandas.DataFrame(query.dicts())
 
-        if not df.empty:
-            buys = []
-            sells = []
-            curr_pos = False
-            for idx, row in df.iterrows():
-                if row.signal == BUY:
-                    if not curr_pos:
-                        buys.append(idx)
-                        curr_pos = True
-                elif row.signal == SELL:
-                    if curr_pos:
-                        sells.append(idx)
-                        curr_pos = False
+        if df.empty:
+            return df
 
-            df.time = df.time.dt.strftime("%Y-%m-%d %H:%M")
-            df.open = df.open.apply(self.qformat)
-            # df.high = df.high.apply(self.qformat)
-            # df.low = df.low.apply(self.qformat)
-            # df.close = df.close.apply(self.qformat)
-            # df.volume = df.volume.apply(self.bformat)
-            df["buys"] = df.open.where(df.index.isin(buys))
-            df.buys = df.buys * D("0.99")
-            df.buys = df.buys.replace({float("nan"): None})
-            df["sells"] = df.open.where(df.index.isin(sells))
-            df.sells = df.sells * D("1.01")
-            df.sells = df.sells.replace({float("nan"): None})
+        price_precision = self.strategy.market.price_precision
+        quote_precision = D("10") ** (D("-1") * df.qprec)
 
-        return df
+        df.open = df.open * quote_precision
+
+        df["buys"] = numpy.where(
+            df.signal == BUY, df.open * D("0.995"), numpy.nan)
+
+        df["sells"] = numpy.where(
+            df.signal == SELL, df.open * D("1.005"), numpy.nan)
+
+        df.time = df.time.dt.strftime("%Y-%m-%d %H:%M")
+        df.buys = df.buys.astype(float).round(price_precision)
+        df.buys = df.buys.replace({float("nan"): None})
+        df.sells = df.sells.astype(float).round(price_precision)
+        df.sells = df.sells.replace({float("nan"): None})
+        df.open = df.open.astype(float).round(price_precision)
+        df.open = df.open.replace({float("nan"): None})
+
+        return df[["time", "open", "buys", "sells"]]
 
     def refresh(self):
         pass
@@ -84,9 +87,3 @@ class BaseStrategy(core.db.BaseModel):
         self.signal = self.get_signal().value
         self.symbol = self.strategy.market.get_symbol()
         self.exchange = self.strategy.market.quote.exchange.name
-
-    def qformat(self, x):
-        return self.strategy.market.quote.format(x, prec=2)
-
-    def bformat(self, x):
-        return self.strategy.market.base.format(x, prec=4)
