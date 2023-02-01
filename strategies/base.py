@@ -14,14 +14,16 @@ class BaseStrategy(core.db.BaseModel):
         super().__init__(*args, **kwargs)
         self.__dict__.update(self.strategy.__data__)
 
-        self.price_precision = self.strategy.market.price_precision
         self.amount_precision = self.strategy.market.amount_precision
+        self.base_precision = self.strategy.market.base.precision
+        self.price_precision = self.strategy.market.price_precision
+        self.quote_precision = self.strategy.market.quote.precision
 
         self.select_fields = [
             core.db.Price,
             core.db.Indicator,
-            peewee.Value(self.strategy.market.base.precision).alias("bprec"),
-            peewee.Value(self.strategy.market.quote.precision).alias("qprec"),
+            peewee.Value(10**(-1*self.base_precision)).alias("bprec"),
+            peewee.Value(10**(-1*self.quote_precision)).alias("qprec"),
         ]
 
     def get_signal(self):
@@ -56,10 +58,11 @@ class BaseStrategy(core.db.BaseModel):
         if df.empty:
             return df
 
-        df.bprec = D("10") ** (D("-1") * df.bprec)
-        df.qprec = D("10") ** (D("-1") * df.qprec)
-
         df.open = df.open * df.qprec
+        df.high = df.high * df.qprec
+        df.low = df.low * df.qprec
+        df.close = df.close * df.qprec
+        df.volume = df.volume * df.bprec
 
         df["buys"] = numpy.where(
             df.signal == BUY, df.open * D("0.995"), numpy.nan)
@@ -68,12 +71,14 @@ class BaseStrategy(core.db.BaseModel):
             df.signal == SELL, df.open * D("1.005"), numpy.nan)
 
         df.time = df.time.dt.strftime("%Y-%m-%d %H:%M")
+
         df.buys = df.buys.astype(float).round(self.price_precision)
-        df.buys = df.buys.replace({float("nan"): None})
         df.sells = df.sells.astype(float).round(self.price_precision)
-        df.sells = df.sells.replace({float("nan"): None})
         df.open = df.open.astype(float).round(self.price_precision)
-        df.open = df.open.replace({float("nan"): None})
+        df.high = df.high.astype(float).round(self.price_precision)
+        df.low = df.low.astype(float).round(self.price_precision)
+        df.close = df.close.astype(float).round(self.price_precision)
+        df.volume = df.volume.astype(float).round(self.amount_precision)
 
         return df
 
