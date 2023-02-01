@@ -65,10 +65,10 @@ class BaseStrategy(core.db.BaseModel):
         df.volume = df.volume * df.bprec
 
         df["buys"] = numpy.where(
-            df.signal == BUY, df.open * D("0.995"), numpy.nan)
+            df.signal == BUY, df.close * D("0.995"), numpy.nan)
 
         df["sells"] = numpy.where(
-            df.signal == SELL, df.open * D("1.005"), numpy.nan)
+            df.signal == SELL, df.close * D("1.005"), numpy.nan)
 
         df.time = df.time.dt.strftime("%Y-%m-%d %H:%M")
 
