@@ -3,13 +3,14 @@ export interface Position {
   market: string
   strategy_id: number
   status: string
-  target_cost: string
-  entry_cost: string
-  entry_amount: string
-  entry_price: string
-  exit_price: string
-  exit_amount: string
-  exit_cost: string
-  fee: string
-  pnl: string
+  target_cost: number
+  entry_cost: number
+  entry_amount: number
+  entry_price: number
+  exit_price: number
+  exit_amount: number
+  exit_cost: number
+  fee: number
+  pnl: number
+  roi: number
 }
