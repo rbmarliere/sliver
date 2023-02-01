@@ -39,6 +39,7 @@ no positions found
   let balance = 10000;
   let avg_time = 0;
   let avg_roi = 0;
+  let total_timedelta_in_position = 0;
   for (let i = 0; i < positions.length; i++) {
     let pos = positions[i];
 
@@ -46,6 +47,8 @@ no positions found
     let pricedelta = pos.exit_price - pos.entry_price;
     let pnl = pricedelta * entry_amount;
     let timedelta = pos.exit_time.getTime() - pos.entry_time.getTime();
+
+    total_timedelta_in_position += timedelta;
 
     avg_time = (avg_time * i + timedelta) / (i + 1);
 
@@ -63,14 +66,18 @@ no positions found
   let roi = (balance / init_balance - 1) * 100;
   let roi_bh = (exit_bh_value / init_balance - 1) * 100;
 
+  let total_timedelta = end.getTime() - start.getTime();
+  let avg_time_oom = (total_timedelta - total_timedelta_in_position) / positions.length;
+
   return `
 initial balance = ${init_balance.toFixed(2)}
 final balance = ${balance.toFixed(2)}
 pnl = ${(balance - init_balance).toFixed(2)}
 roi = ${roi.toFixed(4)}%
-total timedelta = ${msToString(end.getTime() - start.getTime())}
+total timedelta = ${msToString(total_timedelta)}
 number of trades = ${positions.length}
 average timedelta in position = ${msToString(avg_time)}
+average timedelta out of position = ${msToString(avg_time_oom)}
 average position roi = ${avg_roi.toFixed(4)}%
 buy and hold final balance = ${exit_bh_value.toFixed(2)}
 buy and hold roi = ${roi_bh.toFixed(4)}%
