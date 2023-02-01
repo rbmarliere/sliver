@@ -134,6 +134,7 @@ def watch():
             # - green flag -- all signals are respected
             # in general, account for overall market risk and volatility
             # maybe use GARCH to model volatility, or a machine learning model
+            # maybe user.max_risk and user.max_volatility
 
             for position in core.db.get_opening_positions():
                 stopped = position.check_stops()
