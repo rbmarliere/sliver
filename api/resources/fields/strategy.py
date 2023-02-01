@@ -78,6 +78,19 @@ mixer_fields = {
     "weights": fields.List(fields.Float),
 }
 
+bb_indicators = {
+    **price_fields,
+    "ma": fields.List(fields.Float),
+    "bolu": fields.List(fields.Float),
+    "bold": fields.List(fields.Float),
+}
+bb_fields = {
+    **base_fields,
+    "use_ema": fields.Boolean,
+    "ma_period": fields.Integer,
+    "num_std": fields.Integer,
+}
+
 
 def get_fields(type=None, all=True):
     if type == strategies.Types.MANUAL.value:
@@ -94,6 +107,9 @@ def get_fields(type=None, all=True):
 
     elif type == strategies.Types.MIXER.value:
         return mixer_fields if all else mixer_indicators
+
+    elif type == strategies.Types.BB.value:
+        return bb_fields if all else bb_indicators
 
     return base_fields if all else price_fields
 
@@ -165,5 +181,10 @@ def get_base_parser(type=None):
                                  type=list,
                                  required=True,
                                  location="json")
+
+    elif type == strategies.Types.BB.value:
+        base_parser.add_argument("use_ema", type=bool, required=True)
+        base_parser.add_argument("ma_period", type=int, required=True)
+        base_parser.add_argument("num_std", type=int, required=True)
 
     return base_parser

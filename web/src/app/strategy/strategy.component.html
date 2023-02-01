@@ -194,6 +194,22 @@
           </button>
         </div>
 
+        <div class="fields" *ngIf="strategy.type === 5">
+          <p>
+            <mat-form-field>
+              <mat-label>Number of Standard Deviations</mat-label>
+              <input matInput type="number" formControlName="num_std" />
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>Moving Average Period</mat-label>
+              <input matInput type="number" formControlName="ma_period" />
+            </mat-form-field>
+            <mat-slide-toggle formControlName="use_ema">
+            </mat-slide-toggle>
+            <mat-label style="padding: 1vh">Use Exponential Moving Average?</mat-label>
+          </p>
+        </div>
+
         <div class="button">
           <button mat-raised-button color="primary">Save</button>
 

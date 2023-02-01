@@ -45,4 +45,9 @@ export interface Strategy extends BaseStrategy {
   strategies?: number[];
   weights?: number[];
   mixins?: FormArray;
+
+  // bb
+  use_ema?: boolean;
+  ma_period?: number;
+  num_std?: number;
 }

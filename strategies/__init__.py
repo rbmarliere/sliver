@@ -1,5 +1,6 @@
 import enum
 
+from .bb import BBStrategy
 from .dd3 import DD3Strategy
 from .hypnox import HypnoxStrategy
 from .manual import ManualStrategy
@@ -13,6 +14,7 @@ class Types(enum.Enum):
     HYPNOX = 2
     DD3 = 3
     MIXER = 4
+    BB = 5
 
 
 class Signal(enum.Enum):
@@ -38,6 +40,9 @@ def load(strategy, user=None):
         stt = MixerStrategy.get_or_create(strategy=strategy)[0]
         stt.strategies = [m.strategy_id for m in strategy.mixins]
         stt.weights = [m.weight for m in strategy.mixins]
+
+    elif strategy.type == Types.BB.value:
+        stt = BBStrategy.get_or_create(strategy=strategy)[0]
 
     else:
         raise ValueError("invalid strategy type")
