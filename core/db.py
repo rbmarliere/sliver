@@ -287,8 +287,9 @@ class Strategy(BaseModel):
 
     def postpone(self, interval_in_minutes=None):
         if interval_in_minutes is None:
-            interval = core.utils.get_timeframe_in_seconds(self.timeframe) / 60
-        self.next_refresh = core.utils.get_next_refresh(interval)
+            interval_in_minutes = \
+                core.utils.get_timeframe_in_seconds(self.timeframe) / 60
+        self.next_refresh = core.utils.get_next_refresh(interval_in_minutes)
         i("next refresh at {n}".format(n=self.next_refresh))
         self.save()
 
@@ -579,8 +580,9 @@ class Position(BaseModel):
 
     def postpone(self, interval_in_minutes=None):
         if interval_in_minutes is None:
-            interval = self.user_strategy.strategy.orders_interval
-        self.next_refresh = core.utils.get_next_refresh(interval)
+            interval_in_minutes = \
+                self.user_strategy.strategy.orders_interval
+        self.next_refresh = core.utils.get_next_refresh(interval_in_minutes)
         i("next refresh at {n}".format(n=self.next_refresh))
         self.save()
 
