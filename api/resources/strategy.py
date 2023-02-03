@@ -99,6 +99,7 @@ class Strategy(Resource):
             args["timeframe"] = old_strategy.timeframe
             args["type"] = old_strategy.type
             args["active"] = old_strategy.active
+            args["next_refresh"] = None  # force instant strat update
             strategy = core.db.Strategy(**args)
             strategy.save()
 

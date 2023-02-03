@@ -19,10 +19,10 @@ class Indicator(Resource):
             raise api.errors.StrategyDoesNotExist
 
         strategy = strategies.load(strategy)
-        try:
-            strategy.refresh_indicators()
-        except peewee.IntegrityError:
-            pass
+        # try:
+        #     strategy.refresh_indicators()
+        # except peewee.IntegrityError:
+        #     pass
 
         ind = strategy.get_indicators_df()
         ind.replace({float("nan"): None}, inplace=True)
