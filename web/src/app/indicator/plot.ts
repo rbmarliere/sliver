@@ -161,12 +161,28 @@ function getDD3PlotData(data: any): any {
 function getMixerPlotData(data: any): any {
   return [
     {
-      name: 'weighted_signal',
+      name: 'signal',
       x: data.time,
-      y: data.weighted_signal,
+      y: data.signal,
       type: 'line',
       xaxis: 'x',
       yaxis: 'y2',
+    },
+    {
+      name: 'buy_w_signal',
+      x: data.time,
+      y: data.buy_w_signal,
+      type: 'line',
+      xaxis: 'x',
+      yaxis: 'y3',
+    },
+    {
+      name: 'sell_w_signal',
+      x: data.time,
+      y: data.sell_w_signal,
+      type: 'line',
+      xaxis: 'x',
+      yaxis: 'y4',
     },
   ]
 }
@@ -179,8 +195,10 @@ function getMixerPlotLayout(): any {
       autorange: true,
       type: 'date',
     },
-    yaxis: { domain: [0.33, 1] },
-    yaxis2: { domain: [0, 0.33] },
+    yaxis: { domain: [0.31, 1] },
+    yaxis2: { domain: [0.20, 0.30] },
+    yaxis3: { domain: [0.10, 0.20] },
+    yaxis4: { domain: [0, 0.10] },
   }
 }
 
