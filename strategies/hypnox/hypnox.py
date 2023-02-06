@@ -159,7 +159,7 @@ class HypnoxStrategy(BaseStrategy):
 
         # fill out remaining columns
         indicators = indicators.drop("price", axis=1)
-        indicators.strategy = self.strategy.id
+        indicators["strategy"] = self.strategy.id
         indicators.n_samples = n_samples + len(tweets)
         indicators.i_mean = i_mean
         indicators.i_variance = i_variance
