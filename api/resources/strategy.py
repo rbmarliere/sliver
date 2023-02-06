@@ -112,15 +112,20 @@ class Strategy(Resource):
                     .where(mixin.mixer_id == strategy_id) \
                     .execute()
 
-                if args["strategies"] and args["weights"]:
-                    if len(args["strategies"]) != len(args["weights"]):
+                if args["strategies"] \
+                        and args["buy_weights"] and args["sell_weights"]:
+                    if len(args["strategies"]) != len(args["buy_weights"]):
+                        raise api.errors.InvalidArgument
+                    if len(args["strategies"]) != len(args["sell_weights"]):
                         raise api.errors.InvalidArgument
 
                     if len(args["strategies"]) != len(set(args["strategies"])):
                         raise api.errors.InvalidArgument(
                             "Mixed strategies must be unique")
 
-                    for s, w in zip(args["strategies"], args["weights"]):
+                    for s, b_w, s_w in zip(args["strategies"],
+                                           args["buy_weights"],
+                                           args["sell_weights"]):
                         mixed_st = core.db.Strategy.get_by_id(s)
 
                         if mixed_st.deleted:
@@ -142,7 +147,8 @@ class Strategy(Resource):
                         mixin.create(
                             mixer_id=strategy_id,
                             strategy_id=mixed_st.id,
-                            weight=w)
+                            buy_weight=b_w,
+                            sell_weight=s_w)
 
             strategy = strategies.load(strategy)
             if len([*strategy._meta.columns]) > 1:
