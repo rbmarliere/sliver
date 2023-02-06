@@ -218,6 +218,14 @@ def watch():
             error("crashed", e)
             break
 
+        finally:
+            if "position" in locals():
+                del position
+            if "strategy" in locals():
+                del strategy
+            if "user_strat" in locals():
+                del user_strat
+
         core.db.connection.close()
 
     warning("shutdown")
