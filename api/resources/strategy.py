@@ -1,3 +1,5 @@
+import datetime
+
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from flask_restful import Resource, marshal
 
@@ -99,7 +101,8 @@ class Strategy(Resource):
             args["timeframe"] = old_strategy.timeframe
             args["type"] = old_strategy.type
             args["active"] = old_strategy.active
-            args["next_refresh"] = None  # force instant strat update
+            # force instant strat update
+            args["next_refresh"] = datetime.datetime.utcnow()
             strategy = core.db.Strategy(**args)
             strategy.save()
 
