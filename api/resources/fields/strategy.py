@@ -68,14 +68,16 @@ dd3_fields = {
 
 mixer_indicators = {
     **price_fields,
-    "weighted_signal": fields.List(fields.Float),
+    "buy_w_signal": fields.List(fields.Float),
+    "sell_w_signal": fields.List(fields.Float),
 }
 mixer_fields = {
     **base_fields,
     "buy_threshold": fields.Float,
     "sell_threshold": fields.Float,
     "strategies": fields.List(fields.Integer),
-    "weights": fields.List(fields.Float),
+    "buy_weights": fields.List(fields.Float),
+    "sell_weights": fields.List(fields.Float),
 }
 
 bb_indicators = {
@@ -177,7 +179,11 @@ def get_base_parser(type=None):
                                  type=list,
                                  required=True,
                                  location="json")
-        base_parser.add_argument("weights",
+        base_parser.add_argument("buy_weights",
+                                 type=list,
+                                 required=True,
+                                 location="json")
+        base_parser.add_argument("sell_weights",
                                  type=list,
                                  required=True,
                                  location="json")
