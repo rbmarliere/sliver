@@ -9,7 +9,8 @@ class MixerIndicator(core.db.BaseModel):
     indicator = peewee.ForeignKeyField(core.db.Indicator,
                                        primary_key=True,
                                        on_delete="CASCADE")
-    weighted_signal = peewee.DecimalField(default=0)
+    buy_w_signal = peewee.DecimalField(default=0)
+    sell_w_signal = peewee.DecimalField(default=0)
 
 
 class MixerStrategy(BaseStrategy):
@@ -35,22 +36,30 @@ class MixerStrategy(BaseStrategy):
 
         indicators = pandas.DataFrame(self.get_indicators().dicts())
         indicators.drop("signal", axis=1, inplace=True)
-        indicators["weighted_signal"] = NEUTRAL
+        indicators["buy_w_signal"] = NEUTRAL
+        indicators["sell_w_signal"] = NEUTRAL
 
-        # TODO buy_mixins vs sell_mixins
-        # idea is to use different strategies for buy and sell signals
         for mixin in self.strategy.mixins:
             strategy = core.strategies.load(
                 core.db.Strategy.get_by_id(mixin.strategy_id))
             mixind = pandas.DataFrame(strategy.get_indicators().dicts())
-            mixind["weight"] = mixin.weight
-            mixind["weighted_signal"] = mixind["signal"] * mixind["weight"]
-            indicators["weighted_signal"] += mixind["weighted_signal"]
 
-        indicators.weighted_signal = \
-            indicators.weighted_signal.replace({float("nan"): 0})
+            mixind["buy_weight"] = mixin.buy_weight
+            mixind["buy_w_signal"] = mixind["signal"] * mixind["buy_weight"]
+            indicators["buy_w_signal"] += mixind["buy_w_signal"]
 
-        indicators["signal"] = indicators.weighted_signal.apply(
+            mixind["sell_weight"] = mixin.sell_weight
+            mixind["sell_w_signal"] = mixind["signal"] * mixind["sell_weight"]
+            indicators["sell_w_signal"] += mixind["sell_w_signal"]
+
+        indicators.buy_w_signal = \
+            indicators.buy_w_signal.replace({float("nan"): 0})
+        indicators.sell_w_signal = \
+            indicators.sell_w_signal.replace({float("nan"): 0})
+
+        weighted_signal = indicators.buy_w_signal + indicators.sell_w_signal
+
+        indicators["signal"] = weighted_signal.apply(
             lambda x: BUY if x >= self.buy_threshold else
             SELL if x <= self.sell_threshold else NEUTRAL)
 
@@ -73,7 +82,7 @@ class MixerStrategy(BaseStrategy):
             indicators.indicator = range(first_id, first_id + len(indicators))
 
             MixerIndicator.insert_many(
-                indicators[["indicator", "weighted_signal"]]
+                indicators[["indicator", "buy_w_signal", "sell_w_signal"]]
                 .to_dict("records")
             ).execute()
 
@@ -84,7 +93,8 @@ class MixedStrategies(core.db.BaseModel):
                                    backref="mixins")
     strategy = peewee.ForeignKeyField(core.db.Strategy,
                                       on_delete="CASCADE")
-    weight = peewee.DecimalField(default=1)
+    buy_weight = peewee.DecimalField(default=1)
+    sell_weight = peewee.DecimalField(default=1)
 
     class Meta:
         constraints = [peewee.SQL("UNIQUE (mixer_id, strategy_id)")]
