@@ -56,7 +56,8 @@ export class StrategyComponent implements OnInit {
     buy_threshold: 1,
     sell_threshold: -1,
     strategies: [],
-    weights: [],
+    buy_weights: [],
+    sell_weights: [],
     mixins: this.formBuilder.array([]),
 
     // bb
@@ -117,9 +118,9 @@ export class StrategyComponent implements OnInit {
     this.form.get('type')?.disable();
 
     if (strategy.id > 0) {
-      if (strategy.strategies && strategy.weights) {
+      if (strategy.strategies && strategy.buy_weights && strategy.sell_weights) {
         for (let i = 0; i < strategy.strategies.length; i++) {
-          this.addMixin(strategy.strategies[i], strategy.weights[i]);
+          this.addMixin(strategy.strategies[i], strategy.buy_weights[i], strategy.sell_weights[i]);
         }
       }
       this.form.patchValue(strategy);
@@ -193,7 +194,8 @@ export class StrategyComponent implements OnInit {
 
     if (strategy.id > 0) {
       strategy.strategies = this.mixins.controls.map((m) => m.value.strategy_id);
-      strategy.weights = this.mixins.controls.map((m) => m.value.weight);
+      strategy.buy_weights = this.mixins.controls.map((m) => m.value.buy_weight);
+      strategy.sell_weights = this.mixins.controls.map((m) => m.value.sell_weight);
 
       this.strategyService.updateStrategy(strategy).subscribe({
         next: () => location.reload(),
@@ -211,10 +213,11 @@ export class StrategyComponent implements OnInit {
     });
   }
 
-  addMixin(strategy_id: number, weight: number) {
+  addMixin(strategy_id: number, buy_weight: number, sell_weight: number) {
     const group = this.formBuilder.group({
       strategy_id: [strategy_id, Validators.required],
-      weight: [weight, Validators.required],
+      buy_weight: [buy_weight, Validators.required],
+      sell_weight: [sell_weight, Validators.required],
     });
 
     this.mixins.push(group);

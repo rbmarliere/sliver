@@ -180,8 +180,12 @@
                   </mat-select>
                 </mat-form-field>
                 <mat-form-field>
-                  <mat-label>Weight</mat-label>
-                  <input matInput type="number" formControlName="weight" />
+                  <mat-label>Buy Weight</mat-label>
+                  <input matInput type="number" formControlName="buy_weight" />
+                </mat-form-field>
+                <mat-form-field>
+                  <mat-label>Sell Weight</mat-label>
+                  <input matInput type="number" formControlName="sell_weight" />
                 </mat-form-field>
                 <button mat-icon-button type="button" color="primary" (click)="removeMixin(i)" title="Remove Strategy">
                   <mat-icon fontIcon="delete"></mat-icon>
@@ -189,7 +193,7 @@
               </form>
             </ng-container>
           </ng-container>
-          <button mat-icon-button type="button" color="primary" (click)="addMixin(0, 0)" title="Add Strategy">
+          <button mat-icon-button type="button" color="primary" (click)="addMixin(0, 0, 0)" title="Add Strategy">
             <mat-icon fontIcon="add"></mat-icon>
           </button>
         </div>
