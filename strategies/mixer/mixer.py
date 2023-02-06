@@ -71,8 +71,8 @@ class MixerStrategy(BaseStrategy):
             return
 
         with core.db.connection.atomic():
-            indicators.strategy = self.strategy.id
-            indicators.price = indicators.id
+            indicators["strategy"] = self.strategy.id
+            indicators["price"] = indicators.id
 
             core.db.Indicator.insert_many(
                 indicators[["strategy", "price", "signal"]]
