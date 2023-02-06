@@ -37,6 +37,7 @@ price_fields = {
     # "volume": fields.List(fields.Float),
     "buys": fields.List(fields.Float),
     "sells": fields.List(fields.Float),
+    "signal": fields.List(fields.Float),
 }
 
 hypnox_indicators = {
