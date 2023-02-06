@@ -43,7 +43,8 @@ export interface Strategy extends BaseStrategy {
   buy_threshold?: number;
   sell_threshold?: number;
   strategies?: number[];
-  weights?: number[];
+  buy_weights?: number[];
+  sell_weights?: number[];
   mixins?: FormArray;
 
   // bb
