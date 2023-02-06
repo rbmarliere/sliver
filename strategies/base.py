@@ -66,9 +66,11 @@ class BaseStrategy(core.db.BaseModel):
 
         df["buys"] = numpy.where(
             df.signal == BUY, df.close * D("0.995"), numpy.nan)
+        df.buys.replace({float("nan"): None}, inplace=True)
 
         df["sells"] = numpy.where(
             df.signal == SELL, df.close * D("1.005"), numpy.nan)
+        df.sells.replace({float("nan"): None}, inplace=True)
 
         df.time = df.time.dt.strftime("%Y-%m-%d %H:%M")
 
