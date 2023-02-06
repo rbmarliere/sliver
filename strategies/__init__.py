@@ -39,7 +39,8 @@ def load(strategy, user=None):
     elif strategy.type == Types.MIXER.value:
         stt = MixerStrategy.get_or_create(strategy=strategy)[0]
         stt.strategies = [m.strategy_id for m in strategy.mixins]
-        stt.weights = [m.weight for m in strategy.mixins]
+        stt.buy_weights = [m.buy_weight for m in strategy.mixins]
+        stt.sell_weights = [m.sell_weight for m in strategy.mixins]
 
     elif strategy.type == Types.BB.value:
         stt = BBStrategy.get_or_create(strategy=strategy)[0]
