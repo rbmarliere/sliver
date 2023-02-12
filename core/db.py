@@ -694,19 +694,13 @@ class Position(BaseModel):
         i("entry cost is {t}".format(t=market.quote.print(self.entry_cost)))
         i("exit cost is {t}".format(t=market.quote.print(self.exit_cost)))
 
+        core.exchange.sync_limit_orders(self)
+
         self.check_stops(last_p)
 
         # check if position has to be closed
         if self.entry_cost > 0 and self.is_open() and signal == SELL:
             self.close()
-
-        # handle special case of hanging position
-        if self.entry_cost == 0 \
-                and (self.status == "closing" or signal == SELL):
-            i("entry_cost is 0, position is now closed")
-            self.status = "closed"
-
-        core.exchange.sync_limit_orders(self)
 
         if self.is_pending():
             self.refresh_bucket(last_p)
@@ -842,6 +836,14 @@ class Position(BaseModel):
             self.status = "open"
             i("position is now open")
             n(user, self.get_notice(suffix="is now open"))
+
+        # handle special case of hanging position
+        signal = self.user_strategy.strategy.get_signal()
+        SELL = core.strategies.Signal.SELL
+        if self.entry_cost == 0 \
+                and (self.status == "closing" or signal == SELL):
+            i("entry_cost is 0, position is now closed")
+            self.status = "closed"
 
 
 class Order(BaseModel):
