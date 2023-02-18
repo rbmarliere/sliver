@@ -227,6 +227,21 @@ class Market(BaseModel):
         return self.base.asset.ticker + "/" + self.quote.asset.ticker
 
 
+class TradeEngine(BaseModel):
+    description = peewee.TextField()
+    deleted = peewee.BooleanField(default=False)
+    refresh_interval = peewee.IntegerField(default=1)  # 1 minute
+    num_orders = peewee.IntegerField(default=1)
+    bucket_interval = peewee.IntegerField(default=60)  # 1 hour
+    min_buckets = peewee.IntegerField(default=1)
+    spread = peewee.DecimalField(default=1)  # 1%
+    stop_gain = peewee.DecimalField(default=5)  # 5%
+    trailing_gain = peewee.BooleanField(default=False)
+    stop_loss = peewee.DecimalField(default=5)  # -5%
+    trailing_loss = peewee.BooleanField(default=False)
+    lm_ratio = peewee.DecimalField(default=0)
+
+
 class Strategy(BaseModel):
     creator = peewee.ForeignKeyField(User)
     description = peewee.TextField()
@@ -236,16 +251,9 @@ class Strategy(BaseModel):
     market = peewee.ForeignKeyField(Market)
     timeframe = peewee.TextField(default="1d")
     next_refresh = peewee.DateTimeField(default=datetime.datetime.utcnow())
-    orders_interval = peewee.IntegerField(default=1)  # 1 minute
-    num_orders = peewee.IntegerField(default=1)
-    bucket_interval = peewee.IntegerField(default=60)  # 1 hour
-    min_buckets = peewee.IntegerField(default=1)
-    spread = peewee.DecimalField(default=1)  # 1%
-    stop_gain = peewee.DecimalField(default=5)  # 5%
-    trailing_gain = peewee.BooleanField(default=False)
-    stop_loss = peewee.DecimalField(default=3)  # -3%
-    trailing_loss = peewee.BooleanField(default=False)
-    lm_ratio = peewee.DecimalField(default=0)
+    buy_engine = peewee.ForeignKeyField(TradeEngine)
+    sell_engine = peewee.ForeignKeyField(TradeEngine)
+    stop_engine = peewee.ForeignKeyField(TradeEngine)
 
     def get_signal(self):
         return core.strategies.load(self).get_signal()
@@ -380,7 +388,7 @@ class UserStrategy(BaseModel):
 
 class Position(BaseModel):
     user_strategy = peewee.ForeignKeyField(UserStrategy)
-    # based on user_strategy.strategy.orders_interval
+    # based on user_strategy.strategy.buy|sell_engine.refresh_interval
     next_refresh = peewee.DateTimeField(default=datetime.datetime.utcnow())
     # time limit on each buy/sell step for DCA
     next_bucket = peewee.DateTimeField(default=datetime.datetime.utcnow())
@@ -409,6 +417,8 @@ class Position(BaseModel):
     # peak prices for trailing stop calc.
     last_high = peewee.BigIntegerField(default=0)
     last_low = peewee.BigIntegerField(default=0)
+    # boolean that indicates if the position was stopped
+    stopped = peewee.BooleanField(default=False)
 
     def get_notice(self, prefix="", suffix=""):
         try:
@@ -539,15 +549,18 @@ class Position(BaseModel):
 
     def open(u_st: UserStrategy, t_cost: int):
         strategy = u_st.strategy
+        engine = strategy.buy_engine
         market = strategy.market
         user = u_st.user
+        next_bucket = core.utils.get_next_refresh(engine.bucket_interval)
 
-        next_bucket = core.utils.get_next_refresh(strategy.bucket_interval)
-
-        bucket_max = \
-            market.quote.div(t_cost,
-                             market.quote.transform(strategy.min_buckets),
-                             prec=strategy.market.price_precision)
+        if engine.min_buckets > 0:
+            bucket_max = \
+                market.quote.div(t_cost,
+                                 market.quote.transform(engine.min_buckets),
+                                 prec=strategy.market.price_precision)
+        else:
+            bucket_max = t_cost
 
         position = Position(user_strategy=u_st,
                             next_bucket=next_bucket,
@@ -561,15 +574,22 @@ class Position(BaseModel):
 
         return position
 
-    def close(self):
+    def close(self, engine=None):
         strategy = self.user_strategy.strategy
         market = strategy.market
         user = self.user_strategy.user
 
-        self.bucket_max = \
-            market.base.div(self.entry_amount,
-                            market.base.transform(strategy.min_buckets),
-                            prec=strategy.market.amount_precision)
+        if engine is None:
+            engine = strategy.sell_engine
+
+        if engine.min_buckets > 0:
+            self.bucket_max = \
+                market.base.div(self.entry_amount,
+                                market.base.transform(engine.min_buckets),
+                                prec=strategy.market.amount_precision)
+        else:
+            self.bucket_max = self.entry_amount
+
         self.bucket = 0
         self.status = "closing"
 
@@ -580,24 +600,50 @@ class Position(BaseModel):
 
     def postpone(self, interval_in_minutes=None):
         if interval_in_minutes is None:
-            interval_in_minutes = \
-                self.user_strategy.strategy.orders_interval
+            if self.status == "opening":
+                n = self.user_strategy.strategy.buy_engine.refresh_interval
+            elif self.status == "closing":
+                n = self.user_strategy.strategy.sell_engine.refresh_interval
+            else:
+                n = 99999
+            interval_in_minutes = n
         self.next_refresh = core.utils.get_next_refresh(interval_in_minutes)
         i("next refresh at {n}".format(n=self.next_refresh))
         self.save()
 
-    def check_stops(self, last_price=None):
-        if not self.is_open():
-            return False
-
+    def stop(self, last_price=None):
         strategy = self.user_strategy.strategy
+        engine = strategy.stop_engine
         market = strategy.market
         user = self.user_strategy.user
 
-        if strategy.stop_loss <= 0 or strategy.stop_gain <= 0:
+        i("last price is {p}, high was {h} and low was {l}"
+            .format(p=market.quote.print(last_price),
+                    h=market.quote.print(self.last_high),
+                    l=market.quote.print(self.last_low)))
+        i("stop gain is {g}, trailing is {gt}"
+            .format(g=strategy.stop_gain,
+                    gt=strategy.trailing_gain))
+        i("stop loss is {l}, trailing is {lt}"
+            .format(l=strategy.stop_loss,
+                    lt=strategy.trailing_loss))
+        n(user, self.get_notice(prefix="stopped "))
+        self.stopped = True
+        self.close(engine=engine)
+        self.save()
+
+    def check_stops(self, last_price=None):
+        strategy = self.user_strategy.strategy
+        engine = strategy.stop_engine
+        market = strategy.market
+
+        if not self.is_open():
             return False
 
         if self.entry_price == 0:
+            return False
+
+        if engine.stop_gain <= 0 and engine.stop_loss <= 0:
             return False
 
         if last_price is None:
@@ -612,39 +658,39 @@ class Position(BaseModel):
             self.last_low = last_price
             self.save()
 
-        curr_gain = 0
-        curr_loss = 0
+        if engine.stop_gain > 0:
 
-        if strategy.trailing_gain:
-            # multiply by -1 because when taken from the high, it is negative
-            # if price is lower than entry, there are no gains to stop
-            if last_price > self.entry_price:
-                curr_gain = core.utils.get_roi(self.last_high, last_price) * -1
-        else:
-            curr_gain = core.utils.get_roi(self.entry_price, last_price)
+            curr_gain = 0
 
-        if strategy.trailing_loss:
-            # if price is higher than entry, there are no losses to stop
-            if last_price < self.entry_price:
-                curr_loss = core.utils.get_roi(self.last_low, last_price)
-        else:
-            # multiply by -1 because strategy.stop_loss is stored as positive
-            curr_loss = core.utils.get_roi(self.entry_price, last_price) * -1
+            if engine.trailing_gain:
+                # multiply by -1 because when taken from the high, its negative
+                # if price is lower than entry, there are no gains to stop
+                if last_price > self.entry_price:
+                    curr_gain = \
+                        core.utils.get_roi(self.last_high, last_price) * -1
+            else:
+                curr_gain = core.utils.get_roi(self.entry_price, last_price)
 
-        if curr_gain > strategy.stop_gain or curr_loss > strategy.stop_loss:
-            i("last price is {p}, high was {h} and low was {l}"
-              .format(p=market.quote.print(last_price),
-                      h=market.quote.print(self.last_high),
-                      l=market.quote.print(self.last_low)))
-            i("stop gain is {g}, trailing is {gt}"
-              .format(g=strategy.stop_gain,
-                      gt=strategy.trailing_gain))
-            i("stop loss is {l}, trailing is {lt}"
-              .format(l=strategy.stop_loss,
-                      lt=strategy.trailing_loss))
-            n(user, self.get_notice(prefix="stopped "))
-            self.close()
-            return True
+            if curr_gain > engine.stop_gain:
+                self.stop(last_price=last_price)
+                return True
+
+        if engine.stop_loss > 0:
+
+            curr_loss = 0
+
+            if engine.trailing_loss:
+                # if price is higher than entry, there are no losses to stop
+                if last_price < self.entry_price:
+                    curr_loss = core.utils.get_roi(self.last_low, last_price)
+            else:
+                # multiply by -1 because strategy.stop_loss is stored positive
+                curr_loss = \
+                    core.utils.get_roi(self.entry_price, last_price) * -1
+
+            if curr_loss > engine.stop_loss:
+                self.stop(last_price=last_price)
+                return True
 
         return False
 
@@ -716,16 +762,23 @@ class Position(BaseModel):
         market = strategy.market
         now = datetime.datetime.utcnow()
 
+        if self.stopped:
+            engine = strategy.stop_engine
+        elif self.is_open():
+            engine = strategy.buy_engine
+        else:
+            engine = strategy.sell_engine
+
         i("next bucket at {t}".format(t=self.next_bucket))
 
         # check if current bucket needs to be reset
         if now > self.next_bucket:
-            next_bucket = core.utils.get_next_refresh(strategy.bucket_interval)
+            next_bucket = core.utils.get_next_refresh(engine.bucket_interval)
             self.next_bucket = next_bucket
             i("moving on to next bucket at {b}".format(b=self.next_bucket))
             self.bucket = 0
 
-        i("limit to market ratio is {r}".format(r=strategy.lm_ratio))
+        i("limit to market ratio is {r}".format(r=engine.lm_ratio))
 
         if self.status == "opening":
             remaining_cost = self.get_remaining_cost()
@@ -734,7 +787,7 @@ class Position(BaseModel):
                                 last_p,
                                 prec=market.amount_precision)
 
-            m_total_cost = int(strategy.lm_ratio * remaining_cost)
+            m_total_cost = int(engine.lm_ratio * remaining_cost)
             m_total_amount = \
                 market.base.div(m_total_cost,
                                 last_p,
@@ -744,7 +797,7 @@ class Position(BaseModel):
             remaining_amount = self.get_remaining_amount(last_p)
             remaining_cost = market.base.format(remaining_amount) * last_p
 
-            m_total_amount = int(strategy.lm_ratio * remaining_amount)
+            m_total_amount = int(engine.lm_ratio * remaining_amount)
 
         # check if current bucket is filled
         if now < self.next_bucket and remaining_cost < market.cost_min:
@@ -764,14 +817,15 @@ class Position(BaseModel):
                                   m_total_amount,
                                   last_p)
 
-            l_total = self.get_remaining_cost()
-            if l_total > 0:
-                inserted_orders = core.exchange \
-                    .create_limit_buy_orders(l_total,
-                                             self,
-                                             last_p,
-                                             strategy.num_orders,
-                                             strategy.spread)
+            if engine.lm_ratio < 1:
+                l_total = self.get_remaining_cost()
+                if l_total > 0:
+                    inserted_orders = core.exchange \
+                        .create_limit_buy_orders(l_total,
+                                                 self,
+                                                 last_p,
+                                                 engine.num_orders,
+                                                 engine.spread)
 
         elif self.status == "closing":
             side = "sell"
@@ -784,14 +838,15 @@ class Position(BaseModel):
                                   m_total_amount,
                                   last_p)
 
-            l_total = self.get_remaining_amount(last_p)
-            if l_total > 0:
-                inserted_orders = core.exchange \
-                    .create_limit_sell_orders(l_total,
-                                              self,
-                                              last_p,
-                                              strategy.num_orders,
-                                              strategy.spread)
+            if engine.lm_ratio < 1:
+                l_total = self.get_remaining_amount(last_p)
+                if l_total > 0:
+                    inserted_orders = core.exchange \
+                        .create_limit_sell_orders(l_total,
+                                                  self,
+                                                  last_p,
+                                                  engine.num_orders,
+                                                  engine.spread)
 
         # if bucket is not full but can't insert new orders, fill at market
         if not inserted_orders:
