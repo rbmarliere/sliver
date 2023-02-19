@@ -13,17 +13,10 @@ export interface BaseStrategy {
   market_id: number | null;
   timeframe: string;
   // next_refresh: string;
-  orders_interval: number;
-  num_orders: number;
-  min_buckets: number;
-  bucket_interval: number;
-  spread: number;
-  stop_gain: number;
-  trailing_gain: boolean;
-  stop_loss: number;
-  trailing_loss: boolean;
-  lm_ratio: number;
   subscribed: boolean;
+  buy_engine_id: number | null;
+  sell_engine_id: number | null;
+  stop_engine_id: number | null;
 }
 
 export interface Strategy extends BaseStrategy {

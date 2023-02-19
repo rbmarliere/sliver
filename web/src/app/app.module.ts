@@ -36,6 +36,8 @@ import { PositionComponent } from './position/position.component';
 import { StrategiesComponent } from './strategies/strategies.component';
 import { StrategyComponent } from './strategy/strategy.component';
 import { StrategyPerformanceComponent } from './strategy-performance/strategy-performance.component';
+import { EngineComponent } from './engine/engine.component';
+import { EnginesComponent } from './engines/engines.component';
 
 @NgModule({
   declarations: [
@@ -51,6 +53,8 @@ import { StrategyPerformanceComponent } from './strategy-performance/strategy-pe
     StrategyComponent,
     IndicatorComponent,
     StrategyPerformanceComponent,
+    EngineComponent,
+    EnginesComponent,
   ],
   imports: [
     AppRoutingModule,
