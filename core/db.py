@@ -267,6 +267,9 @@ class Strategy(BaseModel):
         i("timeframe is {T}".format(T=self.timeframe))
         i("exchange is {e}".format(e=self.market.base.exchange.name))
         i("type is {m}".format(m=core.strategies.Types(self.type).name))
+        i("buy engine is {e}".format(e=self.buy_engine_id))
+        i("sell engine is {e}".format(e=self.sell_engine_id))
+        i("stop engine is {e}".format(e=self.stop_engine_id))
 
         core.exchange.download_prices(self)
 
