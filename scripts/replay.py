@@ -36,7 +36,7 @@ if __name__ == "__main__":
                       action="store_true")
     args = argp.parse_args()
 
-    model = models.load(args.model_name)
+    model = models.load_model(args.model_name)
 
     if args.input_file:
         filepath = pathlib.Path().cwd() / args.input_file
