@@ -59,20 +59,3 @@ class StrategiesByMarket(Resource):
                 strat_list.append(strategies.load(strategy, user=user))
 
         return strat_list
-
-
-class StrategiesByTimeframe(Resource):
-    @marshal_with(base_fields)
-    @jwt_required()
-    def get(self, timeframe):
-        uid = int(get_jwt_identity())
-        user = core.db.User.get_by_id(uid)
-
-        strat_list = []
-        for strategy in [s for s in core.db.get_strategies()]:
-            if strategy.timeframe == timeframe \
-                    and strategy.type != strategies.Types.MIXER.value \
-                    and strategy.type != strategies.Types.MANUAL.value:
-                strat_list.append(strategies.load(strategy, user=user))
-
-        return strat_list
