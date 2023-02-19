@@ -71,15 +71,15 @@ cache_file = core.config["LOGS_DIR"] + "/cache.tsv"
 class Stream(tweepy.Stream):
 
     def on_connection_error(self):
-        core.watchdog.warning("stream connection error")
+        core.watchdog.warning("connection error")
         super().on_connection_error()
 
     def on_disconnect(self):
-        core.watchdog.warning("stream disconnected")
+        core.watchdog.warning("disconnected")
         super().on_disconnect()
 
     def on_exception(self, exception):
-        core.watchdog.error("stream exception", exception)
+        core.watchdog.error("got exception", exception)
         super().on_exception(exception)
 
     def on_status(self, status):
