@@ -69,3 +69,8 @@ class MarketAlreadySubscribed(HTTPException):
 class EngineDoesNotExist(HTTPException):
     code = 404
     description = "Engine does not exist."
+
+
+class EngineInUse(HTTPException):
+    code = 400
+    description = "Engine is in use."

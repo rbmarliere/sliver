@@ -104,6 +104,10 @@ class Engine(Resource):
         except core.db.TradeEngine.DoesNotExist:
             raise api.errors.EngineDoesNotExist
 
+        if engine.strategy_set.where(core.db.Strategy.deleted == False) \
+                .count() > 0:
+            raise api.errors.EngineInUse
+
         engine.deleted = True
         engine.save()
 
