@@ -93,6 +93,9 @@ class BaseStrategy(core.db.BaseModel):
     def load_fields(self, user):
         self.id = self.strategy_id
         self.market_id = self.strategy.market_id
+        self.buy_engine_id = self.strategy.buy_engine_id
+        self.sell_engine_id = self.strategy.sell_engine_id
+        self.stop_engine_id = self.strategy.stop_engine_id
         self.subscribed = user.is_subscribed(self.id)
         self.signal = self.get_signal().value
         self.symbol = self.strategy.market.get_symbol()

@@ -137,6 +137,9 @@ def get_base_parser(type=None):
     base_parser.add_argument("market_id", type=int, required=True)
     base_parser.add_argument("timeframe", type=str, required=True)
     # ("next_refresh", type=inputs.datetime_from_iso8601, required=True)
+    base_parser.add_argument("buy_engine_id", type=int, required=True)
+    base_parser.add_argument("sell_engine_id", type=int, required=True)
+    base_parser.add_argument("stop_engine_id", type=int, required=True)
 
     if type == strategies.Types.MANUAL.value:
         base_parser.add_argument("signal", type=float)
