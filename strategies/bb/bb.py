@@ -48,7 +48,12 @@ class BBStrategy(BaseStrategy):
 
         indicators.tp = \
             (indicators.high + indicators.low + indicators.close) / 3
-        indicators.ma = indicators.tp.rolling(self.ma_period).mean()
+
+        if self.use_ema:
+            indicators.ma = indicators.tp.ewm(span=self.ma_period).mean()
+        else:
+            indicators.ma = indicators.tp.rolling(self.ma_period).mean()
+
         std = indicators.tp.rolling(self.ma_period).std(ddof=0)
         indicators.bolu = indicators.ma + self.num_std * std
         indicators.bold = indicators.ma - self.num_std * std
