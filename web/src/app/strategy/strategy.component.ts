@@ -75,18 +75,7 @@ export class StrategyComponent implements OnInit {
     return this.form.controls["mixins"] as FormArray;
   }
 
-  private _mixins: Strategy[] = [];
-  set available_mixins(strategies: Strategy[]) {
-    if (this._mixins.length == 0) {
-      this._mixins = strategies;
-    } else {
-      // intersect this._mixins with strategies
-      this._mixins = this._mixins.filter((m) => strategies.some((s) => s.id == m.id));
-    }
-  }
-  get available_mixins(): Strategy[] {
-    return this._mixins;
-  }
+  available_mixins: Strategy[] = [];
 
   strategyTypes: StrategyType[] = getStrategyTypes();
 
@@ -125,9 +114,6 @@ export class StrategyComponent implements OnInit {
       if (strategy.type === 0) {
         this.form.get('signal')?.enable();
       } else if (strategy.type === 4) {
-        this.strategiesService.getStrategiesByTimeframe(strategy.timeframe).subscribe({
-          next: (strategies) => this.available_mixins = strategies
-        });
         if (strategy.market_id) {
           this.strategiesService.getStrategiesByMarketId(strategy.market_id).subscribe({
             next: (strategies) => this.available_mixins = strategies
