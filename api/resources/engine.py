@@ -56,6 +56,18 @@ class Engines(Resource):
 class Engine(Resource):
     @marshal_with(fields)
     @jwt_required()
+    def get(self, engine_id):
+        try:
+            engine = core.db.TradeEngine.get_by_id(engine_id)
+            if engine.deleted:
+                raise api.errors.EngineDoesNotExist
+        except core.db.TradeEngine.DoesNotExist:
+            raise api.errors.EngineDoesNotExist
+
+        return engine
+
+    @marshal_with(fields)
+    @jwt_required()
     def put(self, engine_id):
         try:
             engine = core.db.TradeEngine.get_by_id(engine_id)
