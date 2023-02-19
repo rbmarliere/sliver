@@ -70,6 +70,18 @@ cache_file = core.config["LOGS_DIR"] + "/cache.tsv"
 
 class Stream(tweepy.Stream):
 
+    def on_connection_error(self):
+        core.watchdog.warning("stream connection error")
+        super().on_connection_error()
+
+    def on_disconnect(self):
+        core.watchdog.warning("stream disconnected")
+        super().on_disconnect()
+
+    def on_exception(self, exception):
+        core.watchdog.error("stream exception", exception)
+        super().on_exception(exception)
+
     def on_status(self, status):
         # ignore retweets
         if "retweeted_status" in status._json:
