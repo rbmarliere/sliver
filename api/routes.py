@@ -7,6 +7,8 @@ from .auth import Auth
 def init(api: flask_restful.Api):
     api.add_resource(Auth, "/login")
     api.add_resource(resources.Credential, "/credentials")
+    api.add_resource(resources.Engine, "/engine/<engine_id>")
+    api.add_resource(resources.Engines, "/engines")
     api.add_resource(resources.Exchange, "/exchanges")
     api.add_resource(resources.Indicator, "/indicators/<strategy_id>")
     api.add_resource(resources.Inventory, "/inventory")

@@ -16,17 +16,10 @@ base_fields = {
     "market_id": fields.Integer,
     "timeframe": fields.String,
     # "next_refresh": fields.DateTime(dt_format="iso8601"),
-    "orders_interval": fields.Integer,
-    "num_orders": fields.Integer,
-    "min_buckets": fields.Integer,
-    "bucket_interval": fields.Integer,
-    "spread": fields.Float,
-    "stop_gain": fields.Float,
-    "trailing_gain": fields.Boolean,
-    "stop_loss": fields.Float,
-    "trailing_loss": fields.Boolean,
-    "lm_ratio": fields.Float,
     "subscribed": fields.Boolean,
+    "buy_engine_id": fields.Integer,
+    "sell_engine_id": fields.Integer,
+    "stop_engine_id": fields.Integer,
 }
 price_fields = {
     "time": fields.List(fields.String),
@@ -144,16 +137,6 @@ def get_base_parser(type=None):
     base_parser.add_argument("market_id", type=int, required=True)
     base_parser.add_argument("timeframe", type=str, required=True)
     # ("next_refresh", type=inputs.datetime_from_iso8601, required=True)
-    base_parser.add_argument("orders_interval", type=int, required=True)
-    base_parser.add_argument("num_orders", type=int, required=True)
-    base_parser.add_argument("min_buckets", type=int, required=True)
-    base_parser.add_argument("bucket_interval", type=int, required=True)
-    base_parser.add_argument("spread", type=float, required=True)
-    base_parser.add_argument("stop_gain", type=float, required=True)
-    base_parser.add_argument("trailing_gain", type=bool, required=True)
-    base_parser.add_argument("stop_loss", type=float, required=True)
-    base_parser.add_argument("trailing_loss", type=bool, required=True)
-    base_parser.add_argument("lm_ratio", type=float, required=True)
 
     if type == strategies.Types.MANUAL.value:
         base_parser.add_argument("signal", type=float)
