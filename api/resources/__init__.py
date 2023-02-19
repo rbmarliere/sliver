@@ -20,7 +20,6 @@ Position = position.Position
 PositionsByStrategy = position.PositionsByStrategy
 Indicator = indicator.Indicator
 Strategies = strategies.Strategies
-StrategiesByTimeframe = strategies.StrategiesByTimeframe
 StrategiesByMarket = strategies.StrategiesByMarket
 Strategy = strategy.Strategy
 User = user.User
