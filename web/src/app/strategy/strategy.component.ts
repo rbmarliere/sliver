@@ -1,6 +1,8 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Engine } from '../engine';
+import { EnginesService } from '../engines.service';
 import { Exchange } from '../exchange';
 import { ExchangeService } from '../exchange.service';
 import { Market } from '../market';
@@ -28,17 +30,10 @@ export class StrategyComponent implements OnInit {
     market_id: null,
     timeframe: '',
     // next_refresh: new Date().toISOString().slice(0, 16),
-    orders_interval: 1,
-    num_orders: 1,
-    min_buckets: 1,
-    bucket_interval: 1,
-    spread: 0.01,
-    stop_gain: 0,
-    trailing_gain: false,
-    stop_loss: 0,
-    trailing_loss: false,
-    lm_ratio: 0,
     subscribed: false,
+    buy_engine_id: null,
+    sell_engine_id: null,
+    stop_engine_id: null,
 
     // hypnox
     i_threshold: 0,
@@ -71,6 +66,8 @@ export class StrategyComponent implements OnInit {
   form = this.createForm(this.empty_strat);
 
   timeframes: String[] = [];
+
+  engines: Engine[] = [];
 
   markets: Market[] = [];
 
@@ -151,6 +148,7 @@ export class StrategyComponent implements OnInit {
   constructor(
     private strategyService: StrategyService,
     private strategiesService: StrategiesService,
+    private enginesService: EnginesService,
     private exchangeService: ExchangeService,
     private formBuilder: FormBuilder,
     private route: ActivatedRoute,
@@ -158,6 +156,7 @@ export class StrategyComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
+    this.getEngines();
     this.getExchanges();
 
     const strategy_id = Number(this.route.snapshot.paramMap.get('strategy_id'));
@@ -175,9 +174,15 @@ export class StrategyComponent implements OnInit {
     }
   }
 
+  getEngines(): void {
+    this.enginesService.getEngines().subscribe({
+      next: (res) => this.engines = res,
+    });
+  }
+
   getExchanges(): void {
     this.exchangeService.getExchanges().subscribe({
-      next: (res) => (this.exchanges = res),
+      next: (res) => this.exchanges = res,
     });
   }
 
