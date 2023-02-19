@@ -41,7 +41,7 @@ entry_points = {
 }
 
 setuptools.setup(name="sliver",
-                 version="1.0",
+                 version="0.5",
                  packages=["api", "models", "strategies", "core"],
                  entry_points=entry_points,
                  install_requires=api_deps + core_deps + hypnox_deps)
