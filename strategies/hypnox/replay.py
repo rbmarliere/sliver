@@ -36,8 +36,8 @@ def predict(model, tweets, verbose=0):
 
 
 def replay(model, update_only=True, verbose=0):
-    query = strategies.hypnox.HypnoxTweet.get_tweets_by_model(
-        model.config["name"])
+    query = strategies.hypnox \
+        .HypnoxTweet.get_tweets_by_model(model.config["name"])
 
     if update_only:
         query = query.where(strategies.hypnox.HypnoxScore.model.is_null())
@@ -52,22 +52,29 @@ def replay(model, update_only=True, verbose=0):
                                m=model.config["name"]))
 
     with core.db.connection.atomic():
-        page = 0
-        while True:
-            page_q = query.paginate(page, 1024)
-            page += 1
-            if page_q.count() == 0:
-                break
+        # page = 0
+        # while True:
+        # page_q = query.paginate(page, 1024)
+        # page += 1
+        # if page_q.count() == 0:
+        #     break
 
-            tweets = pandas.DataFrame(page_q.dicts())
-            tweets.text = tweets.text.apply(core.utils.standardize)
-            tweets.text = tweets.text.str.slice(0, model.config["max_length"])
-            tweets = tweets.rename(columns={"id": "tweet_id"})
-            tweets["model"] = model.config["name"]
-            tweets["score"] = predict(model,
-                                      tweets["text"].to_list(),
-                                      verbose=verbose)
+        tweets = pandas.DataFrame(query.dicts())
+        tweets.text = tweets.text.apply(core.utils.standardize)
+        tweets.text = tweets.text.str.slice(0, model.config["max_length"])
+        tweets = tweets.rename(columns={"id": "tweet_id"})
+        tweets["model"] = model.config["name"]
+        tweets["score"] = predict(model,
+                                  tweets["text"].to_list(),
+                                  verbose=verbose)
 
-            scores = tweets[["tweet_id", "model", "score"]]
-            strategies.hypnox.HypnoxScore.insert_many(
-                scores.to_dict("records")).execute()
+        scores = tweets[["tweet_id", "model", "score"]]
+
+        try:
+            strategies.hypnox \
+                .HypnoxScore.insert_many(scores.to_dict("records")).execute()
+
+        except Exception:
+            # drop to a python interpreter shell
+            import code
+            code.interact(local=locals())
