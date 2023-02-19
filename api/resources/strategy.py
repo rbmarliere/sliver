@@ -93,10 +93,6 @@ class Strategy(Resource):
 
         with core.db.connection.atomic():
             args["id"] = int(strategy_id)
-            if args["stop_loss"]:
-                args["stop_loss"] = abs(args.stop_loss)
-            if args["stop_gain"]:
-                args["stop_gain"] = abs(args.stop_gain)
             args["market"] = old_strategy.market.id
             args["timeframe"] = old_strategy.timeframe
             args["type"] = old_strategy.type
