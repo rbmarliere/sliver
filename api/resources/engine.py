@@ -50,6 +50,8 @@ class Engines(Resource):
     def post(self):
         args = argp.parse_args()
 
+        if not args["description"]:
+            raise api.errors.InvalidArgument("Missing description")
         if args["stop_loss"]:
             args["stop_loss"] = abs(args.stop_loss)
         if args["stop_gain"]:
@@ -83,6 +85,8 @@ class Engine(Resource):
 
         args = argp.parse_args()
 
+        if not args["description"]:
+            raise api.errors.InvalidArgument("Missing description")
         if args["stop_loss"]:
             args["stop_loss"] = abs(args.stop_loss)
         if args["stop_gain"]:
