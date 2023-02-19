@@ -19,10 +19,6 @@ export class StrategiesService {
     return this.http.post<BaseStrategy>(this.url, strategy);
   }
 
-  getStrategiesByTimeframe(timeframe: string): Observable<Strategy[]> {
-    return this.http.get<BaseStrategy[]>(`${this.url}/timeframe/${timeframe}`);
-  }
-
   getStrategiesByMarketId(market_id: number): Observable<Strategy[]> {
     return this.http.get<BaseStrategy[]>(`${this.url}/market/${market_id}`);
   }
