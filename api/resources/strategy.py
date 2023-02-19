@@ -126,9 +126,6 @@ class Strategy(Resource):
 
                         if mixed_st.deleted:
                             raise api.errors.StrategyDoesNotExist
-                        if mixed_st.timeframe != strategy.timeframe:
-                            raise api.errors.InvalidArgument(
-                                "Mixed strategies must have same timeframe")
                         if mixed_st.market != strategy.market:
                             raise api.errors.InvalidArgument(
                                 "Mixed strategies must have same market")
