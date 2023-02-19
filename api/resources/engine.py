@@ -50,6 +50,11 @@ class Engines(Resource):
     def post(self):
         args = argp.parse_args()
 
+        if args["stop_loss"]:
+            args["stop_loss"] = abs(args.stop_loss)
+        if args["stop_gain"]:
+            args["stop_gain"] = abs(args.stop_gain)
+
         return core.db.TradeEngine.create(**args)
 
 
@@ -76,7 +81,14 @@ class Engine(Resource):
         except core.db.TradeEngine.DoesNotExist:
             raise api.errors.EngineDoesNotExist
 
-        for k, v in argp.parse_args().items():
+        args = argp.parse_args()
+
+        if args["stop_loss"]:
+            args["stop_loss"] = abs(args.stop_loss)
+        if args["stop_gain"]:
+            args["stop_gain"] = abs(args.stop_gain)
+
+        for k, v in args.items():
             setattr(engine, k, v)
 
         engine.save()

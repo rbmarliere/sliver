@@ -34,10 +34,6 @@ class Strategies(Resource):
                 args["id"] = None
                 args["active"] = True
                 args["creator"] = user
-                if args["stop_loss"]:
-                    args["stop_loss"] = abs(args.stop_loss)
-                if args["stop_gain"]:
-                    args["stop_gain"] = abs(args.stop_gain)
                 strategy = core.db.Strategy.create(**args)
                 strategy.save()
 
