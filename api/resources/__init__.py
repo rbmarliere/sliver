@@ -1,8 +1,18 @@
-from . import (credential, exchange, inventory, order, indicator,
-               position, strategies, strategy, user)
+from . import (credential,
+               engine,
+               exchange,
+               inventory,
+               order,
+               indicator,
+               position,
+               strategies,
+               strategy,
+               user)
 
 
 Credential = credential.Credential
+Engine = engine.Engine
+Engines = engine.Engines
 Exchange = exchange.Exchange
 Inventory = inventory.Inventory
 Order = order.Order
