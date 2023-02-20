@@ -84,29 +84,43 @@
 
         <div class="fields" *ngIf="strategy.type === 2">
           <mat-form-field>
-            <mat-label>Intensity Threshold</mat-label>
-            <input matInput type="number" formControlName="i_threshold" />
+            <mat-label>Intensity High Threshold</mat-label>
+            <input matInput type="number" formControlName="i_h_threshold" />
           </mat-form-field>
 
           <mat-form-field>
-            <mat-label>Polarity Threshold</mat-label>
-            <input matInput type="number" formControlName="p_threshold" />
-          </mat-form-field>
-
-          <mat-form-field>
-            <mat-label>Tweet Filter</mat-label>
-            <input matInput type="text" formControlName="tweet_filter" />
-            <mat-hint>regex</mat-hint>
+            <mat-label>Intensity Low Threshold</mat-label>
+            <input matInput type="number" formControlName="i_l_threshold" />
           </mat-form-field>
 
           <mat-form-field>
             <mat-label>Intensity Model</mat-label>
             <input matInput type="text" formControlName="model_i" />
           </mat-form-field>
+        </div>
+
+        <div class="fields" *ngIf="strategy.type === 2">
+          <mat-form-field>
+            <mat-label>Polarity High Threshold</mat-label>
+            <input matInput type="number" formControlName="p_h_threshold" />
+          </mat-form-field>
+
+          <mat-form-field>
+            <mat-label>Polarity Low Threshold</mat-label>
+            <input matInput type="number" formControlName="p_l_threshold" />
+          </mat-form-field>
 
           <mat-form-field>
             <mat-label>Polarity Model</mat-label>
             <input matInput type="text" formControlName="model_p" />
+          </mat-form-field>
+        </div>
+
+        <div class="fields" *ngIf="strategy.type === 2">
+          <mat-form-field>
+            <mat-label>Tweet Filter</mat-label>
+            <input matInput type="text" formControlName="tweet_filter" />
+            <mat-hint>regex</mat-hint>
           </mat-form-field>
         </div>
 

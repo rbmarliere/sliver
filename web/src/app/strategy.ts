@@ -21,8 +21,10 @@ export interface BaseStrategy {
 
 export interface Strategy extends BaseStrategy {
   // hypnox
-  i_threshold?: number;
-  p_threshold?: number;
+  i_h_threshold?: number;
+  i_l_threshold?: number;
+  p_h_threshold?: number;
+  p_l_threshold?: number;
   tweet_filter?: string;
   model_i?: string;
   model_p?: string;
