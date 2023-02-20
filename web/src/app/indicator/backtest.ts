@@ -1,6 +1,6 @@
 import { Indicator } from '../indicator';
 import { Strategy } from '../strategy';
-import { mean, median, msToString } from './utils';
+import { mean, median, msToString, variance } from './utils';
 
 export function backtest(strategy: Strategy, indicators: Indicator, _start: string, _end: string): string {
   let start = new Date(_start);
@@ -94,13 +94,17 @@ function getHypnoxBacktestLog(data: any, start: Date, end: Date): string {
   let polarities = data.p_score.slice(indexes[0], indexes[indexes.length - 1]);
 
   let i_median = median(intensities);
+  let i_stdev = Math.sqrt(parseFloat(variance(intensities)));
   let i_mean = mean(intensities);
+  let p_stdev = Math.sqrt(parseFloat(variance(polarities)));
   let p_median = median(polarities);
   let p_mean = mean(polarities);
 
   return `
+intensity standard deviation = ${i_stdev}
 intensity median = ${i_median}
 intensity mean = ${i_mean}
+polarity standard deviation = ${p_stdev}
 polarity median = ${p_median}
 polarity mean = ${p_mean}
 `;
