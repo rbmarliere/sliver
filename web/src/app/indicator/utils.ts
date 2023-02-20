@@ -37,3 +37,19 @@ export function mean(values: number[]): string {
   const avg = sum / values.length || 0;
   return avg.toFixed(4);
 }
+
+export function variance(values: number[]): string {
+  if (values.length === 0) {
+    return "0";
+  }
+
+  const avg = parseFloat(mean(values));
+  const squareDiffs = values.map(function(value: number) {
+    var diff = value - avg;
+    var sqrDiff = diff * diff;
+    return sqrDiff;
+  });
+
+  const avgSquareDiff = parseFloat(mean(squareDiffs));
+  return avgSquareDiff.toFixed(4);
+}
