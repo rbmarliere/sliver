@@ -40,8 +40,10 @@ hypnox_indicators = {
 }
 hypnox_fields = {
     **base_fields,
-    "i_threshold": fields.Float,
-    "p_threshold": fields.Float,
+    "i_h_threshold": fields.Float,
+    "i_l_threshold": fields.Float,
+    "p_h_threshold": fields.Float,
+    "p_l_threshold": fields.Float,
     "tweet_filter": fields.String,
     "model_i": fields.String,
     "model_p": fields.String,
@@ -148,8 +150,10 @@ def get_base_parser(type=None):
         pass
 
     elif type == strategies.Types.HYPNOX.value:
-        base_parser.add_argument("i_threshold", type=float, required=True)
-        base_parser.add_argument("p_threshold", type=float, required=True)
+        base_parser.add_argument("i_h_threshold", type=float, required=True)
+        base_parser.add_argument("i_l_threshold", type=float, required=True)
+        base_parser.add_argument("p_h_threshold", type=float, required=True)
+        base_parser.add_argument("p_l_threshold", type=float, required=True)
         base_parser.add_argument("tweet_filter", type=str, required=True)
         base_parser.add_argument("model_i", type=str, required=True)
         base_parser.add_argument("model_p", type=str, required=True)
