@@ -1,3 +1,5 @@
+from decimal import Decimal as D
+
 import pandas
 import peewee
 
@@ -36,13 +38,21 @@ class MixerStrategy(BaseStrategy):
 
         indicators = pandas.DataFrame(self.get_indicators().dicts())
         indicators.drop("signal", axis=1, inplace=True)
-        indicators["buy_w_signal"] = NEUTRAL
-        indicators["sell_w_signal"] = NEUTRAL
+        indicators["buy_w_signal"] = D(NEUTRAL)
+        indicators["sell_w_signal"] = D(NEUTRAL)
 
         for mixin in self.strategy.mixins:
             strategy = core.strategies.load(
                 core.db.Strategy.get_by_id(mixin.strategy_id))
             mixind = pandas.DataFrame(strategy.get_indicators().dicts())
+
+            if self.strategy.timeframe != strategy.timeframe:
+                freq = core.utils.get_timeframe_freq(self.strategy.timeframe)
+                mixind = mixind \
+                    .set_index("time") \
+                    .resample(freq) \
+                    .ffill() \
+                    .reset_index()
 
             mixind["buy_weight"] = mixin.buy_weight
             mixind["buy_w_signal"] = mixind["signal"] * mixind["buy_weight"]
