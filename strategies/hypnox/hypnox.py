@@ -45,8 +45,10 @@ class HypnoxIndicator(core.db.BaseModel):
 
 
 class HypnoxStrategy(BaseStrategy):
-    i_threshold = peewee.DecimalField(default=0)
-    p_threshold = peewee.DecimalField(default=0)
+    i_h_threshold = peewee.DecimalField(default=0)
+    i_l_threshold = peewee.DecimalField(default=0)
+    p_h_threshold = peewee.DecimalField(default=0)
+    p_l_threshold = peewee.DecimalField(default=0)
     tweet_filter = peewee.TextField(null=True)
     model_i = peewee.TextField(null=True)
     model_p = peewee.TextField(null=True)
@@ -171,10 +173,10 @@ class HypnoxStrategy(BaseStrategy):
 
         # compute signals
         indicators["signal"] = NEUTRAL
-        buy_rule = indicators["i_score"] >= self.i_threshold
+        buy_rule = indicators["i_score"] >= self.i_h_threshold
         # & (indicators["p_score"] > self.p_threshold))
         indicators.loc[buy_rule, "signal"] = BUY
-        sell_rule = indicators["i_score"] < self.i_threshold
+        sell_rule = indicators["i_score"] <= self.i_l_threshold
         # & (indicators["p_score"] < self.p_threshold))
         indicators.loc[sell_rule, "signal"] = SELL
 
