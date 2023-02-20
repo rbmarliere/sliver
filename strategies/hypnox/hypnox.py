@@ -116,7 +116,7 @@ class HypnoxStrategy(BaseStrategy):
             core.watchdog.info("indicator data is up to date")
             return 0
         # tweets = tweets[["intensity", "polarity"]]
-        tweets = tweets[["intensity"]]
+        tweets = tweets[["intensity"]].copy()
 
         # grab last computed metrics
         if existing.empty:
@@ -171,10 +171,10 @@ class HypnoxStrategy(BaseStrategy):
 
         # compute signals
         indicators["signal"] = NEUTRAL
-        buy_rule = (indicators["i_score"] > self.i_threshold)
+        buy_rule = indicators["i_score"] >= self.i_threshold
         # & (indicators["p_score"] > self.p_threshold))
         indicators.loc[buy_rule, "signal"] = BUY
-        sell_rule = (indicators["i_score"] > self.i_threshold)
+        sell_rule = indicators["i_score"] < self.i_threshold
         # & (indicators["p_score"] < self.p_threshold))
         indicators.loc[sell_rule, "signal"] = SELL
 
@@ -202,7 +202,7 @@ class HypnoxStrategy(BaseStrategy):
                 # "p_mean",
                 # "p_variance",
                 "n_samples"
-            ]]
+            ]].copy()
 
             hypnox_indicators["p_score"] = 0
             hypnox_indicators["p_mean"] = 0
