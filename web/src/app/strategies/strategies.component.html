@@ -56,9 +56,6 @@
         <!-- <button mat-icon-button color="primary" routerLink="/strategy/{{ element.id }}" title="Details"> -->
         <!--   <mat-icon fontIcon="info"></mat-icon> -->
         <!-- </button> -->
-        <button mat-icon-button type="button" color="primary" (click)="deleteStrategy(element.id)" title="Delete">
-          <mat-icon fontIcon="delete"></mat-icon>
-        </button>
         <button mat-icon-button type="button" color="primary" (click)="updateActive(element)" title="Deactivate"
           *ngIf="element.active">
           <mat-icon class="icon-display" fontIcon="stop"></mat-icon>
@@ -66,6 +63,9 @@
         <button mat-icon-button type="button" color="primary" (click)="updateActive(element)" title="Activate"
           *ngIf="!element.active">
           <mat-icon class="icon-display" fontIcon="play_arrow"></mat-icon>
+        </button>
+        <button mat-icon-button type="button" color="primary" (click)="deleteStrategy(element.id)" title="Delete">
+          <mat-icon fontIcon="delete"></mat-icon>
         </button>
       </td>
     </ng-container>

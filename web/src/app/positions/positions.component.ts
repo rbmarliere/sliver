@@ -4,17 +4,19 @@ import { PositionService } from '../position.service';
 import { Position } from '../position';
 
 @Component({
-  selector: 'app-position',
-  templateUrl: './position.component.html',
-  styleUrls: ['./position.component.less']
+  selector: 'app-positions',
+  templateUrl: './positions.component.html',
+  styleUrls: ['./positions.component.less']
 })
-export class PositionComponent implements OnInit {
+export class PositionsComponent implements OnInit {
 
   positions: Position[] = [];
   displayedColumns: string[] = this.getDisplayedColumns();
   loading: Boolean = true;
 
-  constructor(private positionService: PositionService) { }
+  constructor(
+    private positionService: PositionService
+  ) { }
 
   ngOnInit(): void {
     this.getPositions();
