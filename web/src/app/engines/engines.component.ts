@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { DialogService } from '../dialog.service';
 import { Engine } from '../engine';
 import { EngineService } from '../engine.service';
 import { EnginesService } from '../engines.service';
@@ -22,6 +23,7 @@ export class EnginesComponent implements OnInit {
   constructor(
     private engineService: EngineService,
     private enginesService: EnginesService,
+    private dialogService: DialogService
   ) { }
 
   ngOnInit(): void {
@@ -39,8 +41,12 @@ export class EnginesComponent implements OnInit {
   }
 
   deleteEngine(engine_id: number): void {
-    this.engineService.deleteEngine(engine_id).subscribe({
-      next: () => location.reload(),
+    this.dialogService.confirm('Are you sure you want to delete this engine?').subscribe((res) => {
+      if (res) {
+        this.engineService.deleteEngine(engine_id).subscribe({
+          next: () => location.reload(),
+        });
+      }
     });
   }
 

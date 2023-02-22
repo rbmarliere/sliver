@@ -8,7 +8,9 @@
   <table mat-table *ngIf="strategies.length > 0" [dataSource]="strategies" class="mat-elevation-z8 strategies-table">
     <ng-container matColumnDef="id">
       <th mat-header-cell *matHeaderCellDef>id</th>
-      <td mat-cell *matCellDef="let element">{{ element.id }}</td>
+      <td mat-cell *matCellDef="let element">
+        <a routerLink="/strategy/{{ element.id }}">{{ element.id }}</a>
+      </td>
     </ng-container>
     <ng-container matColumnDef="active">
       <th mat-header-cell *matHeaderCellDef>Active</th>
@@ -51,9 +53,9 @@
           *ngIf="!element.subscribed">
           <mat-icon class="icon-display" fontIcon="favorite"></mat-icon>
         </button>
-        <button mat-icon-button color="primary" routerLink="/strategy/{{ element.id }}" title="Details">
-          <mat-icon fontIcon="info"></mat-icon>
-        </button>
+        <!-- <button mat-icon-button color="primary" routerLink="/strategy/{{ element.id }}" title="Details"> -->
+        <!--   <mat-icon fontIcon="info"></mat-icon> -->
+        <!-- </button> -->
         <button mat-icon-button type="button" color="primary" (click)="deleteStrategy(element.id)" title="Delete">
           <mat-icon fontIcon="delete"></mat-icon>
         </button>
