@@ -76,7 +76,7 @@
   <p>Exchange Credentials</p>
   <mat-card appearance="outlined">
     <mat-card-content>
-      <div *ngIf="loadingCred" class="center" style="padding: 2vh">
+      <div *ngIf="loadingCred" class="spinner">
         <mat-spinner></mat-spinner>
       </div>
       <div *ngIf="!loadingCred" class="credentials">
@@ -98,12 +98,11 @@
   <p></p>
 
   <mat-card appearance="outlined">
+    <div *ngIf="loadingInv" class="spinner">
+      <mat-spinner></mat-spinner>
+    </div>
+
     <mat-card-content>
-
-      <div *ngIf="loadingInv" class="center" style="padding: 2vh">
-        <mat-spinner></mat-spinner>
-      </div>
-
       <div *ngIf="!loadingInv && inventory.balances">
         <table mat-table [dataSource]="inventory.balances" class="mat-elevation-z8 inventory-table">
           <ng-container matColumnDef="ticker">

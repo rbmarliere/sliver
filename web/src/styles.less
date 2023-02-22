@@ -5,34 +5,43 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 
 @media @desktop {
   .main {
-      display: flex;
-      margin: auto;
-      max-width: 1024px;
-      justify-content: center;
+    display: flex;
+    margin: auto;
+    max-width: 1024px;
+    justify-content: center;
   }
   .container {
-      flex-direction: column;
-      padding-bottom: 2vh;
+    flex-direction: column;
+    padding-bottom: 2vh;
   }
 }
 
 @media @phone {
   .main {
-      display: flex;
-      flex-direction: column;
-      margin: auto;
-      justify-content: center;
+    display: flex;
+    flex-direction: column;
+    margin: auto;
+    justify-content: center;
   }
   .container {
-      flex-direction: column;
-      padding: 1vh;
+    flex-direction: column;
+    padding: 1vh;
   }
 }
 
 table {
-    box-shadow: none !important;
+  box-shadow: none !important;
 }
 
 .text-center {
-    text-align: center;
+  text-align: center;
 }
+
+.spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2vh;
+  // height: 100%;
+}
+
