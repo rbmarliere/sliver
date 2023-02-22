@@ -34,7 +34,7 @@ import { IndicatorComponent } from './indicator/indicator.component';
 import { LoginComponent } from './login/login.component';
 import { NavbarComponent } from './navbar/navbar.component';
 import { OrderComponent } from './order/order.component';
-import { PositionComponent } from './position/position.component';
+import { PositionsComponent } from './positions/positions.component';
 import { StrategiesComponent } from './strategies/strategies.component';
 import { StrategyPerformanceComponent } from './strategy-performance/strategy-performance.component';
 import { StrategyComponent } from './strategy/strategy.component';
@@ -48,7 +48,7 @@ import { StrategyComponent } from './strategy/strategy.component';
     LoginComponent,
     NavbarComponent,
     OrderComponent,
-    PositionComponent,
+    PositionsComponent,
     StrategiesComponent,
     StrategyComponent,
     IndicatorComponent,
