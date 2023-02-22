@@ -14,14 +14,14 @@
 <div class="main container">
 
   <mat-card appearance="outlined">
-    <mat-card-content>
+    <mat-card-content class="main container">
 
-      <div *ngIf="loading" class="main" style="padding: 2vh">
+      <div *ngIf="loading" class="main container" style="padding: 2vh">
         <mat-spinner></mat-spinner>
       </div>
 
       <div *ngIf="!loading && positions">
-        <pre class="text-center">
+        <pre>
           {{ perf_log }}
         </pre>
 
@@ -64,16 +64,20 @@
           </ng-container>
           <ng-container matColumnDef="roi">
             <th mat-header-cell *matHeaderCellDef>ROI</th>
-            <td mat-cell *matCellDef="let element">{{ element.roi }}%</td>
-          </ng-container>
-          <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef>Actions</th>
             <td mat-cell *matCellDef="let element">
-              <button mat-icon-button color="primary" routerLink="/position/{{ element.id }}">
-                <mat-icon class="icon-display" fontIcon="info"></mat-icon>
-              </button>
+              <a routerLink="/position/{{element.id}}">
+                {{ element.roi }}%
+              </a>
             </td>
           </ng-container>
+          <!-- <ng-container matColumnDef="actions"> -->
+          <!--   <th mat-header-cell *matHeaderCellDef>Actions</th> -->
+          <!--   <td mat-cell *matCellDef="let element"> -->
+          <!--     <button mat-icon-button color="primary" routerLink="/position/{{ element.id }}"> -->
+          <!--       <mat-icon class="icon-display" fontIcon="info"></mat-icon> -->
+          <!--     </button> -->
+          <!--   </td> -->
+          <!-- </ng-container> -->
 
           <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
           <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>

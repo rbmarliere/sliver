@@ -15,23 +15,43 @@ export class StrategyPerformanceComponent {
   loading: Boolean = false;
   positions?: Position[];
   perf_log: any;
-  displayedColumns: string[] = [
-    'id',
-    'strategy_id',
-    'market',
-    'status',
-    'entry_amount',
-    'entry_price',
-    'exit_price',
-    'exit_amount',
-    'pnl',
-    'roi',
-    'actions'
-  ];
+  displayedColumns: string[] = this.getDisplayedColumns();
 
   constructor(
     private positionService: PositionService,
   ) { }
+
+  getDisplayedColumns(): string[] {
+    if (window.innerWidth < 768) {
+      return [
+        // 'id',
+        // 'strategy_id',
+        // 'market',
+        // 'status',
+        // 'entry_amount',
+        'entry_price',
+        'exit_price',
+        // 'exit_amount',
+        // 'pnl',
+        'roi',
+        // 'actions'
+      ];
+    } else {
+      return [
+        'id',
+        'strategy_id',
+        'market',
+        'status',
+        'entry_amount',
+        'entry_price',
+        'exit_price',
+        'exit_amount',
+        'pnl',
+        'roi',
+        // 'actions'
+      ];
+    }
+  }
 
   getPositions() {
     this.loading = true;

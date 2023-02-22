@@ -70,17 +70,28 @@ no positions found
   let avg_time_oom = (total_timedelta - total_timedelta_in_position) / positions.length;
 
   return `
-initial balance = ${init_balance.toFixed(2)}
-final balance = ${balance.toFixed(2)}
-pnl = ${(balance - init_balance).toFixed(2)}
-roi = ${roi.toFixed(4)}%
-total timedelta = ${msToString(total_timedelta)}
-number of trades = ${positions.length}
-average timedelta in position = ${msToString(avg_time)}
-average timedelta out of position = ${msToString(avg_time_oom)}
-average position roi = ${avg_roi.toFixed(4)}%
-buy and hold final balance = ${exit_bh_value.toFixed(2)}
-buy and hold roi = ${roi_bh.toFixed(4)}%
+initial balance
+${init_balance.toFixed(2)}
+final balance
+${balance.toFixed(2)}
+pnl
+${(balance - init_balance).toFixed(2)}
+roi
+${roi.toFixed(4)}%
+total timedelta
+${msToString(total_timedelta)}
+number of trades
+${positions.length}
+average time in position
+${msToString(avg_time)}
+average time out of position
+${msToString(avg_time_oom)}
+average position roi
+${avg_roi.toFixed(4)}%
+buy and hold final balance
+${exit_bh_value.toFixed(2)}
+buy and hold roi
+${roi_bh.toFixed(4)}%
 `;
 }
 
@@ -101,12 +112,18 @@ function getHypnoxBacktestLog(data: any, start: Date, end: Date): string {
   let p_mean = mean(polarities);
 
   return `
-intensity standard deviation = ${i_stdev}
-intensity median = ${i_median}
-intensity mean = ${i_mean}
-polarity standard deviation = ${p_stdev}
-polarity median = ${p_median}
-polarity mean = ${p_mean}
+intensity standard deviation
+${i_stdev}
+intensity median
+${i_median}
+intensity mean
+${i_mean}
+polarity standard deviation
+${p_stdev}
+polarity median
+${p_median}
+polarity mean
+${p_mean}
 `;
 }
 

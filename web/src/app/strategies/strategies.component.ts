@@ -10,17 +10,7 @@ import { getStrategyTypes } from '../strategy/strategy-types';
   styleUrls: ['./strategies.component.less'],
 })
 export class StrategiesComponent implements OnInit {
-  displayedColumns: string[] = [
-    'id',
-    // 'active',
-    // 'subscribed',
-    'timeframe',
-    'type',
-    'description',
-    'symbol',
-    'exchange',
-    'actions',
-  ];
+  displayedColumns: string[] = this.getDisplayedColumns();
 
   loading: Boolean = true;
 
@@ -33,6 +23,35 @@ export class StrategiesComponent implements OnInit {
 
   ngOnInit(): void {
     this.getStrategies();
+  }
+
+  getDisplayedColumns(): string[] {
+    if (window.innerWidth < 768) {
+      // mobile
+      return [
+        'id',
+        // 'active',
+        // 'subscribed',
+        // 'timeframe',
+        // 'type',
+        'description',
+        // 'symbol',
+        'exchange',
+        'actions',
+      ];
+    } else {
+      return [
+        'id',
+        // 'active',
+        // 'subscribed',
+        'timeframe',
+        'type',
+        'description',
+        'symbol',
+        'exchange',
+        'actions',
+      ];
+    }
   }
 
   getStrategies(): void {
