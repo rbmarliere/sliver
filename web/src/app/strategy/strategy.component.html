@@ -11,7 +11,7 @@
         <div class="fields">
           <mat-form-field>
             <mat-label>Description</mat-label>
-            <input matInput formControlName="description" required />
+            <input matInput formControlName="description" required autocomplete="off" />
           </mat-form-field>
         </div>
 
@@ -85,41 +85,41 @@
         <div class="fields" *ngIf="strategy.type === 2">
           <mat-form-field>
             <mat-label>Intensity High Threshold</mat-label>
-            <input matInput type="number" formControlName="i_h_threshold" />
+            <input matInput type="number" formControlName="i_h_threshold" autocomplete="off" />
           </mat-form-field>
 
           <mat-form-field>
             <mat-label>Intensity Low Threshold</mat-label>
-            <input matInput type="number" formControlName="i_l_threshold" />
+            <input matInput type="number" formControlName="i_l_threshold" autocomplete="off" />
           </mat-form-field>
 
           <mat-form-field>
             <mat-label>Intensity Model</mat-label>
-            <input matInput type="text" formControlName="model_i" />
+            <input matInput type="text" formControlName="model_i" autocomplete="off" />
           </mat-form-field>
         </div>
 
         <div class="fields" *ngIf="strategy.type === 2">
           <mat-form-field>
             <mat-label>Polarity High Threshold</mat-label>
-            <input matInput type="number" formControlName="p_h_threshold" />
+            <input matInput type="number" formControlName="p_h_threshold" autocomplete="off" />
           </mat-form-field>
 
           <mat-form-field>
             <mat-label>Polarity Low Threshold</mat-label>
-            <input matInput type="number" formControlName="p_l_threshold" />
+            <input matInput type="number" formControlName="p_l_threshold" autocomplete="off" />
           </mat-form-field>
 
           <mat-form-field>
             <mat-label>Polarity Model</mat-label>
-            <input matInput type="text" formControlName="model_p" />
+            <input matInput type="text" formControlName="model_p" autocomplete="off" />
           </mat-form-field>
         </div>
 
         <div class="fields" *ngIf="strategy.type === 2">
           <mat-form-field>
             <mat-label>Tweet Filter</mat-label>
-            <input matInput type="text" formControlName="tweet_filter" />
+            <input matInput type="text" formControlName="tweet_filter" autocomplete="off" />
             <mat-hint>regex</mat-hint>
           </mat-form-field>
         </div>
@@ -127,26 +127,26 @@
         <div class="fields" *ngIf="strategy.type === 3">
           <mat-form-field>
             <mat-label>MA1 Period</mat-label>
-            <input matInput type="number" formControlName="ma1_period" />
+            <input matInput type="number" formControlName="ma1_period" autocomplete="off" />
           </mat-form-field>
           <mat-form-field>
             <mat-label>MA2 Period</mat-label>
-            <input matInput type="number" formControlName="ma2_period" />
+            <input matInput type="number" formControlName="ma2_period" autocomplete="off" />
           </mat-form-field>
           <mat-form-field>
             <mat-label>MA3 Period</mat-label>
-            <input matInput type="number" formControlName="ma3_period" />
+            <input matInput type="number" formControlName="ma3_period" autocomplete="off" />
           </mat-form-field>
         </div>
 
         <div class="fields" *ngIf="strategy.type === 4">
           <mat-form-field>
             <mat-label>Mixed Buy Signal Threshold</mat-label>
-            <input matInput type="number" formControlName="buy_threshold" />
+            <input matInput type="number" formControlName="buy_threshold" autocomplete="off" />
           </mat-form-field>
           <mat-form-field>
             <mat-label>Mixed Sell Signal Threshold</mat-label>
-            <input matInput type="number" formControlName="sell_threshold" />
+            <input matInput type="number" formControlName="sell_threshold" autocomplete="off" />
           </mat-form-field>
         </div>
         <div *ngIf="strategy.type === 4" style="display: flex; flex-direction: column;">
@@ -163,11 +163,11 @@
                 </mat-form-field>
                 <mat-form-field>
                   <mat-label>Buy Weight</mat-label>
-                  <input matInput type="number" formControlName="buy_weight" />
+                  <input matInput type="number" formControlName="buy_weight" autocomplete="off" />
                 </mat-form-field>
                 <mat-form-field>
                   <mat-label>Sell Weight</mat-label>
-                  <input matInput type="number" formControlName="sell_weight" />
+                  <input matInput type="number" formControlName="sell_weight" autocomplete="off" />
                 </mat-form-field>
                 <button mat-icon-button type="button" color="primary" (click)="removeMixin(i)" title="Remove Strategy">
                   <mat-icon fontIcon="delete"></mat-icon>
@@ -184,11 +184,11 @@
           <p>
             <mat-form-field>
               <mat-label>Number of Standard Deviations</mat-label>
-              <input matInput type="number" formControlName="num_std" />
+              <input matInput type="number" formControlName="num_std" autocomplete="off" />
             </mat-form-field>
             <mat-form-field>
               <mat-label>Moving Average Period</mat-label>
-              <input matInput type="number" formControlName="ma_period" />
+              <input matInput type="number" formControlName="ma_period" autocomplete="off" />
             </mat-form-field>
             <mat-slide-toggle formControlName="use_ema">
             </mat-slide-toggle>
