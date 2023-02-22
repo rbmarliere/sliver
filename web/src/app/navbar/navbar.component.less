@@ -1,3 +1,5 @@
+@import "../../media.less";
+
 .unselectable {
     -webkit-user-select: none; /* Safari */
     -moz-user-select: none; /* Firefox */
@@ -10,8 +12,10 @@
     flex: 1 1 auto;
 }
 
-.navbar {
-    flex-wrap: wrap;
-    height: 4vh;
-    padding: 0 calc((100% - 1024px) / 2) 0 calc((100% - 1024px) / 2);
+@media @desktop {
+  .navbar {
+      flex-wrap: wrap;
+      height: 4vh;
+      padding: 0 calc((100% - 1024px) / 2) 0 calc((100% - 1024px) / 2);
+  }
 }

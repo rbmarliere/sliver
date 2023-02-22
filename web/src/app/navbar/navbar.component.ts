@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 
-import { Observable } from 'rxjs';
 
 import { AuthService } from '../auth.service';
 
@@ -12,12 +11,16 @@ import { AuthService } from '../auth.service';
 })
 export class NavbarComponent implements OnInit {
 
+  isMobile = false;
+  menuIsOpen = false;
   isAuthenticated = false;
 
   constructor(
     private authService: AuthService,
     private router: Router
-  ) { }
+  ) {
+    this.isMobile = window.innerWidth < 768;
+  }
 
   ngOnInit(): void {
     this.authService.authenticated.subscribe(value => this.isAuthenticated = value);
@@ -26,6 +29,10 @@ export class NavbarComponent implements OnInit {
   logout() {
     this.authService.logout();
     this.router.navigate(['/']);
+  }
+
+  toggleMenu() {
+    this.menuIsOpen = !this.menuIsOpen;
   }
 
 }

@@ -1,14 +1,42 @@
-<mat-toolbar class="navbar" color="primary">
+<mat-toolbar *ngIf="isAuthenticated && !isMobile" class="navbar" color="primary">
   <span class="unselectable" routerLink="">
     <a>
       SLIVER
     </a>
   </span>
   <span class="fill-remaining-space"></span>
-  <button mat-button *ngIf="isAuthenticated" routerLink="positions">Positions</button>
-  <button mat-button *ngIf="isAuthenticated" routerLink="strategies">Strategies</button>
-  <button mat-button *ngIf="isAuthenticated" routerLink="engines">Engines</button>
-  <button mat-button *ngIf="isAuthenticated" routerLink="dashboard">Dashboard</button>
-  <button mat-button *ngIf="!isAuthenticated" routerLink="login">Login</button>
-  <button mat-button *ngIf="isAuthenticated" (click)="logout()">Logout</button>
+  <button mat-button routerLink="positions">Positions</button>
+  <button mat-button routerLink="strategies">Strategies</button>
+  <button mat-button routerLink="engines">Engines</button>
+  <button mat-button routerLink="dashboard">Dashboard</button>
+  <button mat-button (click)="logout()">Logout</button>
+</mat-toolbar>
+
+<mat-toolbar *ngIf="isAuthenticated && isMobile" class="navbar" color="primary">
+  <mat-toolbar-row>
+    <span class="unselectable" routerLink="">
+      <a>
+        SLIVER
+      </a>
+    </span>
+    <span class="fill-remaining-space"></span>
+    <button mat-button type="button" (click)="toggleMenu()">
+      <mat-icon fontIcon="menu"></mat-icon>
+    </button>
+  </mat-toolbar-row>
+  <mat-toolbar-row *ngIf="menuIsOpen">
+    <button mat-button routerLink="positions">Positions</button>
+  </mat-toolbar-row>
+  <mat-toolbar-row *ngIf="menuIsOpen">
+    <button mat-button routerLink="strategies">Strategies</button>
+  </mat-toolbar-row>
+  <mat-toolbar-row *ngIf="menuIsOpen">
+    <button mat-button routerLink="engines">Engines</button>
+  </mat-toolbar-row>
+  <mat-toolbar-row *ngIf="menuIsOpen">
+    <button mat-button routerLink="dashboard">Dashboard</button>
+  </mat-toolbar-row>
+  <mat-toolbar-row *ngIf="menuIsOpen">
+    <button mat-button (click)="logout()">Logout</button>
+  </mat-toolbar-row>
 </mat-toolbar>

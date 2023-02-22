@@ -1,3 +1,5 @@
+@import "../../media.less";
+
 button {
   margin-right: 1vh;
 }
@@ -5,6 +7,12 @@ button {
 .fields {
   display: flex;
   justify-content: flex-start;
+}
+
+@media @phone {
+  .fields {
+    flex-direction: column;
+  }
 }
 
 .button {

@@ -9,9 +9,9 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatGridListModule } from '@angular/material/grid-list';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatListModule } from '@angular/material/list';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSliderModule } from '@angular/material/slider';
 import { MatTableModule } from '@angular/material/table';
@@ -26,6 +26,8 @@ import { AppComponent } from './app.component';
 import { AuthInterceptor } from './auth.interceptor';
 import { CredentialComponent } from './credential/credential.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
+import { EngineComponent } from './engine/engine.component';
+import { EnginesComponent } from './engines/engines.component';
 import { ErrorDialogComponent } from './error-dialog/error-dialog.component';
 import { HttpErrorInterceptor } from './http-error.interceptor';
 import { IndicatorComponent } from './indicator/indicator.component';
@@ -34,10 +36,8 @@ import { NavbarComponent } from './navbar/navbar.component';
 import { OrderComponent } from './order/order.component';
 import { PositionComponent } from './position/position.component';
 import { StrategiesComponent } from './strategies/strategies.component';
-import { StrategyComponent } from './strategy/strategy.component';
 import { StrategyPerformanceComponent } from './strategy-performance/strategy-performance.component';
-import { EngineComponent } from './engine/engine.component';
-import { EnginesComponent } from './engines/engines.component';
+import { StrategyComponent } from './strategy/strategy.component';
 
 @NgModule({
   declarations: [
@@ -71,7 +71,6 @@ import { EnginesComponent } from './engines/engines.component';
     MatInputModule,
     MatProgressSpinnerModule,
     MatSelectModule,
-    MatSidenavModule,
     MatSlideToggleModule,
     MatSliderModule,
     MatTableModule,
@@ -79,6 +78,7 @@ import { EnginesComponent } from './engines/engines.component';
     PlotlyViaWindowModule,
     ReactiveFormsModule,
     RecaptchaV3Module,
+    MatListModule,
   ],
   providers: [
     {
