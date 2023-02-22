@@ -14,29 +14,25 @@
 
 <mat-toolbar *ngIf="isAuthenticated && isMobile" class="navbar" color="primary">
   <mat-toolbar-row>
-    <span class="unselectable" routerLink="">
-      <a>
-        SLIVER
-      </a>
-    </span>
+    <span class="unselectable">SLIVER</span>
     <span class="fill-remaining-space"></span>
     <button mat-button type="button" (click)="toggleMenu()">
-      <mat-icon fontIcon="menu"></mat-icon>
+      <mat-icon fontIcon="menu" class="menu"></mat-icon>
     </button>
   </mat-toolbar-row>
-  <mat-toolbar-row *ngIf="menuIsOpen">
+  <mat-toolbar-row class="menu-item" *ngIf="menuIsOpen">
     <button mat-button routerLink="positions">Positions</button>
   </mat-toolbar-row>
-  <mat-toolbar-row *ngIf="menuIsOpen">
+  <mat-toolbar-row class="menu-item" *ngIf="menuIsOpen">
     <button mat-button routerLink="strategies">Strategies</button>
   </mat-toolbar-row>
-  <mat-toolbar-row *ngIf="menuIsOpen">
+  <mat-toolbar-row class="menu-item" *ngIf="menuIsOpen">
     <button mat-button routerLink="engines">Engines</button>
   </mat-toolbar-row>
-  <mat-toolbar-row *ngIf="menuIsOpen">
+  <mat-toolbar-row class="menu-item" *ngIf="menuIsOpen">
     <button mat-button routerLink="dashboard">Dashboard</button>
   </mat-toolbar-row>
-  <mat-toolbar-row *ngIf="menuIsOpen">
+  <mat-toolbar-row class="menu-item" *ngIf="menuIsOpen">
     <button mat-button (click)="logout()">Logout</button>
   </mat-toolbar-row>
 </mat-toolbar>
