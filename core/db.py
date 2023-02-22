@@ -625,11 +625,11 @@ class Position(BaseModel):
                     h=market.quote.print(self.last_high),
                     l=market.quote.print(self.last_low)))
         i("stop gain is {g}, trailing is {gt}"
-            .format(g=strategy.stop_gain,
-                    gt=strategy.trailing_gain))
+            .format(g=engine.stop_gain,
+                    gt=engine.trailing_gain))
         i("stop loss is {l}, trailing is {lt}"
-            .format(l=strategy.stop_loss,
-                    lt=strategy.trailing_loss))
+            .format(l=engine.stop_loss,
+                    lt=engine.trailing_loss))
         n(user, self.get_notice(prefix="stopped "))
         self.stopped = True
         self.close(engine=engine)
