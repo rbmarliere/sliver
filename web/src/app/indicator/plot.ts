@@ -50,6 +50,13 @@ function getPlotLayout(): any {
       autorange: true,
       type: 'date',
     },
+    margin: {
+      // b: 0,
+      l: 32,
+      pad: 0,
+      r: 0,
+      // t: 0,
+    },
   }
 }
 

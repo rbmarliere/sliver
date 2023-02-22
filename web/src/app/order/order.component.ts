@@ -11,18 +11,7 @@ import { OrderService } from '../order.service';
 export class OrderComponent implements OnInit {
 
   orders: Order[] = [];
-  displayedColumns: string[] = [
-    "exchange_order_id",
-    "time",
-    "status",
-    "type",
-    "side",
-    "price",
-    "amount",
-    "cost",
-    "filled",
-    "fee",
-  ];
+  displayedColumns: string[] = this.getDisplayedColumns();
 
   loading: Boolean = true;
 
@@ -34,6 +23,37 @@ export class OrderComponent implements OnInit {
   ngOnInit(): void {
     const position_id = Number(this.route.snapshot.paramMap.get('position_id'));
     this.getOrders(position_id);
+  }
+
+  getDisplayedColumns(): string[] {
+    if (window.innerWidth < 768) {
+      // mobile
+      return [
+        // "exchange_order_id",
+        "time",
+        // "status",
+        // "type",
+        "side",
+        "price",
+        // "amount",
+        // "cost",
+        "filled",
+        // "fee",
+      ];
+    } else {
+      return [
+        "exchange_order_id",
+        "time",
+        "status",
+        "type",
+        "side",
+        "price",
+        "amount",
+        "cost",
+        "filled",
+        "fee",
+      ];
+    }
   }
 
   getOrders(position_id: number): void {

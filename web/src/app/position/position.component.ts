@@ -11,20 +11,7 @@ import { Position } from '../position';
 export class PositionComponent implements OnInit {
 
   positions: Position[] = [];
-  displayedColumns: string[] = [
-    'id',
-    'strategy_id',
-    'market',
-    'status',
-    'entry_amount',
-    'entry_price',
-    'exit_price',
-    'exit_amount',
-    'pnl',
-    'roi',
-    'actions'
-  ];
-
+  displayedColumns: string[] = this.getDisplayedColumns();
   loading: Boolean = true;
 
   constructor(private positionService: PositionService) { }
@@ -41,5 +28,39 @@ export class PositionComponent implements OnInit {
       }
     });
   }
+
+  getDisplayedColumns(): string[] {
+    if (window.innerWidth < 768) {
+      // mobile
+      return [
+        // 'id',
+        // 'strategy_id',
+        // 'market',
+        // 'status',
+        'entry_amount',
+        'entry_price',
+        'exit_price',
+        'exit_amount',
+        // 'pnl',
+        // 'roi',
+        // 'actions'
+      ];
+    } else {
+      return [
+        'id',
+        'strategy_id',
+        'market',
+        'status',
+        'entry_amount',
+        'entry_price',
+        'exit_price',
+        'exit_amount',
+        'pnl',
+        'roi',
+        // 'actions'
+      ];
+    }
+  }
+
 
 }
