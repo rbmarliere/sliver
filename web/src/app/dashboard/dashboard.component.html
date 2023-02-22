@@ -34,8 +34,7 @@
         <div class="fields">
           <mat-form-field>
             <mat-label>Telegram Username</mat-label>
-            <input matInput name="telegram_username" formControlName="telegram_username"
-              autocomplete="current-password" />
+            <input matInput name="telegram_username" formControlName="telegram_username" autocomplete="off" />
           </mat-form-field>
         </div>
 
@@ -55,14 +54,14 @@
           <p class="pad-right">
             <mat-label>Maximum Risk</mat-label>
             <mat-slider min="0" max="1" step="0.01" discrete [displayWith]="formatLabel">
-              <input matSliderThumb formControlName="max_risk" />
+              <input matSliderThumb formControlName="max_risk" autocomplete="off" />
             </mat-slider>
           </p>
 
           <p class="pad-right">
             <mat-label>Cash Reserve</mat-label>
             <mat-slider min="0" max="1" step="0.01" discrete [displayWith]="formatLabel">
-              <input matSliderThumb formControlName="cash_reserve" />
+              <input matSliderThumb formControlName="cash_reserve" autocomplete="off" />
             </mat-slider>
           </p>
         </div>
