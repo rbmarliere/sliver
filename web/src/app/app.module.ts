@@ -26,9 +26,9 @@ import { AppComponent } from './app.component';
 import { AuthInterceptor } from './auth.interceptor';
 import { CredentialComponent } from './credential/credential.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
+import { DialogComponent } from './dialog/dialog.component';
 import { EngineComponent } from './engine/engine.component';
 import { EnginesComponent } from './engines/engines.component';
-import { ErrorDialogComponent } from './error-dialog/error-dialog.component';
 import { HttpErrorInterceptor } from './http-error.interceptor';
 import { IndicatorComponent } from './indicator/indicator.component';
 import { LoginComponent } from './login/login.component';
@@ -44,7 +44,7 @@ import { StrategyComponent } from './strategy/strategy.component';
     AppComponent,
     CredentialComponent,
     DashboardComponent,
-    ErrorDialogComponent,
+    DialogComponent,
     LoginComponent,
     NavbarComponent,
     OrderComponent,
