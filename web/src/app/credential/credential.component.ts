@@ -2,6 +2,7 @@ import { Component, Input, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { Credential } from '../credential';
 import { CredentialService } from '../credential.service';
+import { DialogService } from '../dialog.service';
 
 @Component({
   selector: 'app-credential',
@@ -22,7 +23,8 @@ export class CredentialComponent implements OnInit {
 
   constructor(
     private credentialService: CredentialService,
-    private formBuilder: FormBuilder
+    private formBuilder: FormBuilder,
+    private dialogService: DialogService
   ) {
   }
 
@@ -62,19 +64,27 @@ export class CredentialComponent implements OnInit {
   }
 
   deleteCredential(): void {
-    this.credentialService
-      .deleteCredential(this.form.value.exchange_id)
-      .subscribe({
-        next: () => location.reload(),
-      });
+    this.dialogService.confirm('Are you sure you want to delete this credential?').subscribe((res) => {
+      if (res) {
+        this.credentialService
+          .deleteCredential(this.form.value.exchange_id)
+          .subscribe({
+            next: () => location.reload(),
+          });
+      }
+    });
   }
 
   activateCredential(): void {
     const cred = this.form.value;
     cred.active = true;
 
-    this.credentialService.updateCredential(cred).subscribe({
-      next: () => location.reload(),
+    this.dialogService.confirm('Are you sure you want to reactivate this credential?').subscribe((res) => {
+      if (res) {
+        this.credentialService.updateCredential(cred).subscribe({
+          next: () => location.reload(),
+        });
+      }
     });
   }
 
@@ -82,8 +92,12 @@ export class CredentialComponent implements OnInit {
     const cred = this.form.value;
     cred.active = false;
 
-    this.credentialService.updateCredential(cred).subscribe({
-      next: () => location.reload(),
+    this.dialogService.confirm('Are you sure you want to deactivate this credential?').subscribe((res) => {
+      if (res) {
+        this.credentialService.updateCredential(cred).subscribe({
+          next: () => location.reload(),
+        });
+      }
     });
   }
 }

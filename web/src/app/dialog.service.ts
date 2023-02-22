@@ -1,7 +1,8 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
-import { ErrorDialogComponent } from './error-dialog/error-dialog.component';
+import { Observable } from 'rxjs';
+import { DialogComponent } from './dialog/dialog.component';
 
 @Injectable({
   providedIn: 'root'
@@ -42,10 +43,22 @@ export class DialogService {
 
     const dialogConfig = new MatDialogConfig;
     dialogConfig.data = {
+      error: true,
       msg: message
     };
 
-    this.dialog.open(ErrorDialogComponent, dialogConfig);
+    this.dialog.open(DialogComponent, dialogConfig);
   }
 
+  confirm(message: string): Observable<boolean> {
+    const dialogConfig = new MatDialogConfig;
+    dialogConfig.data = {
+      confirm: true,
+      msg: message
+    };
+
+    const dialogRef = this.dialog.open(DialogComponent, dialogConfig);
+
+    return dialogRef.afterClosed();
+  }
 }

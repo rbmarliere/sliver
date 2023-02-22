@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { DialogService } from '../dialog.service';
 import { StrategiesService } from '../strategies.service';
 import { BaseStrategy, Strategy } from '../strategy';
 import { StrategyService } from '../strategy.service';
@@ -19,6 +20,7 @@ export class StrategiesComponent implements OnInit {
   constructor(
     private strategyService: StrategyService,
     private strategiesService: StrategiesService,
+    private dialogService: DialogService
   ) { }
 
   ngOnInit(): void {
@@ -64,8 +66,12 @@ export class StrategiesComponent implements OnInit {
   }
 
   deleteStrategy(strategy_id: number) {
-    this.strategyService.deleteStrategy(strategy_id).subscribe({
-      next: () => location.reload(),
+    this.dialogService.confirm('Are you sure you want to delete this strategy?').subscribe((res) => {
+      if (res) {
+        this.strategyService.deleteStrategy(strategy_id).subscribe({
+          next: () => location.reload(),
+        });
+      }
     });
   }
 
