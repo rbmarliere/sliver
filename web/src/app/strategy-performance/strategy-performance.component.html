@@ -21,14 +21,19 @@
     <mat-card-content class="main container">
 
       <div *ngIf="!loading && positions">
-        <pre>
+        <div *ngIf="positions.length == 0">
+          <p>no positions found</p>
+        </div>
+        <pre *ngIf="positions.length > 0">
           {{ perf_log }}
         </pre>
 
         <table mat-table *ngIf="positions.length > 0" [dataSource]="positions" class="mat-elevation-z8 positions-table">
           <ng-container matColumnDef="id">
             <th mat-header-cell *matHeaderCellDef>id</th>
-            <td mat-cell *matCellDef="let element">{{ element.id }}</td>
+            <td mat-cell *matCellDef="let element">
+              <a routerLink="/position/{{element.id}}">{{ element.id }}</a>
+            </td>
           </ng-container>
           <ng-container matColumnDef="strategy_id">
             <th mat-header-cell *matHeaderCellDef>Strategy</th>
@@ -64,11 +69,7 @@
           </ng-container>
           <ng-container matColumnDef="roi">
             <th mat-header-cell *matHeaderCellDef>ROI</th>
-            <td mat-cell *matCellDef="let element">
-              <a routerLink="/position/{{element.id}}">
-                {{ element.roi }}%
-              </a>
-            </td>
+            <td mat-cell *matCellDef="let element">{{ element.roi }}%</td>
           </ng-container>
           <!-- <ng-container matColumnDef="actions"> -->
           <!--   <th mat-header-cell *matHeaderCellDef>Actions</th> -->

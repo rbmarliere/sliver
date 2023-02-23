@@ -24,22 +24,22 @@ export class StrategyPerformanceComponent {
   getDisplayedColumns(): string[] {
     if (window.innerWidth < 768) {
       return [
-        // 'id',
+        'id',
         // 'strategy_id',
         // 'market',
         // 'status',
         // 'entry_amount',
-        'entry_price',
-        'exit_price',
+        // 'entry_price',
+        // 'exit_price',
         // 'exit_amount',
-        // 'pnl',
+        'pnl',
         'roi',
         // 'actions'
       ];
     } else {
       return [
         'id',
-        'strategy_id',
+        // 'strategy_id',
         'market',
         'status',
         'entry_amount',
