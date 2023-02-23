@@ -9,13 +9,12 @@
       <form [formGroup]="form" (ngSubmit)="updateStrategy()">
 
         <div class="fields">
+
           <mat-form-field>
             <mat-label>Description</mat-label>
             <input matInput formControlName="description" required autocomplete="off" />
           </mat-form-field>
-        </div>
 
-        <div class="fields">
           <mat-form-field appearance="fill" *ngIf="strategy.id">
             <mat-label>Signal</mat-label>
             <mat-select formControlName="signal">
@@ -51,9 +50,7 @@
               </mat-option>
             </mat-select>
           </mat-form-field>
-        </div>
 
-        <div class="fields">
           <mat-form-field appearance="fill">
             <mat-label>Buy Engine</mat-label>
             <mat-select formControlName="buy_engine_id" required>
