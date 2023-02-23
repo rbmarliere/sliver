@@ -45,7 +45,7 @@ export class PositionsComponent implements OnInit {
         // 'exit_amount',
         // 'pnl',
         // 'roi',
-        // 'actions'
+        // 'stopped'
       ];
     } else {
       return [
@@ -59,7 +59,7 @@ export class PositionsComponent implements OnInit {
         'exit_amount',
         'pnl',
         'roi',
-        // 'actions'
+        'stopped',
       ];
     }
   }
