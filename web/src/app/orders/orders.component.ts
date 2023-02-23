@@ -4,11 +4,11 @@ import { Order } from '../order';
 import { OrderService } from '../order.service';
 
 @Component({
-  selector: 'app-order',
-  templateUrl: './order.component.html',
-  styleUrls: ['./order.component.less']
+  selector: 'app-orders',
+  templateUrl: './orders.component.html',
+  styleUrls: ['./orders.component.less']
 })
-export class OrderComponent implements OnInit {
+export class OrdersComponent implements OnInit {
 
   orders: Order[] = [];
   displayedColumns: string[] = this.getDisplayedColumns();
