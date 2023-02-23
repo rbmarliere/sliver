@@ -33,12 +33,12 @@ import { HttpErrorInterceptor } from './http-error.interceptor';
 import { IndicatorComponent } from './indicator/indicator.component';
 import { LoginComponent } from './login/login.component';
 import { NavbarComponent } from './navbar/navbar.component';
-import { OrderComponent } from './order/order.component';
+import { OrdersComponent } from './orders/orders.component';
+import { PositionComponent } from './position/position.component';
 import { PositionsComponent } from './positions/positions.component';
 import { StrategiesComponent } from './strategies/strategies.component';
 import { StrategyPerformanceComponent } from './strategy-performance/strategy-performance.component';
 import { StrategyComponent } from './strategy/strategy.component';
-import { PositionComponent } from './position/position.component';
 
 @NgModule({
   declarations: [
@@ -48,7 +48,7 @@ import { PositionComponent } from './position/position.component';
     DialogComponent,
     LoginComponent,
     NavbarComponent,
-    OrderComponent,
+    OrdersComponent,
     PositionsComponent,
     StrategiesComponent,
     StrategyComponent,
