@@ -1,0 +1,99 @@
+<div *ngIf="loading" class="spinner">
+  <mat-spinner></mat-spinner>
+</div>
+
+<div *ngIf="!loading" class="main container">
+  <p>Details</p>
+  <mat-card appearance="outlined">
+    <mat-card-content>
+      <div class="fields">
+
+        <mat-form-field>
+          <mat-label>Id</mat-label>
+          <input matInput value="{{position.id}}" disabled />
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Market</mat-label>
+          <input matInput value="{{position.market}}" disabled />
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Strategy Id</mat-label>
+          <input matInput value="{{position.strategy_id}}" disabled />
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Status</mat-label>
+          <input matInput value="{{position.status}}" disabled />
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Target Cost</mat-label>
+          <input matInput value="{{position.target_cost}}" disabled />
+        </mat-form-field>
+
+      </div>
+      <div class="fields">
+
+        <mat-form-field>
+          <mat-label>Entry Cost</mat-label>
+          <input matInput value="{{position.entry_cost}}" disabled />
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Entry Amount</mat-label>
+          <input matInput value="{{position.entry_amount}}" disabled />
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Entry Price</mat-label>
+          <input matInput value="{{position.entry_price}}" disabled />
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Exit Price</mat-label>
+          <input matInput value="{{position.exit_price}}" disabled />
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Exit Amount</mat-label>
+          <input matInput value="{{position.exit_amount}}" disabled />
+        </mat-form-field>
+
+      </div>
+      <div class="fields">
+
+        <mat-form-field>
+          <mat-label>Exit Cost</mat-label>
+          <input matInput value="{{position.exit_cost}}" disabled />
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Fee</mat-label>
+          <input matInput value="{{position.fee}}" disabled />
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>PnL</mat-label>
+          <input matInput value="{{position.pnl}}" disabled />
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>ROI</mat-label>
+          <input matInput value="{{position.roi}}" disabled />
+        </mat-form-field>
+
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>
+
+<div class="main container">
+  <p>Orders</p>
+  <mat-card appearance="outlined">
+    <mat-card-content>
+      <app-order></app-order>
+    </mat-card-content>
+  </mat-card>
+</div>

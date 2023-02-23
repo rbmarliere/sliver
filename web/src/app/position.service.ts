@@ -21,4 +21,8 @@ export class PositionService {
   getPositionsByStrategyId(strategyId: number): Observable<Position[]> {
     return this.http.get<Position[]>(`${this.url}/strategy/${strategyId}`);
   }
+
+  getPosition(positionId: number): Observable<Position> {
+    return this.http.get<Position>(`v1/position/${positionId}`);
+  }
 }
