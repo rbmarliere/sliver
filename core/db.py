@@ -893,7 +893,7 @@ class Position(BaseModel):
                 and cost_diff < market.cost_min:
             self.status = "open"
             i("position is now open")
-            n(user, self.get_notice(suffix="is now open"))
+            n(user, self.get_notice(prefix="opened "))
 
         # handle special case of hanging position
         signal = self.user_strategy.strategy.get_signal()
