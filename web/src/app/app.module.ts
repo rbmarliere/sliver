@@ -39,6 +39,7 @@ import { PositionsComponent } from './positions/positions.component';
 import { StrategiesComponent } from './strategies/strategies.component';
 import { StrategyPerformanceComponent } from './strategy-performance/strategy-performance.component';
 import { StrategyComponent } from './strategy/strategy.component';
+import { OrderComponent } from './order/order.component';
 
 @NgModule({
   declarations: [
@@ -57,6 +58,7 @@ import { StrategyComponent } from './strategy/strategy.component';
     EngineComponent,
     EnginesComponent,
     PositionComponent,
+    OrderComponent,
   ],
   imports: [
     AppRoutingModule,

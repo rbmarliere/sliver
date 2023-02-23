@@ -12,7 +12,7 @@ export class OrderService {
 
   constructor(private http: HttpClient) { }
 
-  transformDate(orders: Order[]): Order[] {
+  transformDates(orders: Order[]): Order[] {
     for (let order of orders) {
       order.time = order.time.slice(0, 16);
     }
@@ -20,9 +20,22 @@ export class OrderService {
     return orders;
   }
 
+  transformDate(order: Order): Order {
+    order.time = order.time.slice(0, 16);
+    return order;
+  }
+
   getOrders(position_id: number): Observable<Order[]> {
     return this.http
-      .get<Order[]>(this.url + "/" + position_id)
+      .get<Order[]>(`${this.url}/${position_id}`)
+      .pipe(
+        map(this.transformDates)
+      );
+  }
+
+  getOrder(order_id: number): Observable<Order> {
+    return this.http
+      .get<Order>(`v1/order/${order_id}`)
       .pipe(
         map(this.transformDate)
       );
