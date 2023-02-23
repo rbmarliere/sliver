@@ -4,6 +4,7 @@ import pandas
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from flask_restful import Resource, fields, marshal_with
 
+import api
 import core
 
 
@@ -87,6 +88,21 @@ def get_positions_df(query):
 
 
 class Position(Resource):
+    @marshal_with(fields)
+    @jwt_required()
+    def get(self, position_id):
+        uid = int(get_jwt_identity())
+        user = core.db.User.get_by_id(uid)
+        try:
+            pos_q = user.get_positions() \
+                .where(core.db.Position.id == position_id)
+            pos = pos_q.get()
+            return get_positions_df(pos_q).to_dict(orient="records")[0]
+        except core.db.Position.DoesNotExist:
+            raise api.errors.PositionNotFound
+
+
+class Positions(Resource):
     @marshal_with(fields)
     @jwt_required()
     def get(self):
