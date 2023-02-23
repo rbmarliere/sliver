@@ -11,6 +11,7 @@ import core
 fields = {
     "id": fields.Integer,
     "exchange_order_id": fields.String,
+    "market": fields.String,
     "time": fields.DateTime(dt_format="iso8601"),
     "status": fields.String,
     "type": fields.String,
@@ -28,6 +29,8 @@ def get_orders_df(query):
 
     if orders.empty:
         return orders.to_dict("records")
+
+    orders["market"] = orders.base_ticker + "/" + orders.quote_ticker
 
     base_precision = D("10") ** (D("-1") * orders.base_precision)
     quote_precision = D("10") ** (D("-1") * orders.quote_precision)
