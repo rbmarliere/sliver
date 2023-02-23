@@ -41,8 +41,13 @@ function getBasePlot(indicators: Indicator): any {
 }
 
 function getPlotLayout(): any {
+  let height = 1100;
+  if (window.innerWidth < 768) {
+    height = 800;
+  }
+
   return {
-    height: 1100,
+    height: height,
     showlegend: false,
     // title: title,
     xaxis: {
