@@ -38,7 +38,7 @@ export class StrategiesComponent implements OnInit {
         // 'type',
         'description',
         // 'symbol',
-        'exchange',
+        // 'exchange',
         'actions',
       ];
     } else {
