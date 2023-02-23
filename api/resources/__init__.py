@@ -16,6 +16,7 @@ Engines = engine.Engines
 Exchange = exchange.Exchange
 Inventory = inventory.Inventory
 Order = order.Order
+Orders = order.Orders
 Position = position.Position
 Positions = position.Positions
 PositionsByStrategy = position.PositionsByStrategy
