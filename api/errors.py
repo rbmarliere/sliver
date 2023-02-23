@@ -74,3 +74,8 @@ class EngineDoesNotExist(HTTPException):
 class EngineInUse(HTTPException):
     code = 400
     description = "Engine is in use."
+
+
+class OrderDoesNotExist(HTTPException):
+    code = 404
+    description = "Order does not exist."
