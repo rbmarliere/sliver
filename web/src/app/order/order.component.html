@@ -1,0 +1,74 @@
+<div *ngIf="loading" class="spinner">
+  <mat-spinner></mat-spinner>
+</div>
+
+<div *ngIf="!loading" class="main container">
+  <p>Details</p>
+  <mat-card appearance="outlined">
+    <mat-card-content>
+      <div class="fields">
+
+        <mat-form-field>
+          <mat-label>Id</mat-label>
+          <input matInput value="{{order.id}}" disabled />
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Exchange Order Id</mat-label>
+          <input matInput value="{{order.exchange_order_id}}" disabled />
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Market</mat-label>
+          <input matInput value="{{order.market}}" disabled />
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Time</mat-label>
+          <input matInput value="{{order.time}}" disabled />
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Status</mat-label>
+          <input matInput value="{{order.status}}" disabled />
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Type</mat-label>
+          <input matInput value="{{order.type}}" disabled />
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Side</mat-label>
+          <input matInput value="{{order.side}}" disabled />
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Price</mat-label>
+          <input matInput value="{{order.price}}" disabled />
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Amount</mat-label>
+          <input matInput value="{{order.amount}}" disabled />
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Cost</mat-label>
+          <input matInput value="{{order.cost}}" disabled />
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Filled</mat-label>
+          <input matInput value="{{order.filled}}" disabled />
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Fee</mat-label>
+          <input matInput value="{{order.fee}}" disabled />
+        </mat-form-field>
+
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

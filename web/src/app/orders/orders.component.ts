@@ -29,15 +29,15 @@ export class OrdersComponent implements OnInit {
     if (window.innerWidth < 768) {
       // mobile
       return [
-        // "exchange_order_id",
-        "time",
-        // "status",
+        "exchange_order_id",
+        // "time",
+        "status",
         // "type",
         "side",
-        "price",
+        // "price",
         // "amount",
         // "cost",
-        "filled",
+        // "filled",
         // "fee",
       ];
     } else {
