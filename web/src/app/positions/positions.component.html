@@ -50,6 +50,10 @@
       <th mat-header-cell *matHeaderCellDef>ROI</th>
       <td mat-cell *matCellDef="let element">{{ element.roi }}%</td>
     </ng-container>
+    <ng-container matColumnDef="stopped">
+      <th mat-header-cell *matHeaderCellDef>Stopped</th>
+      <td mat-cell *matCellDef="let element">{{ element.stopped }}</td>
+    </ng-container>
 
     <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
     <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
