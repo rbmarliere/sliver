@@ -10,10 +10,13 @@
       <th mat-header-cell *matHeaderCellDef>id</th>
       <td mat-cell *matCellDef="let element">
         <a routerLink="/position/{{element.id}}">{{element.id}}</a>
+      </td>
     </ng-container>
     <ng-container matColumnDef="strategy_id">
       <th mat-header-cell *matHeaderCellDef>Strategy</th>
-      <td mat-cell *matCellDef="let element">{{ element.strategy_id }}</td>
+      <td mat-cell *matCellDef="let element">
+        <a routerLink="/strategy/{{element.strategy_id}}">{{element.strategy_id}}</a>
+      </td>
     </ng-container>
     <ng-container matColumnDef="market">
       <th mat-header-cell *matHeaderCellDef>Market</th>
