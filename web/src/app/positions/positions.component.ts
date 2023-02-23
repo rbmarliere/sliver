@@ -35,14 +35,14 @@ export class PositionsComponent implements OnInit {
     if (window.innerWidth < 768) {
       // mobile
       return [
-        // 'id',
-        // 'strategy_id',
-        // 'market',
-        // 'status',
-        'entry_amount',
-        'entry_price',
-        'exit_price',
-        'exit_amount',
+        'id',
+        'strategy_id',
+        'market',
+        'status',
+        // 'entry_amount',
+        // 'entry_price',
+        // 'exit_price',
+        // 'exit_amount',
         // 'pnl',
         // 'roi',
         // 'actions'

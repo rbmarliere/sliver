@@ -6,7 +6,7 @@ import { EngineComponent } from './engine/engine.component';
 import { EnginesComponent } from './engines/engines.component';
 import { LoginGuard } from './login.guard';
 import { LoginComponent } from './login/login.component';
-import { OrderComponent } from './order/order.component';
+import { PositionComponent } from './position/position.component';
 import { PositionsComponent } from './positions/positions.component';
 import { StrategiesComponent } from './strategies/strategies.component';
 import { StrategyComponent } from './strategy/strategy.component';
@@ -29,7 +29,7 @@ const routes: Routes = [
   },
   {
     path: 'position/:position_id',
-    component: OrderComponent,
+    component: PositionComponent,
     canActivate: [AuthGuard],
   },
   {
