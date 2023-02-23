@@ -3,7 +3,7 @@
 <div style="display: inline-block">
   Performance
   <div *ngIf="!loading" style="display: inline-block">
-    <button mat-icon-button color="primary" (click)="getPositions()" title="Refresh Positions">
+    <button class="icon-display" mat-icon-button color="primary" (click)="getPositions()" title="Refresh Positions">
       <mat-icon fontIcon="refresh"></mat-icon>
     </button>
   </div>
@@ -71,14 +71,6 @@
             <th mat-header-cell *matHeaderCellDef>ROI</th>
             <td mat-cell *matCellDef="let element">{{ element.roi }}%</td>
           </ng-container>
-          <!-- <ng-container matColumnDef="actions"> -->
-          <!--   <th mat-header-cell *matHeaderCellDef>Actions</th> -->
-          <!--   <td mat-cell *matCellDef="let element"> -->
-          <!--     <button mat-icon-button color="primary" routerLink="/position/{{ element.id }}"> -->
-          <!--       <mat-icon class="icon-display" fontIcon="info"></mat-icon> -->
-          <!--     </button> -->
-          <!--   </td> -->
-          <!-- </ng-container> -->
 
           <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
           <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
