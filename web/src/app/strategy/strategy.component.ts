@@ -100,6 +100,7 @@ export class StrategyComponent implements OnInit {
   set strategy(strategy: Strategy) {
     this._strategy = strategy;
 
+    this.form.get('id')?.disable();
     this.form.get('timeframe')?.disable();
     this.form.get('signal')?.disable();
     this.form.get('market_id')?.disable();
