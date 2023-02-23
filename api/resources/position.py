@@ -99,7 +99,7 @@ class Position(Resource):
             pos = pos_q.get()
             return get_positions_df(pos_q).to_dict(orient="records")[0]
         except core.db.Position.DoesNotExist:
-            raise api.errors.PositionNotFound
+            raise api.errors.PositionDoesNotExist
 
 
 class Positions(Resource):
