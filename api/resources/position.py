@@ -23,6 +23,7 @@ fields = {
     "fee": fields.Float,
     "pnl": fields.Float,
     "roi": fields.Float,
+    "stopped": fields.Boolean
 }
 
 
