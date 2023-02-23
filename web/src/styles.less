@@ -45,3 +45,27 @@ table {
   // height: 100%;
 }
 
+.fields {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+@media @phone {
+  .fields {
+    flex-direction: column;
+  }
+}
+
+mat-form-field {
+  margin-right: 1vh;
+}
+
+button {
+  margin-right: 1vh;
+}
+
+.button {
+  display: flex;
+  justify-content: flex-end;
+}
