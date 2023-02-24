@@ -181,6 +181,7 @@ def watch():
         except ccxt.RateLimitExceeded as e:
             error("rate limit exceeded", e)
             if "position" in locals():
+                # TODO postpone if status != open
                 position.postpone(interval_in_minutes=5)
             if "strategy" in locals():
                 strategy.postpone(interval_in_minutes=5)

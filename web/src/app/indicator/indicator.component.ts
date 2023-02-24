@@ -1,3 +1,4 @@
+import { KeyValue } from '@angular/common';
 import { Component, Input } from '@angular/core';
 import { Indicator } from '../indicator';
 import { IndicatorService } from '../indicator.service';
@@ -20,9 +21,15 @@ export class IndicatorComponent {
   loading: Boolean = false;
   indicators?: Indicator;
 
+  public keepOriginalOrder = (a: any, b: any) => a.key
+
   constructor(
     private indicatorService: IndicatorService,
   ) { }
+
+  onCompare(_left: KeyValue<any, any>, _right: KeyValue<any, any>): number {
+    return -1;
+  }
 
   getIndicators(): void {
     this.loading = true;

@@ -27,9 +27,19 @@
         <p class="text-center">
           -- BACKTEST --
         </p>
-        <pre>
-          {{ backtest_log }}
-        </pre>
+        <!-- <pre> -->
+        <!--   {{ backtest_log }} -->
+        <!-- </pre> -->
+
+        <div class="accounting-table">
+          <table>
+            <tr *ngFor="let item of backtest_log | keyvalue:keepOriginalOrder">
+              <td>{{ item.key }}</td>
+              <td>{{ item.value }}</td>
+            </tr>
+          </table>
+        </div>
+
       </div>
 
     </mat-card-content>

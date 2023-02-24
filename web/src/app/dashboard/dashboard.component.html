@@ -55,14 +55,14 @@
             <mat-slider min="0" max="1" step="0.01" discrete [displayWith]="formatLabel">
               <input matSliderThumb formControlName="max_risk" autocomplete="off" />
             </mat-slider>
-            <mat-label style="padding-left: 2vh;">Maximum Risk</mat-label>
+            <mat-label style="padding-left: 2vh; padding-right: 2vh;">Maximum Risk</mat-label>
           </p>
 
           <p class="pad-right">
             <mat-slider min="0" max="1" step="0.01" discrete [displayWith]="formatLabel">
               <input matSliderThumb formControlName="cash_reserve" autocomplete="off" />
             </mat-slider>
-            <mat-label style="padding-left: 2vh;">Cash Reserve</mat-label>
+            <mat-label style="padding-left: 2vh; padding-right: 2vh;">Cash Reserve</mat-label>
           </p>
         </div>
 
@@ -137,26 +137,26 @@
           <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
         </table>
 
-        <div class="user-balance">
+        <div class="accounting-table">
           <table>
             <tr>
-              <td style="padding-right: 1vw">Total Value</td>
+              <td>Total Value</td>
               <td>{{ inventory.total_value | currency }}</td>
             </tr>
             <tr>
-              <td style="padding-right: 1vw">Reserved in Positions</td>
+              <td>Reserved in Positions</td>
               <td>{{ inventory.positions_reserved | currency }}</td>
             </tr>
             <tr>
-              <td style="padding-right: 1vw">Value in Positions</td>
+              <td>Value in Positions</td>
               <td>{{ inventory.positions_value | currency }}</td>
             </tr>
             <tr>
-              <td style="padding-right: 1vw">Net Liquid</td>
+              <td>Net Liquid</td>
               <td>{{ inventory.net_liquid | currency }}</td>
             </tr>
             <tr>
-              <td style="padding-right: 1vw">Maximum Risk</td>
+              <td>Maximum Risk</td>
               <td>{{ inventory.max_risk | currency }}</td>
             </tr>
           </table>
