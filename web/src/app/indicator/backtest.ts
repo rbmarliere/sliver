@@ -14,7 +14,7 @@ export function backtest(strategy: Strategy, indicators: Indicator, _start: stri
     // RANDOM
   } else if (strategy.type === 2) {
     // HYPNOX
-    backtest_log = backtest_log.concat(getHypnoxBacktestLog(indicators, start, end));
+    backtest_log = { ...backtest_log, ...getHypnoxBacktestLog(indicators, start, end) };
   } else if (strategy.type === 3) {
     // DD3
   } else if (strategy.type === 4) {
@@ -24,14 +24,12 @@ export function backtest(strategy: Strategy, indicators: Indicator, _start: stri
   return backtest_log;
 }
 
-function getBaseBacktestLog(data: any, start: Date, end: Date): string {
+function getBaseBacktestLog(data: any, start: Date, end: Date): any {
   let indexes = getIndexes(data, start, end);
   let positions = getPositions(data, indexes);
 
   if (positions.length == 0) {
-    return `
-no positions found
-`;
+    return { '': 'no positions found' };
   }
 
   // compute metrics based on found positions
@@ -69,26 +67,24 @@ no positions found
   let total_timedelta = end.getTime() - start.getTime();
   let avg_time_oom = (total_timedelta - total_timedelta_in_position) / positions.length;
 
-  return `
-initial balance ${init_balance.toFixed(2)}
-final balance ${balance.toFixed(2)}
-pnl ${(balance - init_balance).toFixed(2)}
-roi ${roi.toFixed(4)}%
-
-b&h final balance ${exit_bh_value.toFixed(2)}
-b&h roi ${roi_bh.toFixed(4)}%
-
-total timedelta ${msToString(total_timedelta)}
-number of trades ${positions.length}
-avg time in ${msToString(avg_time)}
-avg time out ${msToString(avg_time_oom)}
-avg roi ${avg_roi.toFixed(4)}%
-`;
+  return {
+    'initial balance': init_balance.toFixed(2),
+    'final balance': balance.toFixed(2),
+    'pnl': (balance - init_balance).toFixed(2),
+    'roi': `${roi.toFixed(4)}`,
+    'b&h final balance': exit_bh_value.toFixed(2),
+    'b&h roi': `${roi_bh.toFixed(4)}%`,
+    'total timedelta': msToString(total_timedelta),
+    'number of trades': positions.length,
+    'avg time in': msToString(avg_time),
+    'avg time out': msToString(avg_time_oom),
+    'avg roi': `${avg_roi.toFixed(4)}%`,
+  };
 }
 
-function getHypnoxBacktestLog(data: any, start: Date, end: Date): string {
+function getHypnoxBacktestLog(data: any, start: Date, end: Date): any {
   if (data.i_score.length == 0 || data.p_score.length == 0) {
-    return ``;
+    return {};
   }
 
   let indexes = getIndexes(data, start, end);
@@ -102,14 +98,14 @@ function getHypnoxBacktestLog(data: any, start: Date, end: Date): string {
   let p_median = median(polarities);
   let p_mean = mean(polarities);
 
-  return `
-i stdev ${i_stdev}
-i median ${i_median}
-i mean ${i_mean}
-p stdev ${p_stdev}
-p median ${p_median}
-p mean ${p_mean}
-`;
+  return {
+    'i stdev': i_stdev.toFixed(4),
+    'i median': i_median,
+    'i mean': i_mean,
+    'p stdev': p_stdev.toFixed(4),
+    'p median': p_median,
+    'p mean': p_mean,
+  };
 }
 
 
