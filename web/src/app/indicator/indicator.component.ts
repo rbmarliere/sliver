@@ -45,8 +45,13 @@ export class IndicatorComponent {
       return;
     }
 
-    const start = event['xaxis.range[0]'];
-    const end = event['xaxis.range[1]'];
+    let start = event['xaxis.range[0]'];
+    start = start.replace(" ", "T");
+    start = start + "Z";
+
+    let end = event['xaxis.range[1]'];
+    end = end.replace(" ", "T");
+    end = end + "Z";
 
     if (start) {
       this.backtest_log = backtest(this.strategy, this.indicators, start, end);
