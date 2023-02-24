@@ -52,17 +52,17 @@
       <form [formGroup]="form" (ngSubmit)="updateRisk()">
         <div class="fields">
           <p class="pad-right">
-            <mat-label>Maximum Risk</mat-label>
             <mat-slider min="0" max="1" step="0.01" discrete [displayWith]="formatLabel">
               <input matSliderThumb formControlName="max_risk" autocomplete="off" />
             </mat-slider>
+            <mat-label style="padding-left: 2vh;">Maximum Risk</mat-label>
           </p>
 
           <p class="pad-right">
-            <mat-label>Cash Reserve</mat-label>
             <mat-slider min="0" max="1" step="0.01" discrete [displayWith]="formatLabel">
               <input matSliderThumb formControlName="cash_reserve" autocomplete="off" />
             </mat-slider>
+            <mat-label style="padding-left: 2vh;">Cash Reserve</mat-label>
           </p>
         </div>
 
