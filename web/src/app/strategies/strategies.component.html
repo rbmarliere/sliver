@@ -45,26 +45,36 @@
     <ng-container matColumnDef="actions">
       <th mat-header-cell *matHeaderCellDef>Actions</th>
       <td mat-cell *matCellDef="let element">
-        <button mat-icon-button class="icon-display" type="button" color="primary" (click)="updateSubscription(element)"
-          title="Unsubscribe" *ngIf="element.subscribed">
-          <mat-icon fontIcon="heart_broken"></mat-icon>
-        </button>
-        <button mat-icon-button class="icon-display" type="button" color="primary" (click)="updateSubscription(element)"
-          title="Subscribe" *ngIf="!element.subscribed">
-          <mat-icon fontIcon="favorite"></mat-icon>
-        </button>
-        <button mat-icon-button class="icon-display" type="button" color="primary" (click)="updateActive(element)"
-          title="Deactivate" *ngIf="element.active">
-          <mat-icon fontIcon="stop"></mat-icon>
-        </button>
-        <button mat-icon-button class="icon-display" type="button" color="primary" (click)="updateActive(element)"
-          title="Activate" *ngIf="!element.active">
-          <mat-icon fontIcon="play_arrow"></mat-icon>
-        </button>
-        <button mat-icon-button class="icon-display" type="button" color="primary" (click)="deleteStrategy(element.id)"
-          title="Delete">
-          <mat-icon fontIcon="delete"></mat-icon>
-        </button>
+
+        <div class="actions">
+
+          <button mat-icon-button class="icon-display" type="button" color="primary"
+            (click)="updateSubscription(element)" title="Unsubscribe" *ngIf="element.subscribed">
+            <mat-icon>heart_broken</mat-icon>
+          </button>
+
+          <button mat-icon-button class="icon-display" type="button" color="primary"
+            (click)="updateSubscription(element)" title="Subscribe" *ngIf="!element.subscribed">
+            <mat-icon>favorite</mat-icon>
+          </button>
+
+          <button mat-icon-button class="icon-display" type="button" color="primary" (click)="updateActive(element)"
+            title="Deactivate" *ngIf="element.active">
+            <mat-icon>stop</mat-icon>
+          </button>
+
+          <button mat-icon-button class="icon-display" type="button" color="primary" (click)="updateActive(element)"
+            title="Activate" *ngIf="!element.active">
+            <mat-icon>play_arrow</mat-icon>
+          </button>
+
+          <button mat-icon-button class="icon-display" type="button" color="primary"
+            (click)="deleteStrategy(element.id)" title="Delete">
+            <mat-icon>delete</mat-icon>
+          </button>
+
+        </div>
+
       </td>
     </ng-container>
 
