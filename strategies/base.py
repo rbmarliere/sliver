@@ -72,8 +72,6 @@ class BaseStrategy(core.db.BaseModel):
             df.signal == SELL, df.close * D("1.005"), numpy.nan)
         df.sells.replace({float("nan"): None}, inplace=True)
 
-        df.time = df.time.dt.strftime("%Y-%m-%dT%H:%MZ")
-
         df.buys = df.buys.astype(float).round(self.price_precision)
         df.sells = df.sells.astype(float).round(self.price_precision)
         df.open = df.open.astype(float).round(self.price_precision)
