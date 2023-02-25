@@ -1,12 +1,17 @@
 import { Indicator } from '../indicator';
+import { BasePosition } from '../position';
 import { Strategy } from '../strategy';
 import { mean, median, msToString, variance } from './utils';
 
-export function backtest(strategy: Strategy, indicators: Indicator, _start: string, _end: string): string {
-  let start = new Date(_start);
-  let end = new Date(_end);
+export function backtest(strategy: Strategy, indicators: Indicator, start: Date, end: Date): object {
 
-  let backtest_log = getBaseBacktestLog(indicators, start, end);
+  let indexes = getIndexes(indicators, start, end);
+  let positions = getPositions(indicators, indexes);
+
+  let first_price = indicators.close[indexes[0]];
+  let last_price = indicators.close[indexes[indexes.length - 1]];
+
+  let metrics = getMetrics(positions, start, end, first_price, last_price);
 
   if (strategy.type === 0) {
     // MANUAL
@@ -14,30 +19,28 @@ export function backtest(strategy: Strategy, indicators: Indicator, _start: stri
     // RANDOM
   } else if (strategy.type === 2) {
     // HYPNOX
-    backtest_log = { ...backtest_log, ...getHypnoxBacktestLog(indicators, start, end) };
+    metrics = { ...metrics, ...getHypnoxMetrics(indicators, indexes) };
   } else if (strategy.type === 3) {
     // DD3
   } else if (strategy.type === 4) {
     // MIXER
   }
 
-  return backtest_log;
+  return metrics;
 }
 
-function getBaseBacktestLog(data: any, start: Date, end: Date): any {
-  let indexes = getIndexes(data, start, end);
-  let positions = getPositions(data, indexes);
+export function getMetrics(positions: BasePosition[], start: Date, end: Date, first_price: number, last_price: number): object {
 
   if (positions.length == 0) {
     return { '': 'no positions found' };
   }
 
-  // compute metrics based on found positions
   let init_balance = 10000;
   let balance = 10000;
   let avg_time = 0;
   let avg_roi = 0;
   let total_timedelta_in_position = 0;
+
   for (let i = 0; i < positions.length; i++) {
     let pos = positions[i];
 
@@ -57,9 +60,8 @@ function getBaseBacktestLog(data: any, start: Date, end: Date): any {
     balance = new_balance;
   }
 
-  let init_bh_amount = init_balance / data.close[indexes[0]];
-  let exit_bh_value =
-    init_bh_amount * data.close[indexes[indexes.length - 1]];
+  let init_bh_amount = init_balance / first_price;
+  let exit_bh_value = init_bh_amount * last_price;
 
   let roi = (balance / init_balance - 1) * 100;
   let roi_bh = (exit_bh_value / init_balance - 1) * 100;
@@ -71,6 +73,7 @@ function getBaseBacktestLog(data: any, start: Date, end: Date): any {
     'initial balance': init_balance.toFixed(2),
     'final balance': balance.toFixed(2),
     'pnl': (balance - init_balance).toFixed(2),
+    'sep': '',
     'roi': `${roi.toFixed(4)}`,
     'b&h final balance': exit_bh_value.toFixed(2),
     'b&h roi': `${roi_bh.toFixed(4)}%`,
@@ -82,14 +85,17 @@ function getBaseBacktestLog(data: any, start: Date, end: Date): any {
   };
 }
 
-function getHypnoxBacktestLog(data: any, start: Date, end: Date): any {
-  if (data.i_score.length == 0 || data.p_score.length == 0) {
+function getHypnoxMetrics(indicators: Indicator, indexes: number[]): object {
+  if (!indicators.i_score || !indicators.p_score) {
     return {};
   }
 
-  let indexes = getIndexes(data, start, end);
-  let intensities = data.i_score.slice(indexes[0], indexes[indexes.length - 1]);
-  let polarities = data.p_score.slice(indexes[0], indexes[indexes.length - 1]);
+  if (indicators.i_score.length == 0 || indicators.p_score.length == 0) {
+    return {};
+  }
+
+  let intensities = indicators.i_score.slice(indexes[0], indexes[indexes.length - 1]);
+  let polarities = indicators.p_score.slice(indexes[0], indexes[indexes.length - 1]);
 
   let i_median = median(intensities);
   let i_stdev = Math.sqrt(parseFloat(variance(intensities)));
@@ -102,6 +108,7 @@ function getHypnoxBacktestLog(data: any, start: Date, end: Date): any {
     'i stdev': i_stdev.toFixed(4),
     'i median': i_median,
     'i mean': i_mean,
+    'sep': '',
     'p stdev': p_stdev.toFixed(4),
     'p median': p_median,
     'p mean': p_mean,
@@ -109,10 +116,10 @@ function getHypnoxBacktestLog(data: any, start: Date, end: Date): any {
 }
 
 
-function getIndexes(data: any, start: Date, end: Date): number[] {
+function getIndexes(indicators: Indicator, start: Date, end: Date): number[] {
   let indexes = [];
-  for (let i = 0; i < data.time.length; i++) {
-    let current = new Date(data.time[i]);
+  for (let i = 0; i < indicators.time.length; i++) {
+    let current = new Date(indicators.time[i]);
     if (current >= start && current <= end) {
       indexes.push(i);
     }
@@ -120,7 +127,7 @@ function getIndexes(data: any, start: Date, end: Date): number[] {
   return indexes;
 }
 
-function getPositions(data: any, indexes: number[]): any[] {
+function getPositions(indicators: Indicator, indexes: number[]): BasePosition[] {
   let positions = [];
   let curr = false;
   let currPos = {
@@ -131,17 +138,17 @@ function getPositions(data: any, indexes: number[]): any[] {
   };
   for (let i = 0; i < indexes.length; i++) {
     let idx = indexes[i];
-    if (data.buys[idx] > 0) {
+    if (indicators.buys[idx] > 0) {
       if (!curr) {
         curr = true;
-        currPos.entry_price = data.close[idx];
-        currPos.entry_time = new Date(data.time[idx]);
+        currPos.entry_price = indicators.close[idx];
+        currPos.entry_time = new Date(indicators.time[idx]);
       }
-    } else if (data.sells[idx] > 0) {
+    } else if (indicators.sells[idx] > 0) {
       if (curr) {
         curr = false;
-        currPos.exit_price = data.close[idx];
-        currPos.exit_time = new Date(data.time[idx]);
+        currPos.exit_price = indicators.close[idx];
+        currPos.exit_time = new Date(indicators.time[idx]);
         positions.push({
           entry_price: currPos.entry_price,
           entry_time: currPos.entry_time,
