@@ -14,14 +14,14 @@ export class OrderService {
 
   transformDates(orders: Order[]): Order[] {
     for (let order of orders) {
-      order.time = order.time.slice(0, 16);
+      order.time = new Date(order.time);
     }
 
     return orders;
   }
 
   transformDate(order: Order): Order {
-    order.time = order.time.slice(0, 16);
+    order.time = new Date(order.time);
     return order;
   }
 
