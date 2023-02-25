@@ -22,7 +22,7 @@ base_fields = {
     "stop_engine_id": fields.Integer,
 }
 price_fields = {
-    "time": fields.List(fields.String),
+    "time": fields.List(fields.DateTime(dt_format="iso8601")),
     "open": fields.List(fields.Float),
     # "high": fields.List(fields.Float),
     # "low": fields.List(fields.Float),
