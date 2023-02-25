@@ -23,7 +23,9 @@ fields = {
     "fee": fields.Float,
     "pnl": fields.Float,
     "roi": fields.Float,
-    "stopped": fields.Boolean
+    "stopped": fields.Boolean,
+    "entry_time": fields.DateTime(dt_format="iso8601"),
+    "exit_time": fields.DateTime(dt_format="iso8601"),
 }
 
 
@@ -120,6 +122,8 @@ class PositionsByStrategy(Resource):
     def get(self, strategy_id):
         uid = int(get_jwt_identity())
         user = core.db.User.get_by_id(uid)
-        pos_q = user.get_positions().where(core.db.Strategy.id == strategy_id)
+        pos_q = user.get_positions() \
+            .where(core.db.Strategy.id == strategy_id) \
+            .where(core.db.Position.status == "closed")
 
         return get_positions_df(pos_q).to_dict("records")
