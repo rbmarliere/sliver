@@ -409,6 +409,8 @@ class Position(BaseModel):
     entry_amount = peewee.BigIntegerField(default=0)
     # average prices in quote
     entry_price = peewee.BigIntegerField(default=0)
+    entry_time = peewee.DateTimeField(null=True)
+    exit_time = peewee.DateTimeField(null=True)
     exit_price = peewee.BigIntegerField(default=0)
     exit_amount = peewee.BigIntegerField(default=0)
     exit_cost = peewee.BigIntegerField(default=0)
@@ -569,7 +571,8 @@ class Position(BaseModel):
                             next_bucket=next_bucket,
                             bucket_max=bucket_max,
                             status="opening",
-                            target_cost=t_cost)
+                            target_cost=t_cost,
+                            entry_time=datetime.datetime.utcnow())
         position.save()
 
         i("opening position {i}".format(i=position.id))
@@ -902,6 +905,9 @@ class Position(BaseModel):
                 and (self.status == "closing" or signal == SELL):
             i("entry_cost is 0, position is now closed")
             self.status = "closed"
+            self.exit_time = datetime.datetime.utcnow()
+
+        self.save()
 
 
 class Order(BaseModel):
