@@ -1,4 +1,3 @@
-import { KeyValue } from '@angular/common';
 import { Component, Input } from '@angular/core';
 import { Indicator } from '../indicator';
 import { IndicatorService } from '../indicator.service';
@@ -15,7 +14,7 @@ export class IndicatorComponent {
 
   @Input() strategy!: Strategy;
 
-  backtest_log: any;
+  backtestLog: any;
   plot: any;
 
   loading: Boolean = false;
@@ -26,10 +25,6 @@ export class IndicatorComponent {
   constructor(
     private indicatorService: IndicatorService,
   ) { }
-
-  onCompare(_left: KeyValue<any, any>, _right: KeyValue<any, any>): number {
-    return -1;
-  }
 
   getIndicators(): void {
     this.loading = true;
@@ -52,17 +47,13 @@ export class IndicatorComponent {
       return;
     }
 
-    let start = event['xaxis.range[0]'];
-    let end = event['xaxis.range[1]'];
+    let start = new Date(event['xaxis.range[0]']);
+    let end = new Date(event['xaxis.range[1]']);
 
     if (start) {
-      start = start.replace(" ", "T");
-      start = start + "Z";
-      end = end.replace(" ", "T");
-      end = end + "Z";
-      this.backtest_log = backtest(this.strategy, this.indicators, start, end);
+      this.backtestLog = backtest(this.strategy, this.indicators, start, end);
     } else {
-      this.backtest_log = backtest(
+      this.backtestLog = backtest(
         this.strategy,
         this.indicators,
         this.indicators.time[0],
