@@ -2,7 +2,7 @@ export interface Order {
   id: number;
   exchange_order_id: string;
   market: string;
-  time: string;
+  time: Date;
   status: string;
   type: string;
   side: string;

@@ -1,5 +1,5 @@
 export interface Indicator {
-  time: string[];
+  time: Date[];
   open: number[];
   high: number[];
   low: number[];
