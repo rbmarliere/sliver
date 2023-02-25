@@ -47,19 +47,18 @@ export class IndicatorComponent {
       return;
     }
 
-    let start = new Date(event['xaxis.range[0]']);
-    let end = new Date(event['xaxis.range[1]']);
+    let start: Date;
+    let end: Date;
 
-    if (start) {
-      this.backtestLog = backtest(this.strategy, this.indicators, start, end);
+    if (event['xaxis.range[0]'] === undefined) {
+      start = this.indicators.time[0];
+      end = this.indicators.time[this.indicators.time.length - 1];
     } else {
-      this.backtestLog = backtest(
-        this.strategy,
-        this.indicators,
-        this.indicators.time[0],
-        this.indicators.time[this.indicators.time.length - 1]
-      );
+      start = new Date(event['xaxis.range[0]']);
+      end = new Date(event['xaxis.range[1]']);
     }
+
+    this.backtestLog = backtest(this.strategy, this.indicators, start, end);
   }
 
 }
