@@ -27,15 +27,20 @@
         <p class="text-center">
           -- BACKTEST --
         </p>
-        <!-- <pre> -->
-        <!--   {{ backtest_log }} -->
-        <!-- </pre> -->
 
         <div class="accounting-table">
           <table>
-            <tr *ngFor="let item of backtest_log | keyvalue:keepOriginalOrder">
-              <td>{{ item.key }}</td>
-              <td>{{ item.value }}</td>
+            <tr *ngFor="let item of backtestLog | keyvalue:keepOriginalOrder">
+              <td *ngIf="item.key == 'sep'" colspan="2">
+                <hr>
+              </td>
+
+              <td *ngIf="item.key != 'sep'" style="text-align: left;">
+                {{ item.key }}
+              </td>
+              <td *ngIf="item.key != 'sep'" style="text-align: right;">
+                {{ item.value }}
+              </td>
             </tr>
           </table>
         </div>

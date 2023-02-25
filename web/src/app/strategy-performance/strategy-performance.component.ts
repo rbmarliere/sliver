@@ -1,4 +1,5 @@
 import { Component, Input } from '@angular/core';
+import { getMetrics } from '../indicator/backtest';
 import { Position } from '../position';
 import { PositionService } from '../position.service';
 import { Strategy } from '../strategy';
@@ -14,8 +15,10 @@ export class StrategyPerformanceComponent {
 
   loading: Boolean = false;
   positions?: Position[];
-  perf_log: any;
+  perfLog: any;
   displayedColumns: string[] = this.getDisplayedColumns();
+
+  public keepOriginalOrder = (a: any, b: any) => a.key
 
   constructor(
     private positionService: PositionService,
@@ -59,21 +62,29 @@ export class StrategyPerformanceComponent {
       next: (res) => {
         this.positions = res;
         this.loading = false;
-        this.perf_log = this.getPerfLog();
+        this.perfLog = this.getPerfLog();
       }
     });
   }
 
   getPerfLog() {
     if (this.positions) {
-      return `
-total pnl = ${(this.positions.reduce((a, b) => a + b.pnl, 0)).toFixed(2)}
-average roi = ${(this.positions.reduce((a, b) => a + b.roi, 0) / this.positions.length).toFixed(4)}%
-`
+      let last_index = this.positions.length - 1;
+      let start = new Date(this.positions[last_index].entry_time);
+      let first_price = this.positions[last_index].entry_price;
+
+      // order positions by exit_time desc
+      let positions = this.positions.sort((a, b) => {
+        return new Date(b.exit_time).getTime() - new Date(a.exit_time).getTime();
+      });
+
+      let end = new Date(positions[0].exit_time);
+      let last_price = positions[0].exit_price;
+
+      return getMetrics(this.positions, start, end, first_price, last_price);
     }
 
     return ``;
-
   }
 
 }
