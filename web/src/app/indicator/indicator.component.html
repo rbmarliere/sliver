@@ -21,8 +21,6 @@
     <mat-card-content class="container">
 
       <div *ngIf="!loading && indicators">
-        <plotly-plot [config]="plot.config" [data]="plot.data" [layout]="plot.layout" [updateOnlyWithRevision]="true"
-          (relayout)="zoom($event)"></plotly-plot>
 
         <div class="accounting-table">
           <table>
@@ -48,6 +46,9 @@
             </tr>
           </table>
         </div>
+
+        <plotly-plot [config]="plot.config" [data]="plot.data" [layout]="plot.layout" [updateOnlyWithRevision]="true"
+          (relayout)="zoom($event)"></plotly-plot>
 
       </div>
 
