@@ -1,31 +1,20 @@
 import { Indicator } from "../indicator";
 import { Strategy } from "../strategy";
+import { getStrategyTypeName } from "../strategy/strategy-types";
 
 
 export function getPlot(strategy: Strategy, indicators: Indicator): any {
   let plot = getBasePlot(indicators);
 
-  if (strategy.type === 0) {
-    // MANUAL
-  } else if (strategy.type === 1) {
-    // RANDOM
-  } else if (strategy.type === 2) {
-    // HYPNOX
+  if (getStrategyTypeName(strategy.type) === 'HYPNOX') {
     plot.data = plot.data.concat(getHypnoxPlotData(indicators));
-    plot.layout = {
-      ...plot.layout, ...getHypnoxPlotLayout(),
-    }
-  } else if (strategy.type === 3) {
-    // DD3
+    plot.layout = { ...plot.layout, ...getHypnoxPlotLayout(), }
+  } else if (getStrategyTypeName(strategy.type) === 'DD3') {
     plot.data = plot.data.concat(getDD3PlotData(indicators));
-  } else if (strategy.type === 4) {
-    // MIXER
+  } else if (getStrategyTypeName(strategy.type) === 'MIXER') {
     plot.data = plot.data.concat(getMixerPlotData(indicators));
-    plot.layout = {
-      ...plot.layout, ...getMixerPlotLayout(),
-    }
-  } else if (strategy.type === 5) {
-    // BB
+    plot.layout = { ...plot.layout, ...getMixerPlotLayout(), }
+  } else if (getStrategyTypeName(strategy.type) === 'BB') {
     plot.data = plot.data.concat(getBBPlotData(indicators));
   }
 

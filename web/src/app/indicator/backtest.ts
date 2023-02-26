@@ -1,6 +1,7 @@
 import { Indicator } from '../indicator';
 import { BasePosition } from '../position';
 import { Strategy } from '../strategy';
+import { getStrategyTypeName } from '../strategy/strategy-types';
 import { mean, median, msToString, variance } from './utils';
 
 export function backtest(strategy: Strategy, indicators: Indicator, start: Date, end: Date): object {
@@ -13,17 +14,8 @@ export function backtest(strategy: Strategy, indicators: Indicator, start: Date,
 
   let metrics = getMetrics(positions, start, end, first_price, last_price);
 
-  if (strategy.type === 0) {
-    // MANUAL
-  } else if (strategy.type === 1) {
-    // RANDOM
-  } else if (strategy.type === 2) {
-    // HYPNOX
+  if (getStrategyTypeName(strategy.type) == "HYPNOX") {
     metrics = { ...metrics, ...getHypnoxMetrics(indicators, indexes) };
-  } else if (strategy.type === 3) {
-    // DD3
-  } else if (strategy.type === 4) {
-    // MIXER
   }
 
   return metrics;
