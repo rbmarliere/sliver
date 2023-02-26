@@ -21,9 +21,9 @@ base_fields = {
     "sell_engine_id": fields.Integer,
     "stop_engine_id": fields.Integer,
 }
-price_fields = {
+indicators_fields = {
     "time": fields.List(fields.DateTime(dt_format="iso8601")),
-    "open": fields.List(fields.Float),
+    # "open": fields.List(fields.Float),
     # "high": fields.List(fields.Float),
     # "low": fields.List(fields.Float),
     "close": fields.List(fields.Float),
@@ -34,7 +34,7 @@ price_fields = {
 }
 
 hypnox_indicators = {
-    **price_fields,
+    **indicators_fields,
     "i_score": fields.List(fields.Float),
     "p_score": fields.List(fields.Float),
 }
@@ -50,7 +50,7 @@ hypnox_fields = {
 }
 
 dd3_indicators = {
-    **price_fields,
+    **indicators_fields,
     "ma1": fields.List(fields.Float),
     "ma2": fields.List(fields.Float),
     "ma3": fields.List(fields.Float),
@@ -63,7 +63,7 @@ dd3_fields = {
 }
 
 mixer_indicators = {
-    **price_fields,
+    **indicators_fields,
     "buy_w_signal": fields.List(fields.Float),
     "sell_w_signal": fields.List(fields.Float),
 }
@@ -77,7 +77,7 @@ mixer_fields = {
 }
 
 bb_indicators = {
-    **price_fields,
+    **indicators_fields,
     "ma": fields.List(fields.Float),
     "bolu": fields.List(fields.Float),
     "bold": fields.List(fields.Float),
@@ -109,7 +109,7 @@ def get_fields(type=None, all=True):
     elif type == strategies.Types.BB.value:
         return bb_fields if all else bb_indicators
 
-    return base_fields if all else price_fields
+    return base_fields if all else indicators_fields
 
 
 def get_subscription_parser():
