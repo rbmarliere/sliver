@@ -1,3 +1,25 @@
+@import '../../media.less';
+
 .fields {
   justify-content: flex-start;
+}
+
+.mixin-fields {
+  display: flex;
+  flex-direction: row;
+  align-content: center;
+  justify-content: flex-start;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+@media @phone {
+  .mixin-fields {
+    flex-direction: column;
+  }
+}
+
+
+
+.mixinButton {
 }

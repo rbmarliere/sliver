@@ -9,7 +9,7 @@ import { Market } from '../market';
 import { StrategiesService } from '../strategies.service';
 import { Strategy } from '../strategy';
 import { StrategyService } from '../strategy.service';
-import { getStrategyTypes, StrategyType } from './strategy-types';
+import { getStrategyTypeName, getStrategyTypes, StrategyType } from './strategy-types';
 
 @Component({
   selector: 'app-strategy',
@@ -114,9 +114,9 @@ export class StrategyComponent implements OnInit {
       }
       this.form.patchValue(strategy);
 
-      if (strategy.type === 0) {
+      if (getStrategyTypeName(strategy.type) === 'MANUAL') {
         this.form.get('signal')?.enable();
-      } else if (strategy.type === 4) {
+      } else if (getStrategyTypeName(strategy.type) === 'MIXER') {
         if (strategy.market_id) {
           this.strategiesService.getStrategiesByMarketId(strategy.market_id).subscribe({
             next: (strategies) => this.available_mixins = strategies
@@ -219,6 +219,10 @@ export class StrategyComponent implements OnInit {
 
   removeMixin(index: number) {
     this.mixins.removeAt(index);
+  }
+
+  getStrategyTypeName(type: number | null): string {
+    return getStrategyTypeName(type);
   }
 
 }
