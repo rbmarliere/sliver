@@ -1,5 +1,5 @@
 import { Component, Input } from '@angular/core';
-import { getMetrics } from '../indicator/backtest';
+import { getMetrics, Metrics } from '../indicator/backtest';
 import { Position } from '../position';
 import { PositionService } from '../position.service';
 import { Strategy } from '../strategy';
@@ -15,10 +15,8 @@ export class StrategyPerformanceComponent {
 
   loading: Boolean = false;
   positions?: Position[];
-  perfLog: any;
+  perfLog?: Metrics[];
   displayedColumns: string[] = this.getDisplayedColumns();
-
-  public keepOriginalOrder = (a: any, b: any) => a.key
 
   constructor(
     private positionService: PositionService,
@@ -56,7 +54,7 @@ export class StrategyPerformanceComponent {
     }
   }
 
-  getPositions() {
+  getPositions(): void {
     this.loading = true;
     this.positionService.getPositionsByStrategyId(this.strategy.id).subscribe({
       next: (res) => {
@@ -67,8 +65,8 @@ export class StrategyPerformanceComponent {
     });
   }
 
-  getPerfLog() {
-    if (this.positions) {
+  getPerfLog(): Metrics[] {
+    if (this.positions && this.positions.length > 0) {
       let last_index = this.positions.length - 1;
       let start = new Date(this.positions[last_index].entry_time);
       let first_price = this.positions[last_index].entry_price;
@@ -84,7 +82,7 @@ export class StrategyPerformanceComponent {
       return getMetrics(this.positions, start, end, first_price, last_price);
     }
 
-    return ``;
+    return [];
   }
 
 }
