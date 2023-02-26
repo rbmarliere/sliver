@@ -4,7 +4,12 @@ import { Strategy } from '../strategy';
 import { getStrategyTypeName } from '../strategy/strategy-types';
 import { mean, median, msToString, variance } from './utils';
 
-export function backtest(strategy: Strategy, indicators: Indicator, start: Date, end: Date): object {
+export interface Metrics {
+  key: string;
+  value: string | number;
+}
+
+export function backtest(strategy: Strategy, indicators: Indicator, start: Date, end: Date): Metrics[] {
 
   let indexes = getIndexes(indicators, start, end);
   let positions = getPositions(indicators, indexes);
@@ -15,16 +20,16 @@ export function backtest(strategy: Strategy, indicators: Indicator, start: Date,
   let metrics = getMetrics(positions, start, end, first_price, last_price);
 
   if (getStrategyTypeName(strategy.type) == "HYPNOX") {
-    metrics = { ...metrics, ...getHypnoxMetrics(indicators, indexes) };
+    metrics = metrics.concat(getHypnoxMetrics(indicators, indexes))
   }
 
   return metrics;
 }
 
-export function getMetrics(positions: BasePosition[], start: Date, end: Date, first_price: number, last_price: number): object {
+export function getMetrics(positions: BasePosition[], start: Date, end: Date, first_price: number, last_price: number): Metrics[] {
 
   if (positions.length == 0) {
-    return { '': 'no positions found' };
+    return [{ key: '', value: 'no positions found' }];
   }
 
   let init_balance = 10000;
@@ -61,29 +66,35 @@ export function getMetrics(positions: BasePosition[], start: Date, end: Date, fi
   let total_timedelta = end.getTime() - start.getTime();
   let avg_time_oom = (total_timedelta - total_timedelta_in_position) / positions.length;
 
-  return {
-    'initial balance': init_balance.toFixed(2),
-    'final balance': balance.toFixed(2),
-    'pnl': (balance - init_balance).toFixed(2),
-    'sep': '',
-    'roi': `${roi.toFixed(4)}`,
-    'b&h final balance': exit_bh_value.toFixed(2),
-    'b&h roi': `${roi_bh.toFixed(4)}%`,
-    'total timedelta': msToString(total_timedelta),
-    'number of trades': positions.length,
-    'avg time in': msToString(avg_time),
-    'avg time out': msToString(avg_time_oom),
-    'avg roi': `${avg_roi.toFixed(4)}%`,
-  };
+  return [
+    { key: 'title', value: 'Results' },
+
+    { key: 'Gross Profit', value: 0 },
+    { key: 'Gross Loss', value: 0 },
+    { key: 'Net Profit', value: (balance - init_balance).toFixed(2) },
+
+    { key: 'sep', value: '' },
+
+    { key: 'Return on Investment', value: `${roi.toFixed(2)}%` },
+    { key: 'Buy and Hold ROI', value: `${roi_bh.toFixed(2)}%` },
+
+    { key: 'sep', value: '' },
+
+    { key: 'total timedelta', value: msToString(total_timedelta) },
+    { key: 'number of trades', value: positions.length },
+    { key: 'avg time in', value: msToString(avg_time) },
+    { key: 'avg time out', value: msToString(avg_time_oom) },
+    { key: 'avg roi', value: `${avg_roi.toFixed(2)}%` },
+  ];
 }
 
-function getHypnoxMetrics(indicators: Indicator, indexes: number[]): object {
+function getHypnoxMetrics(indicators: Indicator, indexes: number[]): Metrics[] {
   if (!indicators.i_score || !indicators.p_score) {
-    return {};
+    return [];
   }
 
   if (indicators.i_score.length == 0 || indicators.p_score.length == 0) {
-    return {};
+    return [];
   }
 
   let intensities = indicators.i_score.slice(indexes[0], indexes[indexes.length - 1]);
@@ -96,15 +107,19 @@ function getHypnoxMetrics(indicators: Indicator, indexes: number[]): object {
   let p_median = median(polarities);
   let p_mean = mean(polarities);
 
-  return {
-    'i stdev': i_stdev.toFixed(4),
-    'i median': i_median,
-    'i mean': i_mean,
-    'sep': '',
-    'p stdev': p_stdev.toFixed(4),
-    'p median': p_median,
-    'p mean': p_mean,
-  };
+  return [
+    { key: 'SEP', value: '' },
+
+    { key: 'title', value: 'Intensity' },
+    { key: 'Standard Deviation', value: i_stdev.toFixed(4) },
+    { key: 'Median', value: i_median },
+    { key: 'Mean', value: i_mean },
+
+    { key: 'title', value: 'Polarity' },
+    { key: 'Standard Deviation', value: p_stdev.toFixed(4) },
+    { key: 'Median', value: p_median },
+    { key: 'Mean', value: p_mean },
+  ];
 }
 
 

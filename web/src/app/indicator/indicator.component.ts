@@ -2,7 +2,7 @@ import { Component, Input } from '@angular/core';
 import { Indicator } from '../indicator';
 import { IndicatorService } from '../indicator.service';
 import { Strategy } from '../strategy';
-import { backtest } from './backtest';
+import { backtest, Metrics } from './backtest';
 import { getPlot } from './plot';
 
 @Component({
@@ -14,13 +14,11 @@ export class IndicatorComponent {
 
   @Input() strategy!: Strategy;
 
-  backtestLog: any;
+  backtestLog?: Metrics[];
   plot: any;
 
   loading: Boolean = false;
   indicators?: Indicator;
-
-  public keepOriginalOrder = (a: any, b: any) => a.key
 
   constructor(
     private indicatorService: IndicatorService,
@@ -59,6 +57,7 @@ export class IndicatorComponent {
     }
 
     this.backtestLog = backtest(this.strategy, this.indicators, start, end);
+    console.log();
   }
 
 }
