@@ -1,7 +1,7 @@
 <p></p>
 
 <div style="display: inline-block">
-  Indicators
+  Backtest
   <div *ngIf="!loading" style="display: inline-block">
     <button class="icon-display" mat-icon-button color="primary" (click)="getIndicators()" title="Refresh Indicators">
       <mat-icon fontIcon="refresh"></mat-icon>
@@ -24,21 +24,25 @@
         <plotly-plot [config]="plot.config" [data]="plot.data" [layout]="plot.layout" [updateOnlyWithRevision]="true"
           (relayout)="zoom($event)"></plotly-plot>
 
-        <p class="text-center">
-          -- BACKTEST --
-        </p>
-
         <div class="accounting-table">
           <table>
-            <tr *ngFor="let item of backtestLog | keyvalue:keepOriginalOrder">
+            <tr *ngFor="let item of backtestLog">
+
               <td *ngIf="item.key == 'sep'" colspan="2">
                 <hr>
               </td>
+              <td *ngIf="item.key == 'SEP'" colspan="2">
+                <hr style="width: 100%; height: 2px; background-color: #000000;">
+              </td>
 
-              <td *ngIf="item.key != 'sep'" style="text-align: left;">
+              <td *ngIf="item.key == 'title'" colspan="2" style="text-align: center;">
+                <h4>{{ item.value }}</h4>
+              </td>
+
+              <td *ngIf="item.key != 'sep' && item.key != 'SEP' && item.key != 'title'" style="text-align: left;">
                 {{ item.key }}
               </td>
-              <td *ngIf="item.key != 'sep'" style="text-align: right;">
+              <td *ngIf="item.key != 'sep' && item.key != 'SEP' && item.key != 'title'" style="text-align: right;">
                 {{ item.value }}
               </td>
             </tr>
