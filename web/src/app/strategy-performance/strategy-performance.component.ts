@@ -79,7 +79,7 @@ export class StrategyPerformanceComponent {
       let end = new Date(positions[0].exit_time);
       let last_price = positions[0].exit_price;
 
-      return getMetrics(this.positions, start, end, first_price, last_price);
+      return getMetrics(this.positions);
     }
 
     return [];

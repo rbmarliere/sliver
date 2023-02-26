@@ -1,5 +1,5 @@
-import { Indicator } from '../indicator';
-import { BasePosition } from '../position';
+import { Indicator, sliceIndicators } from '../indicator';
+import { BasePosition, getPositions } from '../position';
 import { Strategy } from '../strategy';
 import { getStrategyTypeName } from '../strategy/strategy-types';
 import { mean, median, msToString, variance } from './utils';
@@ -11,26 +11,36 @@ export interface Metrics {
 
 export function backtest(strategy: Strategy, indicators: Indicator, start: Date, end: Date): Metrics[] {
 
-  let indexes = getIndexes(indicators, start, end);
-  let positions = getPositions(indicators, indexes);
+  let startIdx = indicators.time.findIndex((t) => t >= start);
+  let endIdx = indicators.time.findIndex((t) => t >= end);
 
-  let first_price = indicators.close[indexes[0]];
-  let last_price = indicators.close[indexes[indexes.length - 1]];
+  indicators = sliceIndicators(indicators, startIdx, endIdx);
 
-  let metrics = getMetrics(positions, start, end, first_price, last_price);
+  let positions = getPositions(indicators);
 
-  if (getStrategyTypeName(strategy.type) == "HYPNOX") {
-    metrics = metrics.concat(getHypnoxMetrics(indicators, indexes))
-  }
+  let metrics = getMetrics(positions);
+
+  if (getStrategyTypeName(strategy.type) == "HYPNOX")
+    metrics = metrics.concat(getHypnoxMetrics(indicators))
 
   return metrics;
 }
 
-export function getMetrics(positions: BasePosition[], start: Date, end: Date, first_price: number, last_price: number): Metrics[] {
+export function getMetrics(positions: BasePosition[]): Metrics[] {
 
   if (positions.length == 0) {
     return [{ key: '', value: 'no positions found' }];
   }
+
+  let first_price = positions[0].entry_price;
+  let start = new Date(positions[positions.length - 1].entry_time);
+
+  // order positions by exit_time desc
+  let pos_desc = positions.sort((a, b) => {
+    return new Date(b.exit_time).getTime() - new Date(a.exit_time).getTime();
+  });
+  let end = new Date(pos_desc[0].exit_time);
+  let last_price = pos_desc[0].exit_price;
 
   let init_balance = 10000;
   let balance = 10000;
@@ -88,7 +98,7 @@ export function getMetrics(positions: BasePosition[], start: Date, end: Date, fi
   ];
 }
 
-function getHypnoxMetrics(indicators: Indicator, indexes: number[]): Metrics[] {
+function getHypnoxMetrics(indicators: Indicator): Metrics[] {
   if (!indicators.i_score || !indicators.p_score) {
     return [];
   }
@@ -97,8 +107,8 @@ function getHypnoxMetrics(indicators: Indicator, indexes: number[]): Metrics[] {
     return [];
   }
 
-  let intensities = indicators.i_score.slice(indexes[0], indexes[indexes.length - 1]);
-  let polarities = indicators.p_score.slice(indexes[0], indexes[indexes.length - 1]);
+  let intensities = indicators.i_score;
+  let polarities = indicators.p_score;
 
   let i_median = median(intensities);
   let i_stdev = Math.sqrt(parseFloat(variance(intensities)));
@@ -123,47 +133,3 @@ function getHypnoxMetrics(indicators: Indicator, indexes: number[]): Metrics[] {
 }
 
 
-function getIndexes(indicators: Indicator, start: Date, end: Date): number[] {
-  let indexes = [];
-  for (let i = 0; i < indicators.time.length; i++) {
-    let current = new Date(indicators.time[i]);
-    if (current >= start && current <= end) {
-      indexes.push(i);
-    }
-  }
-  return indexes;
-}
-
-function getPositions(indicators: Indicator, indexes: number[]): BasePosition[] {
-  let positions = [];
-  let curr = false;
-  let currPos = {
-    entry_price: 0,
-    entry_time: new Date(0),
-    exit_price: 0,
-    exit_time: new Date(0),
-  };
-  for (let i = 0; i < indexes.length; i++) {
-    let idx = indexes[i];
-    if (indicators.buys[idx] > 0) {
-      if (!curr) {
-        curr = true;
-        currPos.entry_price = indicators.close[idx];
-        currPos.entry_time = new Date(indicators.time[idx]);
-      }
-    } else if (indicators.sells[idx] > 0) {
-      if (curr) {
-        curr = false;
-        currPos.exit_price = indicators.close[idx];
-        currPos.exit_time = new Date(indicators.time[idx]);
-        positions.push({
-          entry_price: currPos.entry_price,
-          entry_time: currPos.entry_time,
-          exit_price: currPos.exit_price,
-          exit_time: currPos.exit_time,
-        });
-      }
-    }
-  }
-  return positions;
-}
