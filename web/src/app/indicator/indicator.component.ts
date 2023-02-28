@@ -62,7 +62,6 @@ export class IndicatorComponent {
     let endIdx = this.indicators.time.findIndex((t) => t >= end);
     let indicators = sliceIndicators(this.indicators, startIdx, endIdx);
 
-    // TODO init_balance = 10000 as a param?
     this.positions = getPositions(indicators);
 
     this.backtestLog = backtest(this.strategy, indicators, this.positions);

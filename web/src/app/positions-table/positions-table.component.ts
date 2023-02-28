@@ -70,6 +70,7 @@ export class PositionsTableComponent implements OnInit {
         return [
           'pnl',
           'roi',
+          'balance'
         ];
       } else {
         return [
@@ -79,6 +80,7 @@ export class PositionsTableComponent implements OnInit {
           'exit_amount',
           'pnl',
           'roi',
+          'balance'
         ];
       }
     }
