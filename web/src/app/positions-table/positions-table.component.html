@@ -39,6 +39,10 @@
     <th mat-header-cell *matHeaderCellDef>PnL</th>
     <td mat-cell *matCellDef="let element">{{ element.pnl }}</td>
   </ng-container>
+  <ng-container matColumnDef="fee">
+    <th mat-header-cell *matHeaderCellDef>Fee</th>
+    <td mat-cell *matCellDef="let element">{{ element.fee }}</td>
+  </ng-container>
   <ng-container matColumnDef="roi">
     <th mat-header-cell *matHeaderCellDef>ROI</th>
     <td mat-cell *matCellDef="let element">{{ element.roi }}%</td>

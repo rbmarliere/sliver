@@ -5,5 +5,5 @@
 <div *ngIf="!loading" class="main">
   <p *ngIf="positions.length === 0" class="text-center">no positions found</p>
 
-  <app-positions-table *ngIf="positions.length > 0" [positions]="positions"></app-positions-table>
+  <app-positions-table *ngIf="positions.length > 0" [positions]="positions" displayMode="full"></app-positions-table>
 </div>
