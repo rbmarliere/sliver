@@ -20,6 +20,9 @@ export interface Position {
   stopped: boolean;
 
   balance?: number;
+  max_equity_value?: number;
+  min_equity_value?: number;
+  drawdown?: number;
 }
 
 export function getPositions(indicators: Indicator): Position[] {
@@ -48,7 +51,11 @@ export function getPositions(indicators: Indicator): Position[] {
     pnl: 0,
     roi: 0,
     stopped: false,
+
     balance: init_balance,
+    max_equity_value: 0,
+    min_equity_value: 9999999999999,
+    drawdown: 0,
   };
 
   for (let i = 0; i < indicators.time.length; i++) {
@@ -62,6 +69,9 @@ export function getPositions(indicators: Indicator): Position[] {
         pos.entry_amount = balance / pos.entry_price;
         pos.entry_cost = pos.entry_amount * pos.entry_price;
         pos.exit_amount = pos.entry_amount
+
+        pos.max_equity_value = 0;
+        pos.min_equity_value = 9999999999999;
 
       }
     } else if (indicators.sells[i] > 0) {
@@ -80,8 +90,18 @@ export function getPositions(indicators: Indicator): Position[] {
         balance = balance + pos.pnl;
         pos.balance = balance;
 
+        pos.drawdown = (pos.min_equity_value - pos.max_equity_value) / pos.max_equity_value * 100;
+
         positions.push({ ...pos });
       }
+    }
+
+    if (pos.entry_amount > 0) {
+      let currBalance = indicators.close[i] * pos.entry_amount;
+      if (currBalance > pos.max_equity_value)
+        pos.max_equity_value = indicators.close[i] * pos.entry_amount;
+      if (currBalance < pos.min_equity_value)
+        pos.min_equity_value = indicators.close[i] * pos.entry_amount;
     }
   }
 

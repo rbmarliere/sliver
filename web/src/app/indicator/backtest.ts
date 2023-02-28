@@ -65,7 +65,11 @@ export function getMetrics(positions: Position[]): Metrics[] {
   let consecutive_losing_trades = 0;
   let max_consecutive_losses = 0;
 
-  // let max_drawdown = 0;
+  let max_drawdown_tt_value = 0;
+  let max_drawdown_tt_pct = 0;
+  let greatest_equity_value = 0;
+  let greatest_equity_pct = 0;
+  let lowest_equity_value = 9999999999999;
 
   for (let i = 0; i < positions.length; i++) {
     let pos = positions[i];
@@ -73,6 +77,19 @@ export function getMetrics(positions: Position[]): Metrics[] {
     total_timedelta_in_market += timedelta;
     total_entry_cost += pos.entry_cost;
     total_pnl += pos.pnl;
+
+    if (pos.max_equity_value && pos.min_equity_value && pos.drawdown) {
+      if (pos.max_equity_value > greatest_equity_value) {
+        greatest_equity_value = pos.max_equity_value;
+        greatest_equity_pct = (greatest_equity_value / pos.entry_cost - 1) * 100;
+      }
+      if (pos.min_equity_value < lowest_equity_value)
+        lowest_equity_value = pos.min_equity_value;
+      if (pos.drawdown < max_drawdown_tt_value) {
+        max_drawdown_tt_value = pos.max_equity_value - pos.min_equity_value;
+        max_drawdown_tt_pct = pos.drawdown;
+      }
+    }
 
     if (pos.pnl > 0) {
       gross_profit += pos.pnl;
@@ -126,9 +143,13 @@ export function getMetrics(positions: Position[]): Metrics[] {
   let bh_pnl = bh_exit_cost - bh_entry_cost;
   let bh_roi = (bh_pnl / bh_entry_cost) * 100;
   let bh_apr = (bh_roi / (trading_period / 1000 / 60 / 60 / 24)) * 365
+  let bh_sharpe = bh_roi / Math.sqrt(variance(positions.map(p => p.roi)));
+  let bh_sortino = bh_roi / Math.sqrt(variance(positions.filter(p => p.roi < 0).map(p => p.roi)));
 
   let roi = (total_pnl / total_entry_cost) * 100;
   let apr = (roi / (trading_period / 1000 / 60 / 60 / 24)) * 365
+  let sharpe = roi / Math.sqrt(variance(positions.map(p => p.roi)));
+  let sortino = roi / Math.sqrt(variance(positions.filter(p => p.roi < 0).map(p => p.roi)));
 
   let avg_trade_net_profit = (gross_profit / winning_trades) + (gross_loss / losing_trades);
   let avg_trade_net_profit_pct = (avg_trade_net_profit / total_entry_cost) * 100;
@@ -143,8 +164,13 @@ export function getMetrics(positions: Position[]): Metrics[] {
   let total_timedelta = end.getTime() - start.getTime();
   let percent_of_time_in_market = (total_timedelta_in_market / total_timedelta) * 100;
 
+  let max_drawdown_pv_value = greatest_equity_value - lowest_equity_value;
+  let max_drawdown_pv_pct = (lowest_equity_value - greatest_equity_value) / greatest_equity_value * 100;
+  let net_profit_vs_dd_pv = (net_profit / max_drawdown_pv_value) * 100;
+  let net_profit_vs_dd_tt = (net_profit / max_drawdown_tt_value) * 100;
+
   // https://www.investopedia.com/articles/fundamental-analysis/10/strategy-performance-reports.asp
-  return [
+  let metrics = [
     { key: 'title', value: 'Performance Summary' },
 
     { key: 'sep', value: '' },
@@ -152,18 +178,16 @@ export function getMetrics(positions: Position[]): Metrics[] {
     { key: 'subtitle', value: 'Buy & Hold' },
     { key: 'Return on Investment', value: bh_roi },
     { key: 'Annualized Return', value: bh_apr },
-    // { key: 'Exposure', value: bh_exposure },
-    // { key: 'Sharpe Ratio', value: bh_sharpe },
-    // { key: 'Risk Return Ratio', value: bh_risk_return_ratio },
+    { key: 'Sharpe Ratio', value: bh_sharpe },
+    { key: 'Sortino Ratio', value: bh_sortino },
 
     { key: 'sep', value: '' },
 
     { key: 'subtitle', value: 'Strategy' },
     { key: 'Return on Investment', value: roi },
     { key: 'Annualized Return', value: apr },
-    // { key: 'Exposure', value: exposure },
-    // { key: 'Sharpe Ratio', value: sharpe },
-    // { key: 'Risk Return Ratio', value: risk_return_ratio },
+    { key: 'Sharpe Ratio', value: sharpe },
+    { key: 'Sortino Ratio', value: sortino },
 
     { key: 'sep', value: '' },
 
@@ -201,39 +225,41 @@ export function getMetrics(positions: Position[]): Metrics[] {
 
     { key: 'Trading Period', value: trading_period },
     { key: 'Percent of Time in Market', value: percent_of_time_in_market },
-    // { key: 'Max. Equity Run-up', value: max_equity_runup },
-
-    { key: 'sep', value: '' },
-
-    { key: 'subtitle', value: 'Max. Drawdown (Peak to Valley)' },
-    // { key: 'Value', value: max_drawdown_pv_value },
-    // { key: 'Net Profit as % of Drawdown', value: net_profit_vs_dd_pv },
-
-    { key: 'sep', value: '' },
-
-    { key: 'subtitle', value: 'Max. Drawdown (Trade to Trade)' },
-    // { key: 'Value', value: max_drawdown_tt_value },
-    // { key: 'Net Profit as % of Drawdown', value: net_profit_vs_dd_tt },
 
   ];
+
+  if (max_drawdown_tt_value > 0) {
+    metrics = metrics.concat([
+      { key: 'SEP', value: '' },
+
+      { key: 'Max. Equity Run-up', value: `${greatest_equity_value} (${greatest_equity_pct}%)` },
+      { key: 'Drawdown (Peak to Valley)', value: `${max_drawdown_pv_value} (${max_drawdown_pv_pct}%)` },
+      { key: 'Net Profit as % of Drawdown', value: net_profit_vs_dd_pv },
+
+      { key: 'sep', value: '' },
+
+      { key: 'Drawdown (Trade to Trade)', value: `${max_drawdown_tt_value} (${max_drawdown_tt_pct}%)` },
+      { key: 'Net Profit as % of Drawdown', value: net_profit_vs_dd_tt },
+    ]);
+  }
+
+  return metrics;
 }
 
 function getHypnoxMetrics(indicators: Indicator): Metrics[] {
-  if (!indicators.i_score || !indicators.p_score) {
+  if (!indicators.i_score || !indicators.p_score)
     return [];
-  }
 
-  if (indicators.i_score.length == 0 || indicators.p_score.length == 0) {
+  if (indicators.i_score.length == 0 || indicators.p_score.length == 0)
     return [];
-  }
 
   let intensities = indicators.i_score;
   let polarities = indicators.p_score;
 
   let i_median = median(intensities);
-  let i_stdev = Math.sqrt(parseFloat(variance(intensities)));
+  let i_stdev = Math.sqrt(variance(intensities));
   let i_mean = mean(intensities);
-  let p_stdev = Math.sqrt(parseFloat(variance(polarities)));
+  let p_stdev = Math.sqrt(variance(polarities));
   let p_median = median(polarities);
   let p_mean = mean(polarities);
 

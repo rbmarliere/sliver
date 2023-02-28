@@ -8,12 +8,11 @@ export function msToString(ms: number): string {
   return `${days}d ${hours}h ${minutes}m`;
 }
 
-export function median(_values: number[]): string {
+export function median(_values: number[]): number {
   let values = [..._values]; // copy first, since sort() is in-place
 
-  if (values.length === 0) {
-    return "0";
-  }
+  if (values.length === 0)
+    return 0;
 
   values.sort(function(a: number, b: number) {
     return a - b;
@@ -21,35 +20,32 @@ export function median(_values: number[]): string {
 
   var half = Math.floor(values.length / 2);
 
-  if (values.length % 2) {
-    return values[half].toFixed(4);
-  };
+  if (values.length % 2)
+    return values[half];
 
-  return ((values[half - 1] + values[half]) / 2.0).toFixed(4);
+  return (values[half - 1] + values[half]) / 2.0;
 }
 
-export function mean(values: number[]): string {
-  if (values.length === 0) {
-    return "0";
-  }
+export function mean(values: number[]): number {
+  if (values.length === 0)
+    return 0;
 
   const sum = values.reduce((a: number, b: number) => a + b, 0);
   const avg = sum / values.length || 0;
-  return avg.toFixed(4);
+  return avg;
 }
 
-export function variance(values: number[]): string {
-  if (values.length === 0) {
-    return "0";
-  }
+export function variance(values: number[]): number {
+  if (values.length === 0)
+    return 0;
 
-  const avg = parseFloat(mean(values));
+  const avg = mean(values);
   const squareDiffs = values.map(function(value: number) {
     var diff = value - avg;
     var sqrDiff = diff * diff;
     return sqrDiff;
   });
 
-  const avgSquareDiff = parseFloat(mean(squareDiffs));
-  return avgSquareDiff.toFixed(4);
+  const avgSquareDiff = mean(squareDiffs);
+  return avgSquareDiff;
 }
