@@ -1,0 +1,30 @@
+<div *ngIf="summary" class="accounting-table">
+  <table>
+    <tr *ngFor="let item of summary">
+
+      <td *ngIf="item.key == 'sep'" colspan="2">
+        <hr>
+      </td>
+      <td *ngIf="item.key == 'SEP'" colspan="2">
+        <hr style="width: 100%; height: 2px; background-color: #000000;">
+      </td>
+
+      <td *ngIf="item.key == 'title'" colspan="2" style="text-align: center;">
+        <h4>{{ item.value }}</h4>
+      </td>
+
+      <td *ngIf="item.key == 'subtitle'" colspan="2" style="text-align: center;">
+        <h5>{{ item.value }}</h5>
+      </td>
+
+      <td *ngIf="item.key != 'sep' && item.key != 'SEP' && item.key != 'title' && item.key != 'subtitle'"
+        style="text-align: left;">
+        {{ item.key }}
+      </td>
+      <td *ngIf="item.key != 'sep' && item.key != 'SEP' && item.key != 'title' && item.key != 'subtitle'"
+        style="text-align: right;">
+        {{ item.value }}
+      </td>
+    </tr>
+  </table>
+</div>
