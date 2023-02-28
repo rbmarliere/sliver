@@ -25,7 +25,7 @@ export function getMetrics(positions: Position[]): Metrics[] {
     return [{ key: '', value: 'no positions found' }];
 
   // let first_price = positions[0].entry_price;
-  let start = new Date(positions[positions.length - 1].entry_time);
+  let start = new Date(positions[0].entry_time);
 
   // order positions by exit_time desc
   let pos_desc = positions.sort((a, b) => {
@@ -173,7 +173,7 @@ export function getMetrics(positions: Position[]): Metrics[] {
   let metrics = [
     { key: 'title', value: 'Performance Summary' },
 
-    { key: 'sep', value: '' },
+    { key: 'SEP', value: '' },
 
     { key: 'subtitle', value: 'Buy & Hold' },
     { key: 'Return on Investment', value: bh_roi },

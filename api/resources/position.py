@@ -124,6 +124,7 @@ class PositionsByStrategy(Resource):
         user = core.db.User.get_by_id(uid)
         pos_q = user.get_positions() \
             .where(core.db.Strategy.id == strategy_id) \
-            .where(core.db.Position.status == "closed")
+            .where(core.db.Position.status == "closed") \
+            .order_by(core.db.Position.id)
 
         return get_positions_df(pos_q).to_dict("records")
