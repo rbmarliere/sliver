@@ -8,5 +8,6 @@ import { Metrics } from '../indicator/backtest';
 })
 export class PerfSummaryComponent {
   @Input() summary?: Metrics[];
+  @Input() title?: string;
 
 }

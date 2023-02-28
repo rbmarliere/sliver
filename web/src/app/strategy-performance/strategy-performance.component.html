@@ -22,7 +22,7 @@
 
       <div *ngIf="!loading && positions">
 
-        <app-perf-summary [summary]="perfLog"></app-perf-summary>
+        <app-perf-summary title="Performance Summary" [summary]="perfLog"></app-perf-summary>
 
         <app-positions-table *ngIf="positions.length > 0" [positions]="positions"
           displayMode="compact"></app-positions-table>
