@@ -32,23 +32,23 @@
     </ng-container>
     <ng-container matColumnDef="price">
       <th mat-header-cell *matHeaderCellDef>Price</th>
-      <td mat-cell *matCellDef="let element">{{ element.price }}</td>
+      <td mat-cell *matCellDef="let element">{{ element.price | number: '1.2-2' }}</td>
     </ng-container>
     <ng-container matColumnDef="amount">
       <th mat-header-cell *matHeaderCellDef>Amount</th>
-      <td mat-cell *matCellDef="let element">{{ element.amount }}</td>
+      <td mat-cell *matCellDef="let element">{{ element.amount | number: '1.2-8' }}</td>
     </ng-container>
     <ng-container matColumnDef="cost">
       <th mat-header-cell *matHeaderCellDef>Cost</th>
-      <td mat-cell *matCellDef="let element">{{ element.cost }}</td>
+      <td mat-cell *matCellDef="let element">{{ element.cost | number: '1.2-2' }}</td>
     </ng-container>
     <ng-container matColumnDef="filled">
       <th mat-header-cell *matHeaderCellDef>Filled</th>
-      <td mat-cell *matCellDef="let element">{{ element.filled }}</td>
+      <td mat-cell *matCellDef="let element">{{ element.filled | number: '1.2-8' }}</td>
     </ng-container>
     <ng-container matColumnDef="fee">
       <th mat-header-cell *matHeaderCellDef>Fee</th>
-      <td mat-cell *matCellDef="let element">{{ element.fee }}</td>
+      <td mat-cell *matCellDef="let element">{{ element.fee | number: '1.2-2' }}</td>
     </ng-container>
 
     <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
