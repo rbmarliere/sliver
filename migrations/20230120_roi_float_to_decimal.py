@@ -17,5 +17,5 @@ migrate(
 
 for pos in core.db.Position.select():
     if pos.status == "closed":
-        pos.roi = core.utils.get_roi(pos.entry_price, pos.exit_price)
+        pos.roi = core.utils.get_return(pos.entry_price, pos.exit_price)
         pos.save()

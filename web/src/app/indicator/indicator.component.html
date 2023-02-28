@@ -22,7 +22,7 @@
 
       <div *ngIf="!loading && indicators">
 
-        <app-perf-summary [summary]="backtestLog"></app-perf-summary>
+        <app-perf-summary title="Backtest Summary" [summary]="backtestLog"></app-perf-summary>
 
         <app-positions-table *ngIf="positions.length > 0" [positions]="positions"></app-positions-table>
 
