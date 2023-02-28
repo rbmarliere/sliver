@@ -18,13 +18,19 @@ export interface Position {
   pnl: number;
   roi: number;
   stopped: boolean;
+
+  balance?: number;
 }
 
 export function getPositions(indicators: Indicator): Position[] {
+  let init_balance = 1000;
+  let balance = init_balance;
+  let fee = 0.001;
+
   let positions = [];
 
   let curr = false;
-  let currPos = {
+  let pos = {
     id: 0,
     market: "",
     strategy_id: 0,
@@ -42,6 +48,7 @@ export function getPositions(indicators: Indicator): Position[] {
     pnl: 0,
     roi: 0,
     stopped: false,
+    balance: init_balance,
   };
 
   for (let i = 0; i < indicators.time.length; i++) {
@@ -49,24 +56,31 @@ export function getPositions(indicators: Indicator): Position[] {
       if (!curr) {
         curr = true;
 
-        currPos.entry_cost = indicators.close[i];
-        currPos.entry_amount = 1; // TODO make this dynamic
-        currPos.entry_time = new Date(indicators.time[i]);
-        currPos.entry_price = indicators.close[i];
+        pos.entry_time = new Date(indicators.time[i]);
+        pos.entry_price = indicators.close[i];
+
+        pos.entry_amount = balance / pos.entry_price;
+        pos.entry_cost = pos.entry_amount * pos.entry_price;
+        pos.exit_amount = pos.entry_amount
 
       }
     } else if (indicators.sells[i] > 0) {
       if (curr) {
         curr = false;
 
-        currPos.exit_price = indicators.close[i];
-        currPos.exit_time = new Date(indicators.time[i]);
-        currPos.exit_amount = 1;
-        currPos.exit_cost = indicators.close[i];
-        currPos.pnl = currPos.exit_price - currPos.entry_price;
-        currPos.roi = (currPos.exit_price / currPos.entry_price - 1) * 100;
+        pos.exit_price = indicators.close[i];
+        pos.exit_time = new Date(indicators.time[i]);
+        pos.exit_cost = pos.exit_amount * pos.exit_price;
 
-        positions.push(currPos);
+        pos.fee = pos.entry_cost * fee + pos.exit_cost * fee;
+
+        pos.pnl = pos.exit_cost - pos.entry_cost - pos.fee;
+        pos.roi = (pos.pnl / pos.entry_cost) * 100;
+
+        balance = balance + pos.pnl;
+        pos.balance = balance;
+
+        positions.push({ ...pos });
       }
     }
   }
