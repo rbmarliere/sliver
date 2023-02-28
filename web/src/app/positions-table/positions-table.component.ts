@@ -40,6 +40,7 @@ export class PositionsTableComponent implements OnInit {
           'exit_price',
           'exit_amount',
           'pnl',
+          'fee',
           'roi',
           'stopped',
         ];
