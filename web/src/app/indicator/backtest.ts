@@ -21,11 +21,10 @@ export function backtest(strategy: Strategy, indicators: Indicator, positions: P
 
 export function getMetrics(positions: Position[]): Metrics[] {
 
-  if (positions.length == 0) {
+  if (positions.length == 0)
     return [{ key: '', value: 'no positions found' }];
-  }
 
-  let first_price = positions[0].entry_price;
+  // let first_price = positions[0].entry_price;
   let start = new Date(positions[positions.length - 1].entry_time);
 
   // order positions by exit_time desc
@@ -37,6 +36,8 @@ export function getMetrics(positions: Position[]): Metrics[] {
   // let last_price = pos_desc[0].exit_price;
 
   let total_timedelta_in_market = 0;
+  let total_entry_cost = 0;
+  let total_pnl = 0;
 
   let winning_trades = 0;
   let losing_trades = 0;
@@ -46,10 +47,14 @@ export function getMetrics(positions: Position[]): Metrics[] {
   let gross_loss = 0;
 
   let avg_winning_trade = 0;
+  let avg_winning_trade_pct = 0;
   let avg_losing_trade = 0;
+  let avg_losing_trade_pct = 0;
 
   let largest_winning_trade = 0;
+  let largest_winning_trade_pct = 0;
   let largest_losing_trade = 0;
+  let largest_losing_trade_pct = 0;
 
   let avg_time_in_winning_trades = 0;
   let avg_time_in_losing_trades = 0;
@@ -60,18 +65,25 @@ export function getMetrics(positions: Position[]): Metrics[] {
   let consecutive_losing_trades = 0;
   let max_consecutive_losses = 0;
 
+  // let max_drawdown = 0;
+
   for (let i = 0; i < positions.length; i++) {
     let pos = positions[i];
     let timedelta = pos.exit_time.getTime() - pos.entry_time.getTime();
     total_timedelta_in_market += timedelta;
+    total_entry_cost += pos.entry_cost;
+    total_pnl += pos.pnl;
 
     if (pos.pnl > 0) {
       gross_profit += pos.pnl;
       avg_time_in_winning_trades = (avg_time_in_winning_trades * i + timedelta) / (i + 1);
       avg_winning_trade = (avg_winning_trade * i + pos.pnl) / (i + 1);
+      avg_winning_trade_pct = (avg_winning_trade_pct * i + pos.roi) / (i + 1);
 
-      if (pos.pnl > largest_winning_trade)
+      if (pos.pnl > largest_winning_trade) {
         largest_winning_trade = pos.pnl;
+        largest_winning_trade_pct = (pos.pnl / pos.entry_cost) * 100;
+      }
 
       if (consecutive_losing_trades > 0) {
         if (consecutive_losing_trades > max_consecutive_losses)
@@ -86,9 +98,12 @@ export function getMetrics(positions: Position[]): Metrics[] {
       gross_loss += pos.pnl;
       avg_time_in_losing_trades = (avg_time_in_losing_trades * i + timedelta) / (i + 1);
       avg_losing_trade = (avg_losing_trade * i + pos.pnl) / (i + 1);
+      avg_losing_trade_pct = (avg_losing_trade_pct * i + pos.roi) / (i + 1);
 
-      if (pos.pnl < largest_losing_trade)
+      if (pos.pnl < largest_losing_trade) {
         largest_losing_trade = pos.pnl;
+        largest_losing_trade_pct = (pos.pnl / pos.entry_cost) * 100;
+      }
 
       if (consecutive_winning_trades > 0) {
         if (consecutive_winning_trades > max_consecutive_wins)
@@ -104,17 +119,19 @@ export function getMetrics(positions: Position[]): Metrics[] {
       even_trades++;
     }
 
-    // avg_time = (avg_time * i + timedelta) / (i + 1);
-    // let entry_amount = balance / pos.entry_price;
-    // let pricedelta = pos.exit_price - pos.entry_price;
-    // let pnl = pricedelta * entry_amount;
-    // let new_balance = balance + pnl;
-    // let roi = (new_balance / balance - 1) * 100;
-    // avg_roi = (avg_roi * i + roi) / (i + 1);
-    // balance = new_balance;
   }
 
-  let avg_trade_net_profit = (avg_winning_trade * winning_trades + avg_losing_trade * losing_trades) / (winning_trades + losing_trades);
+  let bh_entry_cost = positions[0].entry_cost;
+  let bh_exit_cost = pos_desc[0].exit_cost
+  let bh_pnl = bh_exit_cost - bh_entry_cost;
+  let bh_roi = (bh_pnl / bh_entry_cost) * 100;
+  let bh_apr = (bh_roi / (trading_period / 1000 / 60 / 60 / 24)) * 365
+
+  let roi = (total_pnl / total_entry_cost) * 100;
+  let apr = (roi / (trading_period / 1000 / 60 / 60 / 24)) * 365
+
+  let avg_trade_net_profit = (gross_profit / winning_trades) + (gross_loss / losing_trades);
+  let avg_trade_net_profit_pct = (avg_trade_net_profit / total_entry_cost) * 100;
 
   let percent_profitable = (winning_trades / positions.length) * 100;
 
@@ -122,12 +139,6 @@ export function getMetrics(positions: Position[]): Metrics[] {
   let profit_factor = gross_profit / Math.abs(gross_loss);
 
   let payoff_ratio = avg_winning_trade / Math.abs(avg_losing_trade);
-
-  // let init_bh_amount = init_balance / first_price;
-  // let exit_bh_value = init_bh_amount * last_price;
-
-  // let roi = (balance / init_balance - 1) * 100;
-  // let roi_bh = (exit_bh_value / init_balance - 1) * 100;
 
   let total_timedelta = end.getTime() - start.getTime();
   let percent_of_time_in_market = (total_timedelta_in_market / total_timedelta) * 100;
@@ -139,8 +150,8 @@ export function getMetrics(positions: Position[]): Metrics[] {
     { key: 'sep', value: '' },
 
     { key: 'subtitle', value: 'Buy & Hold' },
-    // { key: 'Return on Investment', value: bh_roi },
-    // { key: 'Annualized Return', value: bh_apr },
+    { key: 'Return on Investment', value: bh_roi },
+    { key: 'Annualized Return', value: bh_apr },
     // { key: 'Exposure', value: bh_exposure },
     // { key: 'Sharpe Ratio', value: bh_sharpe },
     // { key: 'Risk Return Ratio', value: bh_risk_return_ratio },
@@ -148,8 +159,8 @@ export function getMetrics(positions: Position[]): Metrics[] {
     { key: 'sep', value: '' },
 
     { key: 'subtitle', value: 'Strategy' },
-    // { key: 'Return on Investment', value: roi },
-    // { key: 'Annualized Return', value: apr },
+    { key: 'Return on Investment', value: roi },
+    { key: 'Annualized Return', value: apr },
     // { key: 'Exposure', value: exposure },
     // { key: 'Sharpe Ratio', value: sharpe },
     // { key: 'Risk Return Ratio', value: risk_return_ratio },
@@ -171,16 +182,11 @@ export function getMetrics(positions: Position[]): Metrics[] {
 
     { key: 'sep', value: '' },
 
-    { key: 'Avg. Trade Net Profit', value: avg_trade_net_profit },
-    // { key: 'Avg. Trade Net Profit (%)', value: avg_trade_net_profit_pct },
-    { key: 'Avg. Winning Trade', value: avg_winning_trade },
-    // { key: 'Avg. Winning Trade (%)', value: avg_winning_trade_pct },
-    { key: 'Avg. Losing Trade', value: avg_losing_trade },
-    // { key: 'Avg. Losing Trade (%)', value: avg_losing_trade_pct },
-    { key: 'Largest Winning Trade', value: largest_winning_trade },
-    // { key: 'Largest Winning Trade (%)', value: largest_winning_trade_pct },
-    { key: 'Largest Losing Trade', value: largest_losing_trade },
-    // { key: 'Largest Losing Trade (%)', value: largest_losing_trade_pct },
+    { key: 'Avg. Trade Net Profit', value: `${avg_trade_net_profit} (${avg_trade_net_profit_pct}%)` },
+    { key: 'Avg. Winning Trade', value: `${avg_winning_trade} (${avg_winning_trade_pct}%)` },
+    { key: 'Avg. Losing Trade', value: `${avg_losing_trade} (${avg_losing_trade_pct}%)` },
+    { key: 'Largest Winning Trade', value: `${largest_winning_trade} (${largest_winning_trade_pct}%)` },
+    { key: 'Largest Losing Trade', value: `${largest_losing_trade} (${largest_losing_trade_pct}%)` },
     { key: 'Payoff Ratio', value: payoff_ratio },
 
     { key: 'sep', value: '' },

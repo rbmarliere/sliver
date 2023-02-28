@@ -18,21 +18,14 @@
       <mat-spinner></mat-spinner>
     </div>
 
-    <mat-card-content class="main container">
+    <mat-card-content class="container">
 
       <div *ngIf="!loading && positions">
-        <div *ngIf="positions.length == 0">
-          <p>no positions found</p>
-        </div>
 
-        <div *ngIf="positions.length > 0">
+        <app-perf-summary [summary]="perfLog"></app-perf-summary>
 
-          <app-perf-summary [summary]="perfLog"></app-perf-summary>
-
-          <app-positions-table *ngIf="positions.length > 0" [positions]="positions"
-            displayMode="compact"></app-positions-table>
-
-        </div>
+        <app-positions-table *ngIf="positions.length > 0" [positions]="positions"
+          displayMode="compact"></app-positions-table>
       </div>
 
     </mat-card-content>
