@@ -11,7 +11,6 @@ import { Position } from '../position';
 export class PositionsComponent implements OnInit {
 
   positions: Position[] = [];
-  displayedColumns: string[] = this.getDisplayedColumns();
   loading: Boolean = true;
 
   constructor(
@@ -30,39 +29,5 @@ export class PositionsComponent implements OnInit {
       }
     });
   }
-
-  getDisplayedColumns(): string[] {
-    if (window.innerWidth < 768) {
-      // mobile
-      return [
-        'id',
-        'strategy_id',
-        'market',
-        'status',
-        // 'entry_amount',
-        // 'entry_price',
-        // 'exit_price',
-        // 'exit_amount',
-        // 'pnl',
-        // 'roi',
-        // 'stopped'
-      ];
-    } else {
-      return [
-        'id',
-        'strategy_id',
-        'market',
-        'status',
-        'entry_amount',
-        'entry_price',
-        'exit_price',
-        'exit_amount',
-        'pnl',
-        'roi',
-        'stopped',
-      ];
-    }
-  }
-
 
 }
