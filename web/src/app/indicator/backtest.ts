@@ -1,5 +1,5 @@
-import { Indicator, sliceIndicators } from '../indicator';
-import { getPositions, Position } from '../position';
+import { Indicator } from '../indicator';
+import { Position } from '../position';
 import { Strategy } from '../strategy';
 import { getStrategyTypeName } from '../strategy/strategy-types';
 import { mean, median, variance } from './utils';
@@ -9,15 +9,7 @@ export interface Metrics {
   value: string | number;
 }
 
-export function backtest(strategy: Strategy, indicators: Indicator, start: Date, end: Date): Metrics[] {
-
-  let startIdx = indicators.time.findIndex((t) => t >= start);
-  let endIdx = indicators.time.findIndex((t) => t >= end);
-
-  indicators = sliceIndicators(indicators, startIdx, endIdx);
-
-  // TODO init_balance = 10000 as a param?
-  let positions = getPositions(indicators);
+export function backtest(strategy: Strategy, indicators: Indicator, positions: Position[]): Metrics[] {
 
   let metrics = getMetrics(positions);
 

@@ -1,6 +1,7 @@
 import { Component, Input } from '@angular/core';
-import { Indicator } from '../indicator';
+import { Indicator, sliceIndicators } from '../indicator';
 import { IndicatorService } from '../indicator.service';
+import { getPositions, Position } from '../position';
 import { Strategy } from '../strategy';
 import { backtest, Metrics } from './backtest';
 import { getPlot } from './plot';
@@ -15,6 +16,7 @@ export class IndicatorComponent {
   @Input() strategy!: Strategy;
 
   backtestLog?: Metrics[];
+  positions: Position[] = [];
   plot: any;
 
   loading: Boolean = false;
@@ -56,8 +58,14 @@ export class IndicatorComponent {
       end = new Date(event['xaxis.range[1]']);
     }
 
-    this.backtestLog = backtest(this.strategy, this.indicators, start, end);
-    console.log();
+    let startIdx = this.indicators.time.findIndex((t) => t >= start);
+    let endIdx = this.indicators.time.findIndex((t) => t >= end);
+    let indicators = sliceIndicators(this.indicators, startIdx, endIdx);
+
+    // TODO init_balance = 10000 as a param?
+    this.positions = getPositions(indicators);
+
+    this.backtestLog = backtest(this.strategy, indicators, this.positions);
   }
 
 }
