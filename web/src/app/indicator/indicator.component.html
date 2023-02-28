@@ -37,10 +37,16 @@
                 <h4>{{ item.value }}</h4>
               </td>
 
-              <td *ngIf="item.key != 'sep' && item.key != 'SEP' && item.key != 'title'" style="text-align: left;">
+              <td *ngIf="item.key == 'subtitle'" colspan="2" style="text-align: center;">
+                <h5>{{ item.value }}</h5>
+              </td>
+
+              <td *ngIf="item.key != 'sep' && item.key != 'SEP' && item.key != 'title' && item.key != 'subtitle'"
+                style="text-align: left;">
                 {{ item.key }}
               </td>
-              <td *ngIf="item.key != 'sep' && item.key != 'SEP' && item.key != 'title'" style="text-align: right;">
+              <td *ngIf="item.key != 'sep' && item.key != 'SEP' && item.key != 'title' && item.key != 'subtitle'"
+                style="text-align: right;">
                 {{ item.value }}
               </td>
             </tr>
