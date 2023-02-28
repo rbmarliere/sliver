@@ -673,9 +673,9 @@ class Position(BaseModel):
                 # if price is lower than entry, there are no gains to stop
                 if last_price > self.entry_price:
                     curr_gain = \
-                        core.utils.get_roi(self.last_high, last_price) * -1
+                        core.utils.get_return(self.last_high, last_price) * -1
             else:
-                curr_gain = core.utils.get_roi(self.entry_price, last_price)
+                curr_gain = core.utils.get_return(self.entry_price, last_price)
 
             if curr_gain > engine.stop_gain:
                 self.stop(last_price=last_price)
@@ -688,11 +688,12 @@ class Position(BaseModel):
             if engine.trailing_loss:
                 # if price is higher than entry, there are no losses to stop
                 if last_price < self.entry_price:
-                    curr_loss = core.utils.get_roi(self.last_low, last_price)
+                    curr_loss = core.utils.get_return(
+                        self.last_low, last_price)
             else:
                 # multiply by -1 because strategy.stop_loss is stored positive
                 curr_loss = \
-                    core.utils.get_roi(self.entry_price, last_price) * -1
+                    core.utils.get_return(self.entry_price, last_price) * -1
 
             if curr_loss > engine.stop_loss:
                 self.stop(last_price=last_price)
@@ -882,7 +883,7 @@ class Position(BaseModel):
             self.pnl = (self.exit_cost
                         - self.entry_cost
                         - self.fee)
-            self.roi = core.utils.get_roi(self.entry_price, self.exit_price)
+            self.roi = core.utils.get_roi(self.entry_cost, self.pnl)
             i("position is now closed, pnl: {r}"
               .format(r=market.quote.print(self.pnl)))
             n(user, self.get_notice(prefix="closed ",

@@ -127,8 +127,12 @@ def get_mean_var(series: pandas.DataFrame,
     return new_mean, new_var
 
 
-def get_roi(entry_price, exit_price):
+def get_return(entry_price, exit_price):
     return D(str(((exit_price / entry_price) - 1) * 100)).quantize(D("0.0001"))
+
+
+def get_roi(entry_cost, pnl):
+    return D(str((pnl / entry_cost) * 100)).quantize(D("0.0001"))
 
 
 def quantize(row, col, prec_col):
