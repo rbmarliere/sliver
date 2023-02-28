@@ -2,7 +2,7 @@ import { Indicator } from '../indicator';
 import { Position } from '../position';
 import { Strategy } from '../strategy';
 import { getStrategyTypeName } from '../strategy/strategy-types';
-import { mean, median, variance } from './utils';
+import { mean, median, msToString, variance } from './utils';
 
 export interface Metrics {
   key: string;
@@ -24,7 +24,6 @@ export function getMetrics(positions: Position[]): Metrics[] {
   if (positions.length == 0)
     return [{ key: '', value: 'no positions found' }];
 
-  // let first_price = positions[0].entry_price;
   let start = new Date(positions[0].entry_time);
 
   // order positions by exit_time desc
@@ -33,7 +32,6 @@ export function getMetrics(positions: Position[]): Metrics[] {
   });
   let end = new Date(pos_desc[0].exit_time);
   let trading_period = end.getTime() - start.getTime();
-  // let last_price = pos_desc[0].exit_price;
 
   let total_timedelta_in_market = 0;
   let total_entry_cost = 0;
@@ -176,25 +174,25 @@ export function getMetrics(positions: Position[]): Metrics[] {
     { key: 'SEP', value: '' },
 
     { key: 'subtitle', value: 'Buy & Hold' },
-    { key: 'Return on Investment', value: bh_roi },
-    { key: 'Annualized Return', value: bh_apr },
-    { key: 'Sharpe Ratio', value: bh_sharpe },
-    { key: 'Sortino Ratio', value: bh_sortino },
+    { key: 'Return on Investment', value: `${bh_roi.toFixed(2)}%` },
+    { key: 'Annualized Return', value: `${bh_apr.toFixed(2)}%` },
+    { key: 'Sharpe Ratio', value: bh_sharpe.toFixed(2) },
+    { key: 'Sortino Ratio', value: bh_sortino.toFixed(2) },
 
     { key: 'sep', value: '' },
 
     { key: 'subtitle', value: 'Strategy' },
-    { key: 'Return on Investment', value: roi },
-    { key: 'Annualized Return', value: apr },
-    { key: 'Sharpe Ratio', value: sharpe },
-    { key: 'Sortino Ratio', value: sortino },
+    { key: 'Return on Investment', value: `${roi.toFixed(2)}%` },
+    { key: 'Annualized Return', value: `${apr.toFixed(2)}%` },
+    { key: 'Sharpe Ratio', value: sharpe.toFixed(2) },
+    { key: 'Sortino Ratio', value: sortino.toFixed(2) },
 
     { key: 'sep', value: '' },
 
-    { key: 'Total Net Profit', value: net_profit },
-    { key: 'Gross Profit', value: gross_profit },
-    { key: 'Gross Loss', value: gross_loss },
-    { key: 'Profit Factor', value: profit_factor },
+    { key: 'Total Net Profit', value: net_profit.toFixed(2) },
+    { key: 'Gross Profit', value: gross_profit.toFixed(2) },
+    { key: 'Gross Loss', value: gross_loss.toFixed(2) },
+    { key: 'Profit Factor', value: profit_factor.toFixed(2) },
 
     { key: 'SEP', value: '' },
 
@@ -202,29 +200,29 @@ export function getMetrics(positions: Position[]): Metrics[] {
     { key: 'Winning Trades', value: winning_trades },
     { key: 'Losing Trades', value: losing_trades },
     { key: 'Even Trades', value: even_trades },
-    { key: 'Percent Profitable', value: percent_profitable },
+    { key: 'Percent Profitable', value: `${percent_profitable.toFixed(2)}%` },
 
     { key: 'sep', value: '' },
 
-    { key: 'Avg. Trade Net Profit', value: `${avg_trade_net_profit} (${avg_trade_net_profit_pct}%)` },
-    { key: 'Avg. Winning Trade', value: `${avg_winning_trade} (${avg_winning_trade_pct}%)` },
-    { key: 'Avg. Losing Trade', value: `${avg_losing_trade} (${avg_losing_trade_pct}%)` },
-    { key: 'Largest Winning Trade', value: `${largest_winning_trade} (${largest_winning_trade_pct}%)` },
-    { key: 'Largest Losing Trade', value: `${largest_losing_trade} (${largest_losing_trade_pct}%)` },
-    { key: 'Payoff Ratio', value: payoff_ratio },
+    { key: 'Avg. Trade Net Profit', value: `${avg_trade_net_profit.toFixed(2)} (${avg_trade_net_profit_pct.toFixed(2)}%)` },
+    { key: 'Avg. Winning Trade', value: `${avg_winning_trade.toFixed(2)} (${avg_winning_trade_pct.toFixed(2)}%)` },
+    { key: 'Avg. Losing Trade', value: `${avg_losing_trade.toFixed(2)} (${avg_losing_trade_pct.toFixed(2)}%)` },
+    { key: 'Largest Winning Trade', value: `${largest_winning_trade.toFixed(2)} (${largest_winning_trade_pct.toFixed(2)}%)` },
+    { key: 'Largest Losing Trade', value: `${largest_losing_trade.toFixed(2)} (${largest_losing_trade_pct.toFixed(2)}%)` },
+    { key: 'Payoff Ratio', value: payoff_ratio.toFixed(2) },
 
     { key: 'sep', value: '' },
 
     { key: 'Max. Consecutive Wins', value: max_consecutive_wins },
     { key: 'Max. Consecutive Losses', value: max_consecutive_losses },
-    { key: 'Avg. Time in Winning Trades', value: avg_time_in_winning_trades },
-    { key: 'Avg. Time in Losing Trades', value: avg_time_in_losing_trades },
-    { key: 'Avg. Time in Even Trades', value: avg_time_in_even_trades },
+    { key: 'Avg. Time in Winning Trades', value: msToString(avg_time_in_winning_trades) },
+    { key: 'Avg. Time in Losing Trades', value: msToString(avg_time_in_losing_trades) },
+    { key: 'Avg. Time in Even Trades', value: msToString(avg_time_in_even_trades) },
 
     { key: 'sep', value: '' },
 
-    { key: 'Trading Period', value: trading_period },
-    { key: 'Percent of Time in Market', value: percent_of_time_in_market },
+    { key: 'Trading Period', value: msToString(trading_period) },
+    { key: 'Percent of Time in Market', value: `${percent_of_time_in_market.toFixed(2)}%` },
 
   ];
 
@@ -232,14 +230,14 @@ export function getMetrics(positions: Position[]): Metrics[] {
     metrics = metrics.concat([
       { key: 'SEP', value: '' },
 
-      { key: 'Max. Equity Run-up', value: `${greatest_equity_value} (${greatest_equity_pct}%)` },
-      { key: 'Drawdown (Peak to Valley)', value: `${max_drawdown_pv_value} (${max_drawdown_pv_pct}%)` },
-      { key: 'Net Profit as % of Drawdown', value: net_profit_vs_dd_pv },
+      { key: 'Max. Equity Run-up', value: `${greatest_equity_value.toFixed(2)} (${greatest_equity_pct.toFixed(2)}%)` },
+      { key: 'Drawdown (Peak to Valley)', value: `${max_drawdown_pv_value.toFixed(2)} (${max_drawdown_pv_pct.toFixed(2)}%)` },
+      { key: 'Net Profit as % of Drawdown', value: `${net_profit_vs_dd_pv.toFixed(2)}%` },
 
       { key: 'sep', value: '' },
 
-      { key: 'Drawdown (Trade to Trade)', value: `${max_drawdown_tt_value} (${max_drawdown_tt_pct}%)` },
-      { key: 'Net Profit as % of Drawdown', value: net_profit_vs_dd_tt },
+      { key: 'Drawdown (Trade to Trade)', value: `${max_drawdown_tt_value.toFixed(2)} (${max_drawdown_tt_pct.toFixed(2)}%)` },
+      { key: 'Net Profit as % of Drawdown', value: `${net_profit_vs_dd_tt.toFixed(2)}%` },
     ]);
   }
 
