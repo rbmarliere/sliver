@@ -22,12 +22,12 @@
 
       <div *ngIf="!loading && indicators">
 
+        <plotly-plot [config]="plot.config" [data]="plot.data" [layout]="plot.layout" [updateOnlyWithRevision]="true"
+          (relayout)="zoom($event)"></plotly-plot>
+
         <app-perf-summary title="Backtest Summary" [summary]="backtestLog"></app-perf-summary>
 
         <app-positions-table *ngIf="positions.length > 0" [positions]="positions"></app-positions-table>
-
-        <plotly-plot [config]="plot.config" [data]="plot.data" [layout]="plot.layout" [updateOnlyWithRevision]="true"
-          (relayout)="zoom($event)"></plotly-plot>
 
       </div>
 
