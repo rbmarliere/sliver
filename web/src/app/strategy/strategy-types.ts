@@ -35,9 +35,9 @@ export function getStrategyTypes(): StrategyType[] {
 
 export function getStrategyTypeName(value: number | null): string {
   const type = getStrategyTypes().find((strategyType) => strategyType.value === value);
-  if (type) {
-    // throw new Error(`Strategy type not found for value ${value}`);
+
+  if (type)
     return type.name;
-  }
+
   return '';
 }
