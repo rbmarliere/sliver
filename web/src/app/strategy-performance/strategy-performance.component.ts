@@ -67,18 +67,6 @@ export class StrategyPerformanceComponent {
 
   getPerfLog(): Metrics[] {
     if (this.positions && this.positions.length > 0) {
-      let last_index = this.positions.length - 1;
-      let start = new Date(this.positions[last_index].entry_time);
-      let first_price = this.positions[last_index].entry_price;
-
-      // order positions by exit_time desc
-      let positions = this.positions.sort((a, b) => {
-        return new Date(b.exit_time).getTime() - new Date(a.exit_time).getTime();
-      });
-
-      let end = new Date(positions[0].exit_time);
-      let last_price = positions[0].exit_price;
-
       return getMetrics(this.positions);
     }
 

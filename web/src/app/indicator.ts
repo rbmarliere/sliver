@@ -29,7 +29,6 @@ export function sliceIndicators(indicators: Indicator, startIdx: number, endIdx:
     return indicators;
   }
 
-  // if startIdx is 0 and endIdx is last index, return the original indicator
   if (startIdx == 0 && endIdx == indicators.time.length - 1) {
     return indicators;
   }
