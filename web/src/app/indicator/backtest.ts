@@ -144,7 +144,8 @@ export function getMetrics(positions: Position[]): Metrics[] {
   let bh_sharpe = bh_roi / Math.sqrt(variance(positions.map(p => p.roi)));
   let bh_sortino = bh_roi / Math.sqrt(variance(positions.filter(p => p.roi < 0).map(p => p.roi)));
 
-  let roi = (total_pnl / total_entry_cost) * 100;
+  let avg_trade_cost = total_entry_cost / positions.length;
+  let roi = (total_pnl / avg_trade_cost) * 100;
   let apr = (roi / (trading_period / 1000 / 60 / 60 / 24)) * 365
   let sharpe = roi / Math.sqrt(variance(positions.map(p => p.roi)));
   let sortino = roi / Math.sqrt(variance(positions.filter(p => p.roi < 0).map(p => p.roi)));
@@ -233,9 +234,6 @@ export function getMetrics(positions: Position[]): Metrics[] {
       { key: 'Max. Equity Run-up', value: `${greatest_equity_value.toFixed(2)} (${greatest_equity_pct.toFixed(2)}%)` },
       { key: 'Drawdown (Peak to Valley)', value: `${max_drawdown_pv_value.toFixed(2)} (${max_drawdown_pv_pct.toFixed(2)}%)` },
       { key: 'Net Profit as % of Drawdown', value: `${net_profit_vs_dd_pv.toFixed(2)}%` },
-
-      { key: 'sep', value: '' },
-
       { key: 'Drawdown (Trade to Trade)', value: `${max_drawdown_tt_value.toFixed(2)} (${max_drawdown_tt_pct.toFixed(2)}%)` },
       { key: 'Net Profit as % of Drawdown', value: `${net_profit_vs_dd_tt.toFixed(2)}%` },
     ]);
