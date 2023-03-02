@@ -3,7 +3,7 @@
 <div style="display: inline-block">
   Performance
   <div *ngIf="!loading" style="display: inline-block">
-    <button class="icon-display" mat-icon-button color="primary" (click)="getPositions()" title="Refresh Positions">
+    <button class="icon-display" mat-icon-button color="primary" (click)="getPerfLog()" title="Refresh Positions">
       <mat-icon fontIcon="refresh"></mat-icon>
     </button>
   </div>
@@ -20,7 +20,7 @@
 
     <mat-card-content class="container">
 
-      <div *ngIf="!loading && positions">
+      <div *ngIf="!loading && positions && perfLog">
 
         <app-perf-summary title="Performance Summary" [summary]="perfLog"></app-perf-summary>
 
