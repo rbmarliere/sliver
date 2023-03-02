@@ -2,7 +2,7 @@ import { Indicator } from '../indicator';
 import { Position } from '../position';
 import { Strategy } from '../strategy';
 import { getStrategyTypeName } from '../strategy/strategy-types';
-import { mean, median, msToString, variance } from './utils';
+import { getMaxSeriesDrawdown, mean, median, msToString, variance } from './utils';
 
 export interface Metrics {
   key: string;
@@ -11,22 +11,7 @@ export interface Metrics {
 
 export function backtest(strategy: Strategy, indicators: Indicator, positions: Position[]): Metrics[] {
 
-  let change1 = 0;
-  let change2 = 0;
-
-  let abs_peak = Math.max(...indicators.close);
-  let abs_trough = Math.min(...indicators.close);
-
-  // trough is the lowest value in indicators.close, it must come after peak
-  let trough = Math.min(...indicators.close.slice(indicators.close.indexOf(abs_peak)));
-  if (trough > abs_trough) {
-    // get the max value in indicators.close before abs_trough
-    let peak = Math.max(...indicators.close.slice(0, indicators.close.indexOf(abs_trough)));
-    change1 = (abs_trough - peak) / peak * 100;
-  }
-  change2 = (trough - abs_peak) / abs_peak * 100;
-
-  let metrics = getMetrics(positions, Math.min(change1, change2));
+  let metrics = getMetrics(positions, getMaxSeriesDrawdown(indicators.close));
 
   if (getStrategyTypeName(strategy.type) == "HYPNOX")
     metrics = metrics.concat(getHypnoxMetrics(indicators))

@@ -49,3 +49,22 @@ export function variance(values: number[]): number {
   const avgSquareDiff = mean(squareDiffs);
   return avgSquareDiff;
 }
+
+export function getMaxSeriesDrawdown(prices: number[]): number {
+  let change1 = 0;
+  let change2 = 0;
+
+  let abs_peak = Math.max(...prices);
+  let abs_trough = Math.min(...prices);
+
+  // trough is the lowest value in prices, it must come after peak
+  let trough = Math.min(...prices.slice(prices.indexOf(abs_peak)));
+  if (trough > abs_trough) {
+    // get the max value in prices before abs_trough
+    let peak = Math.max(...prices.slice(0, prices.indexOf(abs_trough)));
+    change1 = (abs_trough - peak) / peak * 100;
+  }
+  change2 = (trough - abs_peak) / abs_peak * 100;
+
+  return Math.min(change1, change2);
+}
