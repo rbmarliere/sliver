@@ -114,12 +114,12 @@ export function getPositions(indicators: Indicator, stopEngine: Engine): Positio
       }
 
       if (currEquity > pos.max_equity) {
-        pos.max_equity = indicators.close[i] * pos.entry_amount;
-        pos.min_equity = pos.max_equity;
+        pos.max_equity = currEquity;
+        pos.min_equity = currEquity;
       }
 
       if (currEquity < pos.min_equity) {
-        pos.min_equity = indicators.close[i] * pos.entry_amount;
+        pos.min_equity = currEquity;
       }
 
     }
