@@ -11,7 +11,7 @@ export interface Metrics {
 
 export function backtest(strategy: Strategy, indicators: Indicator, positions: Position[]): Metrics[] {
 
-  let metrics = getMetrics(positions, getMaxSeriesDrawdown(indicators.close));
+  let metrics = getMetrics(positions, indicators);
 
   if (getStrategyTypeName(strategy.type) == "HYPNOX")
     metrics = metrics.concat(getHypnoxMetrics(indicators))
@@ -19,15 +19,14 @@ export function backtest(strategy: Strategy, indicators: Indicator, positions: P
   return metrics;
 }
 
-export function getMetrics(positions: Position[], max_series_drawdown: number): Metrics[] {
+export function getMetrics(positions: Position[], indicators: Indicator): Metrics[] {
 
-  if (positions.length == 0)
-    return [{ key: '', value: 'no positions found' }];
+  let total_timedelta = indicators.time[indicators.time.length - 1].getTime() - indicators.time[0].getTime();
+  let total_days = total_timedelta / (1000 * 60 * 60 * 24);
 
-  let start = new Date(positions[0].entry_time);
-
-  let end = new Date(positions[positions.length - 1].exit_time);
-  let trading_period = end.getTime() - start.getTime();
+  let pos_start = new Date(positions[0].entry_time);
+  let pos_end = new Date(positions[positions.length - 1].exit_time);
+  let trading_period = pos_end.getTime() - pos_start.getTime();
   let trading_days = trading_period / 1000 / 60 / 60 / 24
 
   let total_timedelta_in_market = 0;
@@ -62,6 +61,8 @@ export function getMetrics(positions: Position[], max_series_drawdown: number): 
   let max_equity_runup = 0;
 
   let net_asset_value = 100;
+  let bh_entry_cost = net_asset_value;
+  let bh_entry_amount = net_asset_value / indicators.close[0];
   let init_nav = net_asset_value;
 
   let i = 0;
@@ -126,16 +127,17 @@ export function getMetrics(positions: Position[], max_series_drawdown: number): 
     }
   }
 
+  let max_series_drawdown = getMaxSeriesDrawdown(indicators.close);
+
   let vol = Math.sqrt(variance(positions.map(p => p.roi)));
   let downside_vol = Math.sqrt(variance(positions.filter(p => p.roi < 0).map(p => p.roi)));
 
-  let bh_entry_cost = positions[0].entry_cost;
-  let bh_exit_cost = positions[positions.length - 1].exit_price * positions[0].entry_amount;
+  let bh_exit_cost = indicators.close[indicators.close.length - 1] * bh_entry_amount;
   let bh_roi = ((bh_exit_cost / bh_entry_cost) - 1) * 100;
-  let bh_apr = (bh_roi / trading_days) * 365
+  let bh_apr = (bh_roi / total_days) * 365
   let bh_sharpe = bh_roi / vol;
   let bh_sortino = bh_roi / downside_vol;
-  let bh_calmar = bh_roi / max_pos_drawdown;
+  let bh_calmar = bh_roi / max_series_drawdown;
 
   let roi = ((net_asset_value / init_nav) - 1) * 100;
   let apr = (roi / trading_days) * 365
@@ -150,8 +152,7 @@ export function getMetrics(positions: Position[], max_series_drawdown: number): 
 
   let payoff_ratio = avg_winning_trade_pnl / Math.abs(avg_losing_trade_pnl);
 
-  let total_timedelta = end.getTime() - start.getTime();
-  let percent_of_time_in_market = (total_timedelta_in_market / total_timedelta) * 100;
+  let percent_of_time_in_market = (total_timedelta_in_market / trading_period) * 100;
 
   let bh_recovery_factor = bh_roi / (max_series_drawdown * -1);
   let recovery_factor = roi / (max_pos_drawdown * -1);

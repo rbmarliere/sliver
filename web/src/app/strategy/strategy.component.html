@@ -217,8 +217,10 @@
     </mat-card-content>
   </mat-card>
 
-  <app-strategy-performance [strategy]="strategy"></app-strategy-performance>
+  <app-strategy-performance *ngIf="indicators" [strategy]="strategy"
+    [indicators]="indicators"></app-strategy-performance>
 
-  <app-indicator *ngIf="stopEngine" [strategy]="strategy" [stopEngine]="stopEngine"></app-indicator>
+  <app-indicator *ngIf="stopEngine && indicators" [strategy]="strategy" [stopEngine]="stopEngine"
+    [indicators]="indicators"></app-indicator>
 
 </div>
