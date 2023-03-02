@@ -34,7 +34,7 @@ export class StrategyPerformanceComponent {
 
   getPerfLog(): Metrics[] {
     if (this.positions && this.positions.length > 0) {
-      return getMetrics(this.positions);
+      return getMetrics(this.positions, 0);
     }
 
     return [];

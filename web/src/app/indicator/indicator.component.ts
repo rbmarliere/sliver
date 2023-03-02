@@ -1,4 +1,5 @@
 import { Component, Input } from '@angular/core';
+import { Engine } from '../engine';
 import { Indicator, sliceIndicators } from '../indicator';
 import { IndicatorService } from '../indicator.service';
 import { getPositions, Position } from '../position';
@@ -14,11 +15,11 @@ import { getPlot } from './plot';
 export class IndicatorComponent {
 
   @Input() strategy!: Strategy;
+  @Input() stopEngine!: Engine;
 
   backtestLog?: Metrics[];
   positions: Position[] = [];
   plot: any;
-
   loading: Boolean = false;
   indicators?: Indicator;
 
@@ -62,7 +63,7 @@ export class IndicatorComponent {
     let endIdx = this.indicators.time.findIndex((t) => t >= end);
     let indicators = sliceIndicators(this.indicators, startIdx, endIdx);
 
-    this.positions = getPositions(indicators);
+    this.positions = getPositions(indicators, this.stopEngine);
 
     this.backtestLog = backtest(this.strategy, indicators, this.positions);
   }

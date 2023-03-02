@@ -219,6 +219,6 @@
 
   <app-strategy-performance [strategy]="strategy"></app-strategy-performance>
 
-  <app-indicator [strategy]="strategy"></app-indicator>
+  <app-indicator *ngIf="stopEngine" [strategy]="strategy" [stopEngine]="stopEngine"></app-indicator>
 
 </div>
