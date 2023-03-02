@@ -8,7 +8,7 @@ import api
 import core
 
 
-fields = {
+pos_fields = {
     "id": fields.Integer,
     "market": fields.String,
     "strategy_id": fields.Integer,
@@ -26,6 +26,13 @@ fields = {
     "stopped": fields.Boolean,
     "entry_time": fields.DateTime(dt_format="iso8601"),
     "exit_time": fields.DateTime(dt_format="iso8601"),
+}
+
+by_strategy_fields = {
+    **pos_fields,
+    "max_equity": fields.Float,
+    "min_equity": fields.Float,
+    "drawdown": fields.Float,
 }
 
 
@@ -91,7 +98,7 @@ def get_positions_df(query):
 
 
 class Position(Resource):
-    @marshal_with(fields)
+    @marshal_with(pos_fields)
     @jwt_required()
     def get(self, position_id):
         uid = int(get_jwt_identity())
@@ -106,7 +113,7 @@ class Position(Resource):
 
 
 class Positions(Resource):
-    @marshal_with(fields)
+    @marshal_with(pos_fields)
     @jwt_required()
     def get(self):
         uid = int(get_jwt_identity())
@@ -117,14 +124,66 @@ class Positions(Resource):
 
 
 class PositionsByStrategy(Resource):
-    @marshal_with(fields)
+    @marshal_with(by_strategy_fields)
     @jwt_required()
     def get(self, strategy_id):
         uid = int(get_jwt_identity())
         user = core.db.User.get_by_id(uid)
+
+        try:
+            strategy = core.db.Strategy.get_by_id(strategy_id)
+        except core.db.Strategy.DoesNotExist:
+            raise api.errors.StrategyDoesNotExist
+
         pos_q = user.get_positions() \
             .where(core.db.Strategy.id == strategy_id) \
             .where(core.db.Position.status == "closed") \
             .order_by(core.db.Position.id)
 
-        return get_positions_df(pos_q).to_dict("records")
+        pos_df = get_positions_df(pos_q)
+
+        pos_df["max_equity"] = pos_df.entry_cost
+        pos_df["min_equity"] = pos_df.entry_cost
+        pos_df["drawdown"] = 0
+
+        if pos_df.empty:
+            return pos_df.to_dict("records")
+
+        for i, row in pos_df.iterrows():
+            max_drawdown = 0
+            max_equity = row.max_equity
+            min_equity = row.min_equity
+
+            prices = strategy.get_prices() \
+                .where(core.db.Price.time >= row.entry_time) \
+                .where(core.db.Price.time <= row.exit_time)
+
+            for p in prices:
+                curr_equity = p.close * row.entry_amount
+                curr_drawdown = \
+                    (curr_equity - max_equity) / max_equity * 100
+
+                if curr_drawdown < max_drawdown:
+                    max_drawdown = curr_drawdown
+
+                if curr_equity > max_equity:
+                    max_equity = curr_equity
+                    min_equity = curr_equity
+
+                if curr_equity < min_equity:
+                    min_equity = curr_equity
+
+            quote_precision = D("10") ** (D("-1") * row.quote_precision)
+            price_precision = D("10") ** (D("-1") * row.price_precision)
+
+            max_equity = max_equity * quote_precision
+            max_equity = max_equity.quantize(price_precision)
+
+            min_equity = min_equity * quote_precision
+            min_equity = min_equity.quantize(price_precision)
+
+            pos_df.loc[i, "drawdown"] = max_drawdown
+            pos_df.loc[i, "max_equity"] = max_equity
+            pos_df.loc[i, "min_equity"] = min_equity
+
+        return pos_df.to_dict("records")
