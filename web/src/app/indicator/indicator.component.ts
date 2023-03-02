@@ -1,7 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { Engine } from '../engine';
 import { Indicator, sliceIndicators } from '../indicator';
-import { IndicatorService } from '../indicator.service';
 import { getPositions, Position } from '../position';
 import { Strategy } from '../strategy';
 import { backtest, Metrics } from './backtest';
@@ -15,39 +14,26 @@ import { getPlot } from './plot';
 export class IndicatorComponent {
 
   @Input() strategy!: Strategy;
+  @Input() indicators!: Indicator;
   @Input() stopEngine!: Engine;
 
   backtestLog?: Metrics[];
   positions: Position[] = [];
-  plot: any;
-  loading: Boolean = false;
-  indicators?: Indicator;
+  plot?: any;
 
   constructor(
-    private indicatorService: IndicatorService,
   ) { }
 
-  getIndicators(): void {
-    this.loading = true;
-    this.indicatorService.getIndicators(this.strategy).subscribe({
-      next: (res) => {
-        this.indicators = res;
-        this.loading = false;
-        this.plot = getPlot(this.strategy, this.indicators);
-        this.zoom(0);
-      }
-    });
+  ngOnInit(): void {
+    if (!this.indicators.time) {
+      return;
+    }
+
+    this.plot = getPlot(this.strategy, this.indicators);
+    this.zoom(0);
   }
 
   zoom(event: any): void {
-    if (!this.indicators) {
-      return;
-    }
-
-    if (this.indicators.time === null) {
-      return;
-    }
-
     let start: Date;
     let end: Date;
 
@@ -64,7 +50,6 @@ export class IndicatorComponent {
     let indicators = sliceIndicators(this.indicators, startIdx, endIdx);
 
     this.positions = getPositions(indicators, this.stopEngine);
-
     this.backtestLog = backtest(this.strategy, indicators, this.positions);
   }
 
