@@ -1,3 +1,4 @@
+import { Engine } from "./engine";
 import { Indicator } from "./indicator";
 
 export interface Position {
@@ -20,12 +21,12 @@ export interface Position {
   stopped: boolean;
 
   balance?: number;
-  max_equity_value?: number;
-  min_equity_value?: number;
+  max_equity?: number;
+  min_equity?: number;
   drawdown?: number;
 }
 
-export function getPositions(indicators: Indicator): Position[] {
+export function getPositions(indicators: Indicator, stopEngine: Engine): Position[] {
   let init_balance = 1000;
   let balance = init_balance;
   let fee = 0.001;
@@ -53,15 +54,21 @@ export function getPositions(indicators: Indicator): Position[] {
     stopped: false,
 
     balance: init_balance,
-    max_equity_value: 0,
-    min_equity_value: 9999999999999,
+    max_equity: 0,
+    min_equity: 0,
     drawdown: 0,
   };
 
+  let maxDrawdown = 0;
+
   for (let i = 0; i < indicators.time.length; i++) {
+    let stopped = checkStop(pos, stopEngine, indicators.close[i]);
+
     if (indicators.buys[i] > 0) {
       if (!curr) {
         curr = true;
+
+        maxDrawdown = 0;
 
         pos.entry_time = new Date(indicators.time[i]);
         pos.entry_price = indicators.close[i];
@@ -70,11 +77,11 @@ export function getPositions(indicators: Indicator): Position[] {
         pos.entry_cost = pos.entry_amount * pos.entry_price;
         pos.exit_amount = pos.entry_amount
 
-        pos.max_equity_value = 0;
-        pos.min_equity_value = 9999999999999;
+        pos.max_equity = pos.entry_cost;
+        pos.min_equity = pos.entry_cost;
 
       }
-    } else if (indicators.sells[i] > 0) {
+    } else if (indicators.sells[i] > 0 || stopped) {
       if (curr) {
         curr = false;
 
@@ -90,20 +97,53 @@ export function getPositions(indicators: Indicator): Position[] {
         balance = balance + pos.pnl;
         pos.balance = balance;
 
-        pos.drawdown = (pos.min_equity_value - pos.max_equity_value) / pos.max_equity_value * 100;
+        pos.drawdown = maxDrawdown;
+
+        pos.stopped = stopped;
 
         positions.push({ ...pos });
       }
     }
 
     if (pos.entry_amount > 0) {
-      let currBalance = indicators.close[i] * pos.entry_amount;
-      if (currBalance > pos.max_equity_value)
-        pos.max_equity_value = indicators.close[i] * pos.entry_amount;
-      if (currBalance < pos.min_equity_value)
-        pos.min_equity_value = indicators.close[i] * pos.entry_amount;
+      let currEquity = indicators.close[i] * pos.entry_amount;
+
+      let currDrawdown = (currEquity - pos.max_equity) / pos.max_equity * 100;
+      if (currDrawdown < maxDrawdown) {
+        maxDrawdown = currDrawdown;
+      }
+
+      if (currEquity > pos.max_equity) {
+        pos.max_equity = indicators.close[i] * pos.entry_amount;
+        pos.min_equity = pos.max_equity;
+      }
+
+      if (currEquity < pos.min_equity) {
+        pos.min_equity = indicators.close[i] * pos.entry_amount;
+      }
+
     }
   }
 
   return positions;
+}
+
+function checkStop(pos: Position, engine: Engine, close: number): boolean {
+  // TODO trailing
+  // "chop" current position
+
+  if (pos.entry_price == 0) {
+    return false;
+  }
+
+  if (engine.stop_loss <= 0) {
+    return false;
+  }
+
+  let r = ((close / pos.entry_price) - 1) * 100;
+  if (r * -1 > engine.stop_loss) {
+    return true;
+  }
+
+  return false
 }

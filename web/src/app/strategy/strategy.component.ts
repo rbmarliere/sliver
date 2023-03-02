@@ -2,6 +2,7 @@ import { Component, Input, OnInit } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Engine } from '../engine';
+import { EngineService } from '../engine.service';
 import { EnginesService } from '../engines.service';
 import { Exchange } from '../exchange';
 import { ExchangeService } from '../exchange.service';
@@ -71,6 +72,8 @@ export class StrategyComponent implements OnInit {
 
   engines: Engine[] = [];
 
+  stopEngine?: Engine;
+
   markets: Market[] = [];
 
   get mixins() {
@@ -138,6 +141,7 @@ export class StrategyComponent implements OnInit {
     private strategyService: StrategyService,
     private strategiesService: StrategiesService,
     private enginesService: EnginesService,
+    private engineService: EngineService,
     private exchangeService: ExchangeService,
     private formBuilder: FormBuilder,
     private route: ActivatedRoute,
@@ -157,6 +161,13 @@ export class StrategyComponent implements OnInit {
       this.strategyService.getStrategy(strategy_id).subscribe({
         next: (res) => {
           this.strategy = res;
+          if (res.stop_engine_id) {
+            this.engineService.getEngine(res.stop_engine_id).subscribe({
+              next: (res) => {
+                this.stopEngine = res;
+              }
+            });
+          }
           this.loading = false;
         }
       });
