@@ -16,8 +16,10 @@ export class IndicatorService {
   ) { }
 
   transformDates(indicators: Indicator): Indicator {
-    for (let i = 0; i < indicators.time.length; i++) {
-      indicators.time[i] = new Date(indicators.time[i]);
+    if (indicators.time) {
+      for (let i = 0; i < indicators.time.length; i++) {
+        indicators.time[i] = new Date(indicators.time[i]);
+      }
     }
 
     return indicators;

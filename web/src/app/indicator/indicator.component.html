@@ -1,35 +1,31 @@
+<!-- <p></p> -->
+
+<!-- <div style="display: inline-block"> -->
+<!--   Backtest -->
+<!--   <div *ngIf="!loading" style="display: inline-block"> -->
+<!--     <button class="icon-display" mat-icon-button color="primary" (click)="getPlot()" title="Refresh Indicators"> -->
+<!--       <mat-icon fontIcon="refresh"></mat-icon> -->
+<!--     </button> -->
+<!--   </div> -->
+<!-- </div> -->
+
 <p></p>
 
-<div style="display: inline-block">
-  Backtest
-  <div *ngIf="!loading" style="display: inline-block">
-    <button class="icon-display" mat-icon-button color="primary" (click)="getIndicators()" title="Refresh Indicators">
-      <mat-icon fontIcon="refresh"></mat-icon>
-    </button>
-  </div>
-</div>
-
-<p></p>
-
-<div class="main container">
+<div class="main container" *ngIf="plot">
 
   <mat-card appearance="outlined">
-    <div *ngIf="loading" class="spinner">
-      <mat-spinner></mat-spinner>
-    </div>
+    <!-- <div *ngIf="loading" class="spinner"> -->
+    <!--   <mat-spinner></mat-spinner> -->
+    <!-- </div> -->
 
     <mat-card-content class="container">
 
-      <div *ngIf="!loading && indicators">
+      <app-perf-summary title="Backtest Summary" [summary]="backtestLog"></app-perf-summary>
 
-        <plotly-plot [config]="plot.config" [data]="plot.data" [layout]="plot.layout" [updateOnlyWithRevision]="true"
-          (relayout)="zoom($event)"></plotly-plot>
+      <plotly-plot [config]="plot.config" [data]="plot.data" [layout]="plot.layout" [updateOnlyWithRevision]="true"
+        (relayout)="zoom($event)"></plotly-plot>
 
-        <app-perf-summary title="Backtest Summary" [summary]="backtestLog"></app-perf-summary>
-
-        <app-positions-table *ngIf="positions.length > 0" [positions]="positions"></app-positions-table>
-
-      </div>
+      <app-positions-table *ngIf="positions.length > 0" [positions]="positions"></app-positions-table>
 
     </mat-card-content>
   </mat-card>
