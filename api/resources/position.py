@@ -142,12 +142,12 @@ class PositionsByStrategy(Resource):
 
         pos_df = get_positions_df(pos_q)
 
+        if pos_df.empty:
+            return pos_df.to_dict("records")
+
         pos_df["max_equity"] = pos_df.entry_cost
         pos_df["min_equity"] = pos_df.entry_cost
         pos_df["drawdown"] = 0
-
-        if pos_df.empty:
-            return pos_df.to_dict("records")
 
         for i, row in pos_df.iterrows():
             max_drawdown = 0
