@@ -28,6 +28,11 @@
         </mat-form-field>
 
         <mat-form-field>
+          <mat-label>Stopped</mat-label>
+          <input matInput value="{{position.stopped}}" readonly />
+        </mat-form-field>
+
+        <mat-form-field>
           <mat-label>Target Cost</mat-label>
           <input matInput value="{{position.target_cost}}" readonly />
         </mat-form-field>
@@ -38,8 +43,18 @@
         </mat-form-field>
 
         <mat-form-field>
+          <mat-label>Exit Cost</mat-label>
+          <input matInput value="{{position.exit_cost}}" readonly />
+        </mat-form-field>
+
+        <mat-form-field>
           <mat-label>Entry Amount</mat-label>
           <input matInput value="{{position.entry_amount}}" readonly />
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Exit Amount</mat-label>
+          <input matInput value="{{position.exit_amount}}" readonly />
         </mat-form-field>
 
         <mat-form-field>
@@ -53,18 +68,13 @@
         </mat-form-field>
 
         <mat-form-field>
-          <mat-label>Exit Amount</mat-label>
-          <input matInput value="{{position.exit_amount}}" readonly />
+          <mat-label>Entry Time</mat-label>
+          <input matInput type="datetime-local" value="{{position.entry_time | date: 'yyyy-MM-ddTHH:mm'}}" readonly />
         </mat-form-field>
 
         <mat-form-field>
-          <mat-label>Exit Cost</mat-label>
-          <input matInput value="{{position.exit_cost}}" readonly />
-        </mat-form-field>
-
-        <mat-form-field>
-          <mat-label>Fee</mat-label>
-          <input matInput value="{{position.fee}}" readonly />
+          <mat-label>Exit Time</mat-label>
+          <input matInput type="datetime-local" value="{{position.exit_time | date: 'yyyy-MM-ddTHH:mm'}}" readonly />
         </mat-form-field>
 
         <mat-form-field>
@@ -78,8 +88,8 @@
         </mat-form-field>
 
         <mat-form-field>
-          <mat-label>Stopped</mat-label>
-          <input matInput value="{{position.stopped}}" readonly />
+          <mat-label>Fee</mat-label>
+          <input matInput value="{{position.fee}}" readonly />
         </mat-form-field>
 
       </div>
