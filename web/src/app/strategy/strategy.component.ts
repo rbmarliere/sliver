@@ -67,6 +67,7 @@ export class StrategyComponent implements OnInit {
   };
 
   loading: Boolean = true;
+  loadingInd: Boolean = true;
 
   form = this.createForm(this.empty_strat);
 
@@ -179,10 +180,11 @@ export class StrategyComponent implements OnInit {
           this.indicatorService.getIndicators(this.strategy).subscribe({
             next: (res) => {
               this.indicators = res;
-              this.loading = false;
+              this.loadingInd = false;
             }
           });
 
+          this.loading = false;
         }
       });
     }
