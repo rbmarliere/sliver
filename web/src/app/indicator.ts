@@ -1,6 +1,11 @@
 export interface Indicator {
   time: Date[];
+
+  open: number[];
+  high: number[];
+  low: number[];
   close: number[];
+
   buys: number[];
   sells: number[];
 
@@ -35,7 +40,12 @@ export function sliceIndicators(indicators: Indicator, startIdx: number, endIdx:
 
   return {
     time: indicators.time.slice(startIdx, endIdx),
+
+    open: indicators.open.slice(startIdx, endIdx),
+    high: indicators.high.slice(startIdx, endIdx),
+    low: indicators.low.slice(startIdx, endIdx),
     close: indicators.close.slice(startIdx, endIdx),
+
     buys: indicators.buys.slice(startIdx, endIdx),
     sells: indicators.sells.slice(startIdx, endIdx),
 
