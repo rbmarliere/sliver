@@ -27,12 +27,23 @@ class DD3Strategy(BaseStrategy):
 
     def get_indicators_df(self):
         df = super().get_indicators_df(self.get_indicators())
-        df.ma1 = df.ma1 * df.qprec
-        df.ma1 = df.ma1.astype(float).round(self.price_precision)
-        df.ma2 = df.ma2 * df.qprec
-        df.ma2 = df.ma2.astype(float).round(self.price_precision)
-        df.ma3 = df.ma3 * df.qprec
-        df.ma3 = df.ma3.astype(float).round(self.price_precision)
+
+        df.ma1 = df.ma1 * df.quote_precision
+        df.ma2 = df.ma2 * df.quote_precision
+        df.ma3 = df.ma3 * df.quote_precision
+
+        df.ma1 = df.apply(
+            lambda x: core.utils.quantize(x, "ma1", "price_precision"),
+            axis=1)
+
+        df.ma2 = df.apply(
+            lambda x: core.utils.quantize(x, "ma2", "price_precision"),
+            axis=1)
+
+        df.ma3 = df.apply(
+            lambda x: core.utils.quantize(x, "ma3", "price_precision"),
+            axis=1)
+
         return df
 
     def refresh(self):

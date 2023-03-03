@@ -14,16 +14,17 @@ class BaseStrategy(core.db.BaseModel):
         super().__init__(*args, **kwargs)
         self.__dict__.update(self.strategy.__data__)
 
-        self.amount_precision = self.strategy.market.amount_precision
-        self.base_precision = self.strategy.market.base.precision
-        self.price_precision = self.strategy.market.price_precision
-        self.quote_precision = self.strategy.market.quote.precision
+        def p(p):
+            return D("10") ** (D("-1") * p)
+
+        self.amount_precision = D(self.strategy.market.amount_precision)
+        self.base_precision = p(self.strategy.market.base.precision)
+        self.price_precision = D(self.strategy.market.price_precision)
+        self.quote_precision = p(self.strategy.market.quote.precision)
 
         self.select_fields = [
             core.db.Price,
             core.db.Indicator,
-            peewee.Value(10**(-1*self.base_precision)).alias("bprec"),
-            peewee.Value(10**(-1*self.quote_precision)).alias("qprec"),
         ]
 
     def get_signal(self):
@@ -58,27 +59,50 @@ class BaseStrategy(core.db.BaseModel):
         if df.empty:
             return df
 
-        df.open = df.open * df.qprec
-        df.high = df.high * df.qprec
-        df.low = df.low * df.qprec
-        df.close = df.close * df.qprec
-        df.volume = df.volume * df.bprec
+        df["amount_precision"] = self.amount_precision
+        df["base_precision"] = self.base_precision
+        df["price_precision"] = self.price_precision
+        df["quote_precision"] = self.quote_precision
+
+        df.open = df.open * df.quote_precision
+        df.high = df.high * df.quote_precision
+        df.low = df.low * df.quote_precision
+        df.close = df.close * df.quote_precision
+        df.volume = df.volume * df.base_precision
 
         df["buys"] = numpy.where(
-            df.signal == BUY, df.close * D("0.995"), numpy.nan)
-        df.buys.replace({float("nan"): None}, inplace=True)
+            df.signal == BUY, df.close * D("0.995"), D(0))
+        df.buys = df.apply(
+            lambda x: core.utils.quantize(x, "buys", "price_precision"),
+            axis=1)
+        df.buys.replace({0: None}, inplace=True)
 
         df["sells"] = numpy.where(
-            df.signal == SELL, df.close * D("1.005"), numpy.nan)
-        df.sells.replace({float("nan"): None}, inplace=True)
+            df.signal == SELL, df.close * D("1.005"), D(0))
+        df.sells = df.apply(
+            lambda x: core.utils.quantize(x, "sells", "price_precision"),
+            axis=1)
+        df.sells.replace({0: None}, inplace=True)
 
-        df.buys = df.buys.astype(float).round(self.price_precision)
-        df.sells = df.sells.astype(float).round(self.price_precision)
-        df.open = df.open.astype(float).round(self.price_precision)
-        df.high = df.high.astype(float).round(self.price_precision)
-        df.low = df.low.astype(float).round(self.price_precision)
-        df.close = df.close.astype(float).round(self.price_precision)
-        df.volume = df.volume.astype(float).round(self.amount_precision)
+        df.open = df.apply(
+            lambda x: core.utils.quantize(x, "open", "price_precision"),
+            axis=1)
+
+        df.high = df.apply(
+            lambda x: core.utils.quantize(x, "high", "price_precision"),
+            axis=1)
+
+        df.low = df.apply(
+            lambda x: core.utils.quantize(x, "low", "price_precision"),
+            axis=1)
+
+        df.close = df.apply(
+            lambda x: core.utils.quantize(x, "close", "price_precision"),
+            axis=1)
+
+        df.volume = df.apply(
+            lambda x: core.utils.quantize(x, "volume", "amount_precision"),
+            axis=1)
 
         return df
 
