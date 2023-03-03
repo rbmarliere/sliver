@@ -67,12 +67,12 @@ def download_prices(strategy: core.db.Strategy):
     # check if symbol is supported by exchange
     symbols = [pair["symbol"] for pair in api.fetch_markets()]
     if market.get_symbol() not in symbols:
-        core.watchdog.error("symbol not supported by exchange")
+        core.watchdog.error("symbol not supported by exchange", None)
         raise ccxt.ExchangeError
 
     # check if timeframe is supported by exchange
     if timeframe not in api.timeframes:
-        core.watchdog.error("timeframe not supported by exchange")
+        core.watchdog.error("timeframe not supported by exchange", None)
         raise ccxt.ExchangeError
 
     timeframe_delta = core.utils.get_timeframe_delta(timeframe)
