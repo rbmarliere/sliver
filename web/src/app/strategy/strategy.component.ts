@@ -212,6 +212,9 @@ export class StrategyComponent implements OnInit {
 
   updateStrategy() {
     const strategy = this.form.getRawValue();
+    if (!strategy.stop_engine_id) {
+      strategy.stop_engine_id = null;
+    }
 
     if (strategy.id > 0) {
       strategy.strategies = this.mixins.controls.map((m) => m.value.strategy_id);
