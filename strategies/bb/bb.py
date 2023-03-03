@@ -28,12 +28,23 @@ class BBStrategy(BaseStrategy):
 
     def get_indicators_df(self):
         df = super().get_indicators_df(self.get_indicators())
-        df.ma = df.ma * df.qprec
-        df.ma = df.ma.astype(float).round(self.price_precision)
-        df.bolu = df.bolu * df.qprec
-        df.bolu = df.bolu.astype(float).round(self.price_precision)
-        df.bold = df.bold * df.qprec
-        df.bold = df.bold.astype(float).round(self.price_precision)
+
+        df.ma = df.ma * df.quote_precision
+        df.bolu = df.bolu * df.quote_precision
+        df.bold = df.bold * df.quote_precision
+
+        df.ma = df.apply(
+            lambda x: core.utils.quantize(x, "ma", "price_precision"),
+            axis=1)
+
+        df.bolu = df.apply(
+            lambda x: core.utils.quantize(x, "bolu", "price_precision"),
+            axis=1)
+
+        df.bold = df.apply(
+            lambda x: core.utils.quantize(x, "bold", "price_precision"),
+            axis=1)
+
         return df
 
     def refresh(self):
