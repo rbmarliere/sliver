@@ -1,23 +1,5 @@
-<!-- <p></p> -->
-
-<!-- <div style="display: inline-block"> -->
-<!--   Backtest -->
-<!--   <div *ngIf="!loading" style="display: inline-block"> -->
-<!--     <button class="icon-display" mat-icon-button color="primary" (click)="getPlot()" title="Refresh Indicators"> -->
-<!--       <mat-icon fontIcon="refresh"></mat-icon> -->
-<!--     </button> -->
-<!--   </div> -->
-<!-- </div> -->
-
-<p></p>
-
 <div class="main container" *ngIf="plot">
-
   <mat-card appearance="outlined">
-    <!-- <div *ngIf="loading" class="spinner"> -->
-    <!--   <mat-spinner></mat-spinner> -->
-    <!-- </div> -->
-
     <mat-card-content class="container">
 
       <plotly-plot [config]="plot.config" [data]="plot.data" [layout]="plot.layout" [updateOnlyWithRevision]="true"
@@ -29,5 +11,4 @@
 
     </mat-card-content>
   </mat-card>
-
 </div>

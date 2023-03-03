@@ -217,10 +217,21 @@
     </mat-card-content>
   </mat-card>
 
-  <app-strategy-performance *ngIf="indicators" [strategy]="strategy"
-    [indicators]="indicators"></app-strategy-performance>
+  <div *ngIf="loadingInd" class="spinner">
+    <mat-spinner></mat-spinner>
+  </div>
 
-  <app-indicator *ngIf="stopEngine && indicators" [strategy]="strategy" [stopEngine]="stopEngine"
-    [indicators]="indicators"></app-indicator>
+  <div *ngIf="!loadingInd">
+
+    <p></p>
+
+    <app-strategy-performance *ngIf="indicators" [strategy]="strategy"
+      [indicators]="indicators"></app-strategy-performance>
+
+    <p></p>
+
+    <app-indicator *ngIf="stopEngine && indicators" [strategy]="strategy" [stopEngine]="stopEngine"
+      [indicators]="indicators"></app-indicator>
+  </div>
 
 </div>
