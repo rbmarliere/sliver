@@ -76,7 +76,8 @@
 
           <mat-form-field appearance="fill">
             <mat-label>Stop Engine</mat-label>
-            <mat-select formControlName="stop_engine_id" required>
+            <mat-select formControlName="stop_engine_id">
+              <mat-option>None</mat-option>
               <mat-option *ngFor="let engine of engines" [value]="engine.id">
                 [{{ engine.id }}] {{ engine.description }}
               </mat-option>
