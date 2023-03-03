@@ -15,7 +15,7 @@ export class IndicatorComponent {
 
   @Input() strategy!: Strategy;
   @Input() indicators!: Indicator;
-  @Input() stopEngine!: Engine;
+  @Input() stopEngine!: Engine | null;
 
   backtestLog?: Metrics[];
   positions: Position[] = [];

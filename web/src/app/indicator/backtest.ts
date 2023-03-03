@@ -30,7 +30,6 @@ export function getMetrics(positions: Position[], indicators: Indicator): Metric
   let trading_days = trading_period / 1000 / 60 / 60 / 24
 
   let total_timedelta_in_market = 0;
-  let total_entry_cost = 0;
   let total_pnl = 0;
 
   let winning_trades = 0;
@@ -71,7 +70,6 @@ export function getMetrics(positions: Position[], indicators: Indicator): Metric
 
     let timedelta = pos.exit_time!.getTime() - pos.entry_time.getTime();
     total_timedelta_in_market += timedelta;
-    total_entry_cost += pos.entry_cost;
     total_pnl += pos.pnl;
     net_asset_value += net_asset_value * pos.roi / 100;
     avg_pnl = avg_pnl + (pos.pnl - avg_pnl) / i;
