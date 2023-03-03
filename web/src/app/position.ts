@@ -12,7 +12,7 @@ export interface Position {
   entry_time: Date;
   entry_price: number;
   exit_price: number;
-  exit_time: Date;
+  exit_time: Date | null;
   exit_amount: number;
   exit_cost: number;
   fee: number;

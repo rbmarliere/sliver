@@ -74,7 +74,9 @@
 
         <mat-form-field>
           <mat-label>Exit Time</mat-label>
-          <input matInput type="datetime-local" value="{{position.exit_time | date: 'yyyy-MM-ddTHH:mm'}}" readonly />
+          <input *ngIf="position.exit_time" matInput type="datetime-local"
+            value="{{position.exit_time | date: 'yyyy-MM-ddTHH:mm'}}" readonly />
+          <input *ngIf="!position.exit_time" matInput value="0" readonly />
         </mat-form-field>
 
         <mat-form-field>
