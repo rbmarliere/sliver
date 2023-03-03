@@ -17,7 +17,9 @@ export class PositionService {
   transformDates(positions: Position[]): Position[] {
     for (let position of positions) {
       position.entry_time = new Date(position.entry_time);
-      position.exit_time = new Date(position.exit_time);
+      if (position.exit_time) {
+        position.exit_time = new Date(position.exit_time);
+      }
     }
 
     return positions;
@@ -25,7 +27,9 @@ export class PositionService {
 
   transformDate(position: Position): Position {
     position.entry_time = new Date(position.entry_time);
-    position.exit_time = new Date(position.exit_time);
+    if (position.exit_time) {
+      position.exit_time = new Date(position.exit_time);
+    }
     return position;
   }
 

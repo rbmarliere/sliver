@@ -25,7 +25,7 @@ export function getMetrics(positions: Position[], indicators: Indicator): Metric
   let total_days = total_timedelta / (1000 * 60 * 60 * 24);
 
   let pos_start = new Date(positions[0].entry_time);
-  let pos_end = new Date(positions[positions.length - 1].exit_time);
+  let pos_end = new Date(positions[positions.length - 1].exit_time!);
   let trading_period = pos_end.getTime() - pos_start.getTime();
   let trading_days = trading_period / 1000 / 60 / 60 / 24
 
@@ -69,7 +69,7 @@ export function getMetrics(positions: Position[], indicators: Indicator): Metric
   for (let pos of positions) {
     i++;
 
-    let timedelta = pos.exit_time.getTime() - pos.entry_time.getTime();
+    let timedelta = pos.exit_time!.getTime() - pos.entry_time.getTime();
     total_timedelta_in_market += timedelta;
     total_entry_cost += pos.entry_cost;
     total_pnl += pos.pnl;
