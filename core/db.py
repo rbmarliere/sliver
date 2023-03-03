@@ -253,7 +253,7 @@ class Strategy(BaseModel):
     next_refresh = peewee.DateTimeField(default=datetime.datetime.utcnow())
     buy_engine = peewee.ForeignKeyField(TradeEngine)
     sell_engine = peewee.ForeignKeyField(TradeEngine)
-    stop_engine = peewee.ForeignKeyField(TradeEngine)
+    stop_engine = peewee.ForeignKeyField(TradeEngine, null=True)
 
     def get_signal(self):
         return core.strategies.load(self).get_signal()
@@ -641,6 +641,9 @@ class Position(BaseModel):
         strategy = self.user_strategy.strategy
         engine = strategy.stop_engine
         market = strategy.market
+
+        if not engine:
+            return False
 
         if not self.is_open():
             return False
