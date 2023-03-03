@@ -12,16 +12,13 @@ export class PositionsTableComponent implements OnInit {
 
   displayedColumns: string[] = [];
 
-  // strategy-performance
-  // getDisplayedColumns(): string[] {
-  // }
-
   ngOnInit(): void {
     this.displayedColumns = this.getDisplayedColumns(this.displayMode);
   }
 
   getDisplayedColumns(displayMode: string): string[] {
     if (displayMode === 'full') {
+      // position component
       if (window.innerWidth < 768) {
         return [
           'id',
@@ -47,6 +44,7 @@ export class PositionsTableComponent implements OnInit {
       }
 
     } else if (displayMode === 'compact') {
+      // strategy performance component
       if (window.innerWidth < 768) {
         return [
           'id',
@@ -66,6 +64,7 @@ export class PositionsTableComponent implements OnInit {
       }
 
     } else {
+      // indicator component
       if (window.innerWidth < 768) {
         return [
           'pnl',
@@ -80,7 +79,8 @@ export class PositionsTableComponent implements OnInit {
           'exit_amount',
           'pnl',
           'roi',
-          'balance'
+          'balance',
+          'stopped'
         ];
       }
     }

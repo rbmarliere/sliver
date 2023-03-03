@@ -20,6 +20,9 @@ export interface Position {
   roi: number;
   stopped: boolean;
 
+  last_high?: number;
+  last_low?: number;
+
   balance?: number;
   max_equity?: number;
   min_equity?: number;
@@ -53,6 +56,9 @@ export function getPositions(indicators: Indicator, stopEngine: Engine): Positio
     roi: 0,
     stopped: false,
 
+    last_high: 0,
+    last_low: 0,
+
     balance: init_balance,
     max_equity: 0,
     min_equity: 0,
@@ -62,7 +68,8 @@ export function getPositions(indicators: Indicator, stopEngine: Engine): Positio
   let maxDrawdown = 0;
 
   for (let i = 0; i < indicators.time.length; i++) {
-    let stopped = checkStop(pos, stopEngine, indicators.close[i]);
+    let stopPrice = checkStop(pos, stopEngine, indicators.high[i], indicators.low[i]);
+    let stopped = stopPrice > 0;
 
     if (indicators.buys[i] > 0) {
       if (!curr) {
@@ -80,12 +87,19 @@ export function getPositions(indicators: Indicator, stopEngine: Engine): Positio
         pos.max_equity = pos.entry_cost;
         pos.min_equity = pos.entry_cost;
 
+        pos.last_high = pos.entry_price;
+        pos.last_low = pos.entry_price;
+
       }
     } else if (indicators.sells[i] > 0 || stopped) {
       if (curr) {
         curr = false;
 
         pos.exit_price = indicators.close[i];
+        if (stopped) {
+          pos.exit_price = stopPrice;
+        }
+
         pos.exit_time = new Date(indicators.time[i]);
         pos.exit_cost = pos.exit_amount * pos.exit_price;
 
@@ -106,20 +120,21 @@ export function getPositions(indicators: Indicator, stopEngine: Engine): Positio
     }
 
     if (pos.entry_amount > 0) {
-      let currEquity = indicators.close[i] * pos.entry_amount;
+      let currMaxEquity = indicators.high[i] * pos.entry_amount;
+      let currMinEquity = indicators.low[i] * pos.entry_amount;
 
-      let currDrawdown = (currEquity - pos.max_equity) / pos.max_equity * 100;
+      let currDrawdown = (currMinEquity - pos.max_equity) / pos.max_equity * 100;
       if (currDrawdown < maxDrawdown) {
         maxDrawdown = currDrawdown;
       }
 
-      if (currEquity > pos.max_equity) {
-        pos.max_equity = currEquity;
-        pos.min_equity = currEquity;
+      if (currMaxEquity > pos.max_equity) {
+        pos.max_equity = currMaxEquity;
+        pos.min_equity = currMaxEquity;
       }
 
-      if (currEquity < pos.min_equity) {
-        pos.min_equity = currEquity;
+      if (currMinEquity < pos.min_equity) {
+        pos.min_equity = currMinEquity;
       }
 
     }
@@ -128,22 +143,64 @@ export function getPositions(indicators: Indicator, stopEngine: Engine): Positio
   return positions;
 }
 
-function checkStop(pos: Position, engine: Engine, close: number): boolean {
-  // TODO trailing
-  // "chop" current position
-
+function checkStop(pos: Position, engine: Engine, high: number, low: number): number {
   if (pos.entry_price == 0) {
-    return false;
+    return 0;
   }
 
-  if (engine.stop_loss <= 0) {
-    return false;
+  if (engine.stop_gain <= 0 && engine.stop_loss <= 0) {
+    return 0;
   }
 
-  let r = ((close / pos.entry_price) - 1) * 100;
-  if (r * -1 > engine.stop_loss) {
-    return true;
+  if (high > pos.last_high!) {
+    pos.last_high = high;
   }
 
-  return false
+  if (low < pos.last_low!) {
+    pos.last_low = low;
+  }
+
+  if (engine.stop_gain > 0) {
+    let currGain = 0;
+
+    if (engine.trailing_gain) {
+
+      if (low > pos.entry_price) {
+        currGain = ((pos.last_high! - low) / low * 100) * -1;
+        if (currGain > engine.stop_gain) {
+          return pos.last_high! * (1 - engine.stop_gain / 100);
+        }
+      }
+
+    } else {
+      currGain = (high - pos.entry_price) / pos.entry_price * 100;
+      if (currGain > engine.stop_gain) {
+        return pos.entry_price * (1 + engine.stop_gain / 100);
+      }
+    }
+
+  }
+
+  if (engine.stop_loss > 0) {
+    let currLoss = 0;
+
+    if (engine.trailing_loss) {
+
+      if (high < pos.entry_price) {
+        currLoss = (pos.last_low! - high) / high * 100;
+        if (currLoss > engine.stop_loss) {
+          return pos.last_low! * (1 + engine.stop_loss / 100);
+        }
+      }
+
+    } else {
+      currLoss = ((low - pos.entry_price) / pos.entry_price * 100) * -1;
+      if (currLoss > engine.stop_loss) {
+        return pos.entry_price * (1 - engine.stop_loss / 100);
+      }
+    }
+
+  }
+
+  return 0;
 }
