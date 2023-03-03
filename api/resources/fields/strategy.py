@@ -23,11 +23,11 @@ base_fields = {
 }
 indicators_fields = {
     "time": fields.List(fields.DateTime(dt_format="iso8601")),
-    # "open": fields.List(fields.Float),
-    # "high": fields.List(fields.Float),
-    # "low": fields.List(fields.Float),
+    "open": fields.List(fields.Float),
+    "high": fields.List(fields.Float),
+    "low": fields.List(fields.Float),
     "close": fields.List(fields.Float),
-    # "volume": fields.List(fields.Float),
+    "volume": fields.List(fields.Float),
     "buys": fields.List(fields.Float),
     "sells": fields.List(fields.Float),
     "signal": fields.List(fields.Float),
