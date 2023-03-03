@@ -1,23 +1,5 @@
-<!-- <p></p> -->
-
-<!-- <div style="display: inline-block"> -->
-<!--   Performance -->
-<!--   <div *ngIf="!loading" style="display: inline-block"> -->
-<!--     <button class="icon-display" mat-icon-button color="primary" (click)="getPerfLog()" title="Refresh Positions"> -->
-<!--       <mat-icon fontIcon="refresh"></mat-icon> -->
-<!--     </button> -->
-<!--   </div> -->
-<!-- </div> -->
-
-<p></p>
-
 <div class="main container" *ngIf="positions && perfLog">
-
   <mat-card appearance="outlined">
-    <!-- <div *ngIf="loading" class="spinner"> -->
-    <!--   <mat-spinner></mat-spinner> -->
-    <!-- </div> -->
-
     <mat-card-content class="container">
 
       <app-perf-summary title="Performance Summary" [summary]="perfLog"></app-perf-summary>
@@ -27,5 +9,4 @@
 
     </mat-card-content>
   </mat-card>
-
 </div>
