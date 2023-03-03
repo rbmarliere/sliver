@@ -31,6 +31,7 @@ class DD3Strategy(BaseStrategy):
         df.ma1 = df.ma1 * df.quote_precision
         df.ma2 = df.ma2 * df.quote_precision
         df.ma3 = df.ma3 * df.quote_precision
+        df.replace({float("nan"): None}, inplace=True)
 
         df.ma1 = df.apply(
             lambda x: core.utils.quantize(x, "ma1", "price_precision"),
