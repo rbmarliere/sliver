@@ -136,4 +136,12 @@ def get_roi(entry_cost, pnl):
 
 
 def quantize(row, col, prec_col):
+    # try:
+    if row[col] is None:
+        return row[col]
+
     return row[col].quantize(D("10") ** (D("-1") * row[prec_col]))
+    # except decimal.InvalidOperation:
+    #     return row[col]
+    # except AttributeError:
+    #     return row

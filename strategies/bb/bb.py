@@ -32,6 +32,7 @@ class BBStrategy(BaseStrategy):
         df.ma = df.ma * df.quote_precision
         df.bolu = df.bolu * df.quote_precision
         df.bold = df.bold * df.quote_precision
+        df.replace({float("nan"): None}, inplace=True)
 
         df.ma = df.apply(
             lambda x: core.utils.quantize(x, "ma", "price_precision"),
