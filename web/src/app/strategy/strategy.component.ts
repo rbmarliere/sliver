@@ -75,7 +75,7 @@ export class StrategyComponent implements OnInit {
 
   engines: Engine[] = [];
 
-  stopEngine?: Engine;
+  stopEngine: Engine | null = null;
 
   indicators?: Indicator;
 

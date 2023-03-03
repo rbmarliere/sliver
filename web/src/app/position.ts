@@ -29,7 +29,7 @@ export interface Position {
   drawdown?: number;
 }
 
-export function getPositions(indicators: Indicator, stopEngine: Engine): Position[] {
+export function getPositions(indicators: Indicator, stopEngine: Engine | null): Position[] {
   let init_balance = 1000;
   let balance = init_balance;
   let fee = 0.001;
@@ -143,8 +143,12 @@ export function getPositions(indicators: Indicator, stopEngine: Engine): Positio
   return positions;
 }
 
-function checkStop(pos: Position, engine: Engine, high: number, low: number): number {
+function checkStop(pos: Position, engine: Engine | null, high: number, low: number): number {
   if (pos.entry_price == 0) {
+    return 0;
+  }
+
+  if (engine === null) {
     return 0;
   }
 
