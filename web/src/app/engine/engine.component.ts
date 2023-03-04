@@ -19,6 +19,7 @@ export class EngineComponent implements OnInit {
     bucket_interval: 1,
     min_buckets: 1,
     spread: 0.01,
+    stop_cooldown: 0,
     stop_gain: 0,
     trailing_gain: false,
     stop_loss: 0,
