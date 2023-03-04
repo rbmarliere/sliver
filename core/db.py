@@ -368,6 +368,7 @@ class UserStrategy(BaseModel):
         return get_active_positions() \
             .where(UserStrategy.user_id == self.user_id) \
             .where(UserStrategy.strategy_id == self.strategy_id) \
+            .order_by(core.db.Position.id.desc()) \
             .get_or_none()
 
     def refresh(self):
@@ -387,11 +388,12 @@ class UserStrategy(BaseModel):
 
                 if strategy.stop_engine:
                     cooldown = strategy.stop_engine.stop_cooldown
-                    last_position = self.get_last_position()
-                    if (datetime.datetime.utcnow() - last_position.exit_time) \
-                            < datetime.timedelta(minutes=cooldown):
-                        i("cooldown not expired, can not create position")
-                        return
+                    last_pos = self.get_last_position_or_none()
+                    if last_pos:
+                        c = datetime.datetime.utcnow() - last_pos.exit_time
+                        if c < datetime.timedelta(minutes=cooldown):
+                            i("cooldown not expired, can not create position")
+                            return
 
                 t_cost = core.inventory.get_target_cost(self)
 
@@ -1053,7 +1055,8 @@ def get_active_positions():
         .join(UserStrategy) \
         .join(Strategy) \
         .where(Strategy.active) \
-        .where(UserStrategy.active)
+        .where(UserStrategy.active) \
+        .order_by(core.db.Position.id)
 
 
 def get_opening_positions():
