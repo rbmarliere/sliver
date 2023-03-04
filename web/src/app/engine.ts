@@ -6,6 +6,7 @@ export interface Engine {
   bucket_interval: number;
   min_buckets: number;
   spread: number;
+  stop_cooldown: number;
   stop_gain: number;
   trailing_gain: boolean;
   stop_loss: number;
