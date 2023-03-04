@@ -119,15 +119,31 @@ def notice(user, msg):
     send_user_telegram(user, msg)
 
 
+def disable(locals):
+    if "position" in locals:
+        position = locals["position"]
+        user_strat = position.user_strategy
+    if "user_strat" in locals:
+        user_strat.disable()
+
+
+def postpone(locals):
+    if "position" in locals():
+        position = locals["position"]
+        if position.status != "open":
+            position.postpone(interval_in_minutes=5)
+    if "strategy" in locals():
+        strategy = locals["strategy"]
+        strategy.postpone(interval_in_minutes=5)
+
+
 def watch():
-    # TODO refactor error handling
     set_logger("watchdog")
-    warning("init")
 
     while (True):
-        core.db.connection.connect()
-
         try:
+            core.db.connection.connect()
+
             # TODO risk assessment:
             # - red flag -- exit all positions
             # - yellow flag -- new buy signals ignored & reduce curr. positions
@@ -152,81 +168,41 @@ def watch():
 
             time.sleep(int(core.config["WATCHDOG_INTERVAL"]))
 
-        except core.db.Credential.DoesNotExist as e:
-            error("credential not found", e)
-            if "position" in locals():
-                user_strat = position.user_strategy
-            if "user_strat" in locals():
-                user_strat.disable()
-
-        except ccxt.AuthenticationError as e:
-            error("authentication error", e)
-            if "position" in locals():
-                user_strat = position.user_strategy
-            if "user_strat" in locals():
-                user_strat.disable()
-
-        except ccxt.InsufficientFunds as e:
-            error("insufficient funds", e)
-            if "position" in locals():
-                user_strat = position.user_strategy
-            if "user_strat" in locals():
-                user_strat.disable()
-
         except (core.errors.ModelTooLarge,
-                core.errors.ModelDoesNotExist):
+                core.errors.ModelDoesNotExist) as e:
+            error(e.__class__.__name__, e)
             if "strategy" in locals():
                 strategy.disable()
 
-        except ccxt.RateLimitExceeded as e:
-            error("rate limit exceeded", e)
-            if "position" in locals():
-                # TODO postpone if status != open
-                position.postpone(interval_in_minutes=5)
-            if "strategy" in locals():
-                strategy.postpone(interval_in_minutes=5)
+        except (core.db.Credential.DoesNotExist,
+                ccxt.AuthenticationError,
+                ccxt.InsufficientFunds,
+                ccxt.ExchangeError) as e:
+            error(e.__class__.__name__, e)
+            disable(locals())
 
-        except ccxt.OnMaintenance as e:
-            error("exchange in maintenance", e)
-            if "position" in locals():
-                position.postpone(interval_in_minutes=5)
-
-        except ccxt.ExchangeError as e:
-            error("exchange error", e)
-            if "strategy" in locals():
-                strategy.disable()
-            if "position" in locals():
-                user_strat = position.user_strategy
-            if "user_strat" in locals():
-                user_strat.disable()
-
-        except ccxt.NetworkError as e:
-            error("exchange api error", e)
-            if "position" in locals():
-                position.postpone(interval_in_minutes=5)
-            if "strategy" in locals():
-                strategy.postpone(interval_in_minutes=5)
+        except (ccxt.RateLimitExceeded,
+                ccxt.OnMaintenance,
+                ccxt.NetworkError) as e:
+            error(e.__class__.__name__, e)
+            postpone(locals())
 
         except peewee.OperationalError as e:
             error("database error", e)
             time.sleep(10)
 
-        except KeyboardInterrupt:
-            info("got keyboard interrupt")
-            break
-
         except Exception as e:
             error("crashed", e)
             break
 
+        except KeyboardInterrupt:
+            break
+
         finally:
+            core.db.connection.close()
             if "position" in locals():
                 del position
             if "strategy" in locals():
                 del strategy
             if "user_strat" in locals():
                 del user_strat
-
-        core.db.connection.close()
-
-    warning("shutdown")
