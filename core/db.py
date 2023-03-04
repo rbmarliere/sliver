@@ -235,6 +235,7 @@ class TradeEngine(BaseModel):
     bucket_interval = peewee.IntegerField(default=60)  # 1 hour
     min_buckets = peewee.IntegerField(default=1)
     spread = peewee.DecimalField(default=1)  # 1%
+    stop_cooldown = peewee.IntegerField(default=1440)  # 1 day
     stop_gain = peewee.DecimalField(default=5)  # 5%
     trailing_gain = peewee.BooleanField(default=False)
     stop_loss = peewee.DecimalField(default=5)  # -5%
@@ -363,6 +364,12 @@ class UserStrategy(BaseModel):
             .where(UserStrategy.strategy_id == self.strategy_id) \
             .get_or_none()
 
+    def get_last_position_or_none(self):
+        return get_active_positions() \
+            .where(UserStrategy.user_id == self.user_id) \
+            .where(UserStrategy.strategy_id == self.strategy_id) \
+            .get_or_none()
+
     def refresh(self):
         strategy = self.strategy
         BUY = core.strategies.Signal.BUY
@@ -375,14 +382,24 @@ class UserStrategy(BaseModel):
         position = self.get_active_position_or_none()
 
         if position is None:
+
             if strategy.get_signal() == BUY:
+
+                if strategy.stop_engine:
+                    cooldown = strategy.stop_engine.stop_cooldown
+                    last_position = self.get_last_position()
+                    if (datetime.datetime.utcnow() - last_position.exit_time) \
+                            < datetime.timedelta(minutes=cooldown):
+                        i("cooldown not expired, can not create position")
+                        return
+
                 t_cost = core.inventory.get_target_cost(self)
 
                 if (t_cost == 0 or t_cost < strategy.market.cost_min):
-                    i("invalid target_cost, could not create position")
+                    i("invalid target_cost, can not create position")
+                    return
 
-                if t_cost > 0:
-                    position = core.db.Position.open(self, t_cost)
+                core.db.Position.open(self, t_cost)
 
         elif position.is_open() and strategy.get_signal() == SELL:
             position.next_refresh = datetime.datetime.utcnow()
