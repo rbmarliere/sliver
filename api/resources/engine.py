@@ -13,6 +13,7 @@ fields = {
     "bucket_interval": fields.Integer,
     "min_buckets": fields.Integer,
     "spread": fields.Float,
+    "stop_cooldown": fields.Integer,
     "stop_gain": fields.Float,
     "trailing_gain": fields.Boolean,
     "stop_loss": fields.Float,
@@ -27,6 +28,7 @@ argp.add_argument("num_orders", type=int, required=True)
 argp.add_argument("bucket_interval", type=int, required=True)
 argp.add_argument("min_buckets", type=int, required=True)
 argp.add_argument("spread", type=float, required=True)
+argp.add_argument("stop_cooldown", type=int, required=True)
 argp.add_argument("stop_gain", type=float, required=True)
 argp.add_argument("trailing_gain", type=bool, required=True)
 argp.add_argument("stop_loss", type=float, required=True)
