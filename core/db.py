@@ -590,7 +590,8 @@ class Position(BaseModel):
                             next_bucket=next_bucket,
                             bucket_max=bucket_max,
                             status="opening",
-                            target_cost=t_cost)
+                            target_cost=t_cost,
+                            entry_time=datetime.datetime.utcnow())
         position.save()
 
         i("opening position {i}".format(i=position.id))
@@ -917,7 +918,6 @@ class Position(BaseModel):
                 and self.entry_cost > 0 \
                 and cost_diff < market.cost_min:
             self.status = "open"
-            self.entry_time = datetime.datetime.utcnow()
             i("position is now open")
             n(user, self.get_notice(prefix="opened "))
 
