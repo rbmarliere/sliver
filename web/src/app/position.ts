@@ -71,7 +71,9 @@ export function getPositions(indicators: Indicator, stopEngine: Engine | null): 
     let stopPrice = checkStop(pos, stopEngine, indicators.high[i], indicators.low[i]);
     let stopped = stopPrice > 0;
 
-    if (indicators.buys[i] > 0) {
+    let cooledDown = checkStopCooldown(pos, stopEngine, indicators.time[i]);
+
+    if (indicators.buys[i] > 0 && !cooledDown) {
       if (!curr) {
         curr = true;
 
@@ -207,4 +209,19 @@ function checkStop(pos: Position, engine: Engine | null, high: number, low: numb
   }
 
   return 0;
+}
+
+function checkStopCooldown(pos: Position, engine: Engine | null, time: Date): boolean {
+  let cooldown_in_min = engine?.stop_cooldown || 0;
+
+  if (cooldown_in_min <= 0 || !pos.stopped) {
+    return false;
+  }
+
+  let now = new Date(time);
+  let last = pos.exit_time!;
+
+  let diff_in_min = (now.getTime() - last.getTime()) / 1000 / 60;
+
+  return diff_in_min < cooldown_in_min;
 }
