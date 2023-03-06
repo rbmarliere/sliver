@@ -168,24 +168,25 @@ def watch():
 
             time.sleep(int(core.config["WATCHDOG_INTERVAL"]))
 
-        except (core.errors.ModelTooLarge,
-                core.errors.ModelDoesNotExist) as e:
-            error(e.__class__.__name__, e)
-            if "strategy" in locals():
-                strategy.disable()
-
         except (core.db.Credential.DoesNotExist,
                 ccxt.AuthenticationError,
-                ccxt.InsufficientFunds,
-                ccxt.ExchangeError) as e:
+                ccxt.InsufficientFunds) as e:
             error(e.__class__.__name__, e)
             disable(locals())
 
         except (ccxt.RateLimitExceeded,
                 ccxt.OnMaintenance,
-                ccxt.NetworkError) as e:
+                ccxt.RequestTimeout) as e:
             error(e.__class__.__name__, e)
             postpone(locals())
+
+        except (ccxt.NetworkError,
+                ccxt.ExchangeError,
+                core.errors.ModelTooLarge,
+                core.errors.ModelDoesNotExist) as e:
+            error(e.__class__.__name__, e)
+            if "strategy" in locals():
+                strategy.disable()
 
         except peewee.OperationalError as e:
             error("database error", e)
