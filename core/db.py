@@ -389,7 +389,7 @@ class UserStrategy(BaseModel):
                 if strategy.stop_engine:
                     cooldown = strategy.stop_engine.stop_cooldown
                     last_pos = self.get_last_position_or_none()
-                    if last_pos:
+                    if last_pos and last_pos.stopped:
                         c = datetime.datetime.utcnow() - last_pos.exit_time
                         if c < datetime.timedelta(minutes=cooldown):
                             i("cooldown not expired, can not create position")
