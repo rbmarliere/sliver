@@ -21,10 +21,14 @@ export function backtest(strategy: Strategy, indicators: Indicator, positions: P
 
 export function getMetrics(positions: Position[], indicators: Indicator): Metrics[] {
 
+  if (positions.length == 0) {
+    return [];
+  }
+
   let total_timedelta = indicators.time[indicators.time.length - 1].getTime() - indicators.time[0].getTime();
   let total_days = total_timedelta / (1000 * 60 * 60 * 24);
 
-  let pos_start = new Date(positions[0].entry_time);
+  let pos_start = new Date(positions[0].entry_time!);
   let pos_end = new Date(positions[positions.length - 1].exit_time!);
   let trading_period = pos_end.getTime() - pos_start.getTime();
   let trading_days = trading_period / 1000 / 60 / 60 / 24

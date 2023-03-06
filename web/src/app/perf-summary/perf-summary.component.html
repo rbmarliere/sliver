@@ -1,4 +1,8 @@
-<div *ngIf="summary" class="accounting-table">
+<div *ngIf="summary && summary.length == 0" style="text-align: center;">
+  No positions to compute {{ title }}.
+</div>
+
+<div *ngIf="summary && summary.length > 0" class="accounting-table">
   <table>
 
     <tr>
