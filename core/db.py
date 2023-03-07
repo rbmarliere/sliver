@@ -224,6 +224,13 @@ class Market(BaseModel):
     def get_symbol(self):
         return self.base.asset.ticker + "/" + self.quote.asset.ticker
 
+    def get_prices(self, timeframe: str):
+        return Price \
+            .select() \
+            .where(Price.market_id == self.id) \
+            .where(Price.timeframe == timeframe) \
+            .order_by(Price.time)
+
 
 class TradeEngine(BaseModel):
     description = peewee.TextField()
@@ -334,11 +341,7 @@ class Strategy(BaseModel):
             .where((Strategy.id == self.id) & (UserStrategy.active))
 
     def get_prices(self):
-        return Price \
-            .select() \
-            .where((Price.market == self.market)
-                   & (Price.timeframe == self.timeframe)) \
-            .order_by(Price.time)
+        return self.market.get_prices(self.timeframe)
 
 
 class UserStrategy(BaseModel):
