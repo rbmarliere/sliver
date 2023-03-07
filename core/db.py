@@ -80,8 +80,6 @@ class User(BaseModel):
     def get_exchange_open_positions(self, exchange: Exchange):
         return self.get_open_positions() \
             .join(Market) \
-            .join(ExchangeAsset,
-                  on=(Market.base_id == ExchangeAsset.id)) \
             .join(Exchange) \
             .where(Exchange.id == exchange.id)
 
@@ -89,8 +87,6 @@ class User(BaseModel):
         return self.userstrategy_set \
             .join(Strategy) \
             .join(Market) \
-            .join(ExchangeAsset,
-                  on=(Market.base_id == ExchangeAsset.id)) \
             .join(Exchange) \
             .where(Exchange.id == exchange.id) \
             .where(UserStrategy.user_id == self.id) \
@@ -213,6 +209,7 @@ class Balance(BaseModel):
 
 class Market(BaseModel):
     symbol = peewee.TextField()
+    exchange = peewee.ForeignKeyField(Exchange)
     base = peewee.ForeignKeyField(ExchangeAsset)
     quote = peewee.ForeignKeyField(ExchangeAsset)
     amount_precision = peewee.IntegerField(null=True)
