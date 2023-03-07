@@ -167,11 +167,9 @@ export function getMetrics(positions: Position[], indicators: Indicator): Metric
 
   // https://www.investopedia.com/articles/fundamental-analysis/10/strategy-performance-reports.asp
   let metrics = [
-    { key: 'title', value: 'Performance Summary' },
-
     { key: 'SEP', value: '' },
 
-    { key: 'subtitle', value: 'Buy & Hold' },
+    { key: 'title', value: 'Buy & Hold' },
     { key: 'Return on Investment', value: `${bh_roi.toFixed(2)}%` },
     { key: 'Annualized Return', value: `${bh_apr.toFixed(2)}%` },
     { key: 'Sharpe Ratio', value: bh_sharpe.toFixed(2) },
@@ -186,7 +184,7 @@ export function getMetrics(positions: Position[], indicators: Indicator): Metric
 
     { key: 'SEP', value: '' },
 
-    { key: 'subtitle', value: 'Strategy' },
+    { key: 'title', value: 'Strategy' },
     { key: 'Return on Investment', value: `${roi.toFixed(2)}%` },
     { key: 'Annualized Return', value: `${apr.toFixed(2)}%` },
     { key: 'Sharpe Ratio', value: sharpe.toFixed(2) },
@@ -260,15 +258,17 @@ function getHypnoxMetrics(indicators: Indicator): Metrics[] {
   return [
     { key: 'SEP', value: '' },
 
-    { key: 'title', value: 'Intensity' },
+    { key: 'subtitle', value: 'Intensity' },
     { key: 'Standard Deviation', value: i_stdev.toFixed(4) },
-    { key: 'Median', value: i_median },
-    { key: 'Mean', value: i_mean },
+    { key: 'Median', value: i_median.toFixed(4) },
+    { key: 'Mean', value: i_mean.toFixed(4) },
 
-    { key: 'title', value: 'Polarity' },
+    { key: 'sep', value: '' },
+
+    { key: 'subtitle', value: 'Polarity' },
     { key: 'Standard Deviation', value: p_stdev.toFixed(4) },
-    { key: 'Median', value: p_median },
-    { key: 'Mean', value: p_mean },
+    { key: 'Median', value: p_median.toFixed(4) },
+    { key: 'Mean', value: p_mean.toFixed(4) },
   ];
 }
 
