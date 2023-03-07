@@ -42,6 +42,13 @@ class Exchange(BaseModel):
     padding_mode = peewee.IntegerField(default=NO_PADDING)
     timeframes = peewee.TextField(null=True)
 
+    def get_markets(self):
+        return Market \
+            .select() \
+            .join(Exchange) \
+            .where(Exchange.id == self.id) \
+            .order_by(Exchange.id)
+
 
 class User(BaseModel):
     email = peewee.TextField(unique=True)
