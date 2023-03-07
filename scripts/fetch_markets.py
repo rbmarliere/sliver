@@ -66,6 +66,7 @@ def save_market(ex_market, exchange: core.db.Exchange):
 
         m, new = core.db.Market.get_or_create(base=ex_b, quote=ex_q)
 
+        m.symbol = m.get_symbol()
         m.amount_precision = amount_prec
         m.price_precision = price_prec
 
