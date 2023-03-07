@@ -162,6 +162,7 @@ export class StrategyComponent implements OnInit {
 
     if (!strategy_id) {
       this.loading = false;
+      this.loadingInd = false;
       this.strategy = this.empty_strat;
     } else {
       this.strategyService.getStrategy(strategy_id).subscribe({
