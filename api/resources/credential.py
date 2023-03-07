@@ -1,9 +1,10 @@
+import ccxt
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from flask_restful import Resource, fields, marshal_with, reqparse
 
 import api.errors
-import ccxt
 import core
+
 
 fields = {
     "exchange": fields.String,
@@ -113,11 +114,12 @@ class Credential(Resource):
         if credential is None:
             raise api.errors.CredentialDoesNotExist
 
-        try:
-            core.exchange.set_api(cred=credential)
-            core.exchange.api.fetch_balance()
-        except ccxt.NetworkError:
-            raise api.errors.CredentialInvalid
+        if args.active:
+            try:
+                core.exchange.set_api(cred=credential)
+                core.exchange.api.fetch_balance()
+            except ccxt.BaseError:
+                raise api.errors.CredentialInvalid
 
         credential.active = args.active
         credential.save()
