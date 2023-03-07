@@ -20,8 +20,12 @@
         <hr style="height: 2px; background-color: #000000;">
       </td>
 
-      <td *ngIf="item.key == 'subtitle'" colspan="2" style="text-align: center;">
+      <td *ngIf="item.key == 'title'" colspan="2" style="text-align: center;">
         <h5>{{ item.value }}</h5>
+      </td>
+
+      <td *ngIf="item.key == 'subtitle'" colspan="2" style="text-align: left;">
+        <h6>{{ item.value }}</h6>
       </td>
 
       <td *ngIf="item.key != 'sep' && item.key != 'SEP' && item.key != 'title' && item.key != 'subtitle'"
