@@ -96,11 +96,12 @@ def info(msg):
 
 
 def error(msg, exception):
-    log.error(msg)
-
     if exception:
+        msg = "{m}: {e}".format(m=msg, e=exception)
         get_logger("exception", suppress_output=True) \
             .exception(exception, exc_info=True)
+
+    log.error(msg)
 
     if log.name == "watchdog" or log.name == "stream":
         msg = "{l}: {m}".format(l=log.name, m=msg)

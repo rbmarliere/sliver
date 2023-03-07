@@ -136,9 +136,8 @@ def download_prices(strategy: core.db.Strategy):
     # transform data for the database
     prices[0] = prices[0].apply(
         lambda x: datetime.datetime.utcfromtimestamp(x / 1000))
-    prices[[1, 2, 3,
-            4]] = prices[[1, 2, 3,
-                          4]].applymap(lambda x: market.quote.transform(x))
+    prices[[1, 2, 3, 4]] = prices[[1, 2, 3, 4]] \
+        .applymap(lambda x: market.quote.transform(x))
     prices[5] = prices[5].apply(lambda x: market.base.transform(x))
     prices[6] = timeframe
     prices[7] = market.id
