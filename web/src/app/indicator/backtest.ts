@@ -11,10 +11,15 @@ export interface Metrics {
 
 export function backtest(strategy: Strategy, indicators: Indicator, positions: Position[]): Metrics[] {
 
+  if (positions.length == 0) {
+    return [];
+  }
+
   let metrics = getMetrics(positions, indicators);
 
-  if (getStrategyTypeName(strategy.type) == "HYPNOX")
+  if (getStrategyTypeName(strategy.type) == "HYPNOX") {
     metrics = metrics.concat(getHypnoxMetrics(indicators))
+  }
 
   return metrics;
 }
@@ -234,11 +239,13 @@ export function getMetrics(positions: Position[], indicators: Indicator): Metric
 }
 
 function getHypnoxMetrics(indicators: Indicator): Metrics[] {
-  if (!indicators.i_score || !indicators.p_score)
+  if (!indicators.i_score || !indicators.p_score) {
     return [];
+  }
 
-  if (indicators.i_score.length == 0 || indicators.p_score.length == 0)
+  if (indicators.i_score.length == 0 || indicators.p_score.length == 0) {
     return [];
+  }
 
   let intensities = indicators.i_score;
   let polarities = indicators.p_score;
