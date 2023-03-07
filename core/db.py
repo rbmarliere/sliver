@@ -212,6 +212,7 @@ class Balance(BaseModel):
 
 
 class Market(BaseModel):
+    symbol = peewee.TextField()
     base = peewee.ForeignKeyField(ExchangeAsset)
     quote = peewee.ForeignKeyField(ExchangeAsset)
     amount_precision = peewee.IntegerField(null=True)
