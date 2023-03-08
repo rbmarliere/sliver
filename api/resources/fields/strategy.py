@@ -86,6 +86,19 @@ bb_fields = {
     "num_std": fields.Integer,
 }
 
+ma_cross_indicators = {
+    **indicators_fields,
+    "fast": fields.List(fields.Float),
+    "slow": fields.List(fields.Float),
+}
+ma_cross_fields = {
+    **base_fields,
+    "use_fast_ema": fields.Boolean,
+    "fast_period": fields.Integer,
+    "use_slow_ema": fields.Boolean,
+    "slow_period": fields.Integer,
+}
+
 
 def get_fields(type=None, all=True):
     if type == strategies.Types.MANUAL.value:
@@ -105,6 +118,9 @@ def get_fields(type=None, all=True):
 
     elif type == strategies.Types.BB.value:
         return bb_fields if all else bb_indicators
+
+    elif type == strategies.Types.MA_CROSS.value:
+        return ma_cross_fields if all else ma_cross_indicators
 
     return base_fields if all else indicators_fields
 
@@ -178,5 +194,11 @@ def get_base_parser(type=None):
         base_parser.add_argument("use_ema", type=bool, required=True)
         base_parser.add_argument("ma_period", type=int, required=True)
         base_parser.add_argument("num_std", type=int, required=True)
+
+    elif type == strategies.Types.MA_CROSS.value:
+        base_parser.add_argument("use_fast_ema", type=bool, required=True)
+        base_parser.add_argument("fast_period", type=int, required=True)
+        base_parser.add_argument("use_slow_ema", type=bool, required=True)
+        base_parser.add_argument("slow_period", type=int, required=True)
 
     return base_parser
