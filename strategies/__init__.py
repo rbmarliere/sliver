@@ -3,6 +3,7 @@ import enum
 from .bb import BBStrategy
 from .dd3 import DD3Strategy
 from .hypnox import HypnoxStrategy
+from .ma_cross import MACrossStrategy
 from .manual import ManualStrategy
 from .mixer import MixerStrategy
 from .random import RandomStrategy
@@ -15,6 +16,7 @@ class Types(enum.Enum):
     DD3 = 3
     MIXER = 4
     BB = 5
+    MA_CROSS = 6
 
 
 class Signal(enum.Enum):
@@ -44,6 +46,9 @@ def load(strategy, user=None):
 
     elif strategy.type == Types.BB.value:
         stt = BBStrategy.get_or_create(strategy=strategy)[0]
+
+    elif strategy.type == Types.MA_CROSS.value:
+        stt = MACrossStrategy.get_or_create(strategy=strategy)[0]
 
     else:
         raise ValueError("invalid strategy type")
