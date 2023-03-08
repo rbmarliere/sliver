@@ -11,10 +11,6 @@ export interface Metrics {
 
 export function backtest(strategy: Strategy, indicators: Indicator, positions: Position[]): Metrics[] {
 
-  if (positions.length == 0) {
-    return [];
-  }
-
   let metrics = getMetrics(positions, indicators);
 
   if (getStrategyTypeName(strategy.type) == "HYPNOX") {
@@ -237,38 +233,22 @@ export function getMetrics(positions: Position[], indicators: Indicator): Metric
 }
 
 function getHypnoxMetrics(indicators: Indicator): Metrics[] {
-  if (!indicators.i_score || !indicators.p_score) {
+  if (!indicators.z_score || indicators.z_score.length == 0) {
     return [];
   }
 
-  if (indicators.i_score.length == 0 || indicators.p_score.length == 0) {
-    return [];
-  }
+  let scores = indicators.z_score;
 
-  let intensities = indicators.i_score;
-  let polarities = indicators.p_score;
-
-  let i_median = median(intensities);
-  let i_stdev = Math.sqrt(variance(intensities));
-  let i_mean = mean(intensities);
-  let p_stdev = Math.sqrt(variance(polarities));
-  let p_median = median(polarities);
-  let p_mean = mean(polarities);
+  let scores_stdev = Math.sqrt(variance(scores));
+  let scores_mean = mean(scores);
+  let scores_median = median(scores);
 
   return [
     { key: 'SEP', value: '' },
 
-    { key: 'subtitle', value: 'Intensity' },
-    { key: 'Standard Deviation', value: i_stdev.toFixed(4) },
-    { key: 'Median', value: i_median.toFixed(4) },
-    { key: 'Mean', value: i_mean.toFixed(4) },
-
-    { key: 'sep', value: '' },
-
-    { key: 'subtitle', value: 'Polarity' },
-    { key: 'Standard Deviation', value: p_stdev.toFixed(4) },
-    { key: 'Median', value: p_median.toFixed(4) },
-    { key: 'Mean', value: p_mean.toFixed(4) },
+    { key: 'Standard Deviation', value: scores_stdev.toFixed(4) },
+    { key: 'Median', value: scores_median.toFixed(4) },
+    { key: 'Mean', value: scores_mean.toFixed(4) },
   ];
 }
 
