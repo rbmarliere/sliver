@@ -30,6 +30,10 @@ export function getStrategyTypes(): StrategyType[] {
       value: 5,
       name: 'BB',
     },
+    {
+      value: 6,
+      name: 'MA_CROSS',
+    },
   ];
 }
 

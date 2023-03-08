@@ -44,4 +44,10 @@ export interface Strategy extends BaseStrategy {
   use_ema?: boolean;
   ma_period?: number;
   num_std?: number;
+
+  // ma_cross
+  use_fast_ema?: boolean;
+  fast_period?: number;
+  use_slow_ema?: boolean;
+  slow_period?: number;
 }

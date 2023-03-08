@@ -26,6 +26,10 @@ export interface Indicator {
   ma?: number[];
   bolu?: number[];
   bold?: number[];
+
+  // ma_cross
+  fast?: number[];
+  slow?: number[];
 }
 
 export function sliceIndicators(indicators: Indicator, startIdx: number, endIdx: number): Indicator {
@@ -61,6 +65,9 @@ export function sliceIndicators(indicators: Indicator, startIdx: number, endIdx:
     ma: indicators.ma?.slice(startIdx, endIdx),
     bolu: indicators.bolu?.slice(startIdx, endIdx),
     bold: indicators.bold?.slice(startIdx, endIdx),
+
+    fast: indicators.fast?.slice(startIdx, endIdx),
+    slow: indicators.slow?.slice(startIdx, endIdx),
   };
 
 }
