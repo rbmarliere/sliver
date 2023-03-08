@@ -35,20 +35,9 @@ def predict(model, tweets, verbose=0):
     return scores
 
 
-def replay(model, update_only=True, verbose=0):
-    query = strategies.hypnox \
-        .HypnoxTweet.get_tweets_by_model(model.config["name"])
-
-    if update_only:
-        query = query.where(strategies.hypnox.HypnoxScore.model.is_null())
-
-    count = query.count()
-    if count == 0:
-        core.watchdog.info("{m}: no tweets to replay"
-                           .format(m=model.config["name"]))
-        return
+def replay(query, model, verbose=0):
     core.watchdog.info("{m}: replaying {c} tweets"
-                       .format(c=count,
+                       .format(c=query.count(),
                                m=model.config["name"]))
 
     with core.db.connection.atomic():
