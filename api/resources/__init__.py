@@ -22,5 +22,6 @@ Positions = position.Positions
 PositionsByStrategy = position.PositionsByStrategy
 Indicator = indicator.Indicator
 Strategies = strategies.Strategies
+StrategiesByMarket = strategies.StrategiesByMarket
 Strategy = strategy.Strategy
 User = user.User
