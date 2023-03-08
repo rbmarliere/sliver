@@ -35,18 +35,15 @@ indicators_fields = {
 
 hypnox_indicators = {
     **indicators_fields,
-    "i_score": fields.List(fields.Float),
-    "p_score": fields.List(fields.Float),
+    "z_score": fields.List(fields.Float),
 }
 hypnox_fields = {
     **base_fields,
-    "i_h_threshold": fields.Float,
-    "i_l_threshold": fields.Float,
-    "p_h_threshold": fields.Float,
-    "p_l_threshold": fields.Float,
-    "tweet_filter": fields.String,
-    "model_i": fields.String,
-    "model_p": fields.String,
+    "threshold": fields.Float,
+    "filter": fields.String,
+    "model": fields.String,
+    "mode": fields.String,
+    "operator": fields.String,
 }
 
 dd3_indicators = {
@@ -150,13 +147,11 @@ def get_base_parser(type=None):
         pass
 
     elif type == strategies.Types.HYPNOX.value:
-        base_parser.add_argument("i_h_threshold", type=float, required=True)
-        base_parser.add_argument("i_l_threshold", type=float, required=True)
-        base_parser.add_argument("p_h_threshold", type=float, required=True)
-        base_parser.add_argument("p_l_threshold", type=float, required=True)
-        base_parser.add_argument("tweet_filter", type=str, required=True)
-        base_parser.add_argument("model_i", type=str, required=True)
-        base_parser.add_argument("model_p", type=str, required=True)
+        base_parser.add_argument("threshold", type=float, required=True)
+        base_parser.add_argument("filter", type=str, required=True)
+        base_parser.add_argument("model", type=str, required=True)
+        base_parser.add_argument("mode", type=str, required=True)
+        base_parser.add_argument("operator", type=str, required=True)
 
     elif type == strategies.Types.DD3.value:
         base_parser.add_argument("ma1_period", type=int, required=True)
