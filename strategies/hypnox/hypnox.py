@@ -35,23 +35,18 @@ class HypnoxIndicator(core.db.BaseModel):
     indicator = peewee.ForeignKeyField(core.db.Indicator,
                                        primary_key=True,
                                        on_delete="CASCADE")
-    i_score = peewee.DecimalField()
-    i_mean = peewee.DecimalField()
-    i_variance = peewee.DecimalField()
-    p_score = peewee.DecimalField()
-    p_mean = peewee.DecimalField()
-    p_variance = peewee.DecimalField()
+    z_score = peewee.DecimalField()
+    mean = peewee.DecimalField()
+    variance = peewee.DecimalField()
     n_samples = peewee.IntegerField()
 
 
 class HypnoxStrategy(BaseStrategy):
-    i_h_threshold = peewee.DecimalField(default=0)
-    i_l_threshold = peewee.DecimalField(default=0)
-    p_h_threshold = peewee.DecimalField(default=0)
-    p_l_threshold = peewee.DecimalField(default=0)
-    tweet_filter = peewee.TextField(null=True)
-    model_i = peewee.TextField(null=True)
-    model_p = peewee.TextField(null=True)
+    threshold = peewee.DecimalField(default=0)
+    filter = peewee.TextField(null=True)
+    model = peewee.TextField(null=True)
+    mode = peewee.TextField(default="buy")
+    operator = peewee.TextField(default="gt")
 
     def get_indicators(self):
         return super() \
@@ -90,8 +85,8 @@ class HypnoxStrategy(BaseStrategy):
         indicators = pandas.DataFrame(indicators_q.dicts())
 
         # filter relevant data
-        self_regex = self.tweet_filter.encode("unicode_escape") \
-            if self.tweet_filter else b""
+        self_regex = self.filter.encode("unicode_escape") \
+            if self.filter else b""
         f = HypnoxTweet.text.iregexp(self_regex)
         f = f & (HypnoxScore.model.is_null(False))
         existing = indicators.dropna()
@@ -102,68 +97,40 @@ class HypnoxStrategy(BaseStrategy):
         f = f & (HypnoxTweet.time > indicators.iloc[0].time)
 
         # grab scores
-        intensities_q = HypnoxTweet.get_tweets_by_model(self.model_i).where(f)
-        # polarities_q = HypnoxTweet.get_tweets_by_model(self.model_p).where(f)
-        # if intensities_q.count() == 0 or polarities_q.count() == 0:
-        if intensities_q.count() == 0:
+        tweets_q = HypnoxTweet.get_tweets_by_model(self.model).where(f)
+        if tweets_q.count() == 0:
             core.watchdog.info("no tweets found for given regex")
             return 0
 
-        intensities = pandas.DataFrame(intensities_q.dicts())
-        intensities = intensities.rename(columns={"score": "intensity"})
-        intensities = intensities.set_index("time")
-
-        # grab polarities
-        # polarities = pandas.DataFrame(polarities_q.dicts())
-        # polarities = polarities.rename(columns={"score": "polarity"})
-        # polarities = polarities.set_index("time")
-
-        # build tweets dataframe
-        # tweets = pandas.concat([intensities, polarities], axis=1)
-        tweets = intensities
-        if tweets.empty:
-            core.watchdog.info("indicator data is up to date")
-            return 0
-        # tweets = tweets[["intensity", "polarity"]]
-        tweets = tweets[["intensity"]].copy()
+        tweets = pandas.DataFrame(tweets_q.dicts())
+        tweets = tweets.set_index("time")
 
         # grab last computed metrics
         if existing.empty:
             n_samples = 0
-            i_mean = 0
-            p_mean = 0
-            i_variance = 0
-            p_variance = 0
+            mean = 0
+            variance = 0
         else:
-            n_samples = existing.iloc[-1].n_samples
-            i_mean = existing.iloc[-1].i_mean
-            p_mean = existing.iloc[-1].p_mean
-            i_variance = existing.iloc[-1].i_variance
-            p_variance = existing.iloc[-1].p_variance
+            n_samples = existing.iloc[-1]["n_samples"]
+            mean = existing.iloc[-1]["mean"]
+            variance = existing.iloc[-1]["variance"]
 
         # compute new metrics
-        i_mean, i_variance = core.utils.get_mean_var(tweets.intensity,
-                                                     n_samples,
-                                                     i_mean,
-                                                     i_variance)
-        # p_mean, p_variance = core.utils.get_mean_var(tweets.polarity,
-        #                                              n_samples,
-        #                                              p_mean,
-        #                                              p_variance)
+        mean, variance = core.utils.get_mean_var(tweets.score,
+                                                 n_samples,
+                                                 mean,
+                                                 variance)
 
         # apply normalization
-        tweets["i_score"] = (tweets.intensity - i_mean) / i_variance.sqrt()
-        # tweets["p_score"] = (tweets.polarity - p_mean) / p_variance.sqrt()
+        tweets["z_score"] = (tweets.score - mean) / variance.sqrt()
 
         # resample tweets by strat timeframe freq median
         freq = core.utils.get_timeframe_freq(self.strategy.timeframe)
-        # tweets = tweets[["i_score", "p_score"]].resample(freq).median().ffill()
-        tweets = tweets[["i_score"]].resample(freq).median().ffill()
+        tweets = tweets[["z_score"]].resample(freq).median().ffill()
 
         # join both dataframes
         indicators = indicators.set_index("time")
-        indicators = indicators.drop("i_score", axis=1)
-        # indicators = indicators.drop("p_score", axis=1)
+        indicators = indicators.drop("z_score", axis=1)
         indicators = pandas.concat([indicators, tweets], join="inner", axis=1)
         if indicators.empty:
             core.watchdog.info("indicator data is up to date")
@@ -172,29 +139,34 @@ class HypnoxStrategy(BaseStrategy):
         # fill out remaining columns
         indicators = indicators.drop("price", axis=1)
         indicators["strategy"] = self.strategy.id
-        indicators.n_samples = n_samples + len(tweets)
-        indicators.i_mean = i_mean
-        indicators.i_variance = i_variance
-        indicators.p_mean = p_mean
-        indicators.p_variance = p_variance
+        indicators["n_samples"] = n_samples + len(tweets)
+        indicators["mean"] = mean
+        indicators["variance"] = variance
 
         # compute signals
         indicators["signal"] = NEUTRAL
-        buy_rule = indicators["i_score"] >= self.i_h_threshold
-        # & (indicators["p_score"] > self.p_threshold))
-        indicators.loc[buy_rule, "signal"] = BUY
-        sell_rule = indicators["i_score"] <= self.i_l_threshold
-        # & (indicators["p_score"] < self.p_threshold))
-        indicators.loc[sell_rule, "signal"] = SELL
 
-        # reset index
+        signal = NEUTRAL
+        if self.mode == "buy":
+            signal = BUY
+        elif self.mode == "sell":
+            signal = SELL
+
+        rule = indicators["z_score"] == self.threshold
+        if self.operator == "gt":
+            rule = indicators["z_score"] > self.threshold
+        elif self.operator == "lt":
+            rule = indicators["z_score"] < self.threshold
+
+        indicators.loc[rule, "signal"] = signal
+
         indicators = indicators.reset_index()
+        indicators = indicators.rename(columns={
+            "id": "price_id",
+            "strategy": "strategy_id",
+        })
 
         with core.db.connection.atomic():
-            indicators = indicators.rename(columns={
-                "id": "price_id",
-                "strategy": "strategy_id",
-            })
             vanilla_indicators = indicators[[
                 "strategy_id",
                 "price_id",
@@ -204,18 +176,11 @@ class HypnoxStrategy(BaseStrategy):
                 vanilla_indicators.to_dict("records")).execute()
 
             hypnox_indicators = indicators[[
-                "i_score",
-                "i_mean",
-                "i_variance",
-                # "p_score",
-                # "p_mean",
-                # "p_variance",
+                "z_score",
+                "mean",
+                "variance",
                 "n_samples"
             ]].copy()
-
-            hypnox_indicators["p_score"] = 0
-            hypnox_indicators["p_mean"] = 0
-            hypnox_indicators["p_variance"] = 0
 
             first_id = core.db.Indicator.get(
                 **vanilla_indicators.iloc[0].to_dict()).id
