@@ -64,12 +64,19 @@ class HypnoxStrategy(BaseStrategy):
 
     def refresh(self):
         # update tweet scores
-        if self.model_i:
-            model_i = models.load_model(self.model_i)
-            replay(model_i)
-        if self.model_p:
-            model_p = models.load_model(self.model_p)
-            replay(model_p)
+        if self.model:
+            query = HypnoxTweet \
+                .get_tweets_by_model(self.model) \
+                .where(HypnoxScore.model.is_null())
+
+            count = query.count()
+            if count == 0:
+                core.watchdog.info("{m}: no tweets to replay"
+                                   .format(m=self.model))
+                return
+
+            model = models.load_model(self.model)
+            replay(query, model)
 
         self.refresh_indicators()
 

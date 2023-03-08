@@ -2,12 +2,13 @@
 
 import argparse
 import pathlib
+import sys
 
 import pandas
 
 import core
 import models
-from strategies.hypnox.replay import replay
+import strategies
 
 
 def replay_csv(model, filepath):
@@ -45,5 +46,12 @@ if __name__ == "__main__":
 
         replay_csv(model, filepath)
 
-    else:
-        replay(model, update_only=args.update_only, verbose=1)
+        sys.exit(0)
+
+    query = strategies.hypnox \
+        .HypnoxTweet.get_tweets_by_model(model.config["name"])
+
+    if args.update_only:
+        query = query.where(strategies.hypnox.HypnoxScore.model.is_null())
+
+    strategies.hypnox.replay(query, model, verbose=1)
