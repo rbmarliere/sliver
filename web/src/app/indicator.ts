@@ -15,8 +15,7 @@ export interface Indicator {
   sell_w_signal?: number[];
 
   // hypnox
-  i_score?: number[];
-  p_score?: number[];
+  z_score?: number[];
 
   // dd3
   ma1?: number[];
@@ -53,8 +52,7 @@ export function sliceIndicators(indicators: Indicator, startIdx: number, endIdx:
     buy_w_signal: indicators.buy_w_signal?.slice(startIdx, endIdx),
     sell_w_signal: indicators.sell_w_signal?.slice(startIdx, endIdx),
 
-    i_score: indicators.i_score?.slice(startIdx, endIdx),
-    p_score: indicators.p_score?.slice(startIdx, endIdx),
+    z_score: indicators.z_score?.slice(startIdx, endIdx),
 
     ma1: indicators.ma1?.slice(startIdx, endIdx),
     ma2: indicators.ma2?.slice(startIdx, endIdx),
