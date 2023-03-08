@@ -31,9 +31,9 @@ class BBStrategy(BaseStrategy):
     def get_indicators_df(self):
         df = super().get_indicators_df(self.get_indicators())
 
-        df.ma = df.ma.apply(decimal.Decimal)
-        df.bolu = df.bolu.apply(decimal.Decimal)
-        df.bold = df.bold.apply(decimal.Decimal)
+        df.ma = df.ma.apply(lambda x: decimal.Decimal(x) if x else 0)
+        df.bolu = df.bolu.apply(lambda x: decimal.Decimal(x) if x else 0)
+        df.bold = df.bold.apply(lambda x: decimal.Decimal(x) if x else 0)
 
         df.ma = df.ma * df.quote_precision
         df.bolu = df.bolu * df.quote_precision
