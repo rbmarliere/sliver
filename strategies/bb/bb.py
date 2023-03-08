@@ -1,3 +1,5 @@
+import decimal
+
 import pandas
 import peewee
 
@@ -29,9 +31,14 @@ class BBStrategy(BaseStrategy):
     def get_indicators_df(self):
         df = super().get_indicators_df(self.get_indicators())
 
+        df.ma = df.ma.apply(decimal.Decimal)
+        df.bolu = df.bolu.apply(decimal.Decimal)
+        df.bold = df.bold.apply(decimal.Decimal)
+
         df.ma = df.ma * df.quote_precision
         df.bolu = df.bolu * df.quote_precision
         df.bold = df.bold * df.quote_precision
+
         df.replace({float("nan"): None}, inplace=True)
 
         df.ma = df.apply(
