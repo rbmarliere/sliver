@@ -30,9 +30,9 @@ class DD3Strategy(BaseStrategy):
     def get_indicators_df(self):
         df = super().get_indicators_df(self.get_indicators())
 
-        df.ma1 = df.ma1.apply(decimal.Decimal)
-        df.ma2 = df.ma2.apply(decimal.Decimal)
-        df.ma3 = df.ma3.apply(decimal.Decimal)
+        df.ma1 = df.ma1.apply(lambda x: decimal.Decimal(x) if x else 0)
+        df.ma2 = df.ma2.apply(lambda x: decimal.Decimal(x) if x else 0)
+        df.ma3 = df.ma3.apply(lambda x: decimal.Decimal(x) if x else 0)
 
         df.ma1 = df.ma1 * df.quote_precision
         df.ma2 = df.ma2 * df.quote_precision
