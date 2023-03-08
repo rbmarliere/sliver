@@ -39,13 +39,11 @@ export class StrategyComponent implements OnInit {
     stop_engine_id: null,
 
     // hypnox
-    i_h_threshold: 0,
-    i_l_threshold: 0,
-    p_h_threshold: 0,
-    p_l_threshold: 0,
-    tweet_filter: '',
-    model_i: '',
-    model_p: '',
+    threshold: 0,
+    filter: '',
+    model: '',
+    mode: '',
+    operator: '',
 
     // dd3
     ma1_period: 3,
