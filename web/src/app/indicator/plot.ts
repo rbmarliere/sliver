@@ -99,17 +99,9 @@ function getPlotData(data: any): any {
 function getHypnoxPlotData(data: any): any {
   return [
     {
-      name: 'i_score',
+      name: 'z_score',
       x: data.time,
-      y: data.i_score,
-      type: 'line',
-      xaxis: 'x',
-      yaxis: 'y2',
-    },
-    {
-      name: 'p_score',
-      x: data.time,
-      y: data.p_score,
+      y: data.z_score,
       type: 'line',
       xaxis: 'x',
       yaxis: 'y2',

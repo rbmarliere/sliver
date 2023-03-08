@@ -21,13 +21,11 @@ export interface BaseStrategy {
 
 export interface Strategy extends BaseStrategy {
   // hypnox
-  i_h_threshold?: number;
-  i_l_threshold?: number;
-  p_h_threshold?: number;
-  p_l_threshold?: number;
-  tweet_filter?: string;
-  model_i?: string;
-  model_p?: string;
+  threshold?: number;
+  filter?: string;
+  model?: string;
+  mode?: string;
+  operator?: string;
 
   // dd3
   ma1_period?: number;
