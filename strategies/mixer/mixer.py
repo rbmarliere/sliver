@@ -37,6 +37,7 @@ class MixerStrategy(BaseStrategy):
         SELL = core.strategies.Signal.SELL.value
 
         indicators = pandas.DataFrame(self.get_indicators().dicts())
+        indicators = indicators.set_index("time")
         indicators.drop("signal", axis=1, inplace=True)
         indicators["buy_w_signal"] = D(NEUTRAL)
         indicators["sell_w_signal"] = D(NEUTRAL)
@@ -51,8 +52,7 @@ class MixerStrategy(BaseStrategy):
                 mixind = mixind \
                     .set_index("time") \
                     .resample(freq) \
-                    .ffill() \
-                    .reset_index()
+                    .ffill()
 
             mixind["buy_weight"] = mixin.buy_weight
             mixind["buy_w_signal"] = mixind["signal"] * mixind["buy_weight"]
@@ -64,7 +64,7 @@ class MixerStrategy(BaseStrategy):
 
         not_null = ((indicators['buy_w_signal'].notna())
                     | (indicators['sell_w_signal'].notna()))
-        indicators = indicators[not_null]
+        indicators = indicators[not_null].copy()
 
         # replace all values below 0 with 0
         indicators.buy_w_signal.clip(lower=0, inplace=True)
@@ -81,10 +81,11 @@ class MixerStrategy(BaseStrategy):
         if indicators.empty:
             return
 
-        with core.db.connection.atomic():
-            indicators["strategy"] = self.strategy.id
-            indicators["price"] = indicators.id
+        indicators["strategy"] = self.strategy.id
+        indicators["price"] = indicators.id
+        indicators = indicators.reset_index()
 
+        with core.db.connection.atomic():
             core.db.Indicator.insert_many(
                 indicators[["strategy", "price", "signal"]]
                 .to_dict("records")
