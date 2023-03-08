@@ -60,13 +60,14 @@ class MixerStrategy(BaseStrategy):
 
             mixind["sell_weight"] = mixin.sell_weight
             mixind["sell_w_signal"] = mixind["signal"] * mixind["sell_weight"]
-            indicators["sell_w_signal"] -= mixind["sell_w_signal"]
+            indicators["sell_w_signal"] += mixind["sell_w_signal"]
 
-        indicators.buy_w_signal.replace({float("nan"): 0}, inplace=True)
+        not_null = ((indicators['buy_w_signal'].notna())
+                    | (indicators['sell_w_signal'].notna()))
+        indicators = indicators[not_null]
+
         # replace all values below 0 with 0
         indicators.buy_w_signal.clip(lower=0, inplace=True)
-
-        indicators.sell_w_signal.replace({float("nan"): 0}, inplace=True)
         indicators.sell_w_signal.clip(upper=0, inplace=True)
 
         weighted_signal = indicators.buy_w_signal + indicators.sell_w_signal
