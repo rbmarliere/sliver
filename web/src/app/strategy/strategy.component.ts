@@ -62,6 +62,12 @@ export class StrategyComponent implements OnInit {
     use_ema: false,
     ma_period: 20,
     num_std: 2,
+
+    // ma_cross
+    use_fast_ema: false,
+    fast_period: 50,
+    use_slow_ema: false,
+    slow_period: 200,
   };
 
   loading: Boolean = true;

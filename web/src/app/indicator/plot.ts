@@ -16,6 +16,8 @@ export function getPlot(strategy: Strategy, indicators: Indicator): any {
     plot.layout = { ...plot.layout, ...getMixerPlotLayout(), }
   } else if (getStrategyTypeName(strategy.type) === 'BB') {
     plot.data = plot.data.concat(getBBPlotData(indicators));
+  } else if (getStrategyTypeName(strategy.type) === 'MA_CROSS') {
+    plot.data = plot.data.concat(getMACrossPlotData(indicators));
   }
 
   return plot;
@@ -217,6 +219,27 @@ function getBBPlotData(data: any): any {
       name: 'lower band',
       x: data.time,
       y: data.bold,
+      type: 'line',
+      xaxis: 'x',
+      yaxis: 'y',
+    },
+  ]
+}
+
+function getMACrossPlotData(data: any): any {
+  return [
+    {
+      name: 'fast',
+      x: data.time,
+      y: data.fast,
+      type: 'line',
+      xaxis: 'x',
+      yaxis: 'y',
+    },
+    {
+      name: 'slow',
+      x: data.time,
+      y: data.slow,
       type: 'line',
       xaxis: 'x',
       yaxis: 'y',
