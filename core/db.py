@@ -1050,6 +1050,7 @@ class Price(BaseModel):
 
 
 class Indicator(BaseModel):
+    id = peewee.BigAutoField(primary_key=True)
     strategy = peewee.ForeignKeyField(Strategy)
     price = peewee.ForeignKeyField(Price)
     signal = peewee.DecimalField(default=0)
