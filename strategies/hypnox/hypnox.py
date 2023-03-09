@@ -68,10 +68,9 @@ class HypnoxStrategy(BaseStrategy):
             if count == 0:
                 core.watchdog.info("{m}: no tweets to replay"
                                    .format(m=self.model))
-                return
-
-            model = models.load_model(self.model)
-            replay(query, model)
+            else:
+                model = models.load_model(self.model)
+                replay(query, model)
 
         self.refresh_indicators()
 
