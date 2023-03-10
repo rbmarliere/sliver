@@ -219,6 +219,17 @@
           </p>
         </div>
 
+        <div class="fields" *ngIf="getStrategyTypeName(strategy.type) === 'SWAPPERBOX'">
+          <mat-form-field>
+            <mat-label>Signals Table URL</mat-label>
+            <input matInput type="text" formControlName="url" autocomplete="off" />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Telegram Channel</mat-label>
+            <input matInput type="text" formControlName="telegram" autocomplete="off" />
+          </mat-form-field>
+        </div>
+
         <div class="button">
           <button mat-raised-button color="primary" style="margin-right: 1vh;">Save</button>
 

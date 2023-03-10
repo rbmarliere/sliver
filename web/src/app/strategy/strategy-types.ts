@@ -34,6 +34,10 @@ export function getStrategyTypes(): StrategyType[] {
       value: 6,
       name: 'MA_CROSS',
     },
+    {
+      value: 7,
+      name: 'SWAPPERBOX',
+    }
   ];
 }
 
