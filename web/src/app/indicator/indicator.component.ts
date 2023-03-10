@@ -41,8 +41,10 @@ export class IndicatorComponent {
       start = this.indicators.time[0];
       end = this.indicators.time[this.indicators.time.length - 1];
     } else {
-      start = new Date(event['xaxis.range[0]']);
-      end = new Date(event['xaxis.range[1]']);
+      let start_str = event['xaxis.range[0]'].replace(' ', 'T').replace(/$/, 'Z');
+      let end_str = event['xaxis.range[1]'].replace(' ', 'T').replace(/$/, 'Z');
+      start = new Date(start_str);
+      end = new Date(end_str);
     }
 
     let startIdx = this.indicators.time.findIndex((t) => t >= start);
