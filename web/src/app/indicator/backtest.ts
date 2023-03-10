@@ -161,6 +161,8 @@ export function getMetrics(positions: Position[], indicators: Indicator): Metric
   let bh_recovery_factor = bh_roi / (max_series_drawdown * -1);
   let recovery_factor = roi / (max_pos_drawdown * -1);
 
+  let expected_value = (percent_profitable / 100) * avg_winning_trade_pnl - ((100 - percent_profitable) / 100) * avg_losing_trade_pnl;
+
   // https://www.investopedia.com/articles/fundamental-analysis/10/strategy-performance-reports.asp
   let metrics = [
     { key: 'SEP', value: '' },
@@ -215,6 +217,7 @@ export function getMetrics(positions: Position[], indicators: Indicator): Metric
     { key: 'Largest Winning Trade', value: `${largest_winning_trade_roi.toFixed(2)}%` },
     { key: 'Largest Losing Trade', value: `${largest_losing_trade_roi.toFixed(2)}%` },
     { key: 'Payoff Ratio', value: payoff_ratio.toFixed(2) },
+    { key: 'Expected Value', value: `${expected_value.toFixed(2)}%` },
 
     { key: 'sep', value: '' },
 
