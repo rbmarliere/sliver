@@ -30,6 +30,9 @@ export interface Indicator {
   // ma_cross
   fast?: number[];
   slow?: number[];
+
+  // swapperbox
+  // signal?: number[];
 }
 
 export function sliceIndicators(indicators: Indicator, startIdx: number, endIdx: number): Indicator {
@@ -52,16 +55,20 @@ export function sliceIndicators(indicators: Indicator, startIdx: number, endIdx:
     buys: indicators.buys.slice(startIdx, endIdx),
     sells: indicators.sells.slice(startIdx, endIdx),
 
+    // mixer
     signal: indicators.signal?.slice(startIdx, endIdx),
     buy_w_signal: indicators.buy_w_signal?.slice(startIdx, endIdx),
     sell_w_signal: indicators.sell_w_signal?.slice(startIdx, endIdx),
 
+    // hypnox
     z_score: indicators.z_score?.slice(startIdx, endIdx),
 
+    // dd3
     ma1: indicators.ma1?.slice(startIdx, endIdx),
     ma2: indicators.ma2?.slice(startIdx, endIdx),
     ma3: indicators.ma3?.slice(startIdx, endIdx),
 
+    // bb
     ma: indicators.ma?.slice(startIdx, endIdx),
     bolu: indicators.bolu?.slice(startIdx, endIdx),
     bold: indicators.bold?.slice(startIdx, endIdx),
