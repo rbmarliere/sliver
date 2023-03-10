@@ -50,4 +50,8 @@ export interface Strategy extends BaseStrategy {
   fast_period?: number;
   use_slow_ema?: boolean;
   slow_period?: number;
+
+  // swapperbox
+  url?: string;
+  telegram?: string;
 }

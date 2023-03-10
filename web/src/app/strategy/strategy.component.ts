@@ -68,6 +68,10 @@ export class StrategyComponent implements OnInit {
     fast_period: 50,
     use_slow_ema: false,
     slow_period: 200,
+
+    // swapperbox
+    url: '',
+    telegram: '',
   };
 
   loading: Boolean = true;
