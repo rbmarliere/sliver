@@ -183,37 +183,39 @@
         </div>
 
         <div class="fields" *ngIf="getStrategyTypeName(strategy.type) === 'BB'">
+          <mat-form-field>
+            <mat-label>Number of Standard Deviations</mat-label>
+            <input matInput type="number" formControlName="num_std" autocomplete="off" />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Moving Average Period</mat-label>
+            <input matInput type="number" formControlName="ma_period" autocomplete="off" />
+          </mat-form-field>
           <p>
-            <mat-form-field>
-              <mat-label>Number of Standard Deviations</mat-label>
-              <input matInput type="number" formControlName="num_std" autocomplete="off" />
-            </mat-form-field>
-            <mat-form-field>
-              <mat-label>Moving Average Period</mat-label>
-              <input matInput type="number" formControlName="ma_period" autocomplete="off" />
-            </mat-form-field>
             <mat-slide-toggle formControlName="use_ema">
             </mat-slide-toggle>
-            <mat-label style="padding: 1vh">Exponential?</mat-label>
+            <mat-label style="padding: 1vh">Exponential MA?</mat-label>
           </p>
         </div>
 
         <div class="fields" *ngIf="getStrategyTypeName(strategy.type) === 'MA_CROSS'">
+          <mat-form-field>
+            <mat-label>Fast MA Period</mat-label>
+            <input matInput type="number" formControlName="fast_period" autocomplete="off" />
+          </mat-form-field>
           <p>
-            <mat-form-field>
-              <mat-label>Fast MA Period</mat-label>
-              <input matInput type="number" formControlName="fast_period" autocomplete="off" />
-            </mat-form-field>
             <mat-slide-toggle formControlName="use_fast_ema">
             </mat-slide-toggle>
-            <mat-label style="padding: 1vh">Exponential?</mat-label>
-            <mat-form-field>
-              <mat-label>Slow MA Period</mat-label>
-              <input matInput type="number" formControlName="slow_period" autocomplete="off" />
-            </mat-form-field>
+            <mat-label style="padding: 1vh">Exponential Fast MA?</mat-label>
+          </p>
+          <mat-form-field>
+            <mat-label>Slow MA Period</mat-label>
+            <input matInput type="number" formControlName="slow_period" autocomplete="off" />
+          </mat-form-field>
+          <p>
             <mat-slide-toggle formControlName="use_slow_ema">
             </mat-slide-toggle>
-            <mat-label style="padding: 1vh">Exponential?</mat-label>
+            <mat-label style="padding: 1vh">Exponential Slow MA?</mat-label>
           </p>
         </div>
 
