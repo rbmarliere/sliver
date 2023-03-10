@@ -99,6 +99,15 @@ ma_cross_fields = {
     "slow_period": fields.Integer,
 }
 
+swapperbox_indicators = {
+    **indicators_fields,
+}
+swapperbox_fields = {
+    **base_fields,
+    "url": fields.String,
+    "telegram": fields.String,
+}
+
 
 def get_fields(type=None, all=True):
     if type == strategies.Types.MANUAL.value:
@@ -121,6 +130,9 @@ def get_fields(type=None, all=True):
 
     elif type == strategies.Types.MA_CROSS.value:
         return ma_cross_fields if all else ma_cross_indicators
+
+    elif type == strategies.Types.SWAPPERBOX.value:
+        return swapperbox_fields if all else swapperbox_indicators
 
     return base_fields if all else indicators_fields
 
@@ -200,5 +212,9 @@ def get_base_parser(type=None):
         base_parser.add_argument("fast_period", type=int, required=True)
         base_parser.add_argument("use_slow_ema", type=bool, required=True)
         base_parser.add_argument("slow_period", type=int, required=True)
+
+    elif type == strategies.Types.SWAPPERBOX.value:
+        base_parser.add_argument("url", type=str, required=True)
+        base_parser.add_argument("telegram", type=str, required=True)
 
     return base_parser
