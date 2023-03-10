@@ -47,7 +47,7 @@ class MixerStrategy(BaseStrategy):
             strategy = core.strategies.load(
                 core.db.Strategy.get_by_id(mixin.strategy_id))
             mixind = pandas.DataFrame(strategy.get_indicators().dicts())
-            mixind = mixind.set_time("time")
+            mixind = mixind.set_index("time")
 
             if self.strategy.timeframe != strategy.timeframe:
                 freq = core.utils.get_timeframe_freq(self.strategy.timeframe)
