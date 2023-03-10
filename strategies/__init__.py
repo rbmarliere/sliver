@@ -7,6 +7,7 @@ from .ma_cross import MACrossStrategy
 from .manual import ManualStrategy
 from .mixer import MixerStrategy
 from .random import RandomStrategy
+from .swapperbox import SwapperBoxStrategy
 
 
 class Types(enum.Enum):
@@ -17,6 +18,7 @@ class Types(enum.Enum):
     MIXER = 4
     BB = 5
     MA_CROSS = 6
+    SWAPPERBOX = 7
 
 
 class Signal(enum.Enum):
@@ -49,6 +51,9 @@ def load(strategy, user=None):
 
     elif strategy.type == Types.MA_CROSS.value:
         stt = MACrossStrategy.get_or_create(strategy=strategy)[0]
+
+    elif strategy.type == Types.SWAPPERBOX.value:
+        stt = SwapperBoxStrategy.get_or_create(strategy=strategy)[0]
 
     else:
         raise ValueError("invalid strategy type")
