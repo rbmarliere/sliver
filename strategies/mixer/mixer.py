@@ -1,3 +1,4 @@
+import datetime
 from decimal import Decimal as D
 
 import pandas
@@ -46,13 +47,13 @@ class MixerStrategy(BaseStrategy):
             strategy = core.strategies.load(
                 core.db.Strategy.get_by_id(mixin.strategy_id))
             mixind = pandas.DataFrame(strategy.get_indicators().dicts())
+            mixind = mixind.set_time("time")
 
             if self.strategy.timeframe != strategy.timeframe:
                 freq = core.utils.get_timeframe_freq(self.strategy.timeframe)
-                mixind = mixind \
-                    .set_index("time") \
-                    .resample(freq) \
-                    .ffill()
+                new_row = pandas.DataFrame(index=[datetime.datetime.utcnow()])
+                mixind = pandas.concat([mixind, new_row])
+                mixind = mixind.resample(freq).ffill()
 
             mixind["buy_weight"] = mixin.buy_weight
             mixind["buy_w_signal"] = mixind["signal"] * mixind["buy_weight"]
@@ -66,7 +67,6 @@ class MixerStrategy(BaseStrategy):
                     | (indicators['sell_w_signal'].notna()))
         indicators = indicators[not_null].copy()
 
-        # replace all values below 0 with 0
         indicators.buy_w_signal.clip(lower=0, inplace=True)
         indicators.sell_w_signal.clip(upper=0, inplace=True)
 
