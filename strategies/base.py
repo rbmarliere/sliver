@@ -24,6 +24,7 @@ class BaseStrategy(core.db.BaseModel):
 
         self.select_fields = [
             core.db.Price,
+            core.db.Indicator.id.alias("indicator_id"),
             core.db.Indicator,
         ]
 
