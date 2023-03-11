@@ -1,3 +1,7 @@
+class BaseError(Exception):
+    pass
+
+
 class ModelDoesNotExist(Exception):
     pass
 

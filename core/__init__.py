@@ -20,7 +20,9 @@ config = [
     "LOGS_DIR",
     "MODELS_DIR",
     "TELEGRAM_CHANNEL",
-    "TELEGRAM_KEY",
+    "TELEGRAM_BOT_TOKEN",
+    "TELEGRAM_API_ID",
+    "TELEGRAM_API_HASH",
     "TWITTER_ACCESS_KEY",
     "TWITTER_ACCESS_SECRET",
     "TWITTER_CONSUMER_KEY",
@@ -54,6 +56,7 @@ from . import (  # noqa 402
     errors,
     exchange,
     inventory,
+    telegram,
     utils,
     watchdog)
 __all__ = [
@@ -61,6 +64,7 @@ __all__ = [
     "errors",
     "exchange",
     "inventory",
+    "telegram",
     "utils",
     "watchdog"
 ]
