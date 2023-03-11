@@ -3,58 +3,8 @@ import time
 
 import ccxt
 import peewee
-import telegram
 
 import core
-
-
-def send_user_telegram(user, msg):
-    while True:
-        try:
-            assert core.config["TELEGRAM_KEY"]
-            assert user.telegram_username
-
-            bot = telegram.Bot(core.config["TELEGRAM_KEY"])
-
-            if user.telegram_chat_id is None:
-                updates = bot.get_updates()
-                for update in updates:
-                    if update.message.chat.username == user.telegram_username:
-                        user.telegram_chat_id = update.message.chat.id
-                        user.save()
-
-            bot.send_message(text=msg,
-                             chat_id=user.telegram_chat_id)
-
-        except (KeyError, AssertionError):
-            pass
-
-        except telegram.error.NetworkError:
-            time.sleep(30)
-            continue
-
-        break
-
-
-def send_telegram(message):
-    while True:
-        try:
-            assert core.config["TELEGRAM_KEY"]
-            assert core.config["TELEGRAM_CHANNEL"]
-
-            bot = telegram.Bot(core.config["TELEGRAM_KEY"])
-
-            bot.send_message(text=message,
-                             chat_id=core.config["TELEGRAM_CHANNEL"])
-
-        except (KeyError, AssertionError):
-            pass
-
-        except telegram.error.NetworkError:
-            time.sleep(30)
-            continue
-
-        break
 
 
 def get_logger(name, suppress_output=False):
@@ -105,7 +55,7 @@ def error(msg, exception):
 
     if log.name == "watchdog" or log.name == "stream":
         msg = "{l}: {m}".format(l=log.name, m=msg)
-        send_telegram(msg)
+        core.telegram.send_message(msg)
 
 
 def warning(msg):
@@ -113,11 +63,11 @@ def warning(msg):
 
     if log.name == "watchdog" or log.name == "stream":
         msg = "{l}: {m}".format(l=log.name, m=msg)
-        send_telegram(msg)
+        core.telegram.send_message(msg)
 
 
 def notice(user, msg):
-    send_user_telegram(user, msg)
+    core.telegram.send_user_message(user, msg)
 
 
 def disable(locals):
@@ -184,7 +134,8 @@ def watch():
         except (ccxt.NetworkError,
                 ccxt.ExchangeError,
                 core.errors.ModelTooLarge,
-                core.errors.ModelDoesNotExist) as e:
+                core.errors.ModelDoesNotExist,
+                core.errors.BaseError) as e:
             error(e.__class__.__name__, e)
             if "strategy" in locals():
                 strategy.disable()
