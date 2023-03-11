@@ -1,6 +1,6 @@
 import time
 
-import telethon
+import telethon.sync
 import telegram
 
 import core
@@ -55,7 +55,7 @@ def send_message(message):
         break
 
 
-async def get_messages(username, limit=1):
+def get_messages(username, limit=1):
     while True:
         try:
             assert core.config["LOGS_DIR"]
@@ -74,14 +74,14 @@ async def get_messages(username, limit=1):
                                                           api_id,
                                                           api_hash)
 
-                await telethon_client.connect()
+                telethon_client.connect()
 
-                me = await telethon_client.get_me()
+                me = telethon_client.get_me()
                 if me is None:
                     raise core.errors.BaseError("no telegram authentication")
 
             if not telethon_client.is_connected():
-                await telethon_client.connect()
+                telethon_client.connect()
 
             if limit is None or limit > 0:
                 core.watchdog.info(
@@ -90,11 +90,11 @@ async def get_messages(username, limit=1):
                             l="all" if limit is None else limit))
 
             try:
-                m = await telethon_client.get_messages(username, limit=limit)
+                m = telethon_client.get_messages(username, limit=limit)
             except telethon.errors.FloodWaitError as e:
                 time.sleep(e.seconds)
 
-            await telethon_client.disconnect()
+            telethon_client.disconnect()
 
             return m
 

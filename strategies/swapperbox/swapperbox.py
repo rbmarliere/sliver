@@ -1,4 +1,3 @@
-import asyncio
 import datetime
 
 import pandas
@@ -36,7 +35,7 @@ class SwapperBoxStrategy(BaseStrategy):
 
         return indicators
 
-    async def refresh_messages(self):
+    def refresh_messages(self):
         try:
             header = False
             messages = pandas.read_csv(path+"messages.tsv", sep="\t")
@@ -44,10 +43,7 @@ class SwapperBoxStrategy(BaseStrategy):
             header = True
             messages = pandas.DataFrame()
 
-        get_upstream = asyncio.create_task(
-            core.telegram.get_messages(self.telegram, limit=0))
-        await get_upstream
-        upstream = get_upstream.result()
+        upstream = core.telegram.get_messages(self.telegram, limit=0)
 
         if upstream is None or upstream.total == len(messages):
             core.watchdog.info("swapperbox: no new messages")
@@ -56,10 +52,7 @@ class SwapperBoxStrategy(BaseStrategy):
         if len(messages) > 0:
             limit = upstream.total - len(messages)
 
-        get_missing = asyncio.create_task(
-            core.telegram.get_messages(self.telegram, limit=limit))
-        await get_missing
-        missing = get_missing.result()
+        missing = core.telegram.get_messages(self.telegram, limit=limit)
 
         if len(missing) > 0:
             new = pandas.DataFrame()
@@ -97,7 +90,7 @@ class SwapperBoxStrategy(BaseStrategy):
         if not missing.empty:
             missing = missing.assign(signal=NEUTRAL)
 
-            messages = asyncio.run(self.refresh_messages())
+            messages = self.refresh_messages()
 
             messages = messages.dropna()
             messages = messages.drop_duplicates()
