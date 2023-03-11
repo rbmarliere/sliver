@@ -17,6 +17,7 @@ core_deps = [
     "psycopg2-binary==2.9.5",
     "python-dotenv==0.21.0",
     "python-telegram-bot==13.14",
+    "telethon==1.27.0",
 ]
 
 hypnox_deps = [
