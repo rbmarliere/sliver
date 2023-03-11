@@ -19,6 +19,13 @@ def main(args):
         .where(core.db.Market.symbol == args.symbol) \
         .get()
 
+    if args.force:
+        core.db.Price \
+            .delete() \
+            .where(core.db.Price.market_id == market.id) \
+            .where(core.db.Price.timeframe == args.timeframe) \
+            .execute()
+
     prices_df = pandas.DataFrame(market.get_prices(args.timeframe).dicts())
 
     input_df = pandas.read_csv(args.input_file)
@@ -44,16 +51,15 @@ def main(args):
 
     ins_count = 0
     rm_count = 0
-    with core.db.connection.atomic():
-        ins_count = core.db.Price.insert_many(
-            input_df.to_dict("records")
-        ).execute()
+    ins_count = core.db.Price.insert_many(
+        input_df.to_dict("records")
+    ).execute()
 
-        if not prices_df.empty:
-            rm_count = core.db.Indicator.delete() \
-                .where(core.db.Indicator.price_id >= prices_df.iloc[0].id) \
-                .where(core.db.Indicator.price_id <= prices_df.iloc[-1].id) \
-                .execute()
+    if not prices_df.empty:
+        rm_count = core.db.Indicator.delete() \
+            .where(core.db.Indicator.price_id >= prices_df.iloc[0].id) \
+            .where(core.db.Indicator.price_id <= prices_df.iloc[-1].id) \
+            .execute()
 
     print("Imported {n} prices".format(n=ins_count.cursor.rowcount))
     print("From {s} to {e}".format(s=input_df.time.min(),
@@ -79,9 +85,14 @@ if __name__ == "__main__":
                       "--timeframe",
                       help="Timeframe to import data for",
                       required=True)
+    argp.add_argument("-f",
+                      "--force",
+                      help="Delete existing data",
+                      action="store_true")
     args = argp.parse_args()
 
     try:
-        main(args)
+        with core.db.connection.atomic():
+            main(args)
     except Exception as e:
         print(e)
