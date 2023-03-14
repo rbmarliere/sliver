@@ -2,99 +2,51 @@ require("lspconfig").pylsp.setup({
   -- organizeImports requires pylsp-rope in mason env
   on_attach = LSPAttach,
   capabilities = LSPCapabilities,
-  settings = {
-    pylsp = {
-      plugins = {
-        mccabe = {
-          threshold = 25,
-        },
-      },
-    },
-  },
+  settings = { pylsp = { plugins = { mccabe = { threshold = 25, }, }, }, },
 })
 
--- require("dap").set_log_level("TRACE")
+local dap = require("dap")
 
-require("dap").adapters.chrome = {
+dap.defaults.fallback.force_external_terminal = true
+dap.defaults.fallback.external_terminal = {
+  command = "/usr/local/bin/alacritty",
+  args = { "-e" },
+}
+
+dap.adapters.firefox = {
   type = "executable",
   command = "node",
-  args = { vim.fn.stdpath("data") .. "/mason/packages/chrome-debug-adapter/out/src/chromeDebug.js" },
+  args = { vim.fn.stdpath("data") .. "/mason/packages/firefox-debug-adapter/dist/adapter.bundle.js" },
 }
-require("dap").configurations.typescript = {
+
+dap.configurations.typescript = {
   {
-    type = "chrome",
-    request = "attach",
-    program = "${file}",
-    cwd = vim.fn.getcwd(),
-    sourceMaps = true,
-    protocol = "inspector",
-    port = 9222,
-    webRoot = "${workspaceFolder}/web",
-  },
-}
-
-local cfg = function(config, on_config)
-  local final_config = vim.deepcopy(config)
-  final_config.justMyCode = false
-  on_config(final_config)
-end;
-
-require("dap").adapters.pyscript = {
-  type = "executable";
-  command = vim.fn.getcwd() .. "/venv/bin/python3";
-  args = { "-m", "debugpy.adapter" };
-}
-require("dap").adapters.interpreter = {
-  type = "server";
-  port = 33332;
-  enrich_config = cfg
-}
-require("dap").adapters.serve = {
-  type = "server";
-  port = 33333;
-  enrich_config = cfg;
-}
-require('dap').defaults.serve.exception_breakpoints = {}
-require("dap").adapters.stream = {
-  type = "server";
-  port = 33334;
-  enrich_config = cfg;
-}
-require("dap").adapters.watch = {
-  type = "server";
-  port = 33335;
-  enrich_config = cfg
-}
-
-require("dap").configurations.python = {
-  {
-    type = "pyscript",
+    name = "Launch Firefox",
+    type = "firefox",
     request = "launch",
-    name = "Launch File",
-    program = "${file}";
-    args = function()
-      local argument_string = vim.fn.input('args: ')
-      return vim.fn.split(argument_string, " ", true)
-    end,
-  },
-  {
-    type = "interpreter",
-    request = "attach",
-    name = "Attach to Interpreter",
-  },
-  {
-    type = "serve",
-    request = "attach",
-    name = "Serve",
-  },
-  {
-    type = "stream",
-    request = "attach",
-    name = "Stream",
-  },
-  {
-    type = "watch",
-    request = "attach",
-    name = "Watch",
-  },
+    url = "http://localhost:4200",
+    webRoot = "${workspaceFolder}/web",
+    firefoxExecutable = "/usr/bin/firefox",
+    profile = "debug",
+    keepProfileChanges = true,
+  }
 }
+
+require("dap-python").setup(vim.fn.getcwd() .. "/venv/bin/python", { console = "externalTerminal" })
+
+table.insert(dap.configurations.python, {
+  type = "python",
+  request = "launch",
+  name = "API",
+  program = "api",
+  args = { "--no-debug" },
+  console = "externalTerminal",
+})
+
+table.insert(dap.configurations.python, {
+  type = "python",
+  request = "launch",
+  name = "Watchdog",
+  program = "core",
+  console = "externalTerminal",
+})
