@@ -1,3 +1,4 @@
+import argparse
 import datetime
 import os
 import re
@@ -13,7 +14,7 @@ import core
 import strategies
 
 
-TRACK_USERS = [
+TRACKED_USERS = [
     "22loops", "Amdtrades", "Ameba_NM", "Anbessa100", "AnondranCrypto",
     "AstroCryptoGuru", "Astrones2", "BITCOINTRAPPER", "BTC3P0", "BTCVIX",
     "BTC_JackSparrow", "BTC_y_tho", "Benaskren", "BigCheds", "BigChonis",
@@ -65,10 +66,8 @@ TRACK_USERS = [
     "walter_wyckoff", "xxstevelee"
 ]
 
-cache_file = core.config["LOGS_DIR"] + "/cache.tsv"
 
-
-class Stream(tweepy.Stream):
+class Stream(tweepy.StreamingClient):
 
     def on_connection_error(self):
         core.watchdog.warning("connection error")
@@ -82,27 +81,27 @@ class Stream(tweepy.Stream):
         core.watchdog.error("got exception", exception)
         super().on_exception(exception)
 
-    def on_status(self, status):
-        # ignore retweets
-        if "retweeted_status" in status._json:
-            return
+    def on_errors(self, errors):
+        core.watchdog.error("got errors", errors)
+        super().on_errors(errors)
+
+    def on_request_error(self, status_code):
+        core.watchdog.error("got request error", status_code)
+        super().on_request_error(status_code)
+
+    def on_tweet(self, status):
         # ignore replies
-        if status._json["in_reply_to_user_id"]:
+        if status.in_reply_to_user_id:
             return
-        # if tweet is truncated, get all text
-        if "extended_tweet" in status._json:
-            text = status.extended_tweet["full_text"]
-        else:
-            text = status.text
+
+        time = datetime.datetime.utcnow(),
+        text = status.text
+
         # make the tweet single-line
         text = re.sub("\n", " ", text).strip()
         text = re.sub("\r", " ", text).strip()
         # remove any tab character
         text = re.sub("\t", " ", text).strip()
-        # format data
-        time_with_tz = datetime.datetime.strptime(status._json["created_at"],
-                                                  "%a %b %d %H:%M:%S %z %Y")
-        time = datetime.datetime.utcfromtimestamp(time_with_tz.timestamp())
 
         # log to stdin
         core.watchdog.info(text)
@@ -127,6 +126,7 @@ class Stream(tweepy.Stream):
                         "time": [time],
                         "text": [text]
                     })
+                    cache_file = core.config["LOGS_DIR"] + "/cache.tsv"
                     with open(cache_file, "a") as f:
                         output.to_csv(f,
                                       header=f.tell() == 0,
@@ -135,62 +135,74 @@ class Stream(tweepy.Stream):
                                       sep="\t")
 
 
-def save_uids(users, api):
-    # save the ids of the users to track to disk
-    core.watchdog.info("loading user ids")
-    path = core.config["LOGS_DIR"] + "/user_ids.txt"
-    uids_file = open(path, "a")
+def get_uids():
     uids = []
-    for user in users:
-        # retrieve user id by name from twitter api
-        core.watchdog.info("fetching user %s id" % user)
-        try:
-            uid = str(api.get_user(screen_name=user.strip()).id)
-            # save found uids to a file so it does not consume api each run
-            print(uid, file=uids_file)
-            uids.append(uid)
-        except tweepy.errors.TweepyException as e:
-            core.watchdog.error("user {u} not found".format(u=user), e)
+    client = tweepy.Client(core.config["TWITTER_BEARER_TOKEN"])
+
+    for username in TRACKED_USERS:
+        user = client.get_user(username=username)
+        if user.errors:
+            core.watchdog.info("user {u} not found".format(u=user))
+            continue
+        uids.append(user.data.id)
+
     return uids
 
 
-def stream():
+def get_rules(uids):
+    all_rules = []
+    curr_rule = []
+
+    for uid in uids:
+        new_rule_str = "from:{u}".format(u=uid)
+        curr_rule_str = " OR ".join(curr_rule + [new_rule_str])
+
+        if len(curr_rule_str) > 512:
+            curr_rule_str = " OR ".join(curr_rule)
+            all_rules.append(tweepy.StreamRule(curr_rule_str))
+            curr_rule = [new_rule_str]
+
+        curr_rule.append(new_rule_str)
+
+    all_rules.append("lang:en -is:retweet")
+
+    return all_rules
+
+
+def stream(args):
     core.watchdog.set_logger("stream")
 
-    core.watchdog.info("loading twitter API keys")
-    if (core.config["TWITTER_CONSUMER_KEY"] == ""
-            or core.config["TWITTER_CONSUMER_SECRET"] == ""
-            or core.config["TWITTER_ACCESS_KEY"] == ""
-            or core.config["TWITTER_ACCESS_SECRET"] == ""):
-        core.watchdog.error("empty keys in config!", Exception)
-        return 1
-    auth = tweepy.OAuthHandler(core.config["TWITTER_CONSUMER_KEY"],
-                               core.config["TWITTER_CONSUMER_SECRET"])
-    auth.set_access_token(core.config["TWITTER_ACCESS_KEY"],
-                          core.config["TWITTER_ACCESS_SECRET"])
-    api = tweepy.API(auth)
+    if (core.config["TWITTER_BEARER_TOKEN"] == ""):
+        raise core.errors.BaseError("missing TWITTER_BEARER_TOKEN!")
 
-    core.watchdog.warning("init")
-    stream = Stream(core.config["TWITTER_CONSUMER_KEY"],
-                    core.config["TWITTER_CONSUMER_SECRET"],
-                    core.config["TWITTER_ACCESS_KEY"],
-                    core.config["TWITTER_ACCESS_SECRET"])
+    stream = Stream(core.config["TWITTER_BEARER_TOKEN"])
 
     core.watchdog.info("reading users")
-    try:
-        path = core.config["LOGS_DIR"] + "/user_ids.txt"
-        uids = open(path).read().splitlines()
-        if len(uids) != len(TRACK_USERS):
-            os.remove(path)
-            uids = save_uids(TRACK_USERS, api)
-    except FileNotFoundError:
-        uids = save_uids(TRACK_USERS, api)
+    uids_file = core.config["LOGS_DIR"] + "/user_ids.txt"
+    if args.users or not os.path.isfile(uids_file):
+        core.watchdog.info("storing user ids")
+        try:
+            os.remove(uids_file)
+        except FileNotFoundError:
+            pass
+        uids = get_uids()
+    else:
+        uids = open(uids_file, "r").read().splitlines()
+
+    core.watchdog.info("reading rules")
+    if args.rules:
+        core.watchdog.info("storing rules")
+
+        curr_rules = stream.get_rules()
+        if curr_rules.data:
+            stream.delete_rules([rule.id for rule in curr_rules.data])
+
+        stream.add_rules(get_rules(uids))
 
     core.watchdog.info("streaming...")
     while not stream.running:
         try:
-            stream.filter(languages=["en"], follow=uids)
-            # track=["bitcoin", "btc", "crypto", "cryptocurrency"])
+            stream.filter()
         except (requests.exceptions.Timeout, ssl.SSLError,
                 urllib3.exceptions.ReadTimeoutError,
                 requests.exceptions.ConnectionError) as e:
@@ -201,4 +213,10 @@ def stream():
             core.watchdog.info("got keyboard interrupt")
             break
 
-    core.watchdog.warning("shutting down...")
+
+if __name__ == "__main__":
+    argp = argparse.ArgumentParser()
+    argp.add_argument("--rules", action="store_true")
+    argp.add_argument("--users", action="store_true")
+    args = argp.parse_args()
+    stream(args)
