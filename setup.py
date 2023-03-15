@@ -26,7 +26,7 @@ hypnox_deps = [
     "tensorflow==2.10.0",
     "torch==1.12.1",
     "transformers==4.23.1",
-    "tweepy==4.11.0"
+    "tweepy==4.13.0"
 ]
 
 dev_deps = [
