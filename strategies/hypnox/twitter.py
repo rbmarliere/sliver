@@ -169,7 +169,12 @@ def get_rules(uids):
     return all_rules
 
 
-def stream(args):
+def stream():
+    argp = argparse.ArgumentParser()
+    argp.add_argument("--rules", action="store_true")
+    argp.add_argument("--users", action="store_true")
+    args = argp.parse_args()
+
     core.watchdog.set_logger("stream")
 
     if (core.config["TWITTER_BEARER_TOKEN"] == ""):
@@ -215,8 +220,4 @@ def stream(args):
 
 
 if __name__ == "__main__":
-    argp = argparse.ArgumentParser()
-    argp.add_argument("--rules", action="store_true")
-    argp.add_argument("--users", action="store_true")
-    args = argp.parse_args()
-    stream(args)
+    stream()
