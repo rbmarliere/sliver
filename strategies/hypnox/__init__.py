@@ -1,4 +1,6 @@
-from .hypnox import (HypnoxStrategy, HypnoxIndicator, HypnoxScore, HypnoxTweet)
+from .hypnox import (HypnoxUser, HypnoxStrategy,
+                     HypnoxIndicator, HypnoxScore, HypnoxTweet)
 
 
-__all__ = ["HypnoxStrategy", "HypnoxIndicator", "HypnoxScore", "HypnoxTweet"]
+__all__ = ["HypnoxUser", "HypnoxStrategy",
+           "HypnoxIndicator", "HypnoxScore", "HypnoxTweet"]
