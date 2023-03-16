@@ -1,6 +1,7 @@
 import tensorflow
 import transformers
 
+
 config = {
     "name": "p20221014",
     "class": "polarity",
@@ -23,8 +24,8 @@ def get_bert():
         config["bert"], num_labels=config["num_labels"], from_pt=True)
 
 
-def get_tokenizer():
-    return transformers.AutoTokenizer.from_pretrained(config["bert"])
+def load_tokenizer(modelpath: str = config["bert"]):
+    return transformers.AutoTokenizer.from_pretrained(modelpath)
 
 
 def load_model(modelpath):

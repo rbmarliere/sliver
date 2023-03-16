@@ -1,6 +1,7 @@
 import tensorflow
 import transformers
 
+
 config = {
     "name": "p20221129",
     "class": "polarity",
