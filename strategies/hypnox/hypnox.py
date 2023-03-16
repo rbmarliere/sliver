@@ -7,6 +7,11 @@ from ..base import BaseStrategy
 from strategies.hypnox.replay import replay
 
 
+class HypnoxUser(core.db.BaseModel):
+    twitter_user_id = peewee.TextField(null=True)
+    username = peewee.TextField()
+
+
 class HypnoxTweet(core.db.BaseModel):
     time = peewee.DateTimeField()
     text = peewee.TextField()
