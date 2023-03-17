@@ -10,6 +10,12 @@ from ..base import BaseStrategy
 path = "strategies/swapperbox/"
 
 
+class SwapperBoxMessage(core.db.BaseModel):
+    telegram_message_id = peewee.TextField()
+    date = peewee.DateTimeField()
+    text = peewee.TextField()
+
+
 class SwapperBoxStrategy(BaseStrategy):
     url = peewee.TextField(null=True)
     telegram = peewee.TextField(null=True)
@@ -36,12 +42,7 @@ class SwapperBoxStrategy(BaseStrategy):
         return indicators
 
     def refresh_messages(self):
-        try:
-            header = False
-            messages = pandas.read_csv(path+"messages.tsv", sep="\t")
-        except FileNotFoundError:
-            header = True
-            messages = pandas.DataFrame()
+        messages = pandas.DataFrame(SwapperBoxMessage.select().dicts())
 
         upstream = core.telegram.get_messages(self.telegram, limit=0)
 
@@ -56,18 +57,18 @@ class SwapperBoxStrategy(BaseStrategy):
 
         if len(missing) > 0:
             new = pandas.DataFrame()
-            new["id"] = [msg.id for msg in missing]
+            new["telegram_message_id"] = [msg.id for msg in missing]
             new["text"] = [msg.text for msg in missing]
             new["date"] = [msg.date for msg in missing]
             new.text = new.text.str.strip()
             new.text = new.text.replace(r"\n", " ", regex=True)
             new = new.sort_values("date")
-            new.to_csv(path+"messages.tsv",
-                       mode="a",
-                       sep="\t",
-                       index=False,
-                       header=header)
+
             messages = pandas.concat([messages, new])
+
+            SwapperBoxMessage.\
+                insert_many(new.to_dict(orient="records")) \
+                .execute()
 
         return messages
 

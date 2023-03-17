@@ -1,4 +1,4 @@
-from .swapperbox import SwapperBoxStrategy
+from .swapperbox import SwapperBoxMessage, SwapperBoxStrategy
 
 
-__all__ = ["SwapperBoxStrategy"]
+__all__ = ["SwapperBoxMessage", "SwapperBoxStrategy"]
