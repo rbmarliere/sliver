@@ -71,15 +71,30 @@ class BaseStrategy(core.db.BaseModel):
         df.close = df.close * df.quote_precision
         df.volume = df.volume * df.base_precision
 
-        df["buys"] = numpy.where(
-            df.signal == BUY, df.close * D("0.995"), D(0))
+        df = df.set_index("time")
+        sig = df.loc[df.signal != 0]
+
+        # remove consecutive duplicated signals
+        b = sig \
+            .loc[sig.signal.shift() != sig.signal] \
+            .loc[sig.signal == BUY].index
+        s = sig \
+            .loc[sig.signal.shift() != sig.signal] \
+            .loc[sig.signal == SELL].index
+
+        df["buys"] = D(0)
+        df["sells"] = D(0)
+
+        df.loc[b, "buys"] = df.loc[b, "close"].fillna(D(0)) * D("0.995")
+        df.loc[s, "sells"] = df.loc[s, "close"].fillna(D(0)) * D("1.005")
+
+        df = df.reset_index()
+
         df.buys = df.apply(
             lambda x: core.utils.quantize(x, "buys", "price_precision"),
             axis=1)
         df.buys.replace({0: None}, inplace=True)
 
-        df["sells"] = numpy.where(
-            df.signal == SELL, df.close * D("1.005"), D(0))
         df.sells = df.apply(
             lambda x: core.utils.quantize(x, "sells", "price_precision"),
             axis=1)
