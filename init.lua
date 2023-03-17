@@ -9,11 +9,10 @@ require("lspconfig").pylsp.setup({
 
 local dap = require("dap")
 
-dap.defaults.fallback.force_external_terminal = true
-
 dap.defaults.fallback.external_terminal = {
   command = "/usr/local/bin/alacritty",
-  args = { "--hold", "-e" },
+  -- args = { "--hold", "-e" },
+  args = { "-e" },
 }
 
 dap.adapters.firefox = {
@@ -36,7 +35,7 @@ dap.configurations.typescript = {
   typescript,
 }
 
-require("dap-python").setup(vim.fn.getcwd() .. "/venv/bin/python", { console = "externalTerminal" })
+require("dap-python").setup(vim.fn.getcwd() .. "/venv/bin/python")
 
 local api = {
   type = "python",
@@ -57,14 +56,11 @@ local watchdog = {
 }
 table.insert(dap.configurations.python, watchdog)
 
-table.insert(dap.configurations.python, {
-  type = "python",
-  request = "launch",
-  name = "Stream",
-  program = "strategies/hypnox/twitter.py",
-  console = "externalTerminal",
-})
-
 dap.run(typescript)
-dap.run(api)
 dap.run(watchdog)
+dap.run(api)
+
+local sliver = vim.fn.stdpath("config") .. "/sessions/sliver"
+if vim.fn.filereadable(sliver) == 1 then
+  vim.cmd("source " .. sliver)
+end
