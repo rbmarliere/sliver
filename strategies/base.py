@@ -1,6 +1,5 @@
 from decimal import Decimal as D
 
-import numpy
 import pandas
 import peewee
 
