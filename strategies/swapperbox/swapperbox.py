@@ -93,6 +93,7 @@ class SwapperBoxStrategy(BaseStrategy):
 
             messages = self.refresh_messages()
 
+            messages = messages[["telegram_message_id", "date", "text"]]
             messages = messages.dropna()
             messages = messages.drop_duplicates()
             messages.date = pandas.to_datetime(messages.date, utc=True)
@@ -118,7 +119,7 @@ class SwapperBoxStrategy(BaseStrategy):
             indicators.loc[indicators.index.isin(missing.index), "signal"] = \
                 missing.signal
 
-        indicators = indicators.loc[indicators.indicator_id.isnull()]
+        indicators = indicators.loc[indicators.indicator_id.isnull()].copy()
 
         with core.db.connection.atomic():
             indicators["strategy"] = self.strategy.id
