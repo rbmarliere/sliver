@@ -1,7 +1,7 @@
 import time
 
-import telethon.sync
 import telegram
+import telethon.sync
 
 import core
 
@@ -98,8 +98,7 @@ def get_messages(username, limit=1):
 
             return m
 
-        except (KeyError, AssertionError):
-            pass
-
         except Exception as e:
-            raise core.errors.BaseError("swapperbox: {e}".format(e=e))
+            raise core.errors.BaseError("swapperbox: {err} {e}"
+                                        .format(err=e.__class__.__name__,
+                                                e=e))
