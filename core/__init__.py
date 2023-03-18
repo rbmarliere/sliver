@@ -49,21 +49,20 @@ if config["ENV_NAME"] not in ["development", "production"]:
 
 
 from . import (  # noqa 402
+    alert,
     db,
     errors,
-    exchange,
     inventory,
-    telegram,
     utils,
     watchdog)
 __all__ = [
+    "alert",
     "db",
     "errors",
-    "exchange",
     "inventory",
-    "telegram",
     "utils",
     "watchdog"
 ]
 
 import strategies  # noqa 402
+import exchanges  # noqa 402
