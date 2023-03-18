@@ -58,7 +58,7 @@ with core.db.connection.atomic():
 
     q = core.db.Strategy \
         .select() \
-        .where(core.db.Strategy.type == core.strategies.Types.HYPNOX.value)
+        .where(core.db.Strategy.type == core.strategies.Types.HYPNOX)
 
     for st in q:
         core.db.Indicator \
