@@ -18,7 +18,8 @@ from core.watchdog import info as i
 def get_balance_by_exchange_asset(user: core.db.User,
                                   asset: core.db.ExchangeAsset):
     cred = user.get_active_credential(asset.exchange).get()
-    sync_balance(cred)
+    exchange = core.exchanges.load(cred.exchange, credential=cred)
+    sync_balance(exchange)
     return core.db.Balance.get(user_id=user.id, asset_id=asset.id)
 
 
@@ -139,21 +140,21 @@ def get_target_cost(user_strat: core.db.UserStrategy):
 #   it will effectively deleverage by reducing open positions to fit new params
 
 
-def sync_balance(cred: core.db.Credential):
+def sync_balance(exchange):
     value_ticker = "USDT"
     value_asset, new = core.db.Asset.get_or_create(ticker=value_ticker)
     if new:
         i("saved asset {a}".format(a=value_asset.ticker))
 
     try:
-        ex_bal = core.exchange.api.fetch_balance()
+        ex_bal = exchange.api_fetch_balance()
     except ccxt.ExchangeError as e:
         core.watchdog.error("exchange error", e)
-        cred.disable()
+        exchange.credential.disable()
         return
 
     ex_val_asset, new = core.db.ExchangeAsset.get_or_create(
-        exchange=cred.exchange, asset=value_asset)
+        exchange=exchange.credential.exchange, asset=value_asset)
     if new:
         i("saved asset {a} to exchange".format(a=ex_val_asset.asset.ticker))
 
@@ -171,12 +172,14 @@ def sync_balance(cred: core.db.Credential):
             i("saved new asset {a}".format(a=asset.ticker))
 
         ex_asset, new = core.db.ExchangeAsset.get_or_create(
-            exchange=cred.exchange, asset=asset)
+            exchange=exchange.credential.exchange, asset=asset)
         if new:
             i("saved asset {a}".format(a=ex_asset.asset.ticker))
 
         u_bal, new = core.db.Balance.get_or_create(
-            user=cred.user, asset=ex_asset, value_asset=ex_val_asset)
+            user=exchange.credential.user,
+            asset=ex_asset,
+            value_asset=ex_val_asset)
         if new:
             i("saved new balance {b}".format(b=u_bal.id))
 
@@ -184,32 +187,32 @@ def sync_balance(cred: core.db.Credential):
         u_bal.used = ex_asset.transform(used) if used else 0
         u_bal.total = ex_asset.transform(total) if total else 0
 
-        try:
-            p = core.exchange.api.fetch_ticker(asset.ticker + "/" +
-                                               value_asset.ticker)
-
-            free_value = (ex_val_asset.transform(p["last"] * free)
+        symbol = asset.ticker + "/" + value_asset.ticker
+        p = exchange.api_fetch_last_price(symbol)
+        if p:
+            free_value = (ex_val_asset.transform(p * free)
                           if free else 0)
-            used_value = (ex_val_asset.transform(p["last"] * used)
+            used_value = (ex_val_asset.transform(p * used)
                           if used else 0)
-            total_value = (ex_val_asset.transform(p["last"] * total)
+            total_value = (ex_val_asset.transform(p * total)
                            if total else 0)
 
-        except ccxt.BadSymbol:
-            try:
-                p = core.exchange.api.fetch_ticker(value_asset.ticker + "/" +
-                                                   asset.ticker)
+        if not p:
+            symbol = value_asset.ticker + "/" + asset.ticker
+            p = exchange.api_fetch_last_price(symbol)
 
-                free_value = (ex_val_asset.transform(free / p["last"])
-                              if free else 0)
-                used_value = (ex_val_asset.transform(used / p["last"])
-                              if used else 0)
-                total_value = (ex_val_asset.transform(total / p["last"])
-                               if total else 0)
-            except ccxt.BadSymbol:
-                free_value = u_bal.free
-                used_value = u_bal.used
-                total_value = u_bal.total
+        if p:
+            free_value = (ex_val_asset.transform(free / p)
+                          if free else 0)
+            used_value = (ex_val_asset.transform(used / p)
+                          if used else 0)
+            total_value = (ex_val_asset.transform(total / p)
+                           if total else 0)
+
+        if not p:
+            free_value = u_bal.free
+            used_value = u_bal.used
+            total_value = u_bal.total
 
         u_bal.free_value = free_value
         u_bal.used_value = used_value
@@ -223,8 +226,8 @@ def sync_balances(user: core.db.User):
     # sync balance for each exchange the user has a key
     for cred in user.credential_set.where(core.db.Credential.active):
         i("fetching user balance in exchange {e}".format(e=cred.exchange.name))
-        core.exchange.set_api(cred=cred)
-        sync_balance(cred)
+        exchange = core.exchanges.load(cred.exchange, credential=cred)
+        sync_balance(exchange)
         active_exchanges.append(cred.exchange)
 
     # delete inactive balances

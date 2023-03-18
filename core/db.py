@@ -41,6 +41,7 @@ class Exchange(BaseModel):
     precision_mode = peewee.IntegerField(default=DECIMAL_PLACES)
     padding_mode = peewee.IntegerField(default=NO_PADDING)
     timeframes = peewee.TextField(null=True)
+    type = peewee.IntegerField(default=0)
 
     def get_markets(self):
         return Market \
@@ -284,7 +285,8 @@ class Strategy(BaseModel):
         i("sell engine is {e}".format(e=self.sell_engine_id))
         i("stop engine is {e}".format(e=self.stop_engine_id))
 
-        core.exchange.download_prices(self)
+        core.exchanges.load(self.market.base.exchange,
+                            strategy=self).fetch_ohlcv()
 
         core.strategies.load(self).refresh()
 
@@ -430,7 +432,7 @@ class Position(BaseModel):
     status = peewee.TextField()
     # desired position size in quote
     target_cost = peewee.BigIntegerField()
-    # total effective cost paid in quote
+    # total effectivecost paid in quote
     entry_cost = peewee.BigIntegerField(default=0)
     # total amount in base
     entry_amount = peewee.BigIntegerField(default=0)
@@ -452,12 +454,26 @@ class Position(BaseModel):
     # boolean that indicates if the position was stopped
     stopped = peewee.BooleanField(default=False)
 
-    def get_notice(self, prefix="", suffix=""):
+    @property
+    def exchange(self):
+        if hasattr(self, "_exchange"):
+            return self._exchange
+
+        user = self.user_strategy.user
+        exchange = self.user_strategy.strategy.market.base.exchange
         try:
-            market = self.user_strategy.strategy.market
-            p = core.exchange.api.fetch_ticker(market.get_symbol())
-        except:  # noqa
-            pass
+            credential = user.get_active_credential(exchange).get()
+            self._exchange = core.exchanges.load(exchange,
+                                                 credential=credential,
+                                                 position=self)
+        except Credential.DoesNotExist:
+            self.user_strategy.disable()
+
+        return self._exchange
+
+    def get_notice(self, prefix="", suffix=""):
+        market = self.user_strategy.strategy.market
+        p = self.exchange.api_fetch_last_price(market.get_symbol())
 
         return ("{p}position {pid} of strategy {s} in market {m} ({e}) {su}, "
                 "last price is {lp}"
@@ -467,7 +483,7 @@ class Position(BaseModel):
                         m=market.get_symbol(),
                         e=market.quote.exchange.name,
                         su=suffix,
-                        lp=p["last"]))
+                        lp=p))
 
     def get_timedelta(self):
         if self.is_pending():
@@ -683,9 +699,8 @@ class Position(BaseModel):
             return False
 
         if last_price is None:
-            core.exchange.set_api(exchange=market.base.exchange)
-            p = core.exchange.api.fetch_ticker(market.get_symbol())
-            last_price = market.quote.transform(p["last"])
+            p = self.exchange.api_fetch_last_price(market.get_symbol())
+            last_price = market.quote.transform(p)
 
         if last_price > self.last_high:
             self.last_high = last_price
@@ -764,9 +779,8 @@ class Position(BaseModel):
         market = strategy.market
         SELL = core.strategies.Signal.SELL
 
-        core.exchange.set_api(exchange=market.base.exchange)
-        p = core.exchange.api.fetch_ticker(market.get_symbol())
-        last_p = market.quote.transform(p["last"])
+        p = self.exchange.api_fetch_last_price(market.get_symbol())
+        last_p = market.quote.transform(p)
 
         i("___________________________________________")
         i("refreshing {s} position {i}".format(s=self.status, i=self.id))
@@ -776,7 +790,7 @@ class Position(BaseModel):
         i("entry cost is {t}".format(t=market.quote.print(self.entry_cost)))
         i("exit cost is {t}".format(t=market.quote.print(self.exit_cost)))
 
-        core.exchange.sync_limit_orders(self)
+        self.exchange.sync_limit_orders()
 
         self.check_stops(last_p)
 
@@ -846,19 +860,17 @@ class Position(BaseModel):
             side = "buy"
 
             if m_total_amount > 0:
-                inserted_orders = core.exchange \
+                inserted_orders = self.exchange \
                     .create_order("market",
                                   side,
-                                  self,
                                   m_total_amount,
                                   last_p)
 
             if engine.lm_ratio < 1:
                 l_total = self.get_remaining_cost()
                 if l_total > 0:
-                    inserted_orders = core.exchange \
+                    inserted_orders = self.exchange \
                         .create_limit_buy_orders(l_total,
-                                                 self,
                                                  last_p,
                                                  engine.num_orders,
                                                  engine.spread)
@@ -867,29 +879,26 @@ class Position(BaseModel):
             side = "sell"
 
             if m_total_amount > 0:
-                inserted_orders = core.exchange \
+                inserted_orders = self.exchange \
                     .create_order("market",
                                   side,
-                                  self,
                                   m_total_amount,
                                   last_p)
 
             if engine.lm_ratio < 1:
                 l_total = self.get_remaining_amount(last_p)
                 if l_total > 0:
-                    inserted_orders = core.exchange \
+                    inserted_orders = self.exchange \
                         .create_limit_sell_orders(l_total,
-                                                  self,
                                                   last_p,
                                                   engine.num_orders,
                                                   engine.spread)
 
         # if bucket is not full but can't insert new orders, fill at market
         if not inserted_orders:
-            inserted_orders = core.exchange \
+            inserted_orders = self.exchange \
                 .create_order("market",
                               side,
-                              self,
                               remaining_amount,
                               last_p)
 
@@ -966,6 +975,7 @@ class Order(BaseModel):
     fee = peewee.BigIntegerField()
 
     def sync(self, ex_order, position):
+        # TODO -- implementation specific
         market = position.user_strategy.strategy.market
 
         id = ex_order["id"]
@@ -1095,4 +1105,4 @@ def get_pending_strategies():
         .where(Strategy.active) \
         .where(Strategy.next_refresh < datetime.datetime.utcnow()) \
         .order_by(Strategy.next_refresh) \
-        .order_by(Strategy.type == core.strategies.Types.MIXER.value)
+        .order_by(Strategy.type == core.strategies.Types.MIXER)
