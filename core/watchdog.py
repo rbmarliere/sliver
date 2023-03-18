@@ -1,9 +1,6 @@
 import logging.handlers
 import time
 
-import ccxt
-import peewee
-
 import core
 
 
@@ -55,7 +52,7 @@ def error(msg, exception):
 
     if log.name == "watchdog" or log.name == "stream":
         msg = "{l}: {m}".format(l=log.name, m=msg)
-        core.telegram.send_message(msg)
+        core.alert.send_message(msg)
 
 
 def warning(msg):
@@ -63,29 +60,11 @@ def warning(msg):
 
     if log.name == "watchdog" or log.name == "stream":
         msg = "{l}: {m}".format(l=log.name, m=msg)
-        core.telegram.send_message(msg)
+        core.alert.send_message(msg)
 
 
 def notice(user, msg):
-    core.telegram.send_user_message(user, msg)
-
-
-def disable(locals):
-    if "position" in locals:
-        position = locals["position"]
-        user_strat = position.user_strategy
-    if "user_strat" in locals:
-        user_strat.disable()
-
-
-def postpone(locals):
-    if "position" in locals():
-        position = locals["position"]
-        if position.status != "open":
-            position.postpone(interval_in_minutes=5)
-    if "strategy" in locals():
-        strategy = locals["strategy"]
-        strategy.postpone(interval_in_minutes=5)
+    core.alert.send_user_message(user, msg)
 
 
 def watch():
@@ -119,34 +98,19 @@ def watch():
 
             time.sleep(int(core.config["WATCHDOG_INTERVAL"]))
 
-        except (core.db.Credential.DoesNotExist,
-                ccxt.AuthenticationError,
-                ccxt.InsufficientFunds) as e:
+        except Exception as e:
             error(e.__class__.__name__, e)
-            disable(locals())
-
-        except (ccxt.RateLimitExceeded,
-                ccxt.OnMaintenance,
-                ccxt.RequestTimeout) as e:
-            error(e.__class__.__name__, e)
-            postpone(locals())
-
-        except (ccxt.NetworkError,
-                ccxt.ExchangeError,
-                core.errors.ModelTooLarge,
-                core.errors.ModelDoesNotExist,
-                core.errors.BaseError) as e:
-            error(e.__class__.__name__, e)
+            if "user_strat" in locals():
+                user_strat.disable()
             if "strategy" in locals():
                 strategy.disable()
 
-        except peewee.OperationalError as e:
-            error("database error", e)
-            time.sleep(10)
-
-        except Exception as e:
-            error("crashed", e)
-            break
+        except (core.errors.BaseError,
+                core.errors.ModelTooLarge,
+                core.errors.ModelDoesNotExist) as e:
+            error(e.__class__.__name__, e)
+            if "strategy" in locals():
+                strategy.disable()
 
         except KeyboardInterrupt:
             break
