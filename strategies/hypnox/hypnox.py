@@ -80,9 +80,9 @@ class HypnoxStrategy(BaseStrategy):
         self.refresh_indicators()
 
     def refresh_indicators(self):
-        BUY = core.strategies.Signal.BUY.value
-        NEUTRAL = core.strategies.Signal.NEUTRAL.value
-        SELL = core.strategies.Signal.SELL.value
+        BUY = core.strategies.Signal.BUY
+        NEUTRAL = core.strategies.Signal.NEUTRAL
+        SELL = core.strategies.Signal.SELL
 
         # grab indicators
         indicators_q = self.get_indicators()

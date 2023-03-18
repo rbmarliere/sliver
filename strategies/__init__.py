@@ -10,7 +10,7 @@ from .random import RandomStrategy
 from .swapperbox import SwapperBoxStrategy
 
 
-class Types(enum.Enum):
+class Types(enum.IntEnum):
     MANUAL = 0
     RANDOM = 1
     HYPNOX = 2
@@ -21,38 +21,38 @@ class Types(enum.Enum):
     SWAPPERBOX = 7
 
 
-class Signal(enum.Enum):
+class Signal(enum.IntEnum):
     SELL = -1
     NEUTRAL = 0
     BUY = 1
 
 
 def load(strategy, user=None):
-    if strategy.type == Types.MANUAL.value:
+    if strategy.type == Types.MANUAL:
         stt = ManualStrategy.get_or_create(strategy=strategy)[0]
 
-    elif strategy.type == Types.RANDOM.value:
+    elif strategy.type == Types.RANDOM:
         stt = RandomStrategy.get_or_create(strategy=strategy)[0]
 
-    elif strategy.type == Types.HYPNOX.value:
+    elif strategy.type == Types.HYPNOX:
         stt = HypnoxStrategy.get_or_create(strategy=strategy)[0]
 
-    elif strategy.type == Types.DD3.value:
+    elif strategy.type == Types.DD3:
         stt = DD3Strategy.get_or_create(strategy=strategy)[0]
 
-    elif strategy.type == Types.MIXER.value:
+    elif strategy.type == Types.MIXER:
         stt = MixerStrategy.get_or_create(strategy=strategy)[0]
         stt.strategies = [m.strategy_id for m in strategy.mixins]
         stt.buy_weights = [m.buy_weight for m in strategy.mixins]
         stt.sell_weights = [m.sell_weight for m in strategy.mixins]
 
-    elif strategy.type == Types.BB.value:
+    elif strategy.type == Types.BB:
         stt = BBStrategy.get_or_create(strategy=strategy)[0]
 
-    elif strategy.type == Types.MA_CROSS.value:
+    elif strategy.type == Types.MA_CROSS:
         stt = MACrossStrategy.get_or_create(strategy=strategy)[0]
 
-    elif strategy.type == Types.SWAPPERBOX.value:
+    elif strategy.type == Types.SWAPPERBOX:
         stt = SwapperBoxStrategy.get_or_create(strategy=strategy)[0]
 
     else:
