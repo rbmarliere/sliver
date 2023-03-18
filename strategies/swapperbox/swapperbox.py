@@ -21,7 +21,7 @@ class SwapperBoxStrategy(BaseStrategy):
     telegram = peewee.TextField(null=True)
 
     def init_indicators(self, indicators):
-        NEUTRAL = core.strategies.Signal.NEUTRAL.value
+        NEUTRAL = core.strategies.Signal.NEUTRAL
 
         # signals = pandas.read_html(self.url)[1]
         si = pandas.read_csv(path+"signals.tsv", sep="\t")
@@ -44,7 +44,7 @@ class SwapperBoxStrategy(BaseStrategy):
     def refresh_messages(self):
         messages = pandas.DataFrame(SwapperBoxMessage.select().dicts())
 
-        upstream = core.telegram.get_messages(self.telegram, limit=0)
+        upstream = core.alert.get_messages(self.telegram, limit=0)
 
         if upstream is None or upstream.total == len(messages):
             core.watchdog.info("swapperbox: no new messages")
@@ -53,7 +53,7 @@ class SwapperBoxStrategy(BaseStrategy):
         if len(messages) > 0:
             limit = upstream.total - len(messages)
 
-        missing = core.telegram.get_messages(self.telegram, limit=limit)
+        missing = core.alert.get_messages(self.telegram, limit=limit)
 
         if len(missing) > 0:
             new = pandas.DataFrame()
@@ -76,9 +76,9 @@ class SwapperBoxStrategy(BaseStrategy):
         self.refresh_indicators()
 
     def refresh_indicators(self):
-        SELL = core.strategies.Signal.SELL.value
-        NEUTRAL = core.strategies.Signal.NEUTRAL.value
-        BUY = core.strategies.Signal.BUY.value
+        SELL = core.strategies.Signal.SELL
+        NEUTRAL = core.strategies.Signal.NEUTRAL
+        BUY = core.strategies.Signal.BUY
 
         indicators = pandas.DataFrame(self.get_indicators().dicts())
         indicators = indicators.set_index("time")

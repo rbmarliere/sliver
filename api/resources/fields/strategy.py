@@ -110,28 +110,28 @@ swapperbox_fields = {
 
 
 def get_fields(type=None, all=True):
-    if type == strategies.Types.MANUAL.value:
+    if type == strategies.Types.MANUAL:
         pass
 
-    elif type == strategies.Types.RANDOM.value:
+    elif type == strategies.Types.RANDOM:
         pass
 
-    elif type == strategies.Types.HYPNOX.value:
+    elif type == strategies.Types.HYPNOX:
         return hypnox_fields if all else hypnox_indicators
 
-    elif type == strategies.Types.DD3.value:
+    elif type == strategies.Types.DD3:
         return dd3_fields if all else dd3_indicators
 
-    elif type == strategies.Types.MIXER.value:
+    elif type == strategies.Types.MIXER:
         return mixer_fields if all else mixer_indicators
 
-    elif type == strategies.Types.BB.value:
+    elif type == strategies.Types.BB:
         return bb_fields if all else bb_indicators
 
-    elif type == strategies.Types.MA_CROSS.value:
+    elif type == strategies.Types.MA_CROSS:
         return ma_cross_fields if all else ma_cross_indicators
 
-    elif type == strategies.Types.SWAPPERBOX.value:
+    elif type == strategies.Types.SWAPPERBOX:
         return swapperbox_fields if all else swapperbox_indicators
 
     return base_fields if all else indicators_fields
@@ -168,25 +168,25 @@ def get_base_parser(type=None):
     base_parser.add_argument("sell_engine_id", type=int, required=True)
     base_parser.add_argument("stop_engine_id", type=int, required=True)
 
-    if type == strategies.Types.MANUAL.value:
+    if type == strategies.Types.MANUAL:
         base_parser.add_argument("signal", type=float)
 
-    elif type == strategies.Types.RANDOM.value:
+    elif type == strategies.Types.RANDOM:
         pass
 
-    elif type == strategies.Types.HYPNOX.value:
+    elif type == strategies.Types.HYPNOX:
         base_parser.add_argument("threshold", type=float, required=True)
         base_parser.add_argument("filter", type=str, required=True)
         base_parser.add_argument("model", type=str, required=True)
         base_parser.add_argument("mode", type=str, required=True)
         base_parser.add_argument("operator", type=str, required=True)
 
-    elif type == strategies.Types.DD3.value:
+    elif type == strategies.Types.DD3:
         base_parser.add_argument("ma1_period", type=int, required=True)
         base_parser.add_argument("ma2_period", type=int, required=True)
         base_parser.add_argument("ma3_period", type=int, required=True)
 
-    elif type == strategies.Types.MIXER.value:
+    elif type == strategies.Types.MIXER:
         base_parser.add_argument("buy_threshold", type=float, required=True)
         base_parser.add_argument("sell_threshold", type=float, required=True)
         base_parser.add_argument("strategies",
@@ -202,18 +202,18 @@ def get_base_parser(type=None):
                                  required=True,
                                  location="json")
 
-    elif type == strategies.Types.BB.value:
+    elif type == strategies.Types.BB:
         base_parser.add_argument("use_ema", type=bool, required=True)
         base_parser.add_argument("ma_period", type=int, required=True)
         base_parser.add_argument("num_std", type=int, required=True)
 
-    elif type == strategies.Types.MA_CROSS.value:
+    elif type == strategies.Types.MA_CROSS:
         base_parser.add_argument("use_fast_ema", type=bool, required=True)
         base_parser.add_argument("fast_period", type=int, required=True)
         base_parser.add_argument("use_slow_ema", type=bool, required=True)
         base_parser.add_argument("slow_period", type=int, required=True)
 
-    elif type == strategies.Types.SWAPPERBOX.value:
+    elif type == strategies.Types.SWAPPERBOX:
         base_parser.add_argument("url", type=str, required=True)
         base_parser.add_argument("telegram", type=str, required=True)
 
