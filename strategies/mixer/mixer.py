@@ -33,9 +33,9 @@ class MixerStrategy(BaseStrategy):
         self.refresh_indicators()
 
     def refresh_indicators(self):
-        BUY = core.strategies.Signal.BUY.value
-        NEUTRAL = core.strategies.Signal.NEUTRAL.value
-        SELL = core.strategies.Signal.SELL.value
+        BUY = core.strategies.Signal.BUY
+        NEUTRAL = core.strategies.Signal.NEUTRAL
+        SELL = core.strategies.Signal.SELL
 
         indicators = pandas.DataFrame(self.get_indicators().dicts())
         indicators = indicators.set_index("time")

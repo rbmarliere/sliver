@@ -102,7 +102,7 @@ class Strategy(Resource):
             strategy = core.db.Strategy(**args)
             strategy.save()
 
-            if strategy.type == strategies.Types.MIXER.value:
+            if strategy.type == strategies.Types.MIXER:
                 mixin = strategies.mixer.MixedStrategies
                 mixin.delete() \
                     .where(mixin.mixer_id == strategy_id) \
@@ -129,10 +129,10 @@ class Strategy(Resource):
                         if mixed_st.market != strategy.market:
                             raise api.errors.InvalidArgument(
                                 "Mixed strategies must have same market")
-                        if mixed_st.type == strategies.Types.MIXER.value:
+                        if mixed_st.type == strategies.Types.MIXER:
                             raise api.errors.InvalidArgument(
                                 "Mixed strategies cannot be of type MIXER")
-                        if mixed_st.type == strategies.Types.MANUAL.value:
+                        if mixed_st.type == strategies.Types.MANUAL:
                             raise api.errors.InvalidArgument(
                                 "Mixed strategies cannot be of type MANUAL")
 

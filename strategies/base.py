@@ -32,7 +32,7 @@ class BaseStrategy(core.db.BaseModel):
             signal = self.strategy \
                 .indicator_set \
                 .where(core.db.Indicator.signal
-                       != core.strategies.Signal.NEUTRAL.value) \
+                       != core.strategies.Signal.NEUTRAL) \
                 .order_by(core.db.Indicator.id.desc()) \
                 .get().signal
             return core.strategies.Signal(signal)
@@ -48,8 +48,8 @@ class BaseStrategy(core.db.BaseModel):
                       & (core.db.Indicator.strategy == self)))
 
     def get_indicators_df(self, query=None):
-        BUY = core.strategies.Signal.BUY.value
-        SELL = core.strategies.Signal.SELL.value
+        BUY = core.strategies.Signal.BUY
+        SELL = core.strategies.Signal.SELL
 
         if query is None:
             query = self.get_indicators()
@@ -134,6 +134,6 @@ class BaseStrategy(core.db.BaseModel):
         self.sell_engine_id = self.strategy.sell_engine_id
         self.stop_engine_id = self.strategy.stop_engine_id
         self.subscribed = user.is_subscribed(self.id)
-        self.signal = self.get_signal().value
+        self.signal = self.get_signal()
         self.symbol = self.strategy.market.get_symbol()
         self.exchange = self.strategy.market.quote.exchange.name
