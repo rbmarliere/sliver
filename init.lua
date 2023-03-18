@@ -9,10 +9,10 @@ require("lspconfig").pylsp.setup({
 
 local dap = require("dap")
 
+dap.defaults.fallback.force_external_terminal = true
 dap.defaults.fallback.external_terminal = {
   command = "/usr/local/bin/alacritty",
-  -- args = { "--hold", "-e" },
-  args = { "-e" },
+  args = { "--hold", "-e" },
 }
 
 dap.adapters.firefox = {
@@ -30,12 +30,15 @@ local typescript = {
   firefoxExecutable = "/usr/bin/firefox",
   profile = "debug",
   keepProfileChanges = true,
+  preferences = {
+    ["signon.rememberSignons"] = true,
+  },
 }
 dap.configurations.typescript = {
   typescript,
 }
 
-require("dap-python").setup(vim.fn.getcwd() .. "/venv/bin/python")
+require("dap-python").setup(vim.fn.getcwd() .. "/venv/bin/python", { console = "externalTerminal" })
 
 local api = {
   type = "python",
@@ -44,6 +47,7 @@ local api = {
   program = "api",
   args = { "--no-debug" },
   console = "externalTerminal",
+  justMyCode = false,
 }
 table.insert(dap.configurations.python, api)
 
@@ -53,6 +57,7 @@ local watchdog = {
   name = "Watchdog",
   program = "core",
   console = "externalTerminal",
+  justMyCode = false,
 }
 table.insert(dap.configurations.python, watchdog)
 
