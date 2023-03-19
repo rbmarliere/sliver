@@ -127,3 +127,19 @@ def watch():
                 del strategy
             if "user_strat" in locals():
                 del user_strat
+
+
+class Watchdog():
+    logger = None
+
+    def __init__(self):
+        self.logger = get_logger("watchdog")
+
+    def run(call):
+        ...
+
+    def run_loop(self):
+        ...
+
+    def print(self):
+        ...

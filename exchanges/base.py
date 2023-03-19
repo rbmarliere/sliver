@@ -44,6 +44,10 @@ class BaseExchange(ABC):
         ...
 
     @abstractmethod
+    def api_fetch_time(self):
+        ...
+
+    @abstractmethod
     def api_fetch_balance(self):
         ...
 
@@ -195,7 +199,7 @@ class BaseExchange(ABC):
             order = core.db.Order.sync(core.db.Order(),
                                        ex_order,
                                        self.position)
-            return order
+            return oid
 
     def create_limit_buy_orders(self,
                                 total_cost,
@@ -241,7 +245,6 @@ class BaseExchange(ABC):
 
             return self.create_order("limit",
                                      "buy",
-                                     self.position,
                                      total_amt,
                                      avg_price)
 
@@ -264,7 +267,6 @@ class BaseExchange(ABC):
 
             return self.create_order("limit",
                                      "buy",
-                                     self.position,
                                      amt,
                                      price)
 
@@ -311,7 +313,6 @@ class BaseExchange(ABC):
               "creating single order")
             return self.create_order("limit",
                                      "sell",
-                                     self.position,
                                      total_amount,
                                      avg_price)
 
@@ -328,6 +329,5 @@ class BaseExchange(ABC):
 
             return self.create_order("limit",
                                      "sell",
-                                     self.position,
                                      unit_amount,
                                      price)
