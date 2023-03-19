@@ -160,8 +160,7 @@ class CCXT(BaseExchange):
             i("invalid order parameters, skipping...")
 
         except ccxt.InsufficientFunds:
-            core.watchdog.error("insufficient funds")
-            self.position.user_strategy.disable()
+            raise core.errors.DisablingError("insufficient funds")
 
         except ccxt.RequestTimeout as e:
             core.watchdog.error("order creation request timeout", e)
