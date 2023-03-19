@@ -98,19 +98,23 @@ def watch():
 
             time.sleep(int(core.config["WATCHDOG_INTERVAL"]))
 
-        except Exception as e:
+        except (Exception,
+                core.errors.BaseError,
+                core.errors.ModelTooLarge,
+                core.errors.ModelDoesNotExist,
+                core.errors.DisablingError) as e:
             error(e.__class__.__name__, e)
             if "user_strat" in locals():
                 user_strat.disable()
             if "strategy" in locals():
                 strategy.disable()
 
-        except (core.errors.BaseError,
-                core.errors.ModelTooLarge,
-                core.errors.ModelDoesNotExist) as e:
+        except core.errors.PostponingError as e:
             error(e.__class__.__name__, e)
+            if "position" in locals():
+                position.postpone(interval_in_minutes=5)
             if "strategy" in locals():
-                strategy.disable()
+                strategy.postpone(interval_in_minutes=5)
 
         except KeyboardInterrupt:
             break

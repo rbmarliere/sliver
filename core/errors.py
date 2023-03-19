@@ -1,14 +1,22 @@
 class BaseError(Exception):
-    pass
+    ...
+
+
+class DisablingError(BaseError):
+    ...
+
+
+class PostponingError(BaseError):
+    ...
 
 
 class ModelDoesNotExist(Exception):
-    pass
+    ...
 
 
 class ModelTooLarge(Exception):
-    pass
+    ...
 
 
 class MarketAlreadySubscribed(Exception):
-    pass
+    ...
