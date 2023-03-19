@@ -6,6 +6,7 @@ import peewee
 
 import api
 import core
+import exchanges
 import models
 import strategies
 
