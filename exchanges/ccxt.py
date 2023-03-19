@@ -15,6 +15,9 @@ class CCXT(BaseExchange):
             try:
                 return call(self, *args, **kwargs)
 
+            except ccxt.BadSymbol:
+                pass
+
             except ccxt.RateLimitExceeded:
                 sleep_time = 60
                 if self.market:
@@ -32,22 +35,13 @@ class CCXT(BaseExchange):
                 return inner(self, *args, **kwargs)
 
             except ccxt.AuthenticationError as e:
-                core.watchdog.error("authentication error", e)
-                if self.credential:
-                    self.credential.disable()
+                raise core.errors.DisablingError("authentication error", e)
 
             except ccxt.OnMaintenance as e:
-                core.watchdog.error("exchange is on maintenance", e)
-                if self.strategy:
-                    self.strategy.postpone(interval_in_minutes=5)
-
-            except ccxt.BadSymbol:
-                pass
+                raise core.errors.PostponingError("exchange on maintenance", e)
 
             except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-                core.watchdog.error("ccxt base error", e)
-                if self.strategy:
-                    self.strategy.disable()
+                raise core.errors.DisablingError("ccxt error", e)
 
         return inner
 
@@ -63,10 +57,10 @@ class CCXT(BaseExchange):
         self._api = ccxt_class(api_key)
 
         try:
-            self._api.set_sandbox_mode(
-                core.config["ENV_NAME"] == "development")
+            sandbox_mode = core.config["ENV_NAME"] == "development"
+            self._api.set_sandbox_mode(sandbox_mode)
         except AttributeError:
-            raise core.errors.BaseError("sandbox mode not supported")
+            raise core.errors.DisablingError("sandbox mode not supported")
 
         try:
             getattr(self._api, "fetch_time")
@@ -74,15 +68,18 @@ class CCXT(BaseExchange):
             return
 
         started = datetime.datetime.utcnow()
-        self._api.fetch_time()
+        self.api_fetch_time()
         elapsed = datetime.datetime.utcnow() - started
         elapsed_in_ms = int(elapsed.total_seconds() * 1000)
-        i("api latency is {l} ms".format(l=elapsed_in_ms))
+        # i("api latency is {l} ms".format(l=elapsed_in_ms))
 
         if elapsed_in_ms > 5000:
-            core.watchdog.warning("latency above threshold ({l} > 5000)"
-                                  .format(l=elapsed_in_ms), None)
-            raise ccxt.NetworkError
+            msg = "latency above threshold: {l} > 5000".format(l=elapsed_in_ms)
+            raise core.errors.PostponingError(msg)
+
+    @api_call
+    def api_fetch_time(self):
+        return self._api.fetch_time()
 
     @api_call
     def api_fetch_balance(self):
