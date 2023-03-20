@@ -553,6 +553,7 @@ class Position(BaseModel):
         remaining_to_fill = self.bucket_max - self.bucket
         remaining_to_open = self.target_cost - self.entry_cost
         remaining = min(abs(remaining_to_fill), abs(remaining_to_open))
+        remaining = 0 if remaining_to_fill < 0 else remaining
 
         balance = core.inventory \
             .get_balance_by_exchange_asset(user=self.user_strategy.user,
@@ -572,6 +573,7 @@ class Position(BaseModel):
         remaining_to_fill = self.get_remaining_to_fill()
         remaining_to_exit = self.get_remaining_to_exit()
         remaining = min(abs(remaining_to_fill), abs(remaining_to_exit))
+        remaining = 0 if remaining_to_fill < 0 else remaining
 
         balance = core.inventory \
             .get_balance_by_exchange_asset(user=self.user_strategy.user,
