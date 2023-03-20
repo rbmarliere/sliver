@@ -168,8 +168,11 @@ class BaseExchange(ABC):
             oid = order.exchange_order_id
             i("updating {s} order {i}".format(s=order.side, i=oid))
 
+            self.api_cancel_orders(self.market.get_symbol(), oid=oid)
+
             ex_order = self.api_fetch_orders(self.market.get_symbol(),
                                              oid=oid)
+
             order.sync(ex_order, self.position)
 
     def create_order(self, type, side, amount, price):
