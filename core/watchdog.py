@@ -98,6 +98,16 @@ def watch():
 
             time.sleep(int(core.config["WATCHDOG_INTERVAL"]))
 
+        except KeyboardInterrupt:
+            break
+
+        except core.errors.PostponingError as e:
+            error(e.__class__.__name__, e)
+            if "position" in locals():
+                position.postpone(interval_in_minutes=5)
+            if "strategy" in locals():
+                strategy.postpone(interval_in_minutes=5)
+
         except (Exception,
                 core.errors.BaseError,
                 core.errors.ModelTooLarge,
@@ -108,16 +118,6 @@ def watch():
                 user_strat.disable()
             if "strategy" in locals():
                 strategy.disable()
-
-        except core.errors.PostponingError as e:
-            error(e.__class__.__name__, e)
-            if "position" in locals():
-                position.postpone(interval_in_minutes=5)
-            if "strategy" in locals():
-                strategy.postpone(interval_in_minutes=5)
-
-        except KeyboardInterrupt:
-            break
 
         finally:
             core.db.connection.close()
