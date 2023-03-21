@@ -99,6 +99,16 @@ class BaseExchange(ABC):
         # returns oid if order was created, None otherwise
         ...
 
+    def check_latency(self):
+        started = datetime.datetime.utcnow()
+        self.api_fetch_time()
+        elapsed = datetime.datetime.utcnow() - started
+        elapsed_in_ms = int(elapsed.total_seconds() * 1000)
+        # Watchdog().print("api latency is {l} ms".format(l=elapsed_in_ms))
+        if elapsed_in_ms > 5000:
+            msg = "latency above threshold: {l} > 5000".format(l=elapsed_in_ms)
+            raise core.errors.PostponingError(msg)
+
     def fetch_ohlcv(self):
         tf_delta = core.utils.get_timeframe_delta(self.strategy.timeframe)
 
