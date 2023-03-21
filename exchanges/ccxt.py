@@ -10,6 +10,34 @@ from core.watchdog import info as i
 
 
 class CCXT(BaseExchange):
+
+    @BaseExchange.api.setter
+    def api(self, credential=None):
+        api_key = {}
+
+        if credential:
+            api_key = {"apiKey": credential.api_key,
+                       "secret": credential.api_secret}
+
+        ccxt_class = getattr(ccxt, self.exchange.name)
+        self._api = ccxt_class(api_key)
+
+        try:
+            sandbox_mode = core.config["ENV_NAME"] == "development"
+            self._api.set_sandbox_mode(sandbox_mode)
+        except AttributeError:
+            raise core.errors.DisablingError("sandbox mode not supported")
+
+        started = datetime.datetime.utcnow()
+        self.api_fetch_time()
+        elapsed = datetime.datetime.utcnow() - started
+        elapsed_in_ms = int(elapsed.total_seconds() * 1000)
+        # i("api latency is {l} ms".format(l=elapsed_in_ms))
+
+        if elapsed_in_ms > 5000:
+            msg = "latency above threshold: {l} > 5000".format(l=elapsed_in_ms)
+            raise core.errors.PostponingError(msg)
+
     def api_call(call):
         def inner(self, *args, **kwargs):
             try:
@@ -42,41 +70,13 @@ class CCXT(BaseExchange):
 
         return inner
 
-    @BaseExchange.api.setter
-    def api(self, credential=None):
-        api_key = {}
-
-        if credential:
-            api_key = {"apiKey": credential.api_key,
-                       "secret": credential.api_secret}
-
-        ccxt_class = getattr(ccxt, self.exchange.name)
-        self._api = ccxt_class(api_key)
-
-        try:
-            sandbox_mode = core.config["ENV_NAME"] == "development"
-            self._api.set_sandbox_mode(sandbox_mode)
-        except AttributeError:
-            raise core.errors.DisablingError("sandbox mode not supported")
-
-        try:
-            getattr(self._api, "fetch_time")
-        except AttributeError:
-            return
-
-        started = datetime.datetime.utcnow()
-        self.api_fetch_time()
-        elapsed = datetime.datetime.utcnow() - started
-        elapsed_in_ms = int(elapsed.total_seconds() * 1000)
-        # i("api latency is {l} ms".format(l=elapsed_in_ms))
-
-        if elapsed_in_ms > 5000:
-            msg = "latency above threshold: {l} > 5000".format(l=elapsed_in_ms)
-            raise core.errors.PostponingError(msg)
-
     @api_call
     def api_fetch_time(self):
-        return self._api.fetch_time()
+        try:
+            getattr(self._api, "fetch_time")
+            return self._api.fetch_time()
+        except AttributeError:
+            return self._api.fetch_ticker("BTC/USDT")
 
     @api_call
     def api_fetch_balance(self):
