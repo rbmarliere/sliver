@@ -5,10 +5,9 @@ import peewee
 
 import core
 from ..base import BaseStrategy
-from core.watchdog import Watchdog
 
 
-path = "strategies/swapperbox/"
+print = core.watchdog.Watchdog().print
 
 
 class SwapperBoxMessage(core.db.BaseModel):
@@ -25,7 +24,7 @@ class SwapperBoxStrategy(BaseStrategy):
         NEUTRAL = core.strategies.Signal.NEUTRAL
 
         # signals = pandas.read_html(self.url)[1]
-        si = pandas.read_csv(path+"signals.tsv", sep="\t")
+        si = pandas.read_csv("strategies/swapperbox/signals.tsv", sep="\t")
         si.time = pandas.to_datetime(si.time) \
             .dt.tz_localize("America/Sao_Paulo") \
             .dt.tz_convert("UTC") \
@@ -48,7 +47,7 @@ class SwapperBoxStrategy(BaseStrategy):
         upstream = core.alert.get_messages(self.telegram, limit=0)
 
         if upstream is None or upstream.total == len(messages):
-            Watchdog().print("swapperbox: no new messages")
+            print("swapperbox: no new messages")
             return messages
         limit = None
         if len(messages) > 0:

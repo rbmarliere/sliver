@@ -6,7 +6,9 @@ import pandas
 import ccxt
 import core
 from .base import BaseExchange
-from core.watchdog import Watchdog
+
+
+print = core.watchdog.Watchdog().print
 
 
 class CCXT(BaseExchange):
@@ -43,14 +45,14 @@ class CCXT(BaseExchange):
                 if self.market:
                     sleep_time = self.market.base.exchange.rate_limit
 
-                Watchdog().print("rate limited, sleeping for {s} seconds"
-                                 .format(s=sleep_time))
+                print("rate limited, sleeping for {s} seconds"
+                      .format(s=sleep_time))
                 time.sleep(sleep_time)
 
                 return inner(self, *args, **kwargs)
 
             except ccxt.RequestTimeout as e:
-                Watchdog().print("request timed out", exception=e)
+                print("request timed out", exception=e)
                 time.sleep(5)
                 return inner(self, *args, **kwargs)
 
@@ -146,13 +148,13 @@ class CCXT(BaseExchange):
             return new_order["id"]
 
         except ccxt.InvalidOrder:
-            Watchdog().print("invalid order parameters, skipping...")
+            print("invalid order parameters, skipping...")
 
         except ccxt.InsufficientFunds:
             raise core.errors.DisablingError("insufficient funds")
 
         except ccxt.RequestTimeout as e:
-            Watchdog().print("order creation request timeout", exception=e)
+            print("order creation request timeout", exception=e)
 
             time.sleep(10)
 
@@ -169,7 +171,7 @@ class CCXT(BaseExchange):
                                - datetime.timedelta(minutes=2)) \
                         and cost > last_cost*0.999 and cost < last_cost*1.001 \
                         and int(price) == int(last_order["price"]):
-                    Watchdog().print("order was created and is open")
+                    print("order was created and is open")
                     return last_order["id"]
 
             closed_orders = self.api_fetch_orders(symbol,
@@ -185,5 +187,5 @@ class CCXT(BaseExchange):
                                - datetime.timedelta(minutes=2)) \
                         and cost > last_cost*0.999 and cost < last_cost*1.001 \
                         and int(price) == int(last_order["price"]):
-                    Watchdog().print("order was created and is closed")
+                    print("order was created and is closed")
                     return last_order["id"]

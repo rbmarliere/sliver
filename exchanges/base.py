@@ -5,7 +5,9 @@ import pandas
 import peewee
 
 import core
-from core.watchdog import Watchdog
+
+
+print = core.watchdog.Watchdog().print
 
 
 class BaseExchange(ABC):
@@ -105,7 +107,6 @@ class BaseExchange(ABC):
         self.api_fetch_time()
         elapsed = datetime.datetime.utcnow() - started
         elapsed_in_ms = int(elapsed.total_seconds() * 1000)
-        # Watchdog().print("api latency is {l} ms".format(l=elapsed_in_ms))
         if elapsed_in_ms > 5000:
             msg = "latency above threshold: {l} > 5000".format(l=elapsed_in_ms)
             raise core.errors.PostponingError(msg)
@@ -135,7 +136,7 @@ class BaseExchange(ABC):
         except peewee.DoesNotExist:
             last_entry = datetime.datetime.utcfromtimestamp(0)
             page_start = datetime.datetime(2000, 1, 1)
-            Watchdog().print("no db entries found, downloading everything")
+            print("no db entries found, downloading everything")
 
         prices = pandas.DataFrame(columns=["time", "open", "high",
                                            "low", "close", "volume"])
@@ -144,10 +145,10 @@ class BaseExchange(ABC):
         while True:
             if (prices.empty and page_start + tf_delta > now) \
                     or page_start > now:
-                Watchdog().print("price data is up to date")
+                print("price data is up to date")
                 break
 
-            Watchdog().print("downloading from {s}".format(s=page_start))
+            print("downloading from {s}".format(s=page_start))
             page = self.api_fetch_ohlcv(self.market.get_symbol(),
                                         self.strategy.timeframe,
                                         since=page_start)
@@ -156,8 +157,7 @@ class BaseExchange(ABC):
 
             page_first = page.iloc[0].time
             page_last = page.iloc[-1].time
-            Watchdog().print("received range {f} to {l}"
-                             .format(f=page_first, l=page_last))
+            print("received range {f} - {l}".format(f=page_first, l=page_last))
 
             page_start = page_last + tf_delta
 
@@ -185,13 +185,12 @@ class BaseExchange(ABC):
 
         # if no orders found, exit
         if len(orders) == 0:
-            Watchdog().print("no open orders found")
+            print("no open orders found")
             return
 
         for order in orders:
             oid = order.exchange_order_id
-            Watchdog().print("updating {s} order {i}"
-                             .format(s=order.side, i=oid))
+            print("updating {s} order {i}".format(s=order.side, i=oid))
 
             self.api_cancel_orders(self.market.get_symbol(), oid=oid)
 
@@ -201,17 +200,17 @@ class BaseExchange(ABC):
             order.sync(ex_order, self.position)
 
     def create_order(self, symbol, type, side, amount, price):
-        Watchdog().print("inserting {t} {s} order :: {a} @ {p}"
-                         .format(t=type,
-                                 s=side,
-                                 a=self.market.base.print(amount),
-                                 p=self.market.quote.print(price)))
+        print("inserting {t} {s} order :: {a} @ {p}"
+              .format(t=type,
+                      s=side,
+                      a=self.market.base.print(amount),
+                      p=self.market.quote.print(price)))
         try:
             assert amount >= self.market.amount_min
             assert price >= self.market.price_min
             assert amount * price >= self.market.cost_min
         except AssertionError:
-            Watchdog().print("order values are smaller than minimum")
+            print("order values are smaller than minimum")
             return
 
         amount = self.market.base.format(amount)
@@ -219,8 +218,8 @@ class BaseExchange(ABC):
 
         oid = self.api_create_order(symbol, type, side, amount, price)
         if oid:
-            Watchdog().print("inserted {t} {s} order {i}"
-                             .format(t=type, s=side, i=oid))
+            print("inserted {t} {s} order {i}"
+                  .format(t=type, s=side, i=oid))
 
             ex_order = self.api_fetch_orders(self.market.get_symbol(),
                                              oid=oid)
@@ -256,13 +255,12 @@ class BaseExchange(ABC):
         spreads = [init_price] + [unit_spread] * num_orders
         prices = [sum(spreads[:i]) for i in range(1, len(spreads))]
 
-        Watchdog().print("unit cost is {c}"
-                         .format(c=self.market.quote.print(unit_cost)))
+        print("unit cost is {c}".format(c=self.market.quote.print(unit_cost)))
 
         # send a single order if cost of each order is lower than market min.
         if unit_cost < self.market.cost_min:
-            Watchdog().print("unitary cost is less than exchange minimum,"
-                             "creating single order")
+            print("unitary cost is less than exchange minimum,"
+                  "creating single order")
 
             # get average price for single order
             avg_price = self.market.quote.div(sum(prices),
@@ -282,8 +280,8 @@ class BaseExchange(ABC):
         # avoid rounding errors
         cost_remainder = total_cost - sum([unit_cost] * num_orders)
         if cost_remainder != 0:
-            Watchdog().print("bucket remainder: {r}".format(
-                r=self.market.quote.print(cost_remainder)))
+            print("bucket remainder: {r}"
+                  .format(r=self.market.quote.print(cost_remainder)))
 
         # creates bucket orders if reached here, which normally it will
         for price in prices:
@@ -337,13 +335,13 @@ class BaseExchange(ABC):
                                               len(prices)),
                                           prec=self.market.price_precision)
 
-        Watchdog().print("unit amount is {a}"
-                         .format(a=self.market.base.print(unit_amount)))
+        print("unit amount is {a}"
+              .format(a=self.market.base.print(unit_amount)))
 
         # send a single order if any of the costs is lower than market minimum
         if any(cost < self.market.cost_min for cost in costs):
-            Watchdog().print("unitary cost is less than exchange minimum,"
-                             "creating single order")
+            print("unitary cost is less than exchange minimum,"
+                  "creating single order")
             return self.create_order(self.market.get_symbol(),
                                      "limit",
                                      "sell",
@@ -353,8 +351,8 @@ class BaseExchange(ABC):
         # avoid bucket rounding errors
         bucket_remainder = total_amount - sum([unit_amount] * num_orders)
         if bucket_remainder != 0:
-            Watchdog().print("bucket remainder {r}".format(
-                r=self.market.base.print(bucket_remainder)))
+            print("bucket remainder {r}"
+                  .format(r=self.market.base.print(bucket_remainder)))
 
         # creates bucket orders if reached here, which normally it will
         for price in prices:
