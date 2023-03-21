@@ -344,7 +344,8 @@ class BaseExchange(ABC):
         if any(cost < self.market.cost_min for cost in costs):
             Watchdog().print("unitary cost is less than exchange minimum,"
                              "creating single order")
-            return self.create_order("limit",
+            return self.create_order(self.market.get_symbol(),
+                                     "limit",
                                      "sell",
                                      total_amount,
                                      avg_price)
@@ -360,7 +361,8 @@ class BaseExchange(ABC):
             if price == prices[-1]:
                 unit_amount += bucket_remainder
 
-            return self.create_order("limit",
+            return self.create_order(self.market.get_symbol(),
+                                     "limit",
                                      "sell",
                                      unit_amount,
                                      price)
