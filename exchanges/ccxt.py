@@ -135,9 +135,9 @@ class CCXT(BaseExchange):
             return False
 
     @api_call
-    def api_create_order(self, type, side, amount, price=None):
+    def api_create_order(self, symbol, type, side, amount, price=None):
         try:
-            new_order = self._api.create_order(self.market.get_symbol(),
+            new_order = self._api.create_order(symbol,
                                                type,
                                                side,
                                                amount,
@@ -156,7 +156,7 @@ class CCXT(BaseExchange):
 
             time.sleep(10)
 
-            open_orders = self.api_cancel_orders(self.market.get_symbol(),
+            open_orders = self.api_cancel_orders(symbol,
                                                  status="open")
             if open_orders:
                 last_order = open_orders[-1]
@@ -172,7 +172,7 @@ class CCXT(BaseExchange):
                     Watchdog().print("order was created and is open")
                     return last_order["id"]
 
-            closed_orders = self.api_fetch_orders(self.market.get_symbol(),
+            closed_orders = self.api_fetch_orders(symbol,
                                                   status="closed")
             if closed_orders:
                 last_order = closed_orders[-1]
