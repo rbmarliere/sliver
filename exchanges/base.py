@@ -95,8 +95,9 @@ class BaseExchange(ABC):
 
     @api_call
     @abstractmethod
-    def api_create_order(self, type, side, amount, price=None):
+    def api_create_order(self, symbol, type, side, amount, price=None):
         # returns oid if order was created, None otherwise
+        # should return core.db.Order ?
         ...
 
     def check_latency(self):
@@ -199,7 +200,7 @@ class BaseExchange(ABC):
 
             order.sync(ex_order, self.position)
 
-    def create_order(self, type, side, amount, price):
+    def create_order(self, symbol, type, side, amount, price):
         Watchdog().print("inserting {t} {s} order :: {a} @ {p}"
                          .format(t=type,
                                  s=side,
@@ -216,7 +217,7 @@ class BaseExchange(ABC):
         amount = self.market.base.format(amount)
         price = self.market.quote.format(price)
 
-        oid = self.api_create_order(type, side, amount, price)
+        oid = self.api_create_order(symbol, type, side, amount, price)
         if oid:
             Watchdog().print("inserted {t} {s} order {i}"
                              .format(t=type, s=side, i=oid))
@@ -272,7 +273,8 @@ class BaseExchange(ABC):
                                              avg_price,
                                              prec=self.market.amount_precision)
 
-            return self.create_order("limit",
+            return self.create_order(self.market.get_symbol(),
+                                     "limit",
                                      "buy",
                                      total_amt,
                                      avg_price)
@@ -294,7 +296,8 @@ class BaseExchange(ABC):
                                             price,
                                             prec=self.market.amount_precision)
 
-            return self.create_order("limit",
+            return self.create_order(self.market.get_symbol(),
+                                     "limit",
                                      "buy",
                                      amt,
                                      price)
