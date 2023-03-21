@@ -7,12 +7,14 @@ from ccxt.base.decimal_to_precision import DECIMAL_PLACES, NO_PADDING
 import core
 from .watchdog import Watchdog
 
+
 connection = peewee.PostgresqlDatabase(
     core.config["DB_NAME"], **{
         "host": core.config["DB_HOST"],
         "user": core.config["DB_USER"],
         "password": core.config["DB_PASSWORD"]
-    })
+    },
+    autoconnect=True)
 
 
 class BaseModel(peewee.Model):
