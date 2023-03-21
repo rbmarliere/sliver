@@ -28,15 +28,7 @@ class CCXT(BaseExchange):
         except AttributeError:
             raise core.errors.DisablingError("sandbox mode not supported")
 
-        started = datetime.datetime.utcnow()
-        self.api_fetch_time()
-        elapsed = datetime.datetime.utcnow() - started
-        elapsed_in_ms = int(elapsed.total_seconds() * 1000)
-        # Watchdog().print("api latency is {l} ms".format(l=elapsed_in_ms))
-
-        if elapsed_in_ms > 5000:
-            msg = "latency above threshold: {l} > 5000".format(l=elapsed_in_ms)
-            raise core.errors.PostponingError(msg)
+        self.check_latency()
 
     def api_call(call):
         def inner(self, *args, **kwargs):
