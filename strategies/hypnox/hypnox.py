@@ -5,6 +5,7 @@ import core
 import models
 from ..base import BaseStrategy
 from strategies.hypnox.replay import replay
+from core.watchdog import Watchdog
 
 
 class HypnoxUser(core.db.BaseModel):
@@ -71,8 +72,8 @@ class HypnoxStrategy(BaseStrategy):
 
             count = query.count()
             if count == 0:
-                core.watchdog.info("{m}: no tweets to replay"
-                                   .format(m=self.model))
+                Watchdog().print("{m}: no tweets to replay"
+                                 .format(m=self.model))
             else:
                 model = models.load_model(self.model)
                 replay(query, model)
@@ -96,14 +97,14 @@ class HypnoxStrategy(BaseStrategy):
         existing = indicators.dropna()
         indicators = indicators[indicators.isnull().any(axis=1)]
         if indicators.empty:
-            core.watchdog.info("indicator data is up to date")
+            Watchdog().print("indicator data is up to date")
             return 0
         f = f & (HypnoxTweet.time > indicators.iloc[0].time)
 
         # grab scores
         tweets_q = HypnoxTweet.get_tweets_by_model(self.model).where(f)
         if tweets_q.count() == 0:
-            core.watchdog.info("no tweets found for given regex")
+            Watchdog().print("no tweets found for given regex")
             return 0
 
         tweets = pandas.DataFrame(tweets_q.dicts())
@@ -137,7 +138,7 @@ class HypnoxStrategy(BaseStrategy):
         indicators = indicators.drop("z_score", axis=1)
         indicators = pandas.concat([indicators, tweets], join="inner", axis=1)
         if indicators.empty:
-            core.watchdog.info("indicator data is up to date")
+            Watchdog().print("indicator data is up to date")
             return 0
 
         # fill out remaining columns

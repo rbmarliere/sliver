@@ -1,129 +1,115 @@
-import logging.handlers
-import time
-
 import core
 
 
-def get_logger(name, suppress_output=False):
-    log_file = core.config["LOGS_DIR"] + "/" + name + ".log"
+class WatchdogMeta(type):
+    _instances = {}
 
-    formatter = logging.Formatter(
-        "%(asctime)s %(levelname)s -- %(message)s")
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            instance = super(WatchdogMeta, cls).__call__(*args, **kwargs)
+            cls._instances[cls] = instance
 
-    formatter.converter = time.gmtime
-
-    file_handler = logging.handlers.RotatingFileHandler(
-        log_file,
-        maxBytes=52428800,  # 50mb
-        backupCount=32)
-    file_handler.setFormatter(formatter)
-
-    log = logging.getLogger(name)
-    log.setLevel(logging.INFO)
-    log.addHandler(file_handler)
-
-    if not suppress_output:
-        stream_handler = logging.StreamHandler()
-        stream_handler.setFormatter(formatter)
-        log.addHandler(stream_handler)
-
-    return log
+        return cls._instances[cls]
 
 
-def set_logger(name):
-    global log
-    log = get_logger(name)
+class Watchdog(metaclass=WatchdogMeta):
+    logger = None
+    position = None
+    strategy = None
+    user_strat = None
 
+    def __init__(self, log="watchdog"):
+        self.stdout = core.utils.get_logger(log)
+        self.stderr = core.utils.get_logger(log + "_err", suppress_output=True)
 
-log = get_logger("core")
+    def print(self, message=None, exception=None):
+        if exception:
+            message = "{m} {e} {err}".format(m=message,
+                                             e=exception.__class__.__name__,
+                                             err=exception)
+            self.stderr.exception(exception, exc_info=True)
+            core.alert.send_message(message)
 
+        self.stdout.info(message)
 
-def info(msg):
-    log.info(msg)
+    def run_loop(self):
+        # self.refresh_risk()
+        self.refresh_opening_positions()
+        self.refresh_pending_strategies()
+        self.refresh_pending_positions()
 
+    def run(call):
+        def inner(self, *args, **kwargs):
+            try:
+                call(self, *args, **kwargs)
 
-def error(msg, exception):
-    if exception:
-        msg = "{m}: {e}".format(m=msg, e=exception)
-        get_logger("exception", suppress_output=True) \
-            .exception(exception, exc_info=True)
+            except core.errors.PostponingError as e:
+                self.print(exception=e)
+                if self.position:
+                    self.position.postpone(interval_in_minutes=5)
+                if self.strategy:
+                    self.strategy.postpone(interval_in_minutes=5)
 
-    log.error(msg)
+            except (Exception,
+                    core.errors.BaseError,
+                    core.errors.ModelTooLarge,
+                    core.errors.ModelDoesNotExist,
+                    core.errors.DisablingError) as e:
+                self.print(exception=e)
+                if self.user_strat:
+                    self.user_strat.disable()
+                if self.strategy:
+                    self.strategy.disable()
 
-    if log.name == "watchdog" or log.name == "stream":
-        msg = "{l}: {m}".format(l=log.name, m=msg)
-        core.alert.send_message(msg)
+        return inner
 
+    @run
+    def refresh_opening_positions(self):
+        for position in core.db.get_opening_positions():
+            self.position = position
 
-def warning(msg):
-    log.warning(msg)
-
-    if log.name == "watchdog" or log.name == "stream":
-        msg = "{l}: {m}".format(l=log.name, m=msg)
-        core.alert.send_message(msg)
-
-
-def notice(user, msg):
-    core.alert.send_user_message(user, msg)
-
-
-def watch():
-    set_logger("watchdog")
-
-    while (True):
-        try:
-            core.db.connection.connect()
-
-            # TODO risk assessment:
-            # - red flag -- exit all positions
-            # - yellow flag -- new buy signals ignored & reduce curr. positions
-            # - green flag -- all signals are respected
-            # in general, account for overall market risk and volatility
-            # maybe use GARCH to model volatility, or a machine learning model
-            # maybe user.max_risk and user.max_volatility
-
-            for position in core.db.get_opening_positions():
-                stopped = position.check_stops()
-                if stopped:
-                    position.refresh()
-
-            for strategy in core.db.get_pending_strategies():
-                strategy.refresh()
-
-                for user_strat in strategy.get_active_users():
-                    user_strat.refresh()
-
-            for position in core.db.get_pending_positions():
+            stopped = position.check_stops()
+            if stopped:
                 position.refresh()
 
-            time.sleep(int(core.config["WATCHDOG_INTERVAL"]))
+            self.position = None
 
-        except KeyboardInterrupt:
-            break
+    @run
+    def refresh_pending_positions(self):
+        for position in core.db.get_pending_positions():
+            self.position = position
 
-        except core.errors.PostponingError as e:
-            error(e.__class__.__name__, e)
-            if "position" in locals():
-                position.postpone(interval_in_minutes=5)
-            if "strategy" in locals():
-                strategy.postpone(interval_in_minutes=5)
+            position.refresh()
 
-        except (Exception,
-                core.errors.BaseError,
-                core.errors.ModelTooLarge,
-                core.errors.ModelDoesNotExist,
-                core.errors.DisablingError) as e:
-            error(e.__class__.__name__, e)
-            if "user_strat" in locals():
-                user_strat.disable()
-            if "strategy" in locals():
-                strategy.disable()
+            self.position = None
 
-        finally:
-            core.db.connection.close()
-            if "position" in locals():
-                del position
-            if "strategy" in locals():
-                del strategy
-            if "user_strat" in locals():
-                del user_strat
+    @run
+    def refresh_pending_strategies(self):
+        for strategy in core.db.get_pending_strategies():
+            self.strategy = strategy
+
+            strategy.refresh()
+
+            self.strategy = None
+
+            self.refresh_pending_users(strategy.get_active_users())
+
+    @run
+    def refresh_pending_users(self, users):
+        for user_strat in users:
+            self.user_strat = user_strat
+
+            user_strat.refresh()
+
+            self.user_strat = None
+
+    @run
+    def refresh_risk(self):
+        pass
+        # TODO risk assessment:
+        # - red flag -- exit all positions
+        # - yellow flag -- new buy signals ignored & reduce curr. positions
+        # - green flag -- all signals are respected
+        # in general, account for overall market risk and volatility
+        # maybe use GARCH to model volatility, or a machine learning model
+        # maybe user.max_risk and user.max_volatility
