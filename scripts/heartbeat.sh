@@ -18,6 +18,10 @@ if [ -z "$IP" ]; then
     exit 0
 fi
 
-if ! ping -c 1 "$IP" > /dev/null 2>&1; then
+if ! ping -w 2 -c 1 "$IP" > /dev/null 2>&1; then
+    sudo systemctl restart openvpn.service
+fi
+
+if ! ping -w 2 -c 1 "$IP" > /dev/null 2>&1; then
     curl -s "$TELEGRAM"server%20is%20down
 fi
