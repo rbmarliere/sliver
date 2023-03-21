@@ -35,6 +35,7 @@ class Exchange(BaseModel):
     timeframes = peewee.TextField(null=True)
     type = peewee.IntegerField(default=0)
     api_endpoint = peewee.TextField(null=True)
+    api_sandbox_endpoint = peewee.TextField(null=True)
 
     def get_markets(self):
         return Market \
