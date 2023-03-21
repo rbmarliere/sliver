@@ -34,14 +34,11 @@ class CCXT(BaseExchange):
                 time.sleep(5)
                 return inner(self, *args, **kwargs)
 
-            except ccxt.AuthenticationError as e:
-                raise core.errors.DisablingError("authentication error", e)
-
-            except ccxt.OnMaintenance as e:
-                raise core.errors.PostponingError("exchange on maintenance", e)
-
-            except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            except (ccxt.AuthenticationError, ccxt.ExchangeError) as e:
                 raise core.errors.DisablingError("ccxt error", e)
+
+            except (ccxt.OnMaintenance, ccxt.NetworkError) as e:
+                raise core.errors.PostponingError("ccxt error", e)
 
         return inner
 
