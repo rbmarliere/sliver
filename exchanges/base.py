@@ -44,17 +44,25 @@ class BaseExchange(ABC):
         ...
 
     @abstractmethod
+    def api_call(call):
+        ...
+
+    @api_call
+    @abstractmethod
     def api_fetch_time(self):
         ...
 
+    @api_call
     @abstractmethod
     def api_fetch_balance(self):
         ...
 
+    @api_call
     @abstractmethod
     def api_fetch_markets(self):
         ...
 
+    @api_call
     @abstractmethod
     def api_fetch_ticker(self, symbol):
         # all price returns must be transformed?
@@ -62,6 +70,7 @@ class BaseExchange(ABC):
         # returns none if unsupported
         ...
 
+    @api_call
     @abstractmethod
     def api_fetch_ohlcv(self,
                         symbol,
@@ -72,16 +81,19 @@ class BaseExchange(ABC):
         # returns pandas dataframe
         ...
 
+    @api_call
     @abstractmethod
     def api_fetch_orders(self, symbol, oid=None, status=None):
         # single, all, or based on status (open, closed, canceled)
         ...
 
+    @api_call
     @abstractmethod
     def api_cancel_orders(self, symbol, oid=None):
         # if oid is none, cancel all orders
         ...
 
+    @api_call
     @abstractmethod
     def api_create_order(self, type, side, amount, price=None):
         # returns oid if order was created, None otherwise
