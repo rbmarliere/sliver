@@ -1,18 +1,9 @@
-# VaR,
-# sharpe,
-# TWAP/VWAP,
-# cagr,
-# sterling, calmar, sortino, mar
-# cumulative return,
-# profit factor,
-# max drawdown,
-# payoff ratio,
-# win days
-
 import ccxt
 
 import core
-from core.watchdog import Watchdog
+
+
+print = core.watchdog.Watchdog().print
 
 
 def get_balance_by_exchange_asset(user: core.db.User,
@@ -99,7 +90,7 @@ def get_target_cost(user_strat: core.db.UserStrategy):
     user = user_strat.user
     # each exchange has a target_cost
     exchange = user_strat.strategy.market.base.exchange
-    print = user_strat.strategy.market.quote.print
+    m_print = user_strat.strategy.market.quote.print
     transform = user_strat.strategy.market.quote.transform
 
     inventory = get_inventory(user)
@@ -113,26 +104,24 @@ def get_target_cost(user_strat: core.db.UserStrategy):
         available_in_exch = 0
     else:
         cash_in_exch = available_in_exch.total
-    Watchdog().print("available {a} in exchange {e} is {v}"
-                     .format(a=user_strat.strategy.market.quote.asset.ticker,
-                             e=exchange.name,
-                             v=print(cash_in_exch)))
+    print("available {a} in exchange {e} is {v}"
+          .format(a=user_strat.strategy.market.quote.asset.ticker,
+                  e=exchange.name,
+                  v=m_print(cash_in_exch)))
 
     available = cash_in_exch * (1 - user.cash_reserve)
-    Watchdog().print(
-        "available minus reserve is {v}".format(v=print(available)))
+    print("available minus reserve is {v}".format(v=m_print(available)))
 
     active_strat_in_exch = user.get_exchange_strategies(exchange).count()
     pos_curr_cost = [p.entry_cost for p in
                      user.get_exchange_open_positions(exchange)]
     available = (available + sum(pos_curr_cost)) / active_strat_in_exch
-    Watchdog().print(
-        "available for strategy is {v}".format(v=print(available)))
+    print("available for strategy is {v}".format(v=m_print(available)))
 
     max_risk = transform(inventory["max_risk"])
     target_cost = min(max_risk, available)
-    Watchdog().print("max risk is {v}".format(v=print(max_risk)))
-    Watchdog().print("target cost is {v}".format(v=print(target_cost)))
+    print("max risk is {v}".format(v=m_print(max_risk)))
+    print("target cost is {v}".format(v=m_print(target_cost)))
 
     return int(target_cost)
 
@@ -146,19 +135,19 @@ def sync_balance(exchange):
     value_ticker = "USDT"
     value_asset, new = core.db.Asset.get_or_create(ticker=value_ticker)
     if new:
-        Watchdog().print("saved asset {a}".format(a=value_asset.ticker))
+        print("saved asset {a}".format(a=value_asset.ticker))
 
     try:
         ex_bal = exchange.api_fetch_balance()
     except ccxt.ExchangeError as e:
-        Watchdog().print("exchange error", exception=e)
+        print("exchange error", exception=e)
         exchange.credential.disable()
         return
 
     ex_val_asset, new = core.db.ExchangeAsset.get_or_create(
         exchange=exchange.credential.exchange, asset=value_asset)
     if new:
-        Watchdog().print("saved asset {a} to exchange".format(
+        print("saved asset {a} to exchange".format(
             a=ex_val_asset.asset.ticker))
 
     # for each exchange asset, update internal user balance
@@ -172,19 +161,19 @@ def sync_balance(exchange):
 
         asset, new = core.db.Asset.get_or_create(ticker=ticker.upper())
         if new:
-            Watchdog().print("saved new asset {a}".format(a=asset.ticker))
+            print("saved new asset {a}".format(a=asset.ticker))
 
         ex_asset, new = core.db.ExchangeAsset.get_or_create(
             exchange=exchange.credential.exchange, asset=asset)
         if new:
-            Watchdog().print("saved asset {a}".format(a=ex_asset.asset.ticker))
+            print("saved asset {a}".format(a=ex_asset.asset.ticker))
 
         u_bal, new = core.db.Balance.get_or_create(
             user=exchange.credential.user,
             asset=ex_asset,
             value_asset=ex_val_asset)
         if new:
-            Watchdog().print("saved new balance {b}".format(b=u_bal.id))
+            print("saved new balance {b}".format(b=u_bal.id))
 
         u_bal.free = ex_asset.transform(free) if free else 0
         u_bal.used = ex_asset.transform(used) if used else 0
@@ -228,8 +217,8 @@ def sync_balances(user: core.db.User):
     active_exchanges = []
     # sync balance for each exchange the user has a key
     for cred in user.credential_set.where(core.db.Credential.active):
-        Watchdog().print("fetching user balance in exchange {e}"
-                         .format(e=cred.exchange.name))
+        print("fetching user balance in exchange {e}"
+              .format(e=cred.exchange.name))
         exchange = core.exchanges.load(cred.exchange, credential=cred)
         sync_balance(exchange)
         active_exchanges.append(cred.exchange)

@@ -4,7 +4,9 @@ import pandas
 
 import core
 from ..base import BaseStrategy
-from core.watchdog import Watchdog
+
+
+print = core.watchdog.Watchdog().print
 
 
 class RandomStrategy(BaseStrategy):
@@ -21,7 +23,7 @@ class RandomStrategy(BaseStrategy):
         # remove non-empty rows
         indicators = indicators[indicators.isnull().any(axis=1)]
         if indicators.empty:
-            Watchdog().print("indicator data is up to date")
+            print("indicator data is up to date")
             return
 
         indicators["strategy"] = self.strategy.id

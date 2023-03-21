@@ -3,7 +3,9 @@ import pandas
 
 import core
 import strategies
-from core.watchdog import Watchdog
+
+
+print = core.watchdog.Watchdog().print
 
 
 def predict(model, tweets, verbose=0):
@@ -37,9 +39,9 @@ def predict(model, tweets, verbose=0):
 
 
 def replay(query, model, verbose=0):
-    Watchdog().print("{m}: replaying {c} tweets"
-                     .format(c=query.count(),
-                             m=model.config["name"]))
+    print("{m}: replaying {c} tweets"
+          .format(c=query.count(),
+                  m=model.config["name"]))
 
     with core.db.connection.atomic():
         # page = 0
