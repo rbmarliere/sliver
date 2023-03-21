@@ -941,8 +941,7 @@ class Position(BaseModel):
             self.pnl = (self.exit_cost
                         - self.entry_cost
                         - self.fee)
-            self.roi = core.utils.get_roWatchdog().print(
-                self.entry_cost, self.pnl)
+            self.roi = core.utils.get_roi(self.entry_cost, self.pnl)
             self.exit_time = datetime.datetime.utcnow()
             Watchdog().print("position is now closed, pnl: {r}"
                              .format(r=market.quote.print(self.pnl)))
