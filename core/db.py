@@ -316,7 +316,9 @@ class Strategy(BaseModel):
             interval_in_minutes = \
                 core.utils.get_timeframe_in_seconds(self.timeframe) / 60
         self.next_refresh = core.utils.get_next_refresh(interval_in_minutes)
-        i("next refresh at {n}".format(n=self.next_refresh))
+        i("postponed strategy {i} next refresh at {n}"
+          .format(i=self.id,
+                  n=self.next_refresh))
         self.save()
 
     def subscribe(self, user, subscribed):
@@ -659,7 +661,9 @@ class Position(BaseModel):
                 n = 99999
             interval_in_minutes = n
         self.next_refresh = core.utils.get_next_refresh(interval_in_minutes)
-        i("next refresh at {n}".format(n=self.next_refresh))
+        i("postponed position {i} next refresh at {n}"
+          .format(i=self.id,
+                  n=self.next_refresh))
         self.save()
 
     def stop(self, last_price=None):
