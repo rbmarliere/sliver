@@ -1,9 +1,13 @@
 import datetime
 import decimal
+import logging.handlers
 import re
+import time
 from decimal import Decimal as D
 
 import pandas
+
+import core
 
 
 def standardize(text):
@@ -145,3 +149,30 @@ def quantize(row, col, prec_col):
     #     return row[col]
     # except AttributeError:
     #     return row
+
+
+def get_logger(log, suppress_output=False):
+    log_file = "{dir}/{log}.log".format(dir=core.config["LOGS_DIR"],
+                                        log=log)
+
+    formatter = logging.Formatter("%(asctime)s -- %(message)s")
+    formatter.converter = time.gmtime
+
+    file_handler = logging.handlers.RotatingFileHandler(
+        log_file,
+        maxBytes=52428800,  # 50mb
+        backupCount=32)
+    file_handler.setFormatter(formatter)
+
+    log = logging.getLogger(log)
+    log.setLevel(logging.INFO)
+    log.addHandler(file_handler)
+
+    if suppress_output:
+        return log
+
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+    log.addHandler(stream_handler)
+
+    return log

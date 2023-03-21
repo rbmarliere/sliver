@@ -11,16 +11,17 @@ import urllib3
 
 import core
 import strategies
+from core.watchdog import Watchdog
 
 
 class Stream(tweepy.StreamingClient):
 
     def on_disconnect(self):
-        core.watchdog.warning("disconnected")
+        Watchdog().print("stream disconnect", exception="stream disconnect")
         super().on_disconnect()
 
     def on_exception(self, exception):
-        core.watchdog.error("got exception", exception)
+        Watchdog().print("stream error", exception=exception)
         super().on_exception(exception)
 
     def on_tweet(self, status):
@@ -38,7 +39,7 @@ class Stream(tweepy.StreamingClient):
         text = re.sub("\t", " ", text).strip()
 
         # log to stdin
-        core.watchdog.info(text)
+        Watchdog().print(text)
         tweet = strategies.hypnox.HypnoxTweet(time=time, text=text)
         try:
             tweet.save()
@@ -50,12 +51,12 @@ class Stream(tweepy.StreamingClient):
                     core.db.connection.connect(reuse_if_open=True)
                     tweet.save()
                 except peewee.OperationalError:
-                    core.watchdog.warning(
+                    Watchdog().warning(
                         "couldn't reestablish connection to database!")
 
                     # log to cache csv
-                    core.watchdog.error(
-                        "error on inserting, caching instead...", e)
+                    Watchdog().print("error on inserting, caching instead",
+                                     exception=e)
                     output = pandas.DataFrame({
                         "time": [time],
                         "text": [text]
@@ -81,7 +82,7 @@ def get_uids():
         t_user = client.get_user(username=user.username)
 
         if not t_user.data:
-            core.watchdog.info("user {u} not found".format(u=user.username))
+            Watchdog().print("user {u} not found".format(u=user.username))
             continue
 
         user.twitter_user_id = t_user.data.id
@@ -119,7 +120,7 @@ def stream():
     argp.add_argument("--reset", action="store_true")
     args = argp.parse_args()
 
-    core.watchdog.set_logger("stream")
+    Watchdog(log="stream")
 
     if (core.config["TWITTER_BEARER_TOKEN"] == ""):
         raise core.errors.BaseError("missing TWITTER_BEARER_TOKEN!")
@@ -127,7 +128,7 @@ def stream():
     stream = Stream(core.config["TWITTER_BEARER_TOKEN"])
 
     if args.reset:
-        core.watchdog.info("resetting users and stream rules")
+        Watchdog().print("resetting users and stream rules")
         uids = get_uids()
 
         curr_rules = stream.get_rules()
@@ -136,18 +137,21 @@ def stream():
 
         stream.add_rules(get_rules(uids))
 
-    core.watchdog.info("streaming...")
+    Watchdog().print("streaming...")
     while not stream.running:
         try:
             stream.filter()
+
         except (requests.exceptions.Timeout, ssl.SSLError,
                 urllib3.exceptions.ReadTimeoutError,
                 requests.exceptions.ConnectionError) as e:
-            core.watchdog.error("network error", e)
+            Watchdog().print("network error", exception=e)
+
         except Exception as e:
-            core.watchdog.error("unexpected error", e)
+            Watchdog().print("unexpected error", exception=e)
+
         except KeyboardInterrupt:
-            core.watchdog.info("got keyboard interrupt")
+            Watchdog().print("got keyboard interrupt")
             break
 
 

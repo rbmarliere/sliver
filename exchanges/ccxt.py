@@ -6,7 +6,7 @@ import pandas
 import ccxt
 import core
 from .base import BaseExchange
-from core.watchdog import info as i
+from core.watchdog import Watchdog
 
 
 class CCXT(BaseExchange):
@@ -32,7 +32,7 @@ class CCXT(BaseExchange):
         self.api_fetch_time()
         elapsed = datetime.datetime.utcnow() - started
         elapsed_in_ms = int(elapsed.total_seconds() * 1000)
-        # i("api latency is {l} ms".format(l=elapsed_in_ms))
+        # Watchdog().print("api latency is {l} ms".format(l=elapsed_in_ms))
 
         if elapsed_in_ms > 5000:
             msg = "latency above threshold: {l} > 5000".format(l=elapsed_in_ms)
@@ -51,14 +51,14 @@ class CCXT(BaseExchange):
                 if self.market:
                     sleep_time = self.market.base.exchange.rate_limit
 
-                i("rate limited, sleeping for {s} seconds"
-                  .format(s=sleep_time))
+                Watchdog().print("rate limited, sleeping for {s} seconds"
+                                 .format(s=sleep_time))
                 time.sleep(sleep_time)
 
                 return inner(self, *args, **kwargs)
 
             except ccxt.RequestTimeout as e:
-                core.watchdog.error("request timed out", e)
+                Watchdog().print("request timed out", exception=e)
                 time.sleep(5)
                 return inner(self, *args, **kwargs)
 
@@ -154,13 +154,13 @@ class CCXT(BaseExchange):
             return new_order["id"]
 
         except ccxt.InvalidOrder:
-            i("invalid order parameters, skipping...")
+            Watchdog().print("invalid order parameters, skipping...")
 
         except ccxt.InsufficientFunds:
             raise core.errors.DisablingError("insufficient funds")
 
         except ccxt.RequestTimeout as e:
-            core.watchdog.error("order creation request timeout", e)
+            Watchdog().print("order creation request timeout", exception=e)
 
             time.sleep(10)
 
@@ -177,7 +177,7 @@ class CCXT(BaseExchange):
                                - datetime.timedelta(minutes=2)) \
                         and cost > last_cost*0.999 and cost < last_cost*1.001 \
                         and int(price) == int(last_order["price"]):
-                    i("order was created and is open")
+                    Watchdog().print("order was created and is open")
                     return last_order["id"]
 
             closed_orders = self.api_fetch_orders(self.market.get_symbol(),
@@ -193,5 +193,5 @@ class CCXT(BaseExchange):
                                - datetime.timedelta(minutes=2)) \
                         and cost > last_cost*0.999 and cost < last_cost*1.001 \
                         and int(price) == int(last_order["price"]):
-                    i("order was created and is closed")
+                    Watchdog().print("order was created and is closed")
                     return last_order["id"]
