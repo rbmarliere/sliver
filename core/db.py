@@ -34,6 +34,7 @@ class Exchange(BaseModel):
     padding_mode = peewee.IntegerField(default=NO_PADDING)
     timeframes = peewee.TextField(null=True)
     type = peewee.IntegerField(default=0)
+    api_endpoint = peewee.TextField(null=True)
 
     def get_markets(self):
         return Market \
