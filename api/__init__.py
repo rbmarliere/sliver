@@ -21,4 +21,4 @@ routes.init(api)
 
 jwt = flask_jwt_extended.JWTManager(app)
 
-core.watchdog.set_logger("api")
+core.watchdog.Watchdog(log="api")

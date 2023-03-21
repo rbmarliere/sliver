@@ -5,17 +5,7 @@ import peewee
 from ccxt.base.decimal_to_precision import DECIMAL_PLACES, NO_PADDING
 
 import core
-from core.watchdog import info as i, notice as n
-
-
-# precision modes:
-# DECIMAL_PLACES,
-# SIGNIFICANT_DIGITS,
-# TICK_SIZE,
-
-# padding modes:
-# NO_PADDING,
-# PAD_WITH_ZERO,
+from .watchdog import Watchdog
 
 connection = peewee.PostgresqlDatabase(
     core.config["DB_NAME"], **{
@@ -137,6 +127,9 @@ class User(BaseModel):
                 return u_st.active
         return False
 
+    def send_message(self, message):
+        core.alert.send_user_message(self, message)
+
 
 class Credential(BaseModel):
     user = peewee.ForeignKeyField(User)
@@ -149,9 +142,9 @@ class Credential(BaseModel):
         constraints = [peewee.SQL("UNIQUE (user_id, exchange_id)")]
 
     def disable(self):
-        i("disabling credential {s}...".format(s=self))
-        n(self.user,
-          "disabled credential for exchange {e}".format(e=self.exchange.name))
+        Watchdog().print("disabling credential {s}...".format(s=self))
+        self.user.send_message("disabled credential for exchange {e}"
+                               .format(e=self.exchange.name))
         self.active = False
         self.save()
 
@@ -275,22 +268,25 @@ class Strategy(BaseModel):
     def refresh(self):
         symbol = self.market.get_symbol()
 
-        i("===========================================")
-        i("refreshing strategy {s}".format(s=self))
-        i("market is {m} ({i})".format(m=symbol, i=self.market.id))
-        i("timeframe is {T}".format(T=self.timeframe))
-        i("exchange is {e}".format(e=self.market.base.exchange.name))
-        i("type is {m}".format(m=core.strategies.Types(self.type).name))
-        i("buy engine is {e}".format(e=self.buy_engine_id))
-        i("sell engine is {e}".format(e=self.sell_engine_id))
-        i("stop engine is {e}".format(e=self.stop_engine_id))
+        Watchdog().print("===========================================")
+        Watchdog().print("refreshing strategy {s}".format(s=self))
+        Watchdog().print("market is {m} ({i})".format(
+            m=symbol, i=self.market.id))
+        Watchdog().print("timeframe is {T}".format(T=self.timeframe))
+        Watchdog().print("exchange is {e}".format(
+            e=self.market.base.exchange.name))
+        Watchdog().print("type is {m}".format(
+            m=core.strategies.Types(self.type).name))
+        Watchdog().print("buy engine is {e}".format(e=self.buy_engine_id))
+        Watchdog().print("sell engine is {e}".format(e=self.sell_engine_id))
+        Watchdog().print("stop engine is {e}".format(e=self.stop_engine_id))
 
         core.exchanges.load(self.market.base.exchange,
                             strategy=self).fetch_ohlcv()
 
         core.strategies.load(self).refresh()
 
-        i("signal is {s}".format(s=self.get_signal().name))
+        Watchdog().print("signal is {s}".format(s=self.get_signal().name))
 
         self.postpone()
 
@@ -300,7 +296,7 @@ class Strategy(BaseModel):
         self.save()
 
     def disable(self):
-        i("disabling strategy {s}...".format(s=self))
+        Watchdog().print("disabling strategy {s}...".format(s=self))
         for dep in self.mixedstrategies_set:
             dep.mixer.disable()
         self.active = False
@@ -316,9 +312,9 @@ class Strategy(BaseModel):
             interval_in_minutes = \
                 core.utils.get_timeframe_in_seconds(self.timeframe) / 60
         self.next_refresh = core.utils.get_next_refresh(interval_in_minutes)
-        i("postponed strategy {i} next refresh at {n}"
-          .format(i=self.id,
-                  n=self.next_refresh))
+        Watchdog().print("postponed strategy {i} next refresh at {n}"
+                         .format(i=self.id,
+                                 n=self.next_refresh))
         self.save()
 
     def subscribe(self, user, subscribed):
@@ -364,9 +360,9 @@ class UserStrategy(BaseModel):
         constraints = [peewee.SQL("UNIQUE (user_id, strategy_id)")]
 
     def disable(self):
-        i("disabling user's strategy {s}...".format(s=self))
-        n(self.user,
-          "disabled strategy {s}".format(s=self.strategy.id))
+        Watchdog().print("disabling user's strategy {s}...".format(s=self))
+        self.user.send_message("disabled strategy {s}"
+                               .format(s=self.strategy.id))
         self.active = False
         self.save()
 
@@ -388,8 +384,9 @@ class UserStrategy(BaseModel):
         BUY = core.strategies.Signal.BUY
         SELL = core.strategies.Signal.SELL
 
-        i("...........................................")
-        i("refreshing user {u} strategy {s}".format(u=self.user, s=self))
+        Watchdog().print("...........................................")
+        Watchdog().print(
+            "refreshing user {u} strategy {s}".format(u=self.user, s=self))
 
         # sync orders of active position
         position = self.get_active_position_or_none()
@@ -404,13 +401,15 @@ class UserStrategy(BaseModel):
                     if last_pos and last_pos.stopped:
                         c = datetime.datetime.utcnow() - last_pos.exit_time
                         if c < datetime.timedelta(minutes=cooldown):
-                            i("cooldown not expired, can not create position")
+                            Watchdog().print(
+                                "cooldown not expired, can not create position")
                             return
 
                 t_cost = core.inventory.get_target_cost(self)
 
                 if (t_cost == 0 or t_cost < strategy.market.cost_min):
-                    i("invalid target_cost, can not create position")
+                    Watchdog().print(
+                        "invalid target_cost, can not create position")
                     return
 
                 core.db.Position.open(self, t_cost)
@@ -562,10 +561,12 @@ class Position(BaseModel):
                                            asset=market.quote)
         remaining = min(remaining, balance.total)
 
-        i("bucket cost is {a}".format(a=market.quote.print(self.bucket)))
-        i("remaining to fill in bucket is {r}"
-            .format(r=market.quote.print(remaining)))
-        i("balance is {r}".format(r=market.quote.print(balance.total)))
+        Watchdog().print("bucket cost is {a}".format(
+            a=market.quote.print(self.bucket)))
+        Watchdog().print("remaining to fill in bucket is {r}"
+                         .format(r=market.quote.print(remaining)))
+        Watchdog().print("balance is {r}".format(
+            r=market.quote.print(balance.total)))
 
         return remaining
 
@@ -582,19 +583,22 @@ class Position(BaseModel):
                                            asset=market.base)
         remaining = min(remaining, balance.total)
 
-        i("bucket amount is {a}".format(a=market.base.print(self.bucket)))
-        i("remaining to fill in bucket is {r}"
-            .format(r=market.base.print(remaining_to_fill)))
-        i("remaining to exit position is {r}"
-            .format(r=market.base.print(remaining_to_exit)))
-        i("balance is {r}".format(r=market.base.print(balance.total)))
+        Watchdog().print("bucket amount is {a}".format(
+            a=market.base.print(self.bucket)))
+        Watchdog().print("remaining to fill in bucket is {r}"
+                         .format(r=market.base.print(remaining_to_fill)))
+        Watchdog().print("remaining to exit position is {r}"
+                         .format(r=market.base.print(remaining_to_exit)))
+        Watchdog().print("balance is {r}".format(
+            r=market.base.print(balance.total)))
 
         # avoid position rounding errors by exiting early
         r = remaining_to_exit - remaining_to_fill
         position_remainder = market.base.format(r)
         if position_remainder > 0 \
                 and position_remainder * last_price <= market.cost_min:
-            i("position remainder is {r}".format(r=market.base.print(r)))
+            Watchdog().print(
+                "position remainder is {r}".format(r=market.base.print(r)))
             remaining = remaining_to_exit
 
         return remaining
@@ -622,8 +626,8 @@ class Position(BaseModel):
                             entry_time=datetime.datetime.utcnow())
         position.save()
 
-        i("opening position {i}".format(i=position.id))
-        n(user, position.get_notice(prefix="opening "))
+        Watchdog().print("opening position {i}".format(i=position.id))
+        user.send_message(position.get_notice(prefix="opening "))
 
         return position
 
@@ -646,8 +650,8 @@ class Position(BaseModel):
         self.bucket = 0
         self.status = "closing"
 
-        i("closing position {i}".format(i=self.id))
-        n(user, self.get_notice(prefix="closing "))
+        Watchdog().print("closing position {i}".format(i=self.id))
+        user.send_message(self.get_notice(prefix="closing "))
 
         self.save()
 
@@ -661,9 +665,9 @@ class Position(BaseModel):
                 n = 99999
             interval_in_minutes = n
         self.next_refresh = core.utils.get_next_refresh(interval_in_minutes)
-        i("postponed position {i} next refresh at {n}"
-          .format(i=self.id,
-                  n=self.next_refresh))
+        Watchdog().print("postponed position {i} next refresh at {n}"
+                         .format(i=self.id,
+                                 n=self.next_refresh))
         self.save()
 
     def stop(self, last_price=None):
@@ -672,17 +676,17 @@ class Position(BaseModel):
         market = strategy.market
         user = self.user_strategy.user
 
-        i("last price is {p}, high was {h} and low was {l}"
-            .format(p=market.quote.print(last_price),
-                    h=market.quote.print(self.last_high),
-                    l=market.quote.print(self.last_low)))
-        i("stop gain is {g}, trailing is {gt}"
-            .format(g=engine.stop_gain,
-                    gt=engine.trailing_gain))
-        i("stop loss is {l}, trailing is {lt}"
-            .format(l=engine.stop_loss,
-                    lt=engine.trailing_loss))
-        n(user, self.get_notice(prefix="stopped "))
+        Watchdog().print("last price is {p}, high was {h} and low was {l}"
+                         .format(p=market.quote.print(last_price),
+                                 h=market.quote.print(self.last_high),
+                                 l=market.quote.print(self.last_low)))
+        Watchdog().print("stop gain is {g}, trailing is {gt}"
+                         .format(g=engine.stop_gain,
+                                 gt=engine.trailing_gain))
+        Watchdog().print("stop loss is {l}, trailing is {lt}"
+                         .format(l=engine.stop_loss,
+                                 lt=engine.trailing_loss))
+        user.send_message(self.get_notice(prefix="stopped "))
         self.stopped = True
         self.close(engine=engine)
         self.save()
@@ -788,13 +792,19 @@ class Position(BaseModel):
         p = self.exchange.api_fetch_last_price(market.get_symbol())
         last_p = market.quote.transform(p)
 
-        i("___________________________________________")
-        i("refreshing {s} position {i}".format(s=self.status, i=self.id))
-        i("strategy is {s}".format(s=self.user_strategy.strategy.id))
-        i("last price is {p}".format(p=strategy.market.quote.print(last_p)))
-        i("target cost is {t}".format(t=market.quote.print(self.target_cost)))
-        i("entry cost is {t}".format(t=market.quote.print(self.entry_cost)))
-        i("exit cost is {t}".format(t=market.quote.print(self.exit_cost)))
+        Watchdog().print("___________________________________________")
+        Watchdog().print(
+            "refreshing {s} position {i}".format(s=self.status, i=self.id))
+        Watchdog().print("strategy is {s}".format(
+            s=self.user_strategy.strategy.id))
+        Watchdog().print("last price is {p}".format(
+            p=strategy.market.quote.print(last_p)))
+        Watchdog().print("target cost is {t}".format(
+            t=market.quote.print(self.target_cost)))
+        Watchdog().print("entry cost is {t}".format(
+            t=market.quote.print(self.entry_cost)))
+        Watchdog().print("exit cost is {t}".format(
+            t=market.quote.print(self.exit_cost)))
 
         self.exchange.sync_limit_orders()
 
@@ -825,16 +835,18 @@ class Position(BaseModel):
         else:
             engine = strategy.sell_engine
 
-        i("next bucket at {t}".format(t=self.next_bucket))
+        Watchdog().print("next bucket at {t}".format(t=self.next_bucket))
 
         # check if current bucket needs to be reset
         if now > self.next_bucket:
             next_bucket = core.utils.get_next_refresh(engine.bucket_interval)
             self.next_bucket = next_bucket
-            i("moving on to next bucket at {b}".format(b=self.next_bucket))
+            Watchdog().print(
+                "moving on to next bucket at {b}".format(b=self.next_bucket))
             self.bucket = 0
 
-        i("limit to market ratio is {r}".format(r=engine.lm_ratio))
+        Watchdog().print(
+            "limit to market ratio is {r}".format(r=engine.lm_ratio))
 
         if self.status == "opening":
             remaining_cost = self.get_remaining_cost()
@@ -857,7 +869,7 @@ class Position(BaseModel):
 
         # check if current bucket is filled
         if now < self.next_bucket and remaining_cost < market.cost_min:
-            i("bucket is full")
+            Watchdog().print("bucket is full")
             return
 
         inserted_orders = False
@@ -909,8 +921,8 @@ class Position(BaseModel):
                               last_p)
 
         if not inserted_orders:
-            n(self.user_strategy.user,
-              self.get_notice(prefix="could not insert any orders for "))
+            self.user_strategy.user.send_message(
+                self.get_notice(prefix="could not insert any orders for "))
 
     def refresh_status(self):
         strategy = self.user_strategy.strategy
@@ -927,13 +939,14 @@ class Position(BaseModel):
             self.pnl = (self.exit_cost
                         - self.entry_cost
                         - self.fee)
-            self.roi = core.utils.get_roi(self.entry_cost, self.pnl)
+            self.roi = core.utils.get_roWatchdog().print(
+                self.entry_cost, self.pnl)
             self.exit_time = datetime.datetime.utcnow()
-            i("position is now closed, pnl: {r}"
-              .format(r=market.quote.print(self.pnl)))
-            n(user, self.get_notice(prefix="closed ",
-                                    suffix=" ROI: {r}%"
-                                    .format(r=self.roi)))
+            Watchdog().print("position is now closed, pnl: {r}"
+                             .format(r=market.quote.print(self.pnl)))
+            user.send_message(self.get_notice(prefix="closed ",
+                                              suffix=" ROI: {r}%"
+                                              .format(r=self.roi)))
 
         # position finishes opening when it reaches target
         cost_diff = self.target_cost - self.entry_cost
@@ -941,15 +954,15 @@ class Position(BaseModel):
                 and self.entry_cost > 0 \
                 and cost_diff < market.cost_min:
             self.status = "open"
-            i("position is now open")
-            n(user, self.get_notice(prefix="opened "))
+            Watchdog().print("position is now open")
+            user.send_message(self.get_notice(prefix="opened "))
 
         # handle special case of hanging position
         signal = self.user_strategy.strategy.get_signal()
         SELL = core.strategies.Signal.SELL
         if self.entry_cost == 0 \
                 and (self.status == "closing" or signal == SELL):
-            i("entry_cost is 0, position is now closed")
+            Watchdog().print("entry_cost is 0, position is now closed")
             self.status = "closed"
             self.exit_time = datetime.datetime.utcnow()
 
@@ -1008,11 +1021,12 @@ class Order(BaseModel):
         filled = market.base.transform(filled)
 
         implicit_cost = market.base.format(amount)*price
-        i("{a} @ {p} ({c})".format(a=market.base.print(amount),
-                                   p=market.quote.print(price),
-                                   c=market.quote.print(implicit_cost)))
+        Watchdog().print("{a} @ {p} ({c})".format(a=market.base.print(amount),
+                                                  p=market.quote.print(
+            price),
+            c=market.quote.print(implicit_cost)))
 
-        i("filled: {f}".format(f=market.base.print(filled)))
+        Watchdog().print("filled: {f}".format(f=market.base.print(filled)))
 
         # check for fees
         if ex_order["fee"] is None:

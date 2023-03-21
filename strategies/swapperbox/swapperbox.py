@@ -5,6 +5,7 @@ import peewee
 
 import core
 from ..base import BaseStrategy
+from core.watchdog import Watchdog
 
 
 path = "strategies/swapperbox/"
@@ -47,7 +48,7 @@ class SwapperBoxStrategy(BaseStrategy):
         upstream = core.alert.get_messages(self.telegram, limit=0)
 
         if upstream is None or upstream.total == len(messages):
-            core.watchdog.info("swapperbox: no new messages")
+            Watchdog().print("swapperbox: no new messages")
             return messages
         limit = None
         if len(messages) > 0:
