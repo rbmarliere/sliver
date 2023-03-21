@@ -4,7 +4,9 @@ import telegram
 import telethon.sync
 
 import core
-from core.watchdog import Watchdog
+
+
+print = core.watchdog.Watchdog().print
 
 
 def send_user_message(user, msg):
@@ -85,7 +87,7 @@ def get_messages(username, limit=1):
                 telethon_client.connect()
 
             if limit is None or limit > 0:
-                Watchdog().print(
+                print(
                     "downloading {l} messages from {u}"
                     .format(u=username,
                             l="all" if limit is None else limit))

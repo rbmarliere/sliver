@@ -6,8 +6,9 @@ import tensorflow
 import transformers
 
 import core
-from core.watchdog import Watchdog
 
+
+print = core.watchdog.Watchdog().print
 
 transformers.logging.set_verbosity_error()
 tensorflow.get_logger().setLevel("INFO")
@@ -28,12 +29,12 @@ def load_model(model_name):
         if model.config["name"] == model_name:
             return model
 
-    Watchdog().print("loading model {m}".format(m=model_name))
+    print("loading model {m}".format(m=model_name))
 
     modelpath = pathlib.Path(core.config["MODELS_DIR"] + "/" +
                              model_name).resolve()
     if not modelpath.exists():
-        Watchdog().print("model {m} does not exist".format(m=model_name))
+        print("model {m} does not exist".format(m=model_name))
         raise core.errors.ModelDoesNotExist
 
     model_module = importlib.import_module("models." + model_name)
@@ -45,12 +46,12 @@ def load_model(model_name):
         try:
             model = model_module.load_model(modelpath)
         except tensorflow.errors.ResourceExhaustedError:
-            Watchdog().print("model {m} is too large to be loaded"
-                             .format(m=model_name))
+            print("model {m} is too large to be loaded"
+                  .format(m=model_name))
             raise core.errors.ModelTooLarge
     except Exception as e:
-        Watchdog().print("could not load model {m}".format(m=model_name),
-                         exception=e)
+        print("could not load model {m}".format(m=model_name),
+              exception=e)
         raise core.errors.ModelDoesNotExist
 
     model.config = model_module.config

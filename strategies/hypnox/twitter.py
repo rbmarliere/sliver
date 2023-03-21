@@ -11,17 +11,19 @@ import urllib3
 
 import core
 import strategies
-from core.watchdog import Watchdog
+
+
+print = core.watchdog.Watchdog().print
 
 
 class Stream(tweepy.StreamingClient):
 
     def on_disconnect(self):
-        Watchdog().print("stream disconnect", exception="stream disconnect")
+        print("stream disconnect", exception="stream disconnect")
         super().on_disconnect()
 
     def on_exception(self, exception):
-        Watchdog().print("stream error", exception=exception)
+        print("stream error", exception=exception)
         super().on_exception(exception)
 
     def on_tweet(self, status):
@@ -39,7 +41,7 @@ class Stream(tweepy.StreamingClient):
         text = re.sub("\t", " ", text).strip()
 
         # log to stdin
-        Watchdog().print(text)
+        print(text)
         tweet = strategies.hypnox.HypnoxTweet(time=time, text=text)
         try:
             tweet.save()
@@ -51,12 +53,12 @@ class Stream(tweepy.StreamingClient):
                     core.db.connection.connect(reuse_if_open=True)
                     tweet.save()
                 except peewee.OperationalError:
-                    Watchdog().warning(
+                    warning(
                         "couldn't reestablish connection to database!")
 
                     # log to cache csv
-                    Watchdog().print("error on inserting, caching instead",
-                                     exception=e)
+                    print("error on inserting, caching instead",
+                          exception=e)
                     output = pandas.DataFrame({
                         "time": [time],
                         "text": [text]
@@ -82,7 +84,7 @@ def get_uids():
         t_user = client.get_user(username=user.username)
 
         if not t_user.data:
-            Watchdog().print("user {u} not found".format(u=user.username))
+            print("user {u} not found".format(u=user.username))
             continue
 
         user.twitter_user_id = t_user.data.id
@@ -128,7 +130,7 @@ def stream():
     stream = Stream(core.config["TWITTER_BEARER_TOKEN"])
 
     if args.reset:
-        Watchdog().print("resetting users and stream rules")
+        print("resetting users and stream rules")
         uids = get_uids()
 
         curr_rules = stream.get_rules()
@@ -137,7 +139,7 @@ def stream():
 
         stream.add_rules(get_rules(uids))
 
-    Watchdog().print("streaming...")
+    print("streaming...")
     while not stream.running:
         try:
             stream.filter()
@@ -145,13 +147,13 @@ def stream():
         except (requests.exceptions.Timeout, ssl.SSLError,
                 urllib3.exceptions.ReadTimeoutError,
                 requests.exceptions.ConnectionError) as e:
-            Watchdog().print("network error", exception=e)
+            print("network error", exception=e)
 
         except Exception as e:
-            Watchdog().print("unexpected error", exception=e)
+            print("unexpected error", exception=e)
 
         except KeyboardInterrupt:
-            Watchdog().print("got keyboard interrupt")
+            print("got keyboard interrupt")
             break
 
 
