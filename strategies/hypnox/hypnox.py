@@ -20,18 +20,22 @@ class HypnoxTweet(core.db.BaseModel):
     text = peewee.TextField()
 
     def get_tweets_by_model(model: str):
-        return HypnoxTweet \
-            .select(HypnoxTweet, HypnoxScore) \
-            .join(HypnoxScore,
-                  peewee.JOIN.LEFT_OUTER,
-                  on=((HypnoxScore.tweet_id == HypnoxTweet.id)
-                      & (HypnoxScore.model == model))) \
+        return (
+            HypnoxTweet.select(HypnoxTweet, HypnoxScore)
+            .join(
+                HypnoxScore,
+                peewee.JOIN.LEFT_OUTER,
+                on=(
+                    (HypnoxScore.tweet_id == HypnoxTweet.id)
+                    & (HypnoxScore.model == model)
+                ),
+            )
             .order_by(HypnoxTweet.time)
+        )
 
 
 class HypnoxScore(core.db.BaseModel):
-    tweet = peewee.ForeignKeyField(HypnoxTweet,
-                                   on_delete="CASCADE")
+    tweet = peewee.ForeignKeyField(HypnoxTweet, on_delete="CASCADE")
     model = peewee.TextField()
     score = peewee.DecimalField()
 
@@ -40,9 +44,9 @@ class HypnoxScore(core.db.BaseModel):
 
 
 class HypnoxIndicator(core.db.BaseModel):
-    indicator = peewee.ForeignKeyField(core.db.Indicator,
-                                       primary_key=True,
-                                       on_delete="CASCADE")
+    indicator = peewee.ForeignKeyField(
+        core.db.Indicator, primary_key=True, on_delete="CASCADE"
+    )
     z_score = peewee.DecimalField()
     mean = peewee.DecimalField()
     variance = peewee.DecimalField()
@@ -57,10 +61,12 @@ class HypnoxStrategy(BaseStrategy):
     operator = peewee.TextField(default="gt")
 
     def get_indicators(self):
-        return super() \
-            .get_indicators() \
-            .select(*[*self.select_fields, HypnoxIndicator]) \
+        return (
+            super()
+            .get_indicators()
+            .select(*[*self.select_fields, HypnoxIndicator])
             .join(HypnoxIndicator, peewee.JOIN.LEFT_OUTER)
+        )
 
     def get_indicators_df(self):
         return super().get_indicators_df(self.get_indicators())
@@ -68,14 +74,13 @@ class HypnoxStrategy(BaseStrategy):
     def refresh(self):
         # update tweet scores
         if self.model:
-            query = HypnoxTweet \
-                .get_tweets_by_model(self.model) \
-                .where(HypnoxScore.model.is_null())
+            query = HypnoxTweet.get_tweets_by_model(self.model).where(
+                HypnoxScore.model.is_null()
+            )
 
             count = query.count()
             if count == 0:
-                print("{m}: no tweets to replay"
-                      .format(m=self.model))
+                print("{m}: no tweets to replay".format(m=self.model))
             else:
                 model = models.load_model(self.model)
                 replay(query, model)
@@ -92,8 +97,7 @@ class HypnoxStrategy(BaseStrategy):
         indicators = pandas.DataFrame(indicators_q.dicts())
 
         # filter relevant data
-        self_regex = self.filter.encode("unicode_escape") \
-            if self.filter else b""
+        self_regex = self.filter.encode("unicode_escape") if self.filter else b""
         f = HypnoxTweet.text.iregexp(self_regex)
         f = f & (HypnoxScore.model.is_null(False))
         existing = indicators.dropna()
@@ -123,10 +127,9 @@ class HypnoxStrategy(BaseStrategy):
             variance = existing.iloc[-1]["variance"]
 
         # compute new metrics
-        mean, variance = core.utils.get_mean_var(tweets.score,
-                                                 n_samples,
-                                                 mean,
-                                                 variance)
+        mean, variance = core.utils.get_mean_var(
+            tweets.score, n_samples, mean, variance
+        )
 
         # apply normalization
         tweets["z_score"] = (tweets.score - mean) / variance.sqrt()
@@ -168,32 +171,31 @@ class HypnoxStrategy(BaseStrategy):
         indicators.loc[rule, "signal"] = signal
 
         indicators = indicators.reset_index()
-        indicators = indicators.rename(columns={
-            "id": "price_id",
-            "strategy": "strategy_id",
-        })
+        indicators = indicators.rename(
+            columns={
+                "id": "price_id",
+                "strategy": "strategy_id",
+            }
+        )
 
         with core.db.connection.atomic():
-            vanilla_indicators = indicators[[
-                "strategy_id",
-                "price_id",
-                "signal",
-            ]]
+            vanilla_indicators = indicators[
+                [
+                    "strategy_id",
+                    "price_id",
+                    "signal",
+                ]
+            ]
             core.db.Indicator.insert_many(
-                vanilla_indicators.to_dict("records")).execute()
+                vanilla_indicators.to_dict("records")
+            ).execute()
 
-            hypnox_indicators = indicators[[
-                "z_score",
-                "mean",
-                "variance",
-                "n_samples"
-            ]].copy()
+            hypnox_indicators = indicators[
+                ["z_score", "mean", "variance", "n_samples"]
+            ].copy()
 
-            first_id = core.db.Indicator.get(
-                **vanilla_indicators.iloc[0].to_dict()).id
-            hypnox_indicators.insert(0,
-                                     "indicator_id",
-                                     range(first_id,
-                                           first_id + len(indicators)))
-            HypnoxIndicator.insert_many(
-                hypnox_indicators.to_dict("records")).execute()
+            first_id = core.db.Indicator.get(**vanilla_indicators.iloc[0].to_dict()).id
+            hypnox_indicators.insert(
+                0, "indicator_id", range(first_id, first_id + len(indicators))
+            )
+            HypnoxIndicator.insert_many(hypnox_indicators.to_dict("records")).execute()

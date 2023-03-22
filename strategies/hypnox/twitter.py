@@ -17,7 +17,6 @@ print = core.watchdog.Watchdog().print
 
 
 class Stream(tweepy.StreamingClient):
-
     def on_disconnect(self):
         print("stream disconnect", exception="stream disconnect")
         super().on_disconnect()
@@ -31,7 +30,7 @@ class Stream(tweepy.StreamingClient):
         if status.in_reply_to_user_id:
             return
 
-        time = datetime.datetime.utcnow(),
+        time = (datetime.datetime.utcnow(),)
         text = status.text
 
         # make the tweet single-line
@@ -46,39 +45,32 @@ class Stream(tweepy.StreamingClient):
         try:
             tweet.save()
         except Exception as e:
-            if (isinstance(e, peewee.InterfaceError)
-                    or isinstance(e, peewee.OperationalError)):
+            if isinstance(e, peewee.InterfaceError) or isinstance(
+                e, peewee.OperationalError
+            ):
                 core.db.connection.close()
                 try:
                     core.db.connection.connect(reuse_if_open=True)
                     tweet.save()
                 except peewee.OperationalError:
-                    warning(
-                        "couldn't reestablish connection to database!")
+                    warning("couldn't reestablish connection to database!")
 
                     # log to cache csv
-                    print("error on inserting, caching instead",
-                          exception=e)
-                    output = pandas.DataFrame({
-                        "time": [time],
-                        "text": [text]
-                    })
+                    print("error on inserting, caching instead", exception=e)
+                    output = pandas.DataFrame({"time": [time], "text": [text]})
                     cache_file = core.config["LOGS_DIR"] + "/cache.tsv"
                     with open(cache_file, "a") as f:
-                        output.to_csv(f,
-                                      header=f.tell() == 0,
-                                      mode="a",
-                                      index=False,
-                                      sep="\t")
+                        output.to_csv(
+                            f, header=f.tell() == 0, mode="a", index=False, sep="\t"
+                        )
 
 
 def get_uids():
     client = tweepy.Client(core.config["TWITTER_BEARER_TOKEN"])
 
-    pending = core.strategies.hypnox. \
-        HypnoxUser \
-        .select() \
-        .where(core.strategies.hypnox.HypnoxUser.twitter_user_id.is_null())
+    pending = core.strategies.hypnox.HypnoxUser.select().where(
+        core.strategies.hypnox.HypnoxUser.twitter_user_id.is_null()
+    )
 
     for user in pending:
         t_user = client.get_user(username=user.username)
@@ -124,7 +116,7 @@ def stream():
 
     Watchdog(log="stream")
 
-    if (core.config["TWITTER_BEARER_TOKEN"] == ""):
+    if core.config["TWITTER_BEARER_TOKEN"] == "":
         raise core.errors.BaseError("missing TWITTER_BEARER_TOKEN!")
 
     stream = Stream(core.config["TWITTER_BEARER_TOKEN"])
@@ -144,9 +136,12 @@ def stream():
         try:
             stream.filter()
 
-        except (requests.exceptions.Timeout, ssl.SSLError,
-                urllib3.exceptions.ReadTimeoutError,
-                requests.exceptions.ConnectionError) as e:
+        except (
+            requests.exceptions.Timeout,
+            ssl.SSLError,
+            urllib3.exceptions.ReadTimeoutError,
+            requests.exceptions.ConnectionError,
+        ) as e:
             print("network error", exception=e)
 
         except Exception as e:
