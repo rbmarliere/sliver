@@ -10,21 +10,18 @@ import core
 def main(args):
     exchange = core.db.Exchange.get(name=args.exchange)
 
-    if args.timeframe not in core.utils.get_timeframes() \
-            or args.timeframe not in exchange.timeframes:
+    if (
+        args.timeframe not in core.utils.get_timeframes()
+        or args.timeframe not in exchange.timeframes
+    ):
         raise Exception("Invalid timeframe")
 
-    market = exchange \
-        .get_markets() \
-        .where(core.db.Market.symbol == args.symbol) \
-        .get()
+    market = exchange.get_markets().where(core.db.Market.symbol == args.symbol).get()
 
     if args.force:
-        core.db.Price \
-            .delete() \
-            .where(core.db.Price.market_id == market.id) \
-            .where(core.db.Price.timeframe == args.timeframe) \
-            .execute()
+        core.db.Price.delete().where(core.db.Price.market_id == market.id).where(
+            core.db.Price.timeframe == args.timeframe
+        ).execute()
 
     prices_df = pandas.DataFrame(market.get_prices(args.timeframe).dicts())
 
@@ -41,54 +38,44 @@ def main(args):
     input_df["market_id"] = market.id
     input_df["timeframe"] = args.timeframe
 
-    input_df[["open", "high", "low", "close"]] = \
-        input_df[["open", "high", "low", "close"]] \
-        .applymap(lambda x: market.quote.transform(x))
+    input_df[["open", "high", "low", "close"]] = input_df[
+        ["open", "high", "low", "close"]
+    ].applymap(lambda x: market.quote.transform(x))
 
-    input_df[["volume"]] = \
-        input_df[["volume"]] \
-        .applymap(lambda x: market.base.transform(x))
+    input_df[["volume"]] = input_df[["volume"]].applymap(
+        lambda x: market.base.transform(x)
+    )
 
     ins_count = 0
     rm_count = 0
-    ins_count = core.db.Price.insert_many(
-        input_df.to_dict("records")
-    ).execute()
+    ins_count = core.db.Price.insert_many(input_df.to_dict("records")).execute()
 
     if not prices_df.empty:
-        rm_count = core.db.Indicator.delete() \
-            .where(core.db.Indicator.price_id >= prices_df.iloc[0].id) \
-            .where(core.db.Indicator.price_id <= prices_df.iloc[-1].id) \
+        rm_count = (
+            core.db.Indicator.delete()
+            .where(core.db.Indicator.price_id >= prices_df.iloc[0].id)
+            .where(core.db.Indicator.price_id <= prices_df.iloc[-1].id)
             .execute()
+        )
 
     print("Imported {n} prices".format(n=ins_count.cursor.rowcount))
-    print("From {s} to {e}".format(s=input_df.time.min(),
-                                   e=input_df.time.max()))
+    print("From {s} to {e}".format(s=input_df.time.min(), e=input_df.time.max()))
     print("Removed {n} indicators".format(n=rm_count))
 
 
 if __name__ == "__main__":
     argp = argparse.ArgumentParser()
-    argp.add_argument("-i",
-                      "--input-file",
-                      help="CSV file to import",
-                      required=True)
-    argp.add_argument("-e",
-                      "--exchange",
-                      help="Exchange to import data for",
-                      required=True)
-    argp.add_argument("-s",
-                      "--symbol",
-                      help="Market symbol to import data for",
-                      required=True)
-    argp.add_argument("-t",
-                      "--timeframe",
-                      help="Timeframe to import data for",
-                      required=True)
-    argp.add_argument("-f",
-                      "--force",
-                      help="Delete existing data",
-                      action="store_true")
+    argp.add_argument("-i", "--input-file", help="CSV file to import", required=True)
+    argp.add_argument(
+        "-e", "--exchange", help="Exchange to import data for", required=True
+    )
+    argp.add_argument(
+        "-s", "--symbol", help="Market symbol to import data for", required=True
+    )
+    argp.add_argument(
+        "-t", "--timeframe", help="Timeframe to import data for", required=True
+    )
+    argp.add_argument("-f", "--force", help="Delete existing data", action="store_true")
     args = argp.parse_args()
 
     try:

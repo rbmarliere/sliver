@@ -8,14 +8,15 @@ import core
 
 if __name__ == "__main__":
     argp = argparse.ArgumentParser()
-    argp.add_argument("-p",
-                      "--position_id",
-                      help="position id to update all orders",
-                      required=True)
-    argp.add_argument("-f",
-                      "--fetch-orders",
-                      help="fetch orders from exchange before updating",
-                      action="store_true")
+    argp.add_argument(
+        "-p", "--position_id", help="position id to update all orders", required=True
+    )
+    argp.add_argument(
+        "-f",
+        "--fetch-orders",
+        help="fetch orders from exchange before updating",
+        action="store_true",
+    )
     args = argp.parse_args()
 
     try:
@@ -37,13 +38,14 @@ if __name__ == "__main__":
     for order in pos.get_orders():
         if args.fetch_orders:
             core.exchange.set_api(cred=cred)
-            ex_order = core.exchange.api.fetch_order(order.exchange_order_id,
-                                                     market.get_symbol())
+            ex_order = core.exchange.api.fetch_order(
+                order.exchange_order_id, market.get_symbol()
+            )
             order.sync(ex_order, pos)
         elif order.status != "open":
             pos.add_order(order)
 
     if pos.status == "closed":
-        pos.pnl = (pos.exit_cost - pos.entry_cost - pos.fee)
+        pos.pnl = pos.exit_cost - pos.entry_cost - pos.fee
 
     pos.save()

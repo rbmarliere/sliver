@@ -10,9 +10,7 @@ import core
 
 if __name__ == "__main__":
     argp = argparse.ArgumentParser()
-    argp.add_argument("--email",
-                      "-u",
-                      required=True)
+    argp.add_argument("--email", "-u", required=True)
     args = argp.parse_args()
 
     passwd = getpass.getpass("enter user password: ")
