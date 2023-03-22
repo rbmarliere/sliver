@@ -11,18 +11,14 @@ trailing_gain = peewee.BooleanField(default=False)
 trailing_loss = peewee.BooleanField(default=False)
 
 migrate(
-    migrator.add_column(core.db.Position._meta.table_name,
-                        "roi",
-                        roi),
-    migrator.add_column(core.db.Position._meta.table_name,
-                        "last_price",
-                        last_price),
-    migrator.add_column(core.db.Strategy._meta.table_name,
-                        "trailing_gain",
-                        trailing_gain),
-    migrator.add_column(core.db.Strategy._meta.table_name,
-                        "trailing_loss",
-                        trailing_loss),
+    migrator.add_column(core.db.Position._meta.table_name, "roi", roi),
+    migrator.add_column(core.db.Position._meta.table_name, "last_price", last_price),
+    migrator.add_column(
+        core.db.Strategy._meta.table_name, "trailing_gain", trailing_gain
+    ),
+    migrator.add_column(
+        core.db.Strategy._meta.table_name, "trailing_loss", trailing_loss
+    ),
 )
 
 for pos in core.db.Position.select():

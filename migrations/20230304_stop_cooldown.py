@@ -13,7 +13,7 @@ migrator = PostgresqlMigrator(core.db.connection)
 stop_cooldown = peewee.IntegerField(default=1440)  # 1 day
 
 migrate(
-    migrator.add_column(core.db.TradeEngine._meta.table_name,
-                        "stop_cooldown",
-                        stop_cooldown),
+    migrator.add_column(
+        core.db.TradeEngine._meta.table_name, "stop_cooldown", stop_cooldown
+    ),
 )

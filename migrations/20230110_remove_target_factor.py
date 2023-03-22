@@ -5,6 +5,4 @@ import core
 
 migrator = PostgresqlMigrator(core.db.connection)
 
-migrate(
-    migrator.drop_column("user", "target_factor")
-)
+migrate(migrator.drop_column("user", "target_factor"))

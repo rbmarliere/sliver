@@ -14,4 +14,3 @@ migrate(
     migrator.add_column("hypnoxstrategy", "i_l_threshold", col),
     migrator.add_column("hypnoxstrategy", "p_l_threshold", col),
 )
-

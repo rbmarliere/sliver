@@ -13,12 +13,8 @@ migrator = PostgresqlMigrator(core.db.connection)
 col = peewee.DateTimeField(null=True)
 
 migrate(
-    migrator.add_column(core.db.Position._meta.table_name,
-                        "entry_time",
-                        col),
-    migrator.add_column(core.db.Position._meta.table_name,
-                        "exit_time",
-                        col)
+    migrator.add_column(core.db.Position._meta.table_name, "entry_time", col),
+    migrator.add_column(core.db.Position._meta.table_name, "exit_time", col),
 )
 
 

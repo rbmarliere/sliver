@@ -8,7 +8,5 @@ timeframes = peewee.TextField(null=True)
 migrator = PostgresqlMigrator(core.db.connection)
 
 migrate(
-    migrator.add_column(core.db.Exchange._meta.table_name,
-                        "timeframes",
-                        timeframes)
+    migrator.add_column(core.db.Exchange._meta.table_name, "timeframes", timeframes)
 )

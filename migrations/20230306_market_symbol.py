@@ -10,9 +10,7 @@ migrator = PostgresqlMigrator(core.db.connection)
 symbol = peewee.TextField(null=True)
 
 migrate(
-    migrator.add_column(core.db.Market._meta.table_name,
-                        "symbol",
-                        symbol),
+    migrator.add_column(core.db.Market._meta.table_name, "symbol", symbol),
 )
 
 for m in core.db.Market.select():

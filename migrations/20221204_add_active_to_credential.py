@@ -7,8 +7,4 @@ active = peewee.BooleanField(default=False)
 
 migrator = PostgresqlMigrator(core.db.connection)
 
-migrate(
-    migrator.add_column(core.db.Credential._meta.table_name,
-                        "active",
-                        active)
-)
+migrate(migrator.add_column(core.db.Credential._meta.table_name, "active", active))
