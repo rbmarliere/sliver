@@ -25,18 +25,19 @@ class SwapperBoxStrategy(BaseStrategy):
 
         # signals = pandas.read_html(self.url)[1]
         si = pandas.read_csv("strategies/swapperbox/signals.tsv", sep="\t")
-        si.time = pandas.to_datetime(si.time) \
-            .dt.tz_localize("America/Sao_Paulo") \
-            .dt.tz_convert("UTC") \
+        si.time = (
+            pandas.to_datetime(si.time)
+            .dt.tz_localize("America/Sao_Paulo")
+            .dt.tz_convert("UTC")
             .dt.tz_localize(None)
+        )
         freq = core.utils.get_timeframe_freq(self.strategy.timeframe)
         si = si.set_index("time")
 
         si = si.resample(freq).ffill()
 
         indicators.signal = si.signal
-        until_last = indicators.loc[indicators.index < si.iloc[-1].name,
-                                    "signal"]
+        until_last = indicators.loc[indicators.index < si.iloc[-1].name, "signal"]
         indicators.signal = until_last.fillna(NEUTRAL)
 
         return indicators
@@ -66,9 +67,7 @@ class SwapperBoxStrategy(BaseStrategy):
 
             messages = pandas.concat([messages, new])
 
-            SwapperBoxMessage.\
-                insert_many(new.to_dict(orient="records")) \
-                .execute()
+            SwapperBoxMessage.insert_many(new.to_dict(orient="records")).execute()
 
         return messages
 
@@ -110,14 +109,17 @@ class SwapperBoxStrategy(BaseStrategy):
                 messages = messages.resample(freq).last().bfill()
 
             shorts = messages.loc[
-                messages.text.str.contains("position: SHORT", na=False)].index
+                messages.text.str.contains("position: SHORT", na=False)
+            ].index
             longs = messages.loc[
-                messages.text.str.contains("position: LONG", na=False)].index
+                messages.text.str.contains("position: LONG", na=False)
+            ].index
             missing.loc[missing.index.isin(longs), "signal"] = BUY
             missing.loc[missing.index.isin(shorts), "signal"] = SELL
 
-            indicators.loc[indicators.index.isin(missing.index), "signal"] = \
-                missing.signal
+            indicators.loc[
+                indicators.index.isin(missing.index), "signal"
+            ] = missing.signal
 
         indicators = indicators.loc[indicators.indicator_id.isnull()].copy()
 
@@ -126,6 +128,5 @@ class SwapperBoxStrategy(BaseStrategy):
             indicators["price"] = indicators.id
 
             core.db.Indicator.insert_many(
-                indicators[["strategy", "price", "signal"]]
-                .to_dict("records")
+                indicators[["strategy", "price", "signal"]].to_dict("records")
             ).execute()

@@ -8,9 +8,9 @@ from ..base import BaseStrategy
 
 
 class BBIndicator(core.db.BaseModel):
-    indicator = peewee.ForeignKeyField(core.db.Indicator,
-                                       primary_key=True,
-                                       on_delete="CASCADE")
+    indicator = peewee.ForeignKeyField(
+        core.db.Indicator, primary_key=True, on_delete="CASCADE"
+    )
     ma = peewee.BigIntegerField(null=True)
     bolu = peewee.BigIntegerField(null=True)
     bold = peewee.BigIntegerField(null=True)
@@ -23,10 +23,12 @@ class BBStrategy(BaseStrategy):
     num_std = peewee.IntegerField(default=2)
 
     def get_indicators(self):
-        return super() \
-            .get_indicators() \
-            .select(*[*self.select_fields, BBIndicator]) \
+        return (
+            super()
+            .get_indicators()
+            .select(*[*self.select_fields, BBIndicator])
             .join(BBIndicator, peewee.JOIN.LEFT_OUTER)
+        )
 
     def get_indicators_df(self):
         df = super().get_indicators_df(self.get_indicators())
@@ -42,16 +44,16 @@ class BBStrategy(BaseStrategy):
         df.replace({float("nan"): None}, inplace=True)
 
         df.ma = df.apply(
-            lambda x: core.utils.quantize(x, "ma", "price_precision"),
-            axis=1)
+            lambda x: core.utils.quantize(x, "ma", "price_precision"), axis=1
+        )
 
         df.bolu = df.apply(
-            lambda x: core.utils.quantize(x, "bolu", "price_precision"),
-            axis=1)
+            lambda x: core.utils.quantize(x, "bolu", "price_precision"), axis=1
+        )
 
         df.bold = df.apply(
-            lambda x: core.utils.quantize(x, "bold", "price_precision"),
-            axis=1)
+            lambda x: core.utils.quantize(x, "bold", "price_precision"), axis=1
+        )
 
         return df
 
@@ -65,8 +67,7 @@ class BBStrategy(BaseStrategy):
 
         indicators = pandas.DataFrame(self.get_indicators().dicts())
 
-        indicators.tp = \
-            (indicators.high + indicators.low + indicators.close) / 3
+        indicators.tp = (indicators.high + indicators.low + indicators.close) / 3
 
         if self.use_ema:
             indicators.ma = indicators.tp.ewm(span=self.ma_period).mean()
@@ -95,8 +96,7 @@ class BBStrategy(BaseStrategy):
             indicators["price"] = indicators.id
 
             core.db.Indicator.insert_many(
-                indicators[["strategy", "price", "signal"]]
-                .to_dict("records")
+                indicators[["strategy", "price", "signal"]].to_dict("records")
             ).execute()
 
             first = indicators[["strategy", "price", "signal"]].iloc[0]
@@ -104,6 +104,5 @@ class BBStrategy(BaseStrategy):
             indicators.indicator = range(first_id, first_id + len(indicators))
 
             BBIndicator.insert_many(
-                indicators[["indicator", "ma", "bolu", "bold", "tp"]]
-                .to_dict("records")
+                indicators[["indicator", "ma", "bolu", "bold", "tp"]].to_dict("records")
             ).execute()

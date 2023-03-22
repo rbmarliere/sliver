@@ -9,9 +9,9 @@ from ..base import BaseStrategy
 
 
 class MixerIndicator(core.db.BaseModel):
-    indicator = peewee.ForeignKeyField(core.db.Indicator,
-                                       primary_key=True,
-                                       on_delete="CASCADE")
+    indicator = peewee.ForeignKeyField(
+        core.db.Indicator, primary_key=True, on_delete="CASCADE"
+    )
     buy_w_signal = peewee.DecimalField(default=0)
     sell_w_signal = peewee.DecimalField(default=0)
 
@@ -21,10 +21,12 @@ class MixerStrategy(BaseStrategy):
     sell_threshold = peewee.DecimalField(default=-1)
 
     def get_indicators(self):
-        return super() \
-            .get_indicators() \
-            .select(*[*self.select_fields, MixerIndicator]) \
+        return (
+            super()
+            .get_indicators()
+            .select(*[*self.select_fields, MixerIndicator])
             .join(MixerIndicator, peewee.JOIN.LEFT_OUTER)
+        )
 
     def get_indicators_df(self):
         return super().get_indicators_df(self.get_indicators())
@@ -45,7 +47,8 @@ class MixerStrategy(BaseStrategy):
 
         for mixin in self.strategy.mixins:
             strategy = core.strategies.load(
-                core.db.Strategy.get_by_id(mixin.strategy_id))
+                core.db.Strategy.get_by_id(mixin.strategy_id)
+            )
             mixind = pandas.DataFrame(strategy.get_indicators().dicts())
             mixind = mixind.set_index("time")
 
@@ -63,8 +66,9 @@ class MixerStrategy(BaseStrategy):
             mixind["sell_w_signal"] = mixind["signal"] * mixind["sell_weight"]
             indicators["sell_w_signal"] += mixind["sell_w_signal"]
 
-        not_null = ((indicators['buy_w_signal'].notna())
-                    | (indicators['sell_w_signal'].notna()))
+        not_null = (indicators["buy_w_signal"].notna()) | (
+            indicators["sell_w_signal"].notna()
+        )
         indicators = indicators[not_null].copy()
 
         indicators.buy_w_signal.clip(lower=0, inplace=True)
@@ -73,8 +77,12 @@ class MixerStrategy(BaseStrategy):
         weighted_signal = indicators.buy_w_signal + indicators.sell_w_signal
 
         indicators["signal"] = weighted_signal.apply(
-            lambda x: BUY if x >= self.buy_threshold else
-            SELL if x <= self.sell_threshold else NEUTRAL)
+            lambda x: BUY
+            if x >= self.buy_threshold
+            else SELL
+            if x <= self.sell_threshold
+            else NEUTRAL
+        )
 
         # insert only new indicators
         indicators = indicators.loc[indicators.indicator.isnull()]
@@ -87,8 +95,7 @@ class MixerStrategy(BaseStrategy):
 
         with core.db.connection.atomic():
             core.db.Indicator.insert_many(
-                indicators[["strategy", "price", "signal"]]
-                .to_dict("records")
+                indicators[["strategy", "price", "signal"]].to_dict("records")
             ).execute()
 
             first = indicators[["strategy", "price", "signal"]].iloc[0]
@@ -96,17 +103,17 @@ class MixerStrategy(BaseStrategy):
             indicators.indicator = range(first_id, first_id + len(indicators))
 
             MixerIndicator.insert_many(
-                indicators[["indicator", "buy_w_signal", "sell_w_signal"]]
-                .to_dict("records")
+                indicators[["indicator", "buy_w_signal", "sell_w_signal"]].to_dict(
+                    "records"
+                )
             ).execute()
 
 
 class MixedStrategies(core.db.BaseModel):
-    mixer = peewee.ForeignKeyField(core.db.Strategy,
-                                   on_delete="CASCADE",
-                                   backref="mixins")
-    strategy = peewee.ForeignKeyField(core.db.Strategy,
-                                      on_delete="CASCADE")
+    mixer = peewee.ForeignKeyField(
+        core.db.Strategy, on_delete="CASCADE", backref="mixins"
+    )
+    strategy = peewee.ForeignKeyField(core.db.Strategy, on_delete="CASCADE")
     buy_weight = peewee.DecimalField(default=1)
     sell_weight = peewee.DecimalField(default=1)
 

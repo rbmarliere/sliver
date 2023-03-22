@@ -29,23 +29,31 @@ class BaseStrategy(core.db.BaseModel):
 
     def get_signal(self):
         try:
-            signal = self.strategy \
-                .indicator_set \
-                .where(core.db.Indicator.signal
-                       != core.strategies.Signal.NEUTRAL) \
-                .order_by(core.db.Indicator.id.desc()) \
-                .get().signal
+            signal = (
+                self.strategy.indicator_set.where(
+                    core.db.Indicator.signal != core.strategies.Signal.NEUTRAL
+                )
+                .order_by(core.db.Indicator.id.desc())
+                .get()
+                .signal
+            )
             return core.strategies.Signal(signal)
         except core.db.Indicator.DoesNotExist:
             return core.strategies.Signal.NEUTRAL
 
     def get_indicators(self):
-        return self.strategy.get_prices() \
-            .select(*self.select_fields) \
-            .join(core.db.Indicator,
-                  peewee.JOIN.LEFT_OUTER,
-                  on=((core.db.Indicator.price_id == core.db.Price.id)
-                      & (core.db.Indicator.strategy == self)))
+        return (
+            self.strategy.get_prices()
+            .select(*self.select_fields)
+            .join(
+                core.db.Indicator,
+                peewee.JOIN.LEFT_OUTER,
+                on=(
+                    (core.db.Indicator.price_id == core.db.Price.id)
+                    & (core.db.Indicator.strategy == self)
+                ),
+            )
+        )
 
     def get_indicators_df(self, query=None):
         BUY = core.strategies.Signal.BUY
@@ -74,12 +82,8 @@ class BaseStrategy(core.db.BaseModel):
         sig = df.loc[df.signal != 0]
 
         # remove consecutive duplicated signals
-        b = sig \
-            .loc[sig.signal.shift() != sig.signal] \
-            .loc[sig.signal == BUY].index
-        s = sig \
-            .loc[sig.signal.shift() != sig.signal] \
-            .loc[sig.signal == SELL].index
+        b = sig.loc[sig.signal.shift() != sig.signal].loc[sig.signal == BUY].index
+        s = sig.loc[sig.signal.shift() != sig.signal].loc[sig.signal == SELL].index
 
         df["buys"] = D(0)
         df["sells"] = D(0)
@@ -90,34 +94,34 @@ class BaseStrategy(core.db.BaseModel):
         df = df.reset_index()
 
         df.buys = df.apply(
-            lambda x: core.utils.quantize(x, "buys", "price_precision"),
-            axis=1)
+            lambda x: core.utils.quantize(x, "buys", "price_precision"), axis=1
+        )
         df.buys.replace({0: None}, inplace=True)
 
         df.sells = df.apply(
-            lambda x: core.utils.quantize(x, "sells", "price_precision"),
-            axis=1)
+            lambda x: core.utils.quantize(x, "sells", "price_precision"), axis=1
+        )
         df.sells.replace({0: None}, inplace=True)
 
         df.open = df.apply(
-            lambda x: core.utils.quantize(x, "open", "price_precision"),
-            axis=1)
+            lambda x: core.utils.quantize(x, "open", "price_precision"), axis=1
+        )
 
         df.high = df.apply(
-            lambda x: core.utils.quantize(x, "high", "price_precision"),
-            axis=1)
+            lambda x: core.utils.quantize(x, "high", "price_precision"), axis=1
+        )
 
         df.low = df.apply(
-            lambda x: core.utils.quantize(x, "low", "price_precision"),
-            axis=1)
+            lambda x: core.utils.quantize(x, "low", "price_precision"), axis=1
+        )
 
         df.close = df.apply(
-            lambda x: core.utils.quantize(x, "close", "price_precision"),
-            axis=1)
+            lambda x: core.utils.quantize(x, "close", "price_precision"), axis=1
+        )
 
         df.volume = df.apply(
-            lambda x: core.utils.quantize(x, "volume", "amount_precision"),
-            axis=1)
+            lambda x: core.utils.quantize(x, "volume", "amount_precision"), axis=1
+        )
 
         return df
 
