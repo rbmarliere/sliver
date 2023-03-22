@@ -114,8 +114,6 @@ def stream():
     argp.add_argument("--reset", action="store_true")
     args = argp.parse_args()
 
-    Watchdog(log="stream")
-
     if core.config["TWITTER_BEARER_TOKEN"] == "":
         raise core.errors.BaseError("missing TWITTER_BEARER_TOKEN!")
 
@@ -153,4 +151,5 @@ def stream():
 
 
 if __name__ == "__main__":
+    core.watchdog.Watchdog().logger = "stream"
     stream()

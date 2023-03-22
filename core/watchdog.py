@@ -13,16 +13,28 @@ class WatchdogMeta(type):
 
 
 class Watchdog(metaclass=WatchdogMeta):
-    logger = None
     position = None
     strategy = None
     user_strat = None
 
     def __init__(self, log="watchdog"):
-        self.stdout = core.utils.get_logger(log)
-        self.stderr = core.utils.get_logger(log + "_err", suppress_output=True)
+        self.logger = log
+
+    @property
+    def logger(self):
+        return self._logger
+
+    @logger.setter
+    def logger(self, logger):
+        stdout = core.utils.get_logger(logger)
+        stderr = core.utils.get_logger(logger + "_err", suppress_output=True)
+
+        self._logger = (stdout, stderr)
 
     def print(self, message=None, exception=None):
+        stdout = self.logger[0]
+        stderr = self.logger[1]
+
         if exception:
             exception_msg = "{e} {err}".format(
                 e=exception.__class__.__name__, err=exception
@@ -32,10 +44,10 @@ class Watchdog(metaclass=WatchdogMeta):
             else:
                 message = exception_msg
 
-            self.stderr.exception(exception, exc_info=True)
+            stderr.exception(exception, exc_info=True)
             core.alert.send_message(message)
 
-        self.stdout.info(message)
+        stdout.info(message)
 
     def run_loop(self):
         # self.refresh_risk()
