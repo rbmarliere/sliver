@@ -9,22 +9,15 @@ import core
 
 if __name__ == "__main__":
     argp = argparse.ArgumentParser()
-    argp.add_argument("-e",
-                      "--exchange-name",
-                      help="exchange name to fetch from",
-                      required=True)
-    argp.add_argument("-t",
-                      "--type",
-                      help="exchange type",
-                      type=int,
-                      required=True)
-    argp.add_argument("--api-endpoint",
-                      help="exchange api endpoint")
-    argp.add_argument("--api-sandbox-endpoint",
-                      help="exchange api sandbox endpoint")
+    argp.add_argument(
+        "-e", "--exchange-name", help="exchange name to fetch from", required=True
+    )
+    argp.add_argument("-t", "--type", help="exchange type", type=int, required=True)
+    argp.add_argument("--api-endpoint", help="exchange api endpoint")
+    argp.add_argument("--api-sandbox-endpoint", help="exchange api sandbox endpoint")
     args = argp.parse_args()
 
-    timeframes = ['15m', '30m', '4h', '1h', '1w', '1d']
+    timeframes = ["15m", "30m", "4h", "1h", "1w", "1d"]
 
     obj = {
         "name": args.exchange_name,
@@ -33,7 +26,7 @@ if __name__ == "__main__":
         "padding_mode": 0,
         "timeframes": timeframes,
         "api_endpoint": args.api_endpoint,
-        "api_sandbox_endpoint": args.api_sandbox_endpoint
+        "api_sandbox_endpoint": args.api_sandbox_endpoint,
     }
 
     if args.type == core.exchanges.Types.CCXT:

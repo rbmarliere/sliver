@@ -17,10 +17,12 @@ if __name__ == "__main__":
     argp.add_argument("--name", required=True)
     argp.add_argument("--host", required=True)
     argp.add_argument("--user", required=True)
-    argp.add_argument("-u",
-                      "--update-only",
-                      help="if unset, reset table and download everything",
-                      action="store_true")
+    argp.add_argument(
+        "-u",
+        "--update-only",
+        help="if unset, reset table and download everything",
+        action="store_true",
+    )
     args = argp.parse_args()
 
     passwd = getpass.getpass("enter db password: ")
@@ -33,11 +35,8 @@ if __name__ == "__main__":
         tweet_table.create_table()
 
     db = peewee.PostgresqlDatabase(
-        args.name, **{
-            "host": args.host,
-            "user": args.user,
-            "password": passwd
-        })
+        args.name, **{"host": args.host, "user": args.user, "password": passwd}
+    )
     db.bind([tweet_table])
     db.connect()
 
