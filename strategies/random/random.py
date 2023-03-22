@@ -28,13 +28,13 @@ class RandomStrategy(BaseStrategy):
 
         indicators["strategy"] = self.strategy.id
 
-        indicators = indicators.rename(columns={
-            "id": "price_id",
-            "strategy": "strategy_id"
-        })
+        indicators = indicators.rename(
+            columns={"id": "price_id", "strategy": "strategy_id"}
+        )
 
         indicators.signal = indicators.signal.apply(
-            lambda x: random.choice([BUY, NEUTRAL, SELL]))
+            lambda x: random.choice([BUY, NEUTRAL, SELL])
+        )
 
         indicators = indicators[["price_id", "strategy_id", "signal"]]
 
