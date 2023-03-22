@@ -24,8 +24,7 @@ def send_user_message(user, msg):
                         user.telegram_chat_id = update.message.chat.id
                         user.save()
 
-            bot.send_message(text=msg,
-                             chat_id=user.telegram_chat_id)
+            bot.send_message(text=msg, chat_id=user.telegram_chat_id)
 
         except (KeyError, AssertionError):
             pass
@@ -45,8 +44,7 @@ def send_message(message):
 
             bot = telegram.Bot(core.config["TELEGRAM_BOT_TOKEN"])
 
-            bot.send_message(text=message,
-                             chat_id=core.config["TELEGRAM_CHANNEL"])
+            bot.send_message(text=message, chat_id=core.config["TELEGRAM_CHANNEL"])
 
         except (KeyError, AssertionError):
             pass
@@ -73,9 +71,7 @@ def get_messages(username, limit=1):
             try:
                 telethon_client
             except NameError:
-                telethon_client = telethon.TelegramClient(session,
-                                                          api_id,
-                                                          api_hash)
+                telethon_client = telethon.TelegramClient(session, api_id, api_hash)
 
                 telethon_client.connect()
 
@@ -88,9 +84,10 @@ def get_messages(username, limit=1):
 
             if limit is None or limit > 0:
                 print(
-                    "downloading {l} messages from {u}"
-                    .format(u=username,
-                            l="all" if limit is None else limit))
+                    "downloading {l} messages from {u}".format(
+                        u=username, l="all" if limit is None else limit
+                    )
+                )
 
             try:
                 m = telethon_client.get_messages(username, limit=limit)
@@ -102,6 +99,6 @@ def get_messages(username, limit=1):
             return m
 
         except Exception as e:
-            raise core.errors.BaseError("swapperbox: {err} {e}"
-                                        .format(err=e.__class__.__name__,
-                                                e=e))
+            raise core.errors.BaseError(
+                "swapperbox: {err} {e}".format(err=e.__class__.__name__, e=e)
+            )

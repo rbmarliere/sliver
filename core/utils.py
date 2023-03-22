@@ -39,7 +39,7 @@ def get_timeframes():
         "12h",
         "1d",
         "3d",
-        "1w"
+        "1w",
     ]
 
 
@@ -61,7 +61,7 @@ def get_timeframe_freq(timeframe):
         "12h": "12H",
         "1d": "1D",
         "3d": "3D",
-        "1w": "W-MON"
+        "1w": "W-MON",
     }
 
     assert timeframe in timeframes, "timeframe not supported"
@@ -107,23 +107,28 @@ def get_next_refresh(interval_in_minutes):
     return next_refresh
 
 
-def get_mean_var(series: pandas.DataFrame,
-                 n: int,
-                 old_mean: decimal.Decimal,
-                 old_var: decimal.Decimal):
+def get_mean_var(
+    series: pandas.DataFrame,
+    n: int,
+    old_mean: decimal.Decimal,
+    old_var: decimal.Decimal,
+):
     # https://math.stackexchange.com/questions/102978/incremental-computation-of-standard-deviation
     n = decimal.Decimal(str(n))
     for i, x in series.items():
         x = decimal.Decimal(str(x))
         n += 1
 
-        new_mean = (old_mean*(n-1) + x) / n
+        new_mean = (old_mean * (n - 1) + x) / n
 
         if n == 1:
             new_var = 0
         else:
-            new_var = ((n-2)*old_var + (n-1)*(old_mean - new_mean)
-                       ** 2 + (x - new_mean)**2) / (n-1)
+            new_var = (
+                (n - 2) * old_var
+                + (n - 1) * (old_mean - new_mean) ** 2
+                + (x - new_mean) ** 2
+            ) / (n - 1)
 
         old_var = new_var
         old_mean = new_mean
@@ -152,16 +157,14 @@ def quantize(row, col, prec_col):
 
 
 def get_logger(log, suppress_output=False):
-    log_file = "{dir}/{log}.log".format(dir=core.config["LOGS_DIR"],
-                                        log=log)
+    log_file = "{dir}/{log}.log".format(dir=core.config["LOGS_DIR"], log=log)
 
     formatter = logging.Formatter("%(asctime)s -- %(message)s")
     formatter.converter = time.gmtime
 
     file_handler = logging.handlers.RotatingFileHandler(
-        log_file,
-        maxBytes=52428800,  # 50mb
-        backupCount=32)
+        log_file, maxBytes=52428800, backupCount=32  # 50mb
+    )
     file_handler.setFormatter(formatter)
 
     log = logging.getLogger(log)

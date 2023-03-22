@@ -24,7 +24,7 @@ config = [
     "TELEGRAM_BOT_TOKEN",
     "TELEGRAM_CHANNEL",
     "TWITTER_BEARER_TOKEN",
-    "WATCHDOG_INTERVAL"
+    "WATCHDOG_INTERVAL",
 ]
 
 error = False
@@ -56,9 +56,10 @@ from . import (  # noqa 402
     errors,
     inventory,
 )
+
 __all__ = [
     "utils",
-    "watchdog"
+    "watchdog",
     "alert",
     "db",
     "errors",
