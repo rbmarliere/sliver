@@ -6,7 +6,7 @@ import core
 def main():
     watchdog = core.watchdog.Watchdog()
 
-    while (True):
+    while True:
         try:
             watchdog.run_loop()
 

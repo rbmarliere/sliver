@@ -8,18 +8,18 @@ import core
 
 print = core.watchdog.Watchdog().print
 
-connection = peewee.PostgresqlDatabase(core.config["DB_NAME"],
-                                       **{
-                                           "host": core.config["DB_HOST"],
-                                           "user": core.config["DB_USER"],
-                                           "password":
-                                           core.config["DB_PASSWORD"]
-                                       },
-                                       autoconnect=True)
+connection = peewee.PostgresqlDatabase(
+    core.config["DB_NAME"],
+    **{
+        "host": core.config["DB_HOST"],
+        "user": core.config["DB_USER"],
+        "password": core.config["DB_PASSWORD"],
+    },
+    autoconnect=True
+)
 
 
 class BaseModel(peewee.Model):
-
     class Meta:
         database = connection
 
@@ -39,11 +39,12 @@ class Exchange(BaseModel):
     api_sandbox_endpoint = peewee.TextField(null=True)
 
     def get_markets(self):
-        return Market \
-            .select() \
-            .join(Exchange) \
-            .where(Exchange.id == self.id) \
+        return (
+            Market.select()
+            .join(Exchange)
+            .where(Exchange.id == self.id)
             .order_by(Exchange.id)
+        )
 
 
 class User(BaseModel):
@@ -56,75 +57,73 @@ class User(BaseModel):
     telegram_chat_id = peewee.TextField(null=True)
 
     def get_exchange_credential(self, exchange: Exchange):
-        return self \
-            .credential_set \
-            .where(Credential.exchange == exchange)
+        return self.credential_set.where(Credential.exchange == exchange)
 
     def get_active_credential(self, exchange: Exchange):
-        return self.get_exchange_credential(exchange) \
-            .where(Credential.active)
+        return self.get_exchange_credential(exchange).where(Credential.active)
 
     def get_balances_by_asset(self, asset: Asset):
-        return Balance \
-            .select() \
-            .join(ExchangeAsset,
-                  on=(Balance.asset_id == ExchangeAsset.id)) \
-            .join(Asset) \
-            .switch(Balance) \
-            .join(User) \
-            .where(Balance.user_id == self.id) \
-            .where(Asset.id == asset.id) \
+        return (
+            Balance.select()
+            .join(ExchangeAsset, on=(Balance.asset_id == ExchangeAsset.id))
+            .join(Asset)
+            .switch(Balance)
+            .join(User)
+            .where(Balance.user_id == self.id)
+            .where(Asset.id == asset.id)
             .order_by(Asset.ticker)
+        )
 
     def get_open_positions(self):
-        return get_open_positions() \
-            .where(UserStrategy.user_id == self.id)
+        return get_open_positions().where(UserStrategy.user_id == self.id)
 
     def get_exchange_open_positions(self, exchange: Exchange):
-        return self.get_open_positions() \
-            .join(Market) \
-            .join(Exchange) \
+        return (
+            self.get_open_positions()
+            .join(Market)
+            .join(Exchange)
             .where(Exchange.id == exchange.id)
+        )
 
     def get_exchange_strategies(self, exchange: Exchange):
-        return self.userstrategy_set \
-            .join(Strategy) \
-            .join(Market) \
-            .join(Exchange) \
-            .where(Exchange.id == exchange.id) \
-            .where(UserStrategy.user_id == self.id) \
-            .where(UserStrategy.active) \
+        return (
+            self.userstrategy_set.join(Strategy)
+            .join(Market)
+            .join(Exchange)
+            .where(Exchange.id == exchange.id)
+            .where(UserStrategy.user_id == self.id)
+            .where(UserStrategy.active)
             .where(Strategy.active)
+        )
 
     def get_positions(self):
         base = Asset.alias()
         base_exchange_asset = ExchangeAsset.alias()
         quote = Asset.alias()
         quote_exchange_asset = ExchangeAsset.alias()
-        return Position \
-            .select(Position,
-                    Strategy.id.alias("strategy_id"),
-                    Market.id.alias("market_id"),
-                    base.ticker.alias("base_ticker"),
-                    base_exchange_asset.precision.alias("base_precision"),
-                    quote.ticker.alias("quote_ticker"),
-                    quote_exchange_asset.precision.alias("quote_precision"),
-                    Market.amount_precision,
-                    Market.price_precision) \
-            .join(UserStrategy) \
-            .join(Strategy) \
-            .join(Market) \
-            .join(base_exchange_asset,
-                  on=(Market.base_id == base_exchange_asset.id)) \
-            .join(base,
-                  on=(base_exchange_asset.asset_id == base.id)) \
-            .switch(Market) \
-            .join(quote_exchange_asset,
-                  on=(Market.quote_id == quote_exchange_asset.id)) \
-            .join(quote,
-                  on=(quote_exchange_asset.asset_id == quote.id)) \
-            .where(UserStrategy.user_id == self.id) \
+        return (
+            Position.select(
+                Position,
+                Strategy.id.alias("strategy_id"),
+                Market.id.alias("market_id"),
+                base.ticker.alias("base_ticker"),
+                base_exchange_asset.precision.alias("base_precision"),
+                quote.ticker.alias("quote_ticker"),
+                quote_exchange_asset.precision.alias("quote_precision"),
+                Market.amount_precision,
+                Market.price_precision,
+            )
+            .join(UserStrategy)
+            .join(Strategy)
+            .join(Market)
+            .join(base_exchange_asset, on=(Market.base_id == base_exchange_asset.id))
+            .join(base, on=(base_exchange_asset.asset_id == base.id))
+            .switch(Market)
+            .join(quote_exchange_asset, on=(Market.quote_id == quote_exchange_asset.id))
+            .join(quote, on=(quote_exchange_asset.asset_id == quote.id))
+            .where(UserStrategy.user_id == self.id)
             .order_by(Position.id.desc())
+        )
 
     def is_subscribed(self, strategy_id):
         for u_st in self.userstrategy_set:
@@ -148,8 +147,9 @@ class Credential(BaseModel):
 
     def disable(self):
         print("disabling credential {s}...".format(s=self))
-        self.user.send_message("disabled credential for exchange {e}".format(
-            e=self.exchange.name))
+        self.user.send_message(
+            "disabled credential for exchange {e}".format(e=self.exchange.name)
+        )
         self.active = False
         self.save()
 
@@ -175,12 +175,12 @@ class ExchangeAsset(BaseModel):
             return 0
         if prec is None:
             prec = self.precision
-        precision = D("10")**D(str(-1 * self.precision))
+        precision = D("10") ** D(str(-1 * self.precision))
         value = D(str(value)) * precision
         if prec == self.precision:
             return value.quantize(precision)
         else:
-            trunc_precision = D("10")**D(str(-1 * prec))
+            trunc_precision = D("10") ** D(str(-1 * prec))
             return value.quantize(trunc_precision)
 
     def transform(self, value, prec=None):
@@ -188,14 +188,12 @@ class ExchangeAsset(BaseModel):
             return 0
         if prec is None:
             prec = self.precision
-        precision = D("10")**D(str(prec))
+        precision = D("10") ** D(str(prec))
         return int(D(str(value)) * precision)
 
     def print(self, value):
         value = self.format(value)
-        return "{n:.{p}f} {t}".format(n=value,
-                                      p=self.precision,
-                                      t=self.asset.ticker)
+        return "{n:.{p}f} {t}".format(n=value, p=self.precision, t=self.asset.ticker)
 
 
 class Balance(BaseModel):
@@ -231,11 +229,12 @@ class Market(BaseModel):
         return self.base.asset.ticker + "/" + self.quote.asset.ticker
 
     def get_prices(self, timeframe: str):
-        return Price \
-            .select() \
-            .where(Price.market_id == self.id) \
-            .where(Price.timeframe == timeframe) \
+        return (
+            Price.select()
+            .where(Price.market_id == self.id)
+            .where(Price.timeframe == timeframe)
             .order_by(Price.time)
+        )
 
 
 class TradeEngine(BaseModel):
@@ -283,8 +282,7 @@ class Strategy(BaseModel):
         print("sell engine is {e}".format(e=self.sell_engine_id))
         print("stop engine is {e}".format(e=self.stop_engine_id))
 
-        core.exchanges.load(self.market.base.exchange,
-                            strategy=self).fetch_ohlcv()
+        core.exchanges.load(self.market.base.exchange, strategy=self).fetch_ohlcv()
 
         core.strategies.load(self).refresh()
 
@@ -311,11 +309,15 @@ class Strategy(BaseModel):
 
     def postpone(self, interval_in_minutes=None):
         if interval_in_minutes is None:
-            interval_in_minutes = \
+            interval_in_minutes = (
                 core.utils.get_timeframe_in_seconds(self.timeframe) / 60
+            )
         self.next_refresh = core.utils.get_next_refresh(interval_in_minutes)
-        print("postponed strategy {i} next refresh at {n}".format(
-            i=self.id, n=self.next_refresh))
+        print(
+            "postponed strategy {i} next refresh at {n}".format(
+                i=self.id, n=self.next_refresh
+            )
+        )
         self.save()
 
     def subscribe(self, user, subscribed):
@@ -325,9 +327,11 @@ class Strategy(BaseModel):
         # user can only subscribe to one strategy per market
         if subscribed:
             for u_st in user.userstrategy_set:
-                if u_st.strategy.market == self.market \
-                        and u_st.strategy != self \
-                        and u_st.active:
+                if (
+                    u_st.strategy.market == self.market
+                    and u_st.strategy != self
+                    and u_st.active
+                ):
                     raise core.errors.MarketAlreadySubscribed
 
         user_strat_exists = False
@@ -338,14 +342,14 @@ class Strategy(BaseModel):
                 u_st.save()
 
         if not user_strat_exists:
-            core.db.UserStrategy(user=user, strategy=self,
-                                 active=subscribed).save()
+            core.db.UserStrategy(user=user, strategy=self, active=subscribed).save()
 
     def get_active_users(self):
-        return UserStrategy \
-            .select() \
-            .join(Strategy) \
+        return (
+            UserStrategy.select()
+            .join(Strategy)
             .where((Strategy.id == self.id) & (UserStrategy.active))
+        )
 
     def get_prices(self):
         return self.market.get_prices(self.timeframe)
@@ -361,23 +365,26 @@ class UserStrategy(BaseModel):
 
     def disable(self):
         print("disabling user's strategy {s}...".format(s=self))
-        self.user.send_message(
-            "disabled strategy {s}".format(s=self.strategy.id))
+        self.user.send_message("disabled strategy {s}".format(s=self.strategy.id))
         self.active = False
         self.save()
 
     def get_active_position_or_none(self):
-        return get_open_positions() \
-            .where(UserStrategy.user_id == self.user_id) \
-            .where(UserStrategy.strategy_id == self.strategy_id) \
+        return (
+            get_open_positions()
+            .where(UserStrategy.user_id == self.user_id)
+            .where(UserStrategy.strategy_id == self.strategy_id)
             .get_or_none()
+        )
 
     def get_last_position_or_none(self):
-        return get_active_positions() \
-            .where(UserStrategy.user_id == self.user_id) \
-            .where(UserStrategy.strategy_id == self.strategy_id) \
-            .order_by(core.db.Position.id.desc()) \
+        return (
+            get_active_positions()
+            .where(UserStrategy.user_id == self.user_id)
+            .where(UserStrategy.strategy_id == self.strategy_id)
+            .order_by(core.db.Position.id.desc())
             .get_or_none()
+        )
 
     def refresh(self):
         strategy = self.strategy
@@ -391,9 +398,7 @@ class UserStrategy(BaseModel):
         position = self.get_active_position_or_none()
 
         if position is None:
-
             if strategy.get_signal() == BUY:
-
                 if strategy.stop_engine:
                     cooldown = strategy.stop_engine.stop_cooldown
                     last_pos = self.get_last_position_or_none()
@@ -405,7 +410,7 @@ class UserStrategy(BaseModel):
 
                 t_cost = core.inventory.get_target_cost(self)
 
-                if (t_cost == 0 or t_cost < strategy.market.cost_min):
+                if t_cost == 0 or t_cost < strategy.market.cost_min:
                     print("invalid target_cost, can't create position")
                     return
 
@@ -461,9 +466,9 @@ class Position(BaseModel):
         exchange = self.user_strategy.strategy.market.base.exchange
         try:
             credential = user.get_active_credential(exchange).get()
-            self._exchange = core.exchanges.load(exchange,
-                                                 credential=credential,
-                                                 position=self)
+            self._exchange = core.exchanges.load(
+                exchange, credential=credential, position=self
+            )
         except Credential.DoesNotExist:
             self.user_strategy.disable()
 
@@ -473,14 +478,18 @@ class Position(BaseModel):
         market = self.user_strategy.strategy.market
         p = self.exchange.api_fetch_last_price(market.get_symbol())
 
-        return ("{p}position {pid} of strategy {s} in market {m} ({e}) {su}, "
-                "last price is {lp}".format(p=prefix,
-                                            pid=self.id,
-                                            s=self.user_strategy.strategy,
-                                            m=market.get_symbol(),
-                                            e=market.quote.exchange.name,
-                                            su=suffix,
-                                            lp=p))
+        return (
+            "{p}position {pid} of strategy {s} in market {m} ({e}) {su}, "
+            "last price is {lp}".format(
+                p=prefix,
+                pid=self.id,
+                s=self.user_strategy.strategy,
+                m=market.get_symbol(),
+                e=market.quote.exchange.name,
+                su=suffix,
+                lp=p,
+            )
+        )
 
     def get_timedelta(self):
         if self.is_pending():
@@ -493,40 +502,41 @@ class Position(BaseModel):
         return datetime.timedelta(0)
 
     def get_orders(self):
-        return Order \
-            .select(Order, Strategy.id.alias("strategy_id")) \
-            .join(Position) \
-            .join(UserStrategy) \
-            .join(Strategy) \
-            .where((Order.status != "canceled") | (Order.filled > 0)) \
-            .where(Position.id == self.id) \
+        return (
+            Order.select(Order, Strategy.id.alias("strategy_id"))
+            .join(Position)
+            .join(UserStrategy)
+            .join(Strategy)
+            .where((Order.status != "canceled") | (Order.filled > 0))
+            .where(Position.id == self.id)
             .order_by(Order.time.desc())
+        )
 
     def get_orders_full(self):
         base = Asset.alias()
         base_exchange_asset = ExchangeAsset.alias()
         quote = Asset.alias()
         quote_exchange_asset = ExchangeAsset.alias()
-        return self.get_orders() \
-            .select(Order,
-                    Strategy.id.alias("strategy_id"),
-                    base.ticker.alias("base_ticker"),
-                    base_exchange_asset.precision.alias("base_precision"),
-                    quote.ticker.alias("quote_ticker"),
-                    quote_exchange_asset.precision.alias("quote_precision"),
-                    Market.amount_precision,
-                    Market.price_precision) \
-            .join(Market) \
-            .join(base_exchange_asset,
-                  on=(Market.base_id == base_exchange_asset.id)) \
-            .join(base,
-                  on=(base_exchange_asset.asset_id == base.id)) \
-            .switch(Market) \
-            .join(quote_exchange_asset,
-                  on=(Market.quote_id == quote_exchange_asset.id)) \
-            .join(quote,
-                  on=(quote_exchange_asset.asset_id == quote.id)) \
+        return (
+            self.get_orders()
+            .select(
+                Order,
+                Strategy.id.alias("strategy_id"),
+                base.ticker.alias("base_ticker"),
+                base_exchange_asset.precision.alias("base_precision"),
+                quote.ticker.alias("quote_ticker"),
+                quote_exchange_asset.precision.alias("quote_precision"),
+                Market.amount_precision,
+                Market.price_precision,
+            )
+            .join(Market)
+            .join(base_exchange_asset, on=(Market.base_id == base_exchange_asset.id))
+            .join(base, on=(base_exchange_asset.asset_id == base.id))
+            .switch(Market)
+            .join(quote_exchange_asset, on=(Market.quote_id == quote_exchange_asset.id))
+            .join(quote, on=(quote_exchange_asset.asset_id == quote.id))
             .order_by(Order.time.desc())
+        )
 
     def get_open_orders(self):
         query = self.get_orders().where(Order.status == "open")
@@ -552,14 +562,15 @@ class Position(BaseModel):
         remaining = min(abs(remaining_to_fill), abs(remaining_to_open))
         remaining = 0 if remaining_to_fill < 0 else remaining
 
-        balance = core.inventory \
-            .get_balance_by_exchange_asset(user=self.user_strategy.user,
-                                           asset=market.quote)
+        balance = core.inventory.get_balance_by_exchange_asset(
+            user=self.user_strategy.user, asset=market.quote
+        )
         remaining = min(remaining, balance.total)
 
         print("bucket cost is {a}".format(a=market.quote.print(self.bucket)))
-        print("remaining to fill in bucket is {r}".format(
-            r=market.quote.print(remaining)))
+        print(
+            "remaining to fill in bucket is {r}".format(r=market.quote.print(remaining))
+        )
         print("balance is {r}".format(r=market.quote.print(balance.total)))
 
         return remaining
@@ -572,23 +583,31 @@ class Position(BaseModel):
         remaining = min(abs(remaining_to_fill), abs(remaining_to_exit))
         remaining = 0 if remaining_to_fill < 0 else remaining
 
-        balance = core.inventory \
-            .get_balance_by_exchange_asset(user=self.user_strategy.user,
-                                           asset=market.base)
+        balance = core.inventory.get_balance_by_exchange_asset(
+            user=self.user_strategy.user, asset=market.base
+        )
         remaining = min(remaining, balance.total)
 
         print("bucket amount is {a}".format(a=market.base.print(self.bucket)))
-        print("remaining to fill in bucket is {r}".format(
-            r=market.base.print(remaining_to_fill)))
-        print("remaining to exit position is {r}".format(
-            r=market.base.print(remaining_to_exit)))
+        print(
+            "remaining to fill in bucket is {r}".format(
+                r=market.base.print(remaining_to_fill)
+            )
+        )
+        print(
+            "remaining to exit position is {r}".format(
+                r=market.base.print(remaining_to_exit)
+            )
+        )
         print("balance is {r}".format(r=market.base.print(balance.total)))
 
         # avoid position rounding errors by exiting early
         r = remaining_to_exit - remaining_to_fill
         position_remainder = market.base.format(r)
-        if position_remainder > 0 \
-                and position_remainder * last_price <= market.cost_min:
+        if (
+            position_remainder > 0
+            and position_remainder * last_price <= market.cost_min
+        ):
             print("position remainder is {r}".format(r=market.base.print(r)))
             remaining = remaining_to_exit
 
@@ -602,19 +621,22 @@ class Position(BaseModel):
         next_bucket = core.utils.get_next_refresh(engine.bucket_interval)
 
         if engine.min_buckets > 0:
-            bucket_max = \
-                market.quote.div(t_cost,
-                                 market.quote.transform(engine.min_buckets),
-                                 prec=strategy.market.price_precision)
+            bucket_max = market.quote.div(
+                t_cost,
+                market.quote.transform(engine.min_buckets),
+                prec=strategy.market.price_precision,
+            )
         else:
             bucket_max = t_cost
 
-        position = Position(user_strategy=u_st,
-                            next_bucket=next_bucket,
-                            bucket_max=bucket_max,
-                            status="opening",
-                            target_cost=t_cost,
-                            entry_time=datetime.datetime.utcnow())
+        position = Position(
+            user_strategy=u_st,
+            next_bucket=next_bucket,
+            bucket_max=bucket_max,
+            status="opening",
+            target_cost=t_cost,
+            entry_time=datetime.datetime.utcnow(),
+        )
         position.save()
 
         print("opening position {i}".format(i=position.id))
@@ -631,10 +653,11 @@ class Position(BaseModel):
             engine = strategy.sell_engine
 
         if engine.min_buckets > 0:
-            self.bucket_max = \
-                market.base.div(self.entry_amount,
-                                market.base.transform(engine.min_buckets),
-                                prec=strategy.market.amount_precision)
+            self.bucket_max = market.base.div(
+                self.entry_amount,
+                market.base.transform(engine.min_buckets),
+                prec=strategy.market.amount_precision,
+            )
         else:
             self.bucket_max = self.entry_amount
 
@@ -656,8 +679,11 @@ class Position(BaseModel):
                 n = 99999
             interval_in_minutes = n
         self.next_refresh = core.utils.get_next_refresh(interval_in_minutes)
-        print("postponed position {i} next refresh at {n}".format(
-            i=self.id, n=self.next_refresh))
+        print(
+            "postponed position {i} next refresh at {n}".format(
+                i=self.id, n=self.next_refresh
+            )
+        )
         self.save()
 
     def stop(self, last_price=None):
@@ -666,14 +692,23 @@ class Position(BaseModel):
         market = strategy.market
         user = self.user_strategy.user
 
-        print("last price is {p}, high was {h} and low was {l}".format(
-            p=market.quote.print(last_price),
-            h=market.quote.print(self.last_high),
-            l=market.quote.print(self.last_low)))
-        print("stop gain is {g}, trailing is {gt}".format(
-            g=engine.stop_gain, gt=engine.trailing_gain))
-        print("stop loss is {l}, trailing is {lt}".format(
-            l=engine.stop_loss, lt=engine.trailing_loss))
+        print(
+            "last price is {p}, high was {h} and low was {l}".format(
+                p=market.quote.print(last_price),
+                h=market.quote.print(self.last_high),
+                l=market.quote.print(self.last_low),
+            )
+        )
+        print(
+            "stop gain is {g}, trailing is {gt}".format(
+                g=engine.stop_gain, gt=engine.trailing_gain
+            )
+        )
+        print(
+            "stop loss is {l}, trailing is {lt}".format(
+                l=engine.stop_loss, lt=engine.trailing_loss
+            )
+        )
         user.send_message(self.get_notice(prefix="stopped "))
         self.stopped = True
         self.close(engine=engine)
@@ -708,15 +743,13 @@ class Position(BaseModel):
             self.save()
 
         if engine.stop_gain > 0:
-
             cur_gain = 0
 
             if engine.trailing_gain:
                 # multiply by -1 because when taken from the high, its negative
                 # if price is lower than entry, there are no gains to stop
                 if last_price > self.entry_price:
-                    cur_gain = \
-                        core.utils.get_return(self.last_high, last_price) * -1
+                    cur_gain = core.utils.get_return(self.last_high, last_price) * -1
             else:
                 cur_gain = core.utils.get_return(self.entry_price, last_price)
 
@@ -725,7 +758,6 @@ class Position(BaseModel):
                 return True
 
         if engine.stop_loss > 0:
-
             cur_loss = 0
 
             if engine.trailing_loss:
@@ -734,8 +766,7 @@ class Position(BaseModel):
                     cur_loss = core.utils.get_return(self.last_low, last_price)
             else:
                 # multiply by -1 because strategy.stop_loss is stored positive
-                cur_loss = \
-                    core.utils.get_return(self.entry_price, last_price) * -1
+                cur_loss = core.utils.get_return(self.entry_price, last_price) * -1
 
             if cur_loss > engine.stop_loss:
                 self.stop(last_price=last_price)
@@ -753,8 +784,7 @@ class Position(BaseModel):
             self.fee += order.fee
 
             if self.entry_amount > 0:
-                self.entry_price = \
-                    market.quote.div(self.entry_cost, self.entry_amount)
+                self.entry_price = market.quote.div(self.entry_cost, self.entry_amount)
 
         elif order.side == "sell":
             self.bucket += order.filled
@@ -763,8 +793,7 @@ class Position(BaseModel):
             self.fee += order.fee
 
             if self.exit_amount > 0:
-                self.exit_price = \
-                    market.quote.div(self.exit_cost, self.exit_amount)
+                self.exit_price = market.quote.div(self.exit_cost, self.exit_amount)
 
         self.save()
 
@@ -784,10 +813,8 @@ class Position(BaseModel):
         print("refreshing {s} position {i}".format(s=self.status, i=self.id))
         print("strategy is {s}".format(s=self.user_strategy.strategy.id))
         print("last price: {p}".format(p=strategy.market.quote.print(last_p)))
-        print("target cost is {t}".format(
-            t=market.quote.print(self.target_cost)))
-        print(
-            "entry cost is {t}".format(t=market.quote.print(self.entry_cost)))
+        print("target cost is {t}".format(t=market.quote.print(self.target_cost)))
+        print("entry cost is {t}".format(t=market.quote.print(self.entry_cost)))
         print("exit cost is {t}".format(t=market.quote.print(self.exit_cost)))
 
         self.exchange.sync_limit_orders()
@@ -832,16 +859,14 @@ class Position(BaseModel):
 
         if self.status == "opening":
             remaining_cost = self.get_remaining_cost()
-            remaining_amount = \
-                market.base.div(remaining_cost,
-                                last_p,
-                                prec=market.amount_precision)
+            remaining_amount = market.base.div(
+                remaining_cost, last_p, prec=market.amount_precision
+            )
 
             m_total_cost = int(engine.lm_ratio * remaining_cost)
-            m_total_amount = \
-                market.base.div(m_total_cost,
-                                last_p,
-                                prec=market.amount_precision)
+            m_total_amount = market.base.div(
+                m_total_cost, last_p, prec=market.amount_precision
+            )
 
         elif self.status == "closing":
             remaining_amount = self.get_remaining_amount(last_p)
@@ -860,54 +885,42 @@ class Position(BaseModel):
             side = "buy"
 
             if m_total_amount > 0:
-                inserted_orders = self.exchange \
-                    .create_order(market.get_symbol(),
-                                  "market",
-                                  side,
-                                  m_total_amount,
-                                  last_p)
+                inserted_orders = self.exchange.create_order(
+                    market.get_symbol(), "market", side, m_total_amount, last_p
+                )
 
             if engine.lm_ratio < 1:
                 l_total = self.get_remaining_cost()
                 if l_total > 0:
-                    inserted_orders = self.exchange \
-                        .create_limit_buy_orders(l_total,
-                                                 last_p,
-                                                 engine.num_orders,
-                                                 engine.spread)
+                    inserted_orders = self.exchange.create_limit_buy_orders(
+                        l_total, last_p, engine.num_orders, engine.spread
+                    )
 
         elif self.status == "closing":
             side = "sell"
 
             if m_total_amount > 0:
-                inserted_orders = self.exchange \
-                    .create_order(market.get_symbol(),
-                                  "market",
-                                  side,
-                                  m_total_amount,
-                                  last_p)
+                inserted_orders = self.exchange.create_order(
+                    market.get_symbol(), "market", side, m_total_amount, last_p
+                )
 
             if engine.lm_ratio < 1:
                 l_total = self.get_remaining_amount(last_p)
                 if l_total > 0:
-                    inserted_orders = self.exchange \
-                        .create_limit_sell_orders(l_total,
-                                                  last_p,
-                                                  engine.num_orders,
-                                                  engine.spread)
+                    inserted_orders = self.exchange.create_limit_sell_orders(
+                        l_total, last_p, engine.num_orders, engine.spread
+                    )
 
         # if bucket is not full but can't insert new orders, fill at market
         if not inserted_orders:
-            inserted_orders = self.exchange \
-                .create_order(market.get_symbol(),
-                              "market",
-                              side,
-                              remaining_amount,
-                              last_p)
+            inserted_orders = self.exchange.create_order(
+                market.get_symbol(), "market", side, remaining_amount, last_p
+            )
 
         if not inserted_orders:
             self.user_strategy.user.send_message(
-                self.get_notice(prefix="could not insert any orders for "))
+                self.get_notice(prefix="could not insert any orders for ")
+            )
 
     def refresh_status(self):
         strategy = self.user_strategy.strategy
@@ -917,24 +930,33 @@ class Position(BaseModel):
         # position finishes closing when exit equals entry
         amount_diff = self.entry_amount - self.exit_amount
         cost_diff = int(market.quote.format(amount_diff * self.exit_price))
-        if self.exit_cost > 0 \
-                and self.status == "closing" \
-                and cost_diff < market.cost_min:
+        if (
+            self.exit_cost > 0
+            and self.status == "closing"
+            and cost_diff < market.cost_min
+        ):
             self.status = "closed"
-            self.pnl = (self.exit_cost - self.entry_cost - self.fee)
+            self.pnl = self.exit_cost - self.entry_cost - self.fee
             self.roi = core.utils.get_roi(self.entry_cost, self.pnl)
             self.exit_time = datetime.datetime.utcnow()
-            print("position is now closed, pnl: {r}".format(
-                r=market.quote.print(self.pnl)))
+            print(
+                "position is now closed, pnl: {r}".format(
+                    r=market.quote.print(self.pnl)
+                )
+            )
             user.send_message(
-                self.get_notice(prefix="closed ",
-                                suffix=" ROI: {r}%".format(r=self.roi)))
+                self.get_notice(
+                    prefix="closed ", suffix=" ROI: {r}%".format(r=self.roi)
+                )
+            )
 
         # position finishes opening when it reaches target
         cost_diff = self.target_cost - self.entry_cost
-        if self.status == "opening" \
-                and self.entry_cost > 0 \
-                and cost_diff < market.cost_min:
+        if (
+            self.status == "opening"
+            and self.entry_cost > 0
+            and cost_diff < market.cost_min
+        ):
             self.status = "open"
             print("position is now open")
             user.send_message(self.get_notice(prefix="opened "))
@@ -942,8 +964,7 @@ class Position(BaseModel):
         # handle special case of hanging position
         signal = self.user_strategy.strategy.get_signal()
         SELL = core.strategies.Signal.SELL
-        if self.entry_cost == 0 \
-                and (self.status == "closing" or signal == SELL):
+        if self.entry_cost == 0 and (self.status == "closing" or signal == SELL):
             print("entry_cost is 0, position is now closed")
             self.status = "closed"
             self.exit_time = datetime.datetime.utcnow()
@@ -1001,39 +1022,41 @@ class Indicator(BaseModel):
 
 
 def get_active_positions():
-    return Position.select() \
-        .join(UserStrategy) \
-        .join(Strategy) \
-        .where(Strategy.active) \
-        .where(UserStrategy.active) \
+    return (
+        Position.select()
+        .join(UserStrategy)
+        .join(Strategy)
+        .where(Strategy.active)
+        .where(UserStrategy.active)
         .order_by(core.db.Position.id)
+    )
 
 
 def get_opening_positions():
-    return get_active_positions() \
-        .where(Position.status << ["open", "opening"])
+    return get_active_positions().where(Position.status << ["open", "opening"])
 
 
 def get_open_positions():
-    return get_active_positions() \
-        .where(Position.status << ["open", "opening", "closing"])
+    return get_active_positions().where(
+        Position.status << ["open", "opening", "closing"]
+    )
 
 
 def get_pending_positions():
-    return get_open_positions() \
-        .where(Position.next_refresh < datetime.datetime.utcnow())
+    return get_open_positions().where(
+        Position.next_refresh < datetime.datetime.utcnow()
+    )
 
 
 def get_strategies():
-    return Strategy \
-        .select() \
-        .where(~Strategy.deleted) \
-        .order_by(Strategy.id.desc())
+    return Strategy.select().where(~Strategy.deleted).order_by(Strategy.id.desc())
 
 
 def get_pending_strategies():
-    return get_strategies() \
-        .where(Strategy.active) \
-        .where(Strategy.next_refresh < datetime.datetime.utcnow()) \
-        .order_by(Strategy.next_refresh) \
+    return (
+        get_strategies()
+        .where(Strategy.active)
+        .where(Strategy.next_refresh < datetime.datetime.utcnow())
+        .order_by(Strategy.next_refresh)
         .order_by(Strategy.type == core.strategies.Types.MIXER)
+    )
