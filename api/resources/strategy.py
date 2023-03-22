@@ -6,10 +6,12 @@ from flask_restful import Resource, marshal
 import api
 import core
 import strategies
-from api.resources.fields.strategy import (get_fields,
-                                           get_base_parser,
-                                           get_subscription_parser,
-                                           get_activation_parser)
+from api.resources.fields.strategy import (
+    get_fields,
+    get_base_parser,
+    get_subscription_parser,
+    get_activation_parser,
+)
 
 
 class Strategy(Resource):
@@ -104,12 +106,9 @@ class Strategy(Resource):
 
             if strategy.type == strategies.Types.MIXER:
                 mixin = strategies.mixer.MixedStrategies
-                mixin.delete() \
-                    .where(mixin.mixer_id == strategy_id) \
-                    .execute()
+                mixin.delete().where(mixin.mixer_id == strategy_id).execute()
 
-                if args["strategies"] \
-                        and args["buy_weights"] and args["sell_weights"]:
+                if args["strategies"] and args["buy_weights"] and args["sell_weights"]:
                     if len(args["strategies"]) != len(args["buy_weights"]):
                         raise api.errors.InvalidArgument
                     if len(args["strategies"]) != len(args["sell_weights"]):
@@ -117,31 +116,36 @@ class Strategy(Resource):
 
                     if len(args["strategies"]) != len(set(args["strategies"])):
                         raise api.errors.InvalidArgument(
-                            "Mixed strategies must be unique")
+                            "Mixed strategies must be unique"
+                        )
 
-                    for s, b_w, s_w in zip(args["strategies"],
-                                           args["buy_weights"],
-                                           args["sell_weights"]):
+                    for s, b_w, s_w in zip(
+                        args["strategies"], args["buy_weights"], args["sell_weights"]
+                    ):
                         mixed_st = core.db.Strategy.get_by_id(s)
 
                         if mixed_st.deleted:
                             raise api.errors.StrategyDoesNotExist
                         if mixed_st.market != strategy.market:
                             raise api.errors.InvalidArgument(
-                                "Mixed strategies must have same market")
+                                "Mixed strategies must have same market"
+                            )
                         if mixed_st.type == strategies.Types.MIXER:
                             raise api.errors.InvalidArgument(
-                                "Mixed strategies cannot be of type MIXER")
+                                "Mixed strategies cannot be of type MIXER"
+                            )
                         if mixed_st.type == strategies.Types.MANUAL:
                             raise api.errors.InvalidArgument(
-                                "Mixed strategies cannot be of type MANUAL")
+                                "Mixed strategies cannot be of type MANUAL"
+                            )
 
                         mixed_st.enable()
                         mixin.create(
                             mixer_id=strategy_id,
                             strategy_id=mixed_st.id,
                             buy_weight=b_w,
-                            sell_weight=s_w)
+                            sell_weight=s_w,
+                        )
 
             strategy = strategies.load(strategy)
             if len([*strategy._meta.columns]) > 1:
@@ -153,12 +157,10 @@ class Strategy(Resource):
                         pass
                 strategy.save()
 
-            core.db.Indicator \
-                .delete() \
-                .where(core.db.Indicator.strategy_id == strategy_id) \
-                .execute()
+            core.db.Indicator.delete().where(
+                core.db.Indicator.strategy_id == strategy_id
+            ).execute()
 
-        strategy = strategies.load(core.db.Strategy.get_by_id(strategy_id),
-                                   user=user)
+        strategy = strategies.load(core.db.Strategy.get_by_id(strategy_id), user=user)
 
         return marshal(strategy, get_fields(strategy.type))

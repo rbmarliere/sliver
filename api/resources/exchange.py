@@ -6,7 +6,7 @@ import core
 asset_fields = {
     "id": fields.Integer,
     "ticker": fields.String,
-    "precision": fields.Integer
+    "precision": fields.Integer,
 }
 
 market_fields = {
@@ -18,7 +18,7 @@ market_fields = {
     "price_precision": fields.Integer,
     "amount_min": fields.Integer,
     "cost_min": fields.Integer,
-    "price_min": fields.Integer
+    "price_min": fields.Integer,
 }
 
 fields = {
@@ -28,7 +28,7 @@ fields = {
     "padding_mode": fields.Integer,
     "timeframes": fields.List(fields.String),
     "assets": fields.List(fields.Nested(asset_fields)),
-    "markets": fields.List(fields.Nested(market_fields))
+    "markets": fields.List(fields.Nested(market_fields)),
 }
 
 
@@ -38,17 +38,19 @@ class Exchange(Resource):
     def get(self):
         exchanges = []
         for ex in core.db.Exchange.select():
-            asset_q = core.db.ExchangeAsset \
-                .select(core.db.Asset, core.db.ExchangeAsset) \
-                .join(core.db.Asset) \
+            asset_q = (
+                core.db.ExchangeAsset.select(core.db.Asset, core.db.ExchangeAsset)
+                .join(core.db.Asset)
                 .where(core.db.ExchangeAsset.exchange == ex)
+            )
 
             ex.assets = [a for a in asset_q.dicts()]
 
-            markets_q = core.db.Market \
-                .select() \
-                .join(core.db.ExchangeAsset, on=core.db.Market.base) \
+            markets_q = (
+                core.db.Market.select()
+                .join(core.db.ExchangeAsset, on=core.db.Market.base)
                 .where(core.db.Market.base.exchange == ex)
+            )
 
             ex.markets = []
             for m in markets_q:

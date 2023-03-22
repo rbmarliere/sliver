@@ -9,7 +9,7 @@ fields = {
     "exchange": fields.String,
     "exchange_id": fields.Integer,
     "api_key": fields.String,
-    "active": fields.Boolean
+    "active": fields.Boolean,
 }
 
 
@@ -22,22 +22,23 @@ class Credential(Resource):
 
         credentials = []
         for e in core.db.Exchange.select():
-            cred = user.credential_set \
-                .where(core.db.Credential.exchange == e).get_or_none()
+            cred = user.credential_set.where(
+                core.db.Credential.exchange == e
+            ).get_or_none()
 
             if cred is None:
                 cred = {
                     "exchange_id": e.id,
                     "exchange": e.name,
-                    "api_key": '',
-                    "active": False
+                    "api_key": "",
+                    "active": False,
                 }
             else:
                 cred = {
                     "exchange_id": e.id,
                     "exchange": e.name,
                     "api_key": cred.api_key,
-                    "active": cred.active
+                    "active": cred.active,
                 }
 
             credentials.append(cred)
@@ -74,7 +75,8 @@ class Credential(Resource):
             exchange=args.exchange_id,
             api_key=args.api_key,
             api_secret=args.api_secret,
-            active=args.active)
+            active=args.active,
+        )
 
         credential.save()
 
@@ -82,7 +84,7 @@ class Credential(Resource):
             "exchange": credential.exchange.name,
             "exchange_id": credential.exchange_id,
             "api_key": credential.api_key,
-            "active": credential.active
+            "active": credential.active,
         }
 
         return res
@@ -114,7 +116,7 @@ class Credential(Resource):
             "exchange": credential.exchange.name,
             "exchange_id": credential.exchange_id,
             "api_key": credential.api_key,
-            "active": credential.active
+            "active": credential.active,
         }
 
         return res

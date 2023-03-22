@@ -20,7 +20,7 @@ fields = {
     "amount": fields.String,
     "cost": fields.String,
     "filled": fields.String,
-    "fee": fields.String
+    "fee": fields.String,
 }
 
 
@@ -37,28 +37,28 @@ def get_orders_df(query):
 
     orders.price = orders.price * quote_precision
     orders.price = orders.apply(
-        lambda x: core.utils.quantize(x, "price", "price_precision"),
-        axis=1)
+        lambda x: core.utils.quantize(x, "price", "price_precision"), axis=1
+    )
 
     orders.amount = orders.amount * base_precision
     orders.amount = orders.apply(
-        lambda x: core.utils.quantize(x, "amount", "amount_precision"),
-        axis=1)
+        lambda x: core.utils.quantize(x, "amount", "amount_precision"), axis=1
+    )
 
     orders.cost = orders.cost * quote_precision
     orders.cost = orders.apply(
-        lambda x: core.utils.quantize(x, "cost", "price_precision"),
-        axis=1)
+        lambda x: core.utils.quantize(x, "cost", "price_precision"), axis=1
+    )
 
     orders.filled = orders.filled * base_precision
     orders.filled = orders.apply(
-        lambda x: core.utils.quantize(x, "filled", "amount_precision"),
-        axis=1)
+        lambda x: core.utils.quantize(x, "filled", "amount_precision"), axis=1
+    )
 
     orders.fee = orders.fee * quote_precision
     orders.fee = orders.apply(
-        lambda x: core.utils.quantize(x, "fee", "price_precision"),
-        axis=1)
+        lambda x: core.utils.quantize(x, "fee", "price_precision"), axis=1
+    )
 
     return orders
 
@@ -76,8 +76,7 @@ class Order(Resource):
         except core.db.Order.DoesNotExist:
             raise api.errors.OrderDoesNotExist
 
-        query = position.get_orders_full() \
-            .where(core.db.Order.id == order_id)
+        query = position.get_orders_full().where(core.db.Order.id == order_id)
 
         return get_orders_df(query).to_dict("records")[0]
 
