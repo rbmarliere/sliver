@@ -1,13 +1,15 @@
-from . import (credential,
-               engine,
-               exchange,
-               inventory,
-               order,
-               indicator,
-               position,
-               strategies,
-               strategy,
-               user)
+from . import (
+    credential,
+    engine,
+    exchange,
+    inventory,
+    order,
+    indicator,
+    position,
+    strategies,
+    strategy,
+    user,
+)
 
 
 Credential = credential.Credential

@@ -15,7 +15,6 @@ argp.add_argument("password", type=str)
 
 
 class Auth(Resource):
-
     def post(self):
         args = argp.parse_args()
 
@@ -24,8 +23,7 @@ class Auth(Resource):
         except peewee.DoesNotExist:
             raise api.errors.AuthenticationFailed
 
-        authorized = flask_bcrypt.check_password_hash(user.password,
-                                                      args.password)
+        authorized = flask_bcrypt.check_password_hash(user.password, args.password)
 
         if not authorized:
             raise api.errors.AuthenticationFailed
@@ -33,7 +31,8 @@ class Auth(Resource):
         delta = datetime.timedelta(days=1)
         exp_at = datetime.datetime.now() + delta
         token = flask_jwt_extended.create_access_token(
-            identity=str(user.id), expires_delta=delta)
+            identity=str(user.id), expires_delta=delta
+        )
 
         user.token = token
         user.save()
