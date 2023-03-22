@@ -216,16 +216,18 @@ class CCXT(BaseExchange):
         order.cost = self.market.quote.transform(cost)
         order.filled = self.market.base.transform(filled)
 
-        implicit_cost = self.market.base.format(amount) * order.price
-        print(
-            "{a} @ {p} ({c})".format(
-                a=self.market.base.print(amount),
-                p=self.market.quote.print(price),
-                c=self.market.quote.print(implicit_cost),
-            )
-        )
-
-        print("filled: {f}".format(f=self.market.base.print(filled)))
+        if order.id:
+            print("syncing {s} order {i}".format(s=order.side, i=oid))
+            print("filled: {f}".format(f=self.market.base.print(filled)))
+            implicit_cost = self.market.base.format(amount) * order.price
+            if implicit_cost > 0:
+                print(
+                    "{a} @ {p} ({c})".format(
+                        a=self.market.base.print(amount),
+                        p=self.market.quote.print(price),
+                        c=self.market.quote.print(implicit_cost),
+                    )
+                )
 
         # check for fees
         if ex_order["fee"] is None:
