@@ -10,15 +10,12 @@ import core
 
 if __name__ == "__main__":
     argp = argparse.ArgumentParser()
-    argp.add_argument("-o",
-                      "--order_id",
-                      type=str,
-                      help="Exchange Order ID",
-                      required=True)
-    argp.add_argument("-p",
-                      "--position_id",
-                      help="position id to update all orders",
-                      required=True)
+    argp.add_argument(
+        "-o", "--order_id", type=str, help="Exchange Order ID", required=True
+    )
+    argp.add_argument(
+        "-p", "--position_id", help="position id to update all orders", required=True
+    )
     args = argp.parse_args()
 
     try:
@@ -33,16 +30,13 @@ if __name__ == "__main__":
     core.exchange.set_api(cred=cred)
 
     try:
-        ex_order = core.exchange.api.fetch_order(market.get_symbol(),
-                                                 oid=args.order_id)
+        ex_order = core.exchange.api.fetch_order(market.get_symbol(), oid=args.order_id)
 
         order = core.db.Order.get_or_none(exchange_order_id=args.order_id)
         if order is None:
             order = core.db.Order()
 
-        core.db.Order.sync(order,
-                           ex_order,
-                           pos)
+        core.db.Order.sync(order, ex_order, pos)
     except ccxt.OrderNotFound:
         print("order not found")
         sys.exit(1)

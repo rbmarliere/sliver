@@ -17,8 +17,7 @@ cache = pandas.read_csv(cache_file, sep="\t")
 
 try:
     with core.db.connection.atomic():
-        strategies.hypnox.HypnoxTweet.insert_many(
-            cache.to_dict("records")).execute()
+        strategies.hypnox.HypnoxTweet.insert_many(cache.to_dict("records")).execute()
 
     print("inserted {c} records".format(c=len(cache)))
 

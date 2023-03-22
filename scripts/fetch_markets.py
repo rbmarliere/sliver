@@ -47,20 +47,14 @@ def save_market(ex_market, exchange: core.db.Exchange):
             print("using quote_prec = price_prec")
             quote_prec = price_prec
 
-        base, new = (core.db.Asset
-                     .get_or_create(ticker=ex_market["base"]))
-        quote, new = (core.db.Asset
-                      .get_or_create(ticker=ex_market["quote"]))
+        base, new = core.db.Asset.get_or_create(ticker=ex_market["base"])
+        quote, new = core.db.Asset.get_or_create(ticker=ex_market["quote"])
 
-        ex_b, new = core.db.ExchangeAsset.get_or_create(
-            asset=base,
-            exchange=exchange)
+        ex_b, new = core.db.ExchangeAsset.get_or_create(asset=base, exchange=exchange)
         ex_b.precision = base_prec
         ex_b.save()
 
-        ex_q, new = core.db.ExchangeAsset.get_or_create(
-            asset=quote,
-            exchange=exchange)
+        ex_q, new = core.db.ExchangeAsset.get_or_create(asset=quote, exchange=exchange)
         ex_q.precision = quote_prec
         ex_q.save()
 
@@ -118,13 +112,10 @@ def fetch_markets(exchange: core.db.Exchange):
 
 if __name__ == "__main__":
     argp = argparse.ArgumentParser()
-    argp.add_argument("-e",
-                      "--exchange-name",
-                      help="exchange name to fetch from",
-                      required=True)
-    argp.add_argument("-s",
-                      "--symbol",
-                      help="specify a single market to fetch")
+    argp.add_argument(
+        "-e", "--exchange-name", help="exchange name to fetch from", required=True
+    )
+    argp.add_argument("-s", "--symbol", help="specify a single market to fetch")
     args = argp.parse_args()
 
     try:
