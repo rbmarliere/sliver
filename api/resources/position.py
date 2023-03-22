@@ -49,48 +49,48 @@ def get_positions_df(query):
 
     positions.target_cost = positions.target_cost * quote_precision
     positions.target_cost = positions.apply(
-        lambda x: core.utils.quantize(x, "target_cost", "price_precision"),
-        axis=1)
+        lambda x: core.utils.quantize(x, "target_cost", "price_precision"), axis=1
+    )
 
     positions.entry_cost = positions.entry_cost * quote_precision
     positions.entry_cost = positions.apply(
-        lambda x: core.utils.quantize(x, "entry_cost", "price_precision"),
-        axis=1)
+        lambda x: core.utils.quantize(x, "entry_cost", "price_precision"), axis=1
+    )
 
     positions.entry_amount = positions.entry_amount * base_precision
     positions.entry_amount = positions.apply(
-        lambda x: core.utils.quantize(x, "entry_amount", "amount_precision"),
-        axis=1)
+        lambda x: core.utils.quantize(x, "entry_amount", "amount_precision"), axis=1
+    )
 
     positions.entry_price = positions.entry_price * quote_precision
     positions.entry_price = positions.apply(
-        lambda x: core.utils.quantize(x, "entry_price", "price_precision"),
-        axis=1)
+        lambda x: core.utils.quantize(x, "entry_price", "price_precision"), axis=1
+    )
 
     positions.exit_price = positions.exit_price * quote_precision
     positions.exit_price = positions.apply(
-        lambda x: core.utils.quantize(x, "exit_price", "price_precision"),
-        axis=1)
+        lambda x: core.utils.quantize(x, "exit_price", "price_precision"), axis=1
+    )
 
     positions.exit_amount = positions.exit_amount * base_precision
     positions.exit_amount = positions.apply(
-        lambda x: core.utils.quantize(x, "exit_amount", "amount_precision"),
-        axis=1)
+        lambda x: core.utils.quantize(x, "exit_amount", "amount_precision"), axis=1
+    )
 
     positions.exit_cost = positions.exit_cost * quote_precision
     positions.exit_cost = positions.apply(
-        lambda x: core.utils.quantize(x, "exit_cost", "price_precision"),
-        axis=1)
+        lambda x: core.utils.quantize(x, "exit_cost", "price_precision"), axis=1
+    )
 
     positions.fee = positions.fee * quote_precision
     positions.fee = positions.apply(
-        lambda x: core.utils.quantize(x, "fee", "price_precision"),
-        axis=1)
+        lambda x: core.utils.quantize(x, "fee", "price_precision"), axis=1
+    )
 
     positions.pnl = positions.pnl * quote_precision
     positions.pnl = positions.apply(
-        lambda x: core.utils.quantize(x, "pnl", "price_precision"),
-        axis=1)
+        lambda x: core.utils.quantize(x, "pnl", "price_precision"), axis=1
+    )
 
     positions.roi = positions.roi.apply(lambda x: f"{x:.4f}")
 
@@ -104,8 +104,7 @@ class Position(Resource):
         uid = int(get_jwt_identity())
         user = core.db.User.get_by_id(uid)
         try:
-            pos_q = user.get_positions() \
-                .where(core.db.Position.id == position_id)
+            pos_q = user.get_positions().where(core.db.Position.id == position_id)
             pos = pos_q.get()
             return get_positions_df(pos_q).to_dict(orient="records")[0]
         except core.db.Position.DoesNotExist:
@@ -135,10 +134,12 @@ class PositionsByStrategy(Resource):
         except core.db.Strategy.DoesNotExist:
             raise api.errors.StrategyDoesNotExist
 
-        pos_q = user.get_positions() \
-            .where(core.db.Strategy.id == strategy_id) \
-            .where(core.db.Position.status == "closed") \
+        pos_q = (
+            user.get_positions()
+            .where(core.db.Strategy.id == strategy_id)
+            .where(core.db.Position.status == "closed")
             .order_by(core.db.Position.id)
+        )
 
         pos_df = get_positions_df(pos_q)
 
@@ -154,14 +155,15 @@ class PositionsByStrategy(Resource):
             max_equity = row.max_equity
             min_equity = row.min_equity
 
-            prices = strategy.get_prices() \
-                .where(core.db.Price.time >= row.entry_time) \
+            prices = (
+                strategy.get_prices()
+                .where(core.db.Price.time >= row.entry_time)
                 .where(core.db.Price.time <= row.exit_time)
+            )
 
             for p in prices:
                 curr_equity = p.close * row.entry_amount
-                curr_drawdown = \
-                    (curr_equity - max_equity) / max_equity * 100
+                curr_drawdown = (curr_equity - max_equity) / max_equity * 100
 
                 if curr_drawdown < max_drawdown:
                     max_drawdown = curr_drawdown

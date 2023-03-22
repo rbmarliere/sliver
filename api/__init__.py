@@ -12,7 +12,7 @@ from . import routes
 app = flask.Flask(__name__)
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
 app.config["BUNDLE_ERRORS"] = True
-app.config['PROPAGATE_EXCEPTIONS'] = True
+app.config["PROPAGATE_EXCEPTIONS"] = True
 
 flask_cors.CORS(app)
 

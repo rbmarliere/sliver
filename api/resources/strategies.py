@@ -53,9 +53,11 @@ class StrategiesByMarket(Resource):
 
         strat_list = []
         for strategy in [s for s in core.db.get_strategies()]:
-            if strategy.market_id == int(market_id) \
-                    and strategy.type != strategies.Types.MIXER \
-                    and strategy.type != strategies.Types.MANUAL:
+            if (
+                strategy.market_id == int(market_id)
+                and strategy.type != strategies.Types.MIXER
+                and strategy.type != strategies.Types.MANUAL
+            ):
                 strat_list.append(strategies.load(strategy, user=user))
 
         return strat_list

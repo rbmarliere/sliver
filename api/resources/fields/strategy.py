@@ -189,18 +189,15 @@ def get_base_parser(type=None):
     elif type == strategies.Types.MIXER:
         base_parser.add_argument("buy_threshold", type=float, required=True)
         base_parser.add_argument("sell_threshold", type=float, required=True)
-        base_parser.add_argument("strategies",
-                                 type=list,
-                                 required=True,
-                                 location="json")
-        base_parser.add_argument("buy_weights",
-                                 type=list,
-                                 required=True,
-                                 location="json")
-        base_parser.add_argument("sell_weights",
-                                 type=list,
-                                 required=True,
-                                 location="json")
+        base_parser.add_argument(
+            "strategies", type=list, required=True, location="json"
+        )
+        base_parser.add_argument(
+            "buy_weights", type=list, required=True, location="json"
+        )
+        base_parser.add_argument(
+            "sell_weights", type=list, required=True, location="json"
+        )
 
     elif type == strategies.Types.BB:
         base_parser.add_argument("use_ema", type=bool, required=True)

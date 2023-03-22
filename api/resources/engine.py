@@ -40,10 +40,11 @@ class Engines(Resource):
     @marshal_with(fields)
     @jwt_required()
     def get(self):
-        q = core.db.TradeEngine \
-            .select() \
-            .where(core.db.TradeEngine.deleted == False) \
+        q = (
+            core.db.TradeEngine.select()
+            .where(core.db.TradeEngine.deleted == False)
             .order_by(core.db.TradeEngine.id)
+        )
 
         return [e for e in q]
 
@@ -110,8 +111,7 @@ class Engine(Resource):
         except core.db.TradeEngine.DoesNotExist:
             raise api.errors.EngineDoesNotExist
 
-        if engine.strategy_set.where(core.db.Strategy.deleted == False) \
-                .count() > 0:
+        if engine.strategy_set.where(core.db.Strategy.deleted == False).count() > 0:
             raise api.errors.EngineInUse
 
         engine.deleted = True

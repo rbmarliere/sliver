@@ -39,11 +39,11 @@ class User(Resource):
         user = core.db.User.get_by_id(uid)
 
         if args.password and args.old_password:
-            authorized = flask_bcrypt.check_password_hash(user.password,
-                                                          args.old_password)
+            authorized = flask_bcrypt.check_password_hash(
+                user.password, args.old_password
+            )
             if authorized:
-                user.password = flask_bcrypt.generate_password_hash(
-                    args.password)
+                user.password = flask_bcrypt.generate_password_hash(args.password)
             else:
                 raise api.errors.WrongPassword
 
