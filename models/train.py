@@ -11,14 +11,12 @@ from preprocess import preprocess, tokenize
 
 if __name__ == "__main__":
     argp = argparse.ArgumentParser()
-    argp.add_argument("-i",
-                      "--input-file",
-                      help="path to training data file",
-                      required=True)
-    argp.add_argument("-m",
-                      "--model-name",
-                      help="name of the model to train",
-                      required=True)
+    argp.add_argument(
+        "-i", "--input-file", help="path to training data file", required=True
+    )
+    argp.add_argument(
+        "-m", "--model-name", help="name of the model to train", required=True
+    )
     args = argp.parse_args()
 
     model = models.get_model(args.model_name)
@@ -57,17 +55,20 @@ if __name__ == "__main__":
         min_delta=model.config["min_delta"],
         verbose=1,
         mode="min",
-        restore_best_weights=True)
+        restore_best_weights=True,
+    )
 
-    tensorboard = tensorflow.keras.callbacks.TensorBoard(log_dir=modelpath +
-                                                         "/logs",
-                                                         histogram_freq=1)
+    tensorboard = tensorflow.keras.callbacks.TensorBoard(
+        log_dir=modelpath + "/logs", histogram_freq=1
+    )
 
-    model.fit(train_ds,
-              validation_data=val_ds,
-              epochs=model.config["epochs"],
-              callbacks=[earlystop, tensorboard],
-              batch_size=model.config["batch_size"])
+    model.fit(
+        train_ds,
+        validation_data=val_ds,
+        epochs=model.config["epochs"],
+        callbacks=[earlystop, tensorboard],
+        batch_size=model.config["batch_size"],
+    )
     result = model.evaluate(test_ds, batch_size=model.config["batch_size"])
     dict(zip(model.metrics_names, result))
 
