@@ -24,9 +24,14 @@ class Watchdog(metaclass=WatchdogMeta):
 
     def print(self, message=None, exception=None):
         if exception:
-            message = "{m} {e} {err}".format(m=message,
-                                             e=exception.__class__.__name__,
-                                             err=exception)
+            exception_msg = "{e} {err}".format(
+                e=exception.__class__.__name__, err=exception
+            )
+            if message:
+                message = "{m} {e}".format(m=message, e=exception_msg)
+            else:
+                message = exception_msg
+
             self.stderr.exception(exception, exc_info=True)
             core.alert.send_message(message)
 
