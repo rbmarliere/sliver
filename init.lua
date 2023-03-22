@@ -1,12 +1,5 @@
 vim.fn.jobstart("ng serve -c development --host 0.0.0.0", { cwd = "web" })
 
-require("lspconfig").pylsp.setup({
-  -- organizeImports requires pylsp-rope in mason env
-  on_attach = LSPAttach,
-  capabilities = LSPCapabilities,
-  settings = { pylsp = { plugins = { mccabe = { threshold = 25, }, }, }, },
-})
-
 local dap = require("dap")
 
 dap.defaults.fallback.force_external_terminal = true
