@@ -6,17 +6,16 @@ from ccxt.base.decimal_to_precision import DECIMAL_PLACES, NO_PADDING
 
 import core
 
-
 print = core.watchdog.Watchdog().print
 
-
-connection = peewee.PostgresqlDatabase(
-    core.config["DB_NAME"], **{
-        "host": core.config["DB_HOST"],
-        "user": core.config["DB_USER"],
-        "password": core.config["DB_PASSWORD"]
-    },
-    autoconnect=True)
+connection = peewee.PostgresqlDatabase(core.config["DB_NAME"],
+                                       **{
+                                           "host": core.config["DB_HOST"],
+                                           "user": core.config["DB_USER"],
+                                           "password":
+                                           core.config["DB_PASSWORD"]
+                                       },
+                                       autoconnect=True)
 
 
 class BaseModel(peewee.Model):
@@ -149,8 +148,8 @@ class Credential(BaseModel):
 
     def disable(self):
         print("disabling credential {s}...".format(s=self))
-        self.user.send_message("disabled credential for exchange {e}"
-                               .format(e=self.exchange.name))
+        self.user.send_message("disabled credential for exchange {e}".format(
+            e=self.exchange.name))
         self.active = False
         self.save()
 
@@ -176,12 +175,12 @@ class ExchangeAsset(BaseModel):
             return 0
         if prec is None:
             prec = self.precision
-        precision = D("10") ** D(str(-1 * self.precision))
+        precision = D("10")**D(str(-1 * self.precision))
         value = D(str(value)) * precision
         if prec == self.precision:
             return value.quantize(precision)
         else:
-            trunc_precision = D("10") ** D(str(-1 * prec))
+            trunc_precision = D("10")**D(str(-1 * prec))
             return value.quantize(trunc_precision)
 
     def transform(self, value, prec=None):
@@ -189,7 +188,7 @@ class ExchangeAsset(BaseModel):
             return 0
         if prec is None:
             prec = self.precision
-        precision = D("10") ** D(str(prec))
+        precision = D("10")**D(str(prec))
         return int(D(str(value)) * precision)
 
     def print(self, value):
@@ -315,9 +314,8 @@ class Strategy(BaseModel):
             interval_in_minutes = \
                 core.utils.get_timeframe_in_seconds(self.timeframe) / 60
         self.next_refresh = core.utils.get_next_refresh(interval_in_minutes)
-        print("postponed strategy {i} next refresh at {n}"
-              .format(i=self.id,
-                      n=self.next_refresh))
+        print("postponed strategy {i} next refresh at {n}".format(
+            i=self.id, n=self.next_refresh))
         self.save()
 
     def subscribe(self, user, subscribed):
@@ -340,8 +338,7 @@ class Strategy(BaseModel):
                 u_st.save()
 
         if not user_strat_exists:
-            core.db.UserStrategy(user=user,
-                                 strategy=self,
+            core.db.UserStrategy(user=user, strategy=self,
                                  active=subscribed).save()
 
     def get_active_users(self):
@@ -364,8 +361,8 @@ class UserStrategy(BaseModel):
 
     def disable(self):
         print("disabling user's strategy {s}...".format(s=self))
-        self.user.send_message("disabled strategy {s}"
-                               .format(s=self.strategy.id))
+        self.user.send_message(
+            "disabled strategy {s}".format(s=self.strategy.id))
         self.active = False
         self.save()
 
@@ -477,14 +474,13 @@ class Position(BaseModel):
         p = self.exchange.api_fetch_last_price(market.get_symbol())
 
         return ("{p}position {pid} of strategy {s} in market {m} ({e}) {su}, "
-                "last price is {lp}"
-                .format(p=prefix,
-                        pid=self.id,
-                        s=self.user_strategy.strategy,
-                        m=market.get_symbol(),
-                        e=market.quote.exchange.name,
-                        su=suffix,
-                        lp=p))
+                "last price is {lp}".format(p=prefix,
+                                            pid=self.id,
+                                            s=self.user_strategy.strategy,
+                                            m=market.get_symbol(),
+                                            e=market.quote.exchange.name,
+                                            su=suffix,
+                                            lp=p))
 
     def get_timedelta(self):
         if self.is_pending():
@@ -562,8 +558,8 @@ class Position(BaseModel):
         remaining = min(remaining, balance.total)
 
         print("bucket cost is {a}".format(a=market.quote.print(self.bucket)))
-        print("remaining to fill in bucket is {r}"
-              .format(r=market.quote.print(remaining)))
+        print("remaining to fill in bucket is {r}".format(
+            r=market.quote.print(remaining)))
         print("balance is {r}".format(r=market.quote.print(balance.total)))
 
         return remaining
@@ -582,10 +578,10 @@ class Position(BaseModel):
         remaining = min(remaining, balance.total)
 
         print("bucket amount is {a}".format(a=market.base.print(self.bucket)))
-        print("remaining to fill in bucket is {r}"
-              .format(r=market.base.print(remaining_to_fill)))
-        print("remaining to exit position is {r}"
-              .format(r=market.base.print(remaining_to_exit)))
+        print("remaining to fill in bucket is {r}".format(
+            r=market.base.print(remaining_to_fill)))
+        print("remaining to exit position is {r}".format(
+            r=market.base.print(remaining_to_exit)))
         print("balance is {r}".format(r=market.base.print(balance.total)))
 
         # avoid position rounding errors by exiting early
@@ -660,9 +656,8 @@ class Position(BaseModel):
                 n = 99999
             interval_in_minutes = n
         self.next_refresh = core.utils.get_next_refresh(interval_in_minutes)
-        print("postponed position {i} next refresh at {n}"
-              .format(i=self.id,
-                      n=self.next_refresh))
+        print("postponed position {i} next refresh at {n}".format(
+            i=self.id, n=self.next_refresh))
         self.save()
 
     def stop(self, last_price=None):
@@ -671,16 +666,14 @@ class Position(BaseModel):
         market = strategy.market
         user = self.user_strategy.user
 
-        print("last price is {p}, high was {h} and low was {l}"
-              .format(p=market.quote.print(last_price),
-                      h=market.quote.print(self.last_high),
-                      l=market.quote.print(self.last_low)))
-        print("stop gain is {g}, trailing is {gt}"
-              .format(g=engine.stop_gain,
-                      gt=engine.trailing_gain))
-        print("stop loss is {l}, trailing is {lt}"
-              .format(l=engine.stop_loss,
-                      lt=engine.trailing_loss))
+        print("last price is {p}, high was {h} and low was {l}".format(
+            p=market.quote.print(last_price),
+            h=market.quote.print(self.last_high),
+            l=market.quote.print(self.last_low)))
+        print("stop gain is {g}, trailing is {gt}".format(
+            g=engine.stop_gain, gt=engine.trailing_gain))
+        print("stop loss is {l}, trailing is {lt}".format(
+            l=engine.stop_loss, lt=engine.trailing_loss))
         user.send_message(self.get_notice(prefix="stopped "))
         self.stopped = True
         self.close(engine=engine)
@@ -791,12 +784,11 @@ class Position(BaseModel):
         print("refreshing {s} position {i}".format(s=self.status, i=self.id))
         print("strategy is {s}".format(s=self.user_strategy.strategy.id))
         print("last price: {p}".format(p=strategy.market.quote.print(last_p)))
-        print("target cost is {t}"
-              .format(t=market.quote.print(self.target_cost)))
-        print("entry cost is {t}"
-              .format(t=market.quote.print(self.entry_cost)))
-        print("exit cost is {t}"
-              .format(t=market.quote.print(self.exit_cost)))
+        print("target cost is {t}".format(
+            t=market.quote.print(self.target_cost)))
+        print(
+            "entry cost is {t}".format(t=market.quote.print(self.entry_cost)))
+        print("exit cost is {t}".format(t=market.quote.print(self.exit_cost)))
 
         self.exchange.sync_limit_orders()
 
@@ -869,7 +861,8 @@ class Position(BaseModel):
 
             if m_total_amount > 0:
                 inserted_orders = self.exchange \
-                    .create_order("market",
+                    .create_order(market.get_symbol(),
+                                  "market",
                                   side,
                                   m_total_amount,
                                   last_p)
@@ -888,7 +881,8 @@ class Position(BaseModel):
 
             if m_total_amount > 0:
                 inserted_orders = self.exchange \
-                    .create_order("market",
+                    .create_order(market.get_symbol(),
+                                  "market",
                                   side,
                                   m_total_amount,
                                   last_p)
@@ -905,7 +899,8 @@ class Position(BaseModel):
         # if bucket is not full but can't insert new orders, fill at market
         if not inserted_orders:
             inserted_orders = self.exchange \
-                .create_order("market",
+                .create_order(market.get_symbol(),
+                              "market",
                               side,
                               remaining_amount,
                               last_p)
@@ -926,16 +921,14 @@ class Position(BaseModel):
                 and self.status == "closing" \
                 and cost_diff < market.cost_min:
             self.status = "closed"
-            self.pnl = (self.exit_cost
-                        - self.entry_cost
-                        - self.fee)
+            self.pnl = (self.exit_cost - self.entry_cost - self.fee)
             self.roi = core.utils.get_roi(self.entry_cost, self.pnl)
             self.exit_time = datetime.datetime.utcnow()
-            print("position is now closed, pnl: {r}"
-                  .format(r=market.quote.print(self.pnl)))
-            user.send_message(self.get_notice(prefix="closed ",
-                                              suffix=" ROI: {r}%"
-                                              .format(r=self.roi)))
+            print("position is now closed, pnl: {r}".format(
+                r=market.quote.print(self.pnl)))
+            user.send_message(
+                self.get_notice(prefix="closed ",
+                                suffix=" ROI: {r}%".format(r=self.roi)))
 
         # position finishes opening when it reaches target
         cost_diff = self.target_cost - self.entry_cost
@@ -981,76 +974,6 @@ class Order(BaseModel):
     filled = peewee.BigIntegerField()
     # effective fee paid
     fee = peewee.BigIntegerField()
-
-    def sync(self, ex_order, position):
-        # TODO -- implementation specific
-        market = position.user_strategy.strategy.market
-
-        id = ex_order["id"]
-        status = ex_order["status"]
-        type = ex_order["type"]
-        side = ex_order["side"]
-        time = ex_order["datetime"]
-        if not time:
-            time = datetime.datetime.utcnow()
-
-        price = ex_order["average"]
-        amount = ex_order["amount"]
-        filled = ex_order["filled"]
-        if not filled:
-            filled = 0
-        cost = ex_order["cost"]
-        if not cost:
-            cost = filled * amount
-
-        # transform values to db entry standard
-        price = market.quote.transform(price)
-        amount = market.base.transform(amount)
-        cost = market.quote.transform(cost)
-        filled = market.base.transform(filled)
-
-        implicit_cost = market.base.format(amount)*price
-        print("{a} @ {p} ({c})".format(a=market.base.print(amount),
-                                       p=market.quote.print(price),
-                                       c=market.quote.print(implicit_cost)))
-
-        print("filled: {f}".format(f=market.base.print(filled)))
-
-        # check for fees
-        if ex_order["fee"] is None:
-            # TODO maybe fetch from difference between insertion & filled
-            fee = 0
-        else:
-            try:
-                fee = market.quote.transform(ex_order["fee"]["cost"])
-            except KeyError:
-                fee = 0
-
-        if not status:
-            if self.id:
-                if filled == cost:
-                    status = "closed"
-                else:
-                    status = "canceled"
-            else:
-                status = "open"
-
-        self.position = position
-        self.exchange_order_id = id
-        self.time = time
-        self.status = status
-        self.type = type
-        self.side = side
-        self.price = price
-        self.amount = amount
-        self.cost = cost
-        self.filled = filled
-        self.fee = fee
-
-        self.save()
-
-        if status != "open":
-            position.add_order(self)
 
 
 class Price(BaseModel):
