@@ -180,8 +180,6 @@ class BaseExchange(ABC):
 
         for order in orders:
             oid = order.exchange_order_id
-            print("updating {s} order {i}".format(s=order.side, i=oid))
-
             self.api_cancel_orders(self.market.get_symbol(), oid=oid)
 
             order = self.get_synced_order(oid)
