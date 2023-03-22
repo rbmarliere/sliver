@@ -264,7 +264,8 @@ class BaseExchange(ABC):
             self.create_order(
                 self.market.get_symbol(), "limit", "buy", total_amt, avg_price
             )
-            return
+
+            return True
 
         # avoid rounding errors
         cost_remainder = total_cost - sum([unit_cost] * num_orders)
@@ -277,16 +278,20 @@ class BaseExchange(ABC):
 
         # creates bucket orders if reached here, which normally it will
         for price in prices:
-            amt = self.market.base.div(
+            unit_amount = self.market.base.div(
                 unit_cost, price, prec=self.market.amount_precision
             )
 
             if price == prices[-1]:
-                amt += self.market.base.div(
+                unit_amount += self.market.base.div(
                     cost_remainder, price, prec=self.market.amount_precision
                 )
 
-            self.create_order(self.market.get_symbol(), "limit", "buy", amt, price)
+            self.create_order(
+                self.market.get_symbol(), "limit", "buy", unit_amount, price
+            )
+
+        return True
 
     def create_limit_sell_orders(
         self, total_amount, last_price, num_orders, spread_pct
@@ -334,7 +339,7 @@ class BaseExchange(ABC):
             self.create_order(
                 self.market.get_symbol(), "limit", "sell", total_amount, avg_price
             )
-            return
+            return True
 
         # avoid bucket rounding errors
         bucket_remainder = total_amount - sum([unit_amount] * num_orders)
@@ -353,3 +358,5 @@ class BaseExchange(ABC):
             self.create_order(
                 self.market.get_symbol(), "limit", "sell", unit_amount, price
             )
+
+        return True
