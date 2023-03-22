@@ -74,11 +74,13 @@ class Watchdog(metaclass=WatchdogMeta):
     def refresh_opening_positions(self):
         for position in core.db.get_opening_positions():
             self.position = position
+            self.user_strat = position.user_strategy
 
             stopped = position.check_stops()
             if stopped:
                 position.refresh()
 
+            self.user_strat = None
             self.position = None
 
     @run
