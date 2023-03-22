@@ -36,9 +36,9 @@ core.db.TradeEngine.create(
     lm_ratio=1,
 )
 
-engine = peewee.ForeignKeyField(core.db.TradeEngine,
-                                field=core.db.TradeEngine.id,
-                                default=1)
+engine = peewee.ForeignKeyField(
+    core.db.TradeEngine, field=core.db.TradeEngine.id, default=1
+)
 migrate(
     migrator.add_column("strategy", "buy_engine_id", engine),
     migrator.add_column("strategy", "sell_engine_id", engine),
@@ -46,7 +46,5 @@ migrate(
 )
 
 migrate(
-    migrator.add_column("position",
-                        "stopped",
-                        peewee.BooleanField(default=False)),
+    migrator.add_column("position", "stopped", peewee.BooleanField(default=False)),
 )

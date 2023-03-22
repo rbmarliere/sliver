@@ -26,20 +26,16 @@ i_filter = OldTweet.model_i.is_null(False)
 intensities = pandas.DataFrame(q.where(i_filter).dicts())
 intensities = intensities[["id", "model_i", "intensity"]]
 intensities = intensities.rename(
-    columns={
-        "id": "tweet_id",
-        "model_i": "model",
-        "intensity": "score"})
+    columns={"id": "tweet_id", "model_i": "model", "intensity": "score"}
+)
 core.db.Score.insert_many(intensities.to_dict("records")).execute()
 
 p_filter = OldTweet.model_p.is_null(False)
 polarities = pandas.DataFrame(q.where(p_filter).dicts())
 polarities = polarities[["id", "model_p", "polarity"]]
 polarities = polarities.rename(
-    columns={
-        "id": "tweet_id",
-        "model_p": "model",
-        "polarity": "score"})
+    columns={"id": "tweet_id", "model_p": "model", "polarity": "score"}
+)
 core.db.Score.insert_many(polarities.to_dict("records")).execute()
 
 migrator = PostgresqlMigrator(core.db.connection)
@@ -47,5 +43,5 @@ migrate(
     migrator.drop_column(core.db.Tweet._meta.table_name, "model_i"),
     migrator.drop_column(core.db.Tweet._meta.table_name, "intensity"),
     migrator.drop_column(core.db.Tweet._meta.table_name, "model_p"),
-    migrator.drop_column(core.db.Tweet._meta.table_name, "polarity")
+    migrator.drop_column(core.db.Tweet._meta.table_name, "polarity"),
 )

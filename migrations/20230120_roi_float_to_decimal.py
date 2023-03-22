@@ -10,9 +10,7 @@ roi = peewee.DecimalField(default=0)
 
 migrate(
     migrator.drop_column(core.db.Position._meta.table_name, "roi"),
-    migrator.add_column(core.db.Position._meta.table_name,
-                        "roi",
-                        roi),
+    migrator.add_column(core.db.Position._meta.table_name, "roi", roi),
 )
 
 for pos in core.db.Position.select():
