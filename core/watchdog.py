@@ -55,11 +55,13 @@ class Watchdog(metaclass=WatchdogMeta):
                 if self.strategy:
                     self.strategy.postpone(interval_in_minutes=5)
 
-            except (Exception,
-                    core.errors.BaseError,
-                    core.errors.ModelTooLarge,
-                    core.errors.ModelDoesNotExist,
-                    core.errors.DisablingError) as e:
+            except (
+                Exception,
+                core.errors.BaseError,
+                core.errors.ModelTooLarge,
+                core.errors.ModelDoesNotExist,
+                core.errors.DisablingError,
+            ) as e:
                 self.print(exception=e)
                 if self.user_strat:
                     self.user_strat.disable()
@@ -83,9 +85,11 @@ class Watchdog(metaclass=WatchdogMeta):
     def refresh_pending_positions(self):
         for position in core.db.get_pending_positions():
             self.position = position
+            self.user_strat = position.user_strategy
 
             position.refresh()
 
+            self.user_strat = None
             self.position = None
 
     @run
