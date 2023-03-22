@@ -9,8 +9,8 @@ migrator = PostgresqlMigrator(core.db.connection)
 signal = peewee.DecimalField(default=0)
 
 migrate(
-    migrator.drop_column(
-        core.strategies.ManualStrategy._meta.table_name, "signal"),
+    migrator.drop_column(core.strategies.ManualStrategy._meta.table_name, "signal"),
     migrator.add_column(
-        core.strategies.ManualStrategy._meta.table_name, "signal", signal),
+        core.strategies.ManualStrategy._meta.table_name, "signal", signal
+    ),
 )

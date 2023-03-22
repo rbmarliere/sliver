@@ -227,7 +227,7 @@ curr_uids = [
     "2837666919",
     "899345041965109250",
     "1398843061233463297",
-    "819222096152641537"
+    "819222096152641537",
 ]
 
 assert core.config["TWITTER_BEARER_TOKEN"] is not None
@@ -245,6 +245,6 @@ with core.db.connection.atomic():
 
         print("{id} {username}".format(id=id, username=user.data.username))
 
-        core.strategies.hypnox. \
-            HypnoxUser.get_or_create(twitter_user_id=id,
-                                     username=user.data.username)
+        core.strategies.hypnox.HypnoxUser.get_or_create(
+            twitter_user_id=id, username=user.data.username
+        )

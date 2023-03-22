@@ -7,11 +7,9 @@ import strategies
 
 
 argp = argparse.ArgumentParser()
-argp.add_argument("-i",
-                  "--input",
-                  help="path to messages tsv file",
-                  type=str,
-                  required=True)
+argp.add_argument(
+    "-i", "--input", help="path to messages tsv file", type=str, required=True
+)
 args = argp.parse_args()
 
 strategies.swapperbox.SwapperBoxMessage.create_table()
@@ -23,4 +21,5 @@ with core.db.connection.atomic():
     df.rename(columns={"id": "telegram_message_id"}, inplace=True)
 
     core.strategies.swapperbox.SwapperBoxMessage.insert_many(
-        df.to_dict(orient="records")).execute()
+        df.to_dict(orient="records")
+    ).execute()
