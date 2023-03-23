@@ -10,13 +10,13 @@ class PostponingError(BaseError):
     ...
 
 
-class ModelDoesNotExist(Exception):
+class ModelDoesNotExist(BaseError):
     ...
 
 
-class ModelTooLarge(Exception):
+class ModelTooLarge(BaseError):
     ...
 
 
-class MarketAlreadySubscribed(Exception):
+class MarketAlreadySubscribed(BaseError):
     ...
