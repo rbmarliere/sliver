@@ -1,0 +1,43 @@
+[tool.pdm]
+[tool.pdm.dev-dependencies]
+
+[project]
+name = "sliver"
+version = "0.6.0"
+description = "Sliver is a multi-purpose trading bot for crypto and stocks."
+authors = [
+    {name = "Ricardo Marliere", email = "rbmarliere@gmail.com"},
+]
+dependencies = [
+    "flask>=2.2.3",
+    "flask-bcrypt>=1.0.1",
+    "flask-cors>=3.0.10",
+    "flask-jwt-extended>=4.4.4",
+    "flask-restful>=0.3.9",
+    "waitress>=2.1.2",
+    "ccxt>=3.0.33",
+    "pandas>=1.5.3",
+    "peewee>=3.16.0",
+    "psycopg2-binary>=2.9.5",
+    "python-dotenv>=1.0.0",
+    "python-telegram-bot>=20.1",
+    "telethon>=1.27.0",
+    "transformers>=4.27.3",
+    "rpyc>=5.3.1",
+    "tensorflow==2.10",
+    "tweepy>=4.13.0",
+]
+requires-python = ">=3.9,<3.11"
+license = {text = "None"}
+
+[tool.pdm.scripts]
+serve = {call = "sliver.core:serve", env_file = ".env"}
+watch = {call = "sliver.core:watch", env_file = ".env"}
+stream = {cmd = "python3 scripts/hypnox_streamer.py", env_file = ".env"}
+
+[tool.ruff]
+src = ["src"]
+
+[tool.ruff.isort]
+known-first-party = ["sliver"]
+

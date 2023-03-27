@@ -16,14 +16,15 @@ def main(args):
     ):
         raise Exception("Invalid timeframe")
 
-    market = exchange.get_markets().where(core.db.Market.symbol == args.symbol).get()
+    market = exchange.market_set.where(core.db.Market.symbol == args.symbol).get()
 
     if args.force:
         core.db.Price.delete().where(core.db.Price.market_id == market.id).where(
             core.db.Price.timeframe == args.timeframe
         ).execute()
 
-    prices_df = pandas.DataFrame(market.get_prices(args.timeframe).dicts())
+    prices_q = core.db.Price.get_by_market(market, args.timeframe)
+    prices_df = pandas.DataFrame(prices_q.dicts())
 
     input_df = pandas.read_csv(args.input_file)
     input_df.time = pandas.to_datetime(input_df.time, unit="s")

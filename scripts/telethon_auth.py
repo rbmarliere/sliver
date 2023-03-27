@@ -9,10 +9,10 @@ from telethon import TelegramClient
 import core
 
 
-session = core.config["LOGS_DIR"] + "/telethon"
-api_id = core.config["TELEGRAM_API_ID"]
-api_hash = core.config["TELEGRAM_API_HASH"]
-# bot_token = core.config["TELEGRAM_BOT_TOKEN"]
+session = core.cfg("LOGS_DIR") + "/telethon"
+api_id = core.cfg("TELEGRAM_API_ID")
+api_hash = core.cfg("TELEGRAM_API_HASH")
+# bot_token = core.get_config("TELEGRAM_BOT_TOKEN")
 
 
 async def connect(session):

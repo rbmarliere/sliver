@@ -230,11 +230,11 @@ curr_uids = [
     "819222096152641537",
 ]
 
-assert core.config["TWITTER_BEARER_TOKEN"] is not None
+assert core.cfg("TWITTER_BEARER_TOKEN") is not None
 
 core.strategies.hypnox.HypnoxUser.create_table()
 
-client = tweepy.Client(core.config["TWITTER_BEARER_TOKEN"])
+client = tweepy.Client(core.cfg("TWITTER_BEARER_TOKEN"))
 
 with core.db.connection.atomic():
     for id in curr_uids:
