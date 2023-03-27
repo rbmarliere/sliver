@@ -104,8 +104,13 @@ export class StrategyComponent implements OnInit {
         m.exchange_name = exchange.name;
         this.markets.push(m);
       }
-      this.timeframes = exchange.timeframes;
+      for (let timeframe of exchange.timeframes) {
+        if (!this.timeframes.includes(timeframe)) {
+          this.timeframes.push(timeframe);
+        }
+      }
     }
+    this.timeframes.sort();
   }
 
   @Input() strategy_id: number = 0;

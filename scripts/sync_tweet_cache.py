@@ -6,7 +6,7 @@ import sys
 import core
 import strategies
 
-cache_file = core.config["LOGS_DIR"] + "/cache.tsv"
+cache_file = core.cfg("LOGS_DIR") + "/cache.tsv"
 
 # check if cache_file exists
 if not os.path.isfile(cache_file):
