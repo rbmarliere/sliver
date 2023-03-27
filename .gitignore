@@ -1,8 +1,9 @@
-*__pycache__*
 *egg-info
 .env
-venv
-logs/
-models/saved/*
-scripts/*.csv
-scripts/*.tsv
+.pdm.toml
+.ruff_cache
+.venv
+__pycache__
+__pypackages__
+logs
+models

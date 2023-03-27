@@ -1,5 +1,3 @@
-vim.fn.jobstart("ng serve -c development --host 0.0.0.0", { cwd = "web" })
-
 local dap = require("dap")
 
 dap.defaults.fallback.force_external_terminal = true
@@ -31,14 +29,13 @@ dap.configurations.typescript = {
   typescript,
 }
 
-require("dap-python").setup(vim.fn.getcwd() .. "/venv/bin/python", { console = "externalTerminal" })
+require("dap-python").setup(vim.fn.getcwd() .. "/.venv/bin/python", { console = "externalTerminal" })
 
 local api = {
   type = "python",
   request = "launch",
   name = "API",
-  program = "api",
-  args = { "--no-debug" },
+  module = "sliver.api",
   console = "externalTerminal",
   justMyCode = false,
 }
@@ -48,17 +45,28 @@ local watchdog = {
   type = "python",
   request = "launch",
   name = "Watchdog",
-  program = "core",
+  module = "sliver",
   console = "externalTerminal",
   justMyCode = false,
 }
 table.insert(dap.configurations.python, watchdog)
 
-dap.run(typescript)
-dap.run(watchdog)
-dap.run(api)
+vim.ui.input({ prompt = "Run debugger sessions? [Y|n]  > " }, function(input)
+  if input == "n" then
+    return
+  end
+  vim.fn.jobstart("ng serve -c development --host 0.0.0.0", { cwd = "web" })
+  dap.run(typescript)
+  dap.run(watchdog)
+  dap.run(api)
+end)
 
 local sliver = vim.fn.stdpath("config") .. "/sessions/sliver"
 if vim.fn.filereadable(sliver) == 1 then
-  vim.cmd("source " .. sliver)
+  vim.ui.input({ prompt = "Load session " .. sliver .. "? [Y|n]  > " }, function(input)
+    if input == "n" then
+      return
+    end
+    vim.cmd("source " .. sliver)
+  end)
 end
