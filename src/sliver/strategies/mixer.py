@@ -32,15 +32,10 @@ class MixerStrategy(IStrategy):
     sell_threshold = peewee.DecimalField(default=-1)
 
     def get_indicators(self):
-        return (
-            super()
-            .get_indicators()
-            .select(*[*self.select_fields, MixerIndicator])
-            .join(MixerIndicator, peewee.JOIN.LEFT_OUTER)
-        )
+        return self.strategy.get_indicators(model=MixerIndicator)
 
     def get_indicators_df(self):
-        return super().get_indicators_df(self.get_indicators())
+        return self.strategy.get_indicators_df(self.get_indicators())
 
     def refresh_indicators(self):
         from sliver.strategies.factory import StrategyFactory

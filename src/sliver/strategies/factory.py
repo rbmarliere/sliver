@@ -12,7 +12,7 @@ from sliver.strategies.types import StrategyTypes
 
 class StrategyFactory:
     @classmethod
-    def from_base(self, strategy):
+    def from_base(cls, strategy):
         if strategy.type == StrategyTypes.BB:
             return BB.get_or_create(strategy=strategy)[0]
 
