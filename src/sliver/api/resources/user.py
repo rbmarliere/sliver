@@ -48,8 +48,11 @@ class User(Resource):
 
         if args.telegram_username:
             user.telegram_username = args.telegram_username
+            user.telegram_chat_id = None
+
         if args.max_risk:
             user.max_risk = args.max_risk
+
         if args.cash_reserve:
             user.cash_reserve = args.cash_reserve
 
