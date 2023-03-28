@@ -15,7 +15,7 @@ from sliver.utils import get_timeframe_freq
 class SwapperBoxMessage(db.BaseModel):
     telegram_message_id = peewee.TextField()
     date = peewee.DateTimeField()
-    text = peewee.TextField()
+    text = peewee.TextField(null=True)
 
 
 class SwapperBoxStrategy(IStrategy):
@@ -26,7 +26,7 @@ class SwapperBoxStrategy(IStrategy):
         NEUTRAL = StrategySignals.NEUTRAL
 
         # signals = pandas.read_html(self.url)[1]
-        si = pandas.read_csv("strategies/swapperbox/signals.tsv", sep="\t")
+        si = pandas.read_csv("scripts/swapperbox_signals.tsv", sep="\t")
         si.time = (
             pandas.to_datetime(si.time)
             .dt.tz_localize("America/Sao_Paulo")
@@ -47,7 +47,7 @@ class SwapperBoxStrategy(IStrategy):
     def refresh_messages(self):
         messages = pandas.DataFrame(SwapperBoxMessage.select().dicts())
 
-        upstream = get_messages(self.telegram, limit=0)
+        upstream = get_messages(entity=self.telegram, limit=0)
 
         if upstream is None or upstream.total == len(messages):
             print("swapperbox: no new messages")
@@ -56,7 +56,7 @@ class SwapperBoxStrategy(IStrategy):
         if len(messages) > 0:
             limit = upstream.total - len(messages)
 
-        missing = get_messages(self.telegram, limit=limit)
+        missing = get_messages(entity=self.telegram, limit=limit)
 
         if len(missing) > 0:
             new = pandas.DataFrame()
