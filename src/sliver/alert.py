@@ -8,19 +8,25 @@ from sliver.print import print
 from sliver.exceptions import DisablingError
 
 
+def get_client(entity_type):
+    assert Config().LOGS_DIR
+    assert Config().TELEGRAM_API_ID
+    assert Config().TELEGRAM_API_HASH
+
+    session = Config().LOGS_DIR + "/telethon_" + entity_type
+    api_id = Config().TELEGRAM_API_ID
+    api_hash = Config().TELEGRAM_API_HASH
+
+    return telethon.TelegramClient(session, api_id, api_hash)
+
+
 def telethon_call(entity_type):
     def outer(call):
         def inner(**kwargs):
             try:
-                assert Config().LOGS_DIR
-                assert Config().TELEGRAM_API_ID
-                assert Config().TELEGRAM_API_HASH
+                assert entity_type in ["user", "bot"]
 
-                session = Config().LOGS_DIR + "/telethon_" + entity_type
-                api_id = Config().TELEGRAM_API_ID
-                api_hash = Config().TELEGRAM_API_HASH
-
-                client = telethon.TelegramClient(session, api_id, api_hash)
+                client = get_client(entity_type)
 
                 if entity_type == "bot":
                     assert Config().TELEGRAM_BOT_TOKEN
@@ -34,7 +40,7 @@ def telethon_call(entity_type):
 
                 client.connect()
 
-                method = getattr(client, call.__name__)
+                method = getattr(client, call(**kwargs))
                 res = method(**kwargs)
 
                 client.disconnect()
@@ -42,10 +48,13 @@ def telethon_call(entity_type):
                 return res
 
             except AssertionError:
-                print("no telegram configuration")
+                pass
 
             except AttributeError:
                 print("no telethon method {m}".format(m=call.__name__))
+
+            except telethon.errors.AuthKeyUnregisteredError:
+                raise DisablingError("no telethon authentication")
 
             except telethon.errors.FloodWaitError as e:
                 time.sleep(e.seconds)
