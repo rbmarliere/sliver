@@ -30,7 +30,9 @@ def telethon_call(entity_type):
                     client.start(bot_token=bot_token)
 
                 if "entity" not in kwargs:
-                    kwargs["entity"] = int(channel)
+                    kwargs["entity"] = channel
+
+                kwargs["entity"] = int(kwargs["entity"])
 
                 client.connect()
 
