@@ -25,7 +25,7 @@ class CCXT(Exchange):
         try:
             sandbox_mode = Config().ENV_NAME == "development"
             self._api.set_sandbox_mode(sandbox_mode)
-        except AttributeError:
+        except ccxt.base.errors.NotSupported:
             raise DisablingError("sandbox mode not supported")
 
         self.check_latency()
