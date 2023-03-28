@@ -22,5 +22,5 @@ class Price(db.BaseModel):
             cls.select()
             .where(cls.market == strategy.market)
             .where(cls.timeframe == strategy.timeframe)
-            .order_by(cls.time.desc())
+            .order_by(cls.time)
         )
