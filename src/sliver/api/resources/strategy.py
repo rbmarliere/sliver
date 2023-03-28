@@ -169,14 +169,14 @@ class Strategy(Resource):
 
             strategy = StrategyFactory.from_base(strategy)
 
-            if len([*strategy._meta.columns]) > 1:
-                for field in strategy._meta.sorted_field_names:
-                    try:
-                        if args[field] is not None:
-                            setattr(strategy, field, args[field])
-                    except KeyError:
-                        pass
-                strategy.save()
+            for field in strategy._meta.sorted_field_names:
+                try:
+                    if args[field] is not None:
+                        setattr(strategy, field, args[field])
+                except KeyError:
+                    pass
+
+            strategy.save()
 
             Indicator.delete().where(Indicator.strategy_id == strategy_id).execute()
 
