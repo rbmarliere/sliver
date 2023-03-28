@@ -54,7 +54,7 @@ class BaseStrategy(db.BaseModel):
         try:
             signal = (
                 self.indicator_set.where(Indicator.signal != StrategySignals.NEUTRAL)
-                .order_by(Indicator.id.desc())
+                .order_by(Indicator.price_id.desc())
                 .get()
                 .signal
             )
