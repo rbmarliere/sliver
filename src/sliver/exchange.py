@@ -116,7 +116,9 @@ class Exchange(db.BaseModel):
         #     raise BaseError("timeframe not supported")
 
         try:
-            last_entry = Price.get_by_strategy(strategy).get().time
+            last_entry = (
+                Price.get_by_strategy(strategy).order_by(Price.time.desc()).get().time
+            )
 
             page_start = last_entry + tf_delta
 
