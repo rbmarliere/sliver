@@ -457,7 +457,7 @@ class Position(db.BaseModel):
             return
 
         strategy = self.user_strategy.strategy
-        signal = strategy.signal
+        signal = strategy.get_signal()
         market = strategy.market
         SELL = StrategySignals.SELL
 
@@ -617,7 +617,7 @@ class Position(db.BaseModel):
             user.send_message(self.get_notice(prefix="opened "))
 
         # handle special case of hanging position
-        signal = self.user_strategy.strategy.signal
+        signal = self.user_strategy.strategy.get_signal()
         SELL = StrategySignals.SELL
         if self.entry_cost == 0 and (self.status == "closing" or signal == SELL):
             print("entry_cost is 0, position is now closed")

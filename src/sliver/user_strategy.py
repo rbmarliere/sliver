@@ -75,7 +75,7 @@ class UserStrategy(db.BaseModel):
         )
 
         if position is None:
-            if strategy.signal == BUY:
+            if strategy.get_signal() == BUY:
                 if strategy.stop_engine:
                     cooldown = strategy.stop_engine.stop_cooldown
                     last_pos = (
@@ -100,6 +100,6 @@ class UserStrategy(db.BaseModel):
 
                 Position.open(self, t_cost)
 
-        elif position.is_open() and strategy.signal == SELL:
+        elif position.is_open() and strategy.get_signal() == SELL:
             position.next_refresh = datetime.datetime.utcnow()
             position.save()

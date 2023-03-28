@@ -44,19 +44,6 @@ class BaseStrategy(db.BaseModel):
     def exchange(self):
         return self.market.base.exchange.name
 
-    @property
-    def signal(self):
-        try:
-            signal = (
-                self.indicator_set.where(Indicator.signal != StrategySignals.NEUTRAL)
-                .order_by(Indicator.price_id.desc())
-                .get()
-                .signal
-            )
-            return StrategySignals(signal)
-        except Indicator.DoesNotExist:
-            return StrategySignals.NEUTRAL
-
     @classmethod
     def get_existing(cls):
         return cls.select().where(~cls.deleted).order_by(cls.id.desc())
@@ -74,6 +61,18 @@ class BaseStrategy(db.BaseModel):
             .order_by(cls.next_refresh)
             .order_by(cls.type == StrategyTypes.MIXER)
         )
+
+    def get_signal(self):
+        try:
+            signal = (
+                self.indicator_set.where(Indicator.signal != StrategySignals.NEUTRAL)
+                .order_by(Indicator.price_id.desc())
+                .get()
+                .signal
+            )
+            return StrategySignals(signal)
+        except Indicator.DoesNotExist:
+            return StrategySignals.NEUTRAL
 
     def get_indicators(self, model=None):
         select_fields = [Price, Indicator.id.alias("indicator_id"), Indicator]
@@ -209,7 +208,7 @@ class IStrategy(db.BaseModel):
 
         self.refresh_indicators()
 
-        print("signal is {s}".format(s=self.signal.name))
+        print("signal is {s}".format(s=self.get_signal().name))
 
         self.postpone()
 
