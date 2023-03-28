@@ -28,15 +28,15 @@ def telethon_call(entity_type):
 
                 client = get_client(entity_type)
 
-                if entity_type == "bot":
-                    assert Config().TELEGRAM_BOT_TOKEN
-                    bot_token = Config().TELEGRAM_BOT_TOKEN
-                    client.start(bot_token=bot_token)
-
                 if "entity" not in kwargs:
                     assert Config().TELEGRAM_CHANNEL
                     channel = Config().TELEGRAM_CHANNEL
                     kwargs["entity"] = int(channel)
+
+                if entity_type == "bot":
+                    assert Config().TELEGRAM_BOT_TOKEN
+                    bot_token = Config().TELEGRAM_BOT_TOKEN
+                    client.start(bot_token=bot_token)
 
                 client.connect()
 
@@ -61,6 +61,9 @@ def telethon_call(entity_type):
 
             except Exception as e:
                 raise DisablingError("{err} {e}".format(err=e.__class__.__name__, e=e))
+
+            finally:
+                client.disconnect()
 
         return inner
 
