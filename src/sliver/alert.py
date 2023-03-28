@@ -1,6 +1,7 @@
 import time
 
 import telethon.sync
+import telegram
 
 from sliver.config import Config
 from sliver.print import print
@@ -29,7 +30,7 @@ def telethon_call(entity_type):
                     client.start(bot_token=bot_token)
 
                 if "entity" not in kwargs:
-                    kwargs["entity"] = channel
+                    kwargs["entity"] = int(channel)
 
                 client.connect()
 
@@ -79,50 +80,9 @@ def send_message(*, message):
     return "send_message"
 
 
-# def send_user_message(self, message):
-#     while True:
-#         try:
-#             assert Config().TELEGRAM_BOT_TOKEN
-#             assert self.telegram_username
+def get_updates():
+    assert Config().TELEGRAM_BOT_TOKEN
 
-#             bot = telegram.Bot(Config().TELEGRAM_BOT_TOKEN)
+    bot = telegram.Bot(Config().TELEGRAM_BOT_TOKEN)
 
-#             if self.telegram_chat_id is None:
-#                 updates = bot.get_updates()
-#                 for update in updates:
-#                     if update.message.chat.username == self.telegram_username:
-#                         self.telegram_chat_id = update.message.chat.id
-#                         self.save()
-
-#             bot.send_message(text=message, chat_id=self.telegram_chat_id)
-
-#         except (KeyError, AssertionError):
-#             pass
-
-#         except telegram.error.NetworkError:
-#             time.sleep(30)
-#             continue
-
-#         break
-
-# def send_message(self, message):
-#     while True:
-#         try:
-#             assert Config().TELEGRAM_BOT_TOKEN
-#             assert Config().TELEGRAM_CHANNEL
-
-#             bot = telegram.Bot(Config().TELEGRAM_BOT_TOKEN)
-
-#             bot.send_message(text=message, chat_id=Config().TELEGRAM_CHANNEL)
-
-#         except (KeyError, AssertionError):
-#             pass
-
-#         except telegram.error.NetworkError:
-#             time.sleep(30)
-#             continue
-
-#         break
-
-if __name__ == "__main__":
-    send_message(message="hello world")
+    return bot.get_updates()

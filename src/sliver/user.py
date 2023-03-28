@@ -1,7 +1,7 @@
 import peewee
 
 import sliver.database as db
-from sliver.alert import send_user_message
+from sliver.alert import get_updates, send_user_message
 from sliver.asset import Asset
 from sliver.balance import Balance
 from sliver.credential import Credential
@@ -15,7 +15,7 @@ class User(db.BaseModel):
     max_risk = peewee.DecimalField(default=0.1)
     cash_reserve = peewee.DecimalField(default=0.25)
     telegram_username = peewee.TextField(null=True)
-    telegram_chat_id = peewee.TextField(null=True)  # TODO remove
+    telegram_chat_id = peewee.TextField(null=True)
 
     def get_exchange_credential(self, exchange):
         return self.credential_set.where(Credential.exchange == exchange)
@@ -45,7 +45,15 @@ class User(db.BaseModel):
         if not self.telegram_username:
             return
 
-        send_user_message(self.telegram_username, message)
+        if self.telegram_chat_id is None:
+            updates = get_updates()
+            for update in updates:
+                if update.message.chat.username == self.telegram_username:
+                    self.telegram_chat_id = update.message.chat.id
+                    self.save()
+
+        if self.telegram_chat_id:
+            send_user_message(self.telegram_chat_id, message)
 
     def sync_balances(self):
         ...
