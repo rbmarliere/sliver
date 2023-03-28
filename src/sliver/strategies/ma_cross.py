@@ -23,15 +23,10 @@ class MACrossStrategy(IStrategy):
     slow_period = peewee.IntegerField(default=200)
 
     def get_indicators(self):
-        return (
-            super()
-            .get_indicators()
-            .select(*[*self.select_fields, MACrossIndicator])
-            .join(MACrossIndicator, peewee.JOIN.LEFT_OUTER)
-        )
+        return self.strategy.get_indicators(model=MACrossIndicator)
 
     def get_indicators_df(self):
-        df = super().get_indicators_df(self.get_indicators())
+        df = self.strategy.get_indicators_df(self.get_indicators())
 
         df.fast = df.fast.apply(lambda x: decimal.Decimal(x) if x else 0)
         df.slow = df.slow.apply(lambda x: decimal.Decimal(x) if x else 0)
