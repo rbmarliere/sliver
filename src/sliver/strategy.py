@@ -20,11 +20,6 @@ from sliver.utils import get_next_refresh, get_timeframe_in_seconds, quantize
 
 class BaseStrategy(db.BaseModel):
     __metaclass__ = ABCMeta
-    select_fields = [
-        Price,
-        Indicator.id.alias("indicator_id"),
-        Indicator,
-    ]
 
     class Meta:
         table_name = "strategy"
@@ -80,16 +75,20 @@ class BaseStrategy(db.BaseModel):
             .order_by(cls.type == StrategyTypes.MIXER)
         )
 
-    def get_indicators(self):
-        return (
-            Price.get_by_strategy(self)
-            .select(*self.select_fields)
-            .join(
-                Indicator,
-                peewee.JOIN.LEFT_OUTER,
-                on=((Indicator.price_id == Price.id) & (Indicator.strategy == self)),
-            )
+    def get_indicators(self, model=None):
+        select_fields = [Price, Indicator.id.alias("indicator_id"), Indicator]
+
+        query = Price.get_by_strategy(self).join(
+            Indicator,
+            peewee.JOIN.LEFT_OUTER,
+            on=((Indicator.price_id == Price.id) & (Indicator.strategy == self)),
         )
+
+        if model:
+            select_fields.append(model)
+            query = query.join(model, peewee.JOIN.LEFT_OUTER)
+
+        return query.select(*select_fields)
 
     def get_indicators_df(self, query=None):
         BUY = StrategySignals.BUY
@@ -192,11 +191,8 @@ class IStrategy(db.BaseModel):
     def id(self):
         return self.strategy.id
 
-    def __getattr__(self, name):
-        if name in self.__data__:
-            return self.__data__[name]
-
-        return getattr(self.strategy, name)
+    def __getattr__(self, attr):
+        return getattr(self.strategy, attr)
 
     def refresh(self):
         print("===========================================")
