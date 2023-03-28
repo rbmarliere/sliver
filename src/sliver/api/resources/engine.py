@@ -107,7 +107,7 @@ class Engine(Resource):
         except TradeEngine.DoesNotExist:
             raise EngineDoesNotExist
 
-        if engine.strategy_set.where(~Strategy.deleted).count() > 0:
+        if engine.basestrategy_set.where(~Strategy.deleted).count() > 0:
             raise EngineInUse
 
         engine.deleted = True
