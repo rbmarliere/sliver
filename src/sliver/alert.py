@@ -85,7 +85,7 @@ def send_user_message(*, entity, message):
 
 
 @telethon_call("bot")
-def send_message(*, message):
+def send_message(*, entity, message):
     return "send_message"
 
 
