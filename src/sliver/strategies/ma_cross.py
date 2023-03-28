@@ -28,6 +28,9 @@ class MACrossStrategy(IStrategy):
     def get_indicators_df(self):
         df = self.strategy.get_indicators_df(self.get_indicators())
 
+        if df.empty:
+            return df
+
         df.fast = df.fast.apply(lambda x: decimal.Decimal(x) if x else 0)
         df.slow = df.slow.apply(lambda x: decimal.Decimal(x) if x else 0)
 

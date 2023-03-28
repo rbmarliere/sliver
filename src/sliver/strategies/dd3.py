@@ -23,15 +23,13 @@ class DD3Strategy(IStrategy):
     ma3_period = peewee.IntegerField(default=20)
 
     def get_indicators(self):
-        return (
-            super()
-            .get_indicators()
-            .select(*[*self.select_fields, DD3Indicator])
-            .join(DD3Indicator, peewee.JOIN.LEFT_OUTER)
-        )
+        return self.strategy.get_indicators(model=DD3Indicator)
 
     def get_indicators_df(self):
-        df = super().get_indicators_df(self.get_indicators())
+        df = self.strategy.get_indicators_df(self.get_indicators())
+
+        if df.empty:
+            return df
 
         df.ma1 = df.ma1.apply(lambda x: decimal.Decimal(x) if x else 0)
         df.ma2 = df.ma2.apply(lambda x: decimal.Decimal(x) if x else 0)

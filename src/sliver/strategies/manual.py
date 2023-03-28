@@ -1,6 +1,5 @@
 import peewee
 
-from sliver.strategies.signals import StrategySignals
 from sliver.strategy import IStrategy
 
 

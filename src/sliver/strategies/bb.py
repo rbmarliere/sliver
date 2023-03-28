@@ -24,15 +24,13 @@ class BBStrategy(IStrategy):
     num_std = peewee.IntegerField(default=2)
 
     def get_indicators(self):
-        return (
-            super()
-            .get_indicators()
-            .select(*[*self.select_fields, BBIndicator])
-            .join(BBIndicator, peewee.JOIN.LEFT_OUTER)
-        )
+        return self.strategy.get_indicators(model=BBIndicator)
 
     def get_indicators_df(self):
-        df = super().get_indicators_df(self.get_indicators())
+        df = self.strategy.get_indicators_df(self.get_indicators())
+
+        if df.empty:
+            return df
 
         df.ma = df.ma.apply(lambda x: decimal.Decimal(x) if x else 0)
         df.bolu = df.bolu.apply(lambda x: decimal.Decimal(x) if x else 0)
