@@ -15,24 +15,22 @@ def telethon_call(entity_type):
                 assert Config().LOGS_DIR
                 assert Config().TELEGRAM_API_ID
                 assert Config().TELEGRAM_API_HASH
-                assert Config().TELEGRAM_BOT_TOKEN
-                assert Config().TELEGRAM_CHANNEL
 
                 session = Config().LOGS_DIR + "/telethon_" + entity_type
                 api_id = Config().TELEGRAM_API_ID
                 api_hash = Config().TELEGRAM_API_HASH
-                bot_token = Config().TELEGRAM_BOT_TOKEN
-                channel = Config().TELEGRAM_CHANNEL
 
                 client = telethon.TelegramClient(session, api_id, api_hash)
 
                 if entity_type == "bot":
+                    assert Config().TELEGRAM_BOT_TOKEN
+                    bot_token = Config().TELEGRAM_BOT_TOKEN
                     client.start(bot_token=bot_token)
 
                 if "entity" not in kwargs:
-                    kwargs["entity"] = channel
-
-                kwargs["entity"] = int(kwargs["entity"])
+                    assert Config().TELEGRAM_CHANNEL
+                    channel = Config().TELEGRAM_CHANNEL
+                    kwargs["entity"] = int(channel)
 
                 client.connect()
 
