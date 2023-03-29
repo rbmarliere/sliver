@@ -93,6 +93,10 @@ class Position(db.BaseModel):
             .order_by(Position.id.desc())
         )
 
+    @classmethod
+    def get_open_user_positions(self, user):
+        return self.get_open().where(UserStrategy.user == user)
+
     @property
     def exchange(self):
         if hasattr(self, "_exchange"):
@@ -199,7 +203,7 @@ class Position(db.BaseModel):
         remaining = 0 if remaining_to_fill < 0 else remaining
 
         user = self.user_strategy.user
-        balance = user.get_balance(asset=market.quote)
+        balance = user.get_exchange_balance(market.quote)
         remaining = min(remaining, balance.total)
 
         print("bucket cost is {a}".format(a=market.quote.print(self.bucket)))
@@ -219,7 +223,7 @@ class Position(db.BaseModel):
         remaining = 0 if remaining_to_fill < 0 else remaining
 
         user = self.user_strategy.user
-        balance = user.get_balance(asset=market.base)
+        balance = user.get_exchange_balance(market.base)
         remaining = min(remaining, balance.total)
 
         print("bucket amount is {a}".format(a=market.base.print(self.bucket)))
@@ -447,7 +451,7 @@ class Position(db.BaseModel):
                 self.user_strategy.strategy.market.get_symbol(), oid=oid
             )
 
-            order = self.exchange.get_synced_order(oid)
+            order = self.exchange.get_synced_order(self, oid)
 
             if order.status != "open":
                 self.add_order(order)
@@ -541,14 +545,14 @@ class Position(db.BaseModel):
 
             if m_total_amount > 0:
                 inserted_orders = self.exchange.create_order(
-                    market, "market", side, m_total_amount, last_p
+                    self, "market", side, m_total_amount, last_p
                 )
 
             if engine.lm_ratio < 1:
                 l_total = self.get_remaining_cost()
                 if l_total > 0:
                     inserted_orders = self.exchange.create_limit_buy_orders(
-                        market, l_total, last_p, engine.num_orders, engine.spread
+                        self, l_total, last_p, engine.num_orders, engine.spread
                     )
 
         elif self.status == "closing":
@@ -556,20 +560,20 @@ class Position(db.BaseModel):
 
             if m_total_amount > 0:
                 inserted_orders = self.exchange.create_order(
-                    market, "market", side, m_total_amount, last_p
+                    self, "market", side, m_total_amount, last_p
                 )
 
             if engine.lm_ratio < 1:
                 l_total = self.get_remaining_amount(last_p)
                 if l_total > 0:
                     inserted_orders = self.exchange.create_limit_sell_orders(
-                        market, l_total, last_p, engine.num_orders, engine.spread
+                        self, l_total, last_p, engine.num_orders, engine.spread
                     )
 
         # if bucket is not full but can't insert new orders, fill at market
         if not inserted_orders:
             inserted_orders = self.exchange.create_order(
-                market, "market", side, remaining_amount, last_p
+                self, "market", side, remaining_amount, last_p
             )
 
         if not inserted_orders:

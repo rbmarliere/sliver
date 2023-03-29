@@ -92,7 +92,11 @@ class Exchange(db.BaseModel):
 
     @api_call
     @abstractmethod
-    def get_synced_order(self, oid):
+    def get_synced_order(self, position, oid):
+        ...
+
+    @abstractmethod
+    def sync_user_balance(self, user):
         ...
 
     def check_latency(self):
@@ -171,7 +175,9 @@ class Exchange(db.BaseModel):
 
         return prices
 
-    def create_order(self, market, type, side, amount, price):
+    def create_order(self, position, type, side, amount, price):
+        market = position.user_strategy.strategy.market
+
         print(
             "inserting {t} {s} order :: {a} @ {p}".format(
                 t=type,
@@ -196,13 +202,15 @@ class Exchange(db.BaseModel):
         if oid:
             print("inserted {t} {s} order {i}".format(t=type, s=side, i=oid))
 
-            order = self.get_synced_order(oid)
+            order = self.get_synced_order(position, oid)
 
             return order.exchange_order_id
 
     def create_limit_buy_orders(
-        self, market, total_cost, last_price, num_orders, spread_pct
+        self, position, total_cost, last_price, num_orders, spread_pct
     ):
+        market = position.user_strategy.strategy.market
+
         # compute price delta based on given spread
         delta = market.quote.div(
             last_price * spread_pct,
@@ -244,7 +252,7 @@ class Exchange(db.BaseModel):
                 total_cost, avg_price, prec=market.amount_precision
             )
 
-            self.create_order(market, "limit", "buy", total_amt, avg_price)
+            self.create_order(position, "limit", "buy", total_amt, avg_price)
 
             return True
 
@@ -264,13 +272,15 @@ class Exchange(db.BaseModel):
                     cost_remainder, price, prec=market.amount_precision
                 )
 
-            self.create_order(market, "limit", "buy", unit_amount, price)
+            self.create_order(position, "limit", "buy", unit_amount, price)
 
         return True
 
     def create_limit_sell_orders(
-        self, market, total_amount, last_price, num_orders, spread_pct
+        self, position, total_amount, last_price, num_orders, spread_pct
     ):
+        market = position.user_strategy.strategy.market
+
         # compute price delta based on given spread
         delta = market.quote.div(
             last_price * spread_pct,
@@ -311,7 +321,7 @@ class Exchange(db.BaseModel):
         # send a single order if any of the costs is lower than market minimum
         if any(cost < market.cost_min for cost in costs):
             print("unitary cost is less than exchange minimum," "creating single order")
-            self.create_order(market, "limit", "sell", total_amount, avg_price)
+            self.create_order(position, "limit", "sell", total_amount, avg_price)
             return True
 
         # avoid bucket rounding errors
@@ -324,6 +334,6 @@ class Exchange(db.BaseModel):
             if price == prices[-1]:
                 unit_amount += bucket_remainder
 
-            self.create_order(market, "limit", "sell", unit_amount, price)
+            self.create_order(position, "limit", "sell", unit_amount, price)
 
         return True

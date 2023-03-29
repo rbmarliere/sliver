@@ -4,9 +4,12 @@ import time
 import ccxt
 import pandas
 
+from sliver.asset import Asset
+from sliver.balance import Balance
 from sliver.config import Config
 from sliver.exceptions import DisablingError, PostponingError
 from sliver.exchange import Exchange
+from sliver.exchange_asset import ExchangeAsset
 from sliver.order import Order
 from sliver.print import print
 
@@ -40,12 +43,10 @@ class CCXT(Exchange):
 
             except ccxt.RateLimitExceeded:
                 sleep_time = 60
-                if self.market:
-                    sleep_time = self.market.base.exchange.rate_limit
-
+                if self.rate_limit:
+                    sleep_time = self.rate_limit
                 print("rate limited, sleeping for {s} seconds".format(s=sleep_time))
                 time.sleep(sleep_time)
-
                 return inner(self, *args, **kwargs)
 
             except ccxt.RequestTimeout as e:
@@ -188,14 +189,16 @@ class CCXT(Exchange):
                     return last_order["id"]
 
     @api_call
-    def get_synced_order(self, oid) -> Order:
+    def get_synced_order(self, position, oid) -> Order:
+        market = position.user_strategy.strategy.market
+
         order = Order.get_or_none(exchange_order_id=oid)
-        if order is None or order.position_id != self.position.id:
+        if order is None or order.position_id != position.id:
             order = Order()
 
-        ex_order = self.api_fetch_orders(self.market.get_symbol(), oid=oid)
+        ex_order = self.api_fetch_orders(market.get_symbol(), oid=oid)
 
-        order.position = self.position
+        order.position = position
         order.exchange_order_id = ex_order["id"]
         order.status = ex_order["status"]
         order.type = ex_order["type"]
@@ -214,21 +217,21 @@ class CCXT(Exchange):
             cost = filled * amount
 
         # transform values to db entry standard
-        order.price = self.market.quote.transform(price)
-        order.amount = self.market.base.transform(amount)
-        order.cost = self.market.quote.transform(cost)
-        order.filled = self.market.base.transform(filled)
+        order.price = market.quote.transform(price)
+        order.amount = market.base.transform(amount)
+        order.cost = market.quote.transform(cost)
+        order.filled = market.base.transform(filled)
 
         if order.id:
             print("syncing {s} order {i}".format(s=order.side, i=oid))
-            print("filled: {f}".format(f=self.market.base.print(filled)))
-            implicit_cost = self.market.base.format(amount) * order.price
+            print("filled: {f}".format(f=market.base.print(filled)))
+            implicit_cost = market.base.format(amount) * order.price
             if implicit_cost > 0:
                 print(
                     "{a} @ {p} ({c})".format(
-                        a=self.market.base.print(amount),
-                        p=self.market.quote.print(price),
-                        c=self.market.quote.print(implicit_cost),
+                        a=market.base.print(amount),
+                        p=market.quote.print(price),
+                        c=market.quote.print(implicit_cost),
                     )
                 )
 
@@ -238,7 +241,7 @@ class CCXT(Exchange):
             order.fee = 0
         else:
             try:
-                order.fee = self.market.quote.transform(ex_order["fee"]["cost"])
+                order.fee = market.quote.transform(ex_order["fee"]["cost"])
             except KeyError:
                 order.fee = 0
 
@@ -254,3 +257,73 @@ class CCXT(Exchange):
         order.save()
 
         return order
+
+    def sync_user_balance(self, user):
+        print("syncing user balance in exchange {e}".format(e=self.name))
+
+        value_ticker = "USDT"
+        value_asset, new = Asset.get_or_create(ticker=value_ticker)
+        if new:
+            print("saved asset {a}".format(a=value_asset.ticker))
+
+        ex_bal = self.api_fetch_balance()
+
+        ex_val_asset, new = ExchangeAsset.get_or_create(
+            exchange=self, asset=value_asset
+        )
+        if new:
+            print("saved asset {a} to exchange".format(a=ex_val_asset.asset.ticker))
+
+        # for each exchange asset, update internal user balance
+        for ticker in ex_bal["free"]:
+            free = ex_bal["free"][ticker]
+            used = ex_bal["used"][ticker]
+            total = ex_bal["total"][ticker]
+
+            if not total:
+                continue
+
+            asset, new = Asset.get_or_create(ticker=ticker.upper())
+            if new:
+                print("saved new asset {a}".format(a=asset.ticker))
+
+            ex_asset, new = ExchangeAsset.get_or_create(exchange=self, asset=asset)
+            if new:
+                print("saved asset {a}".format(a=ex_asset.asset.ticker))
+
+            u_bal, new = Balance.get_or_create(
+                user=user, asset=ex_asset, value_asset=ex_val_asset
+            )
+            if new:
+                print("saved new balance {b}".format(b=u_bal.id))
+
+            u_bal.free = ex_asset.transform(free) if free else 0
+            u_bal.used = ex_asset.transform(used) if used else 0
+            u_bal.total = ex_asset.transform(total) if total else 0
+
+            symbol = asset.ticker + "/" + value_asset.ticker
+            p = self.api_fetch_last_price(symbol)
+            if p:
+                free_value = ex_val_asset.transform(p * free) if free else 0
+                used_value = ex_val_asset.transform(p * used) if used else 0
+                total_value = ex_val_asset.transform(p * total) if total else 0
+
+            if not p:
+                symbol = value_asset.ticker + "/" + asset.ticker
+                p = self.api_fetch_last_price(symbol)
+
+            if p:
+                free_value = ex_val_asset.transform(free / p) if free else 0
+                used_value = ex_val_asset.transform(used / p) if used else 0
+                total_value = ex_val_asset.transform(total / p) if total else 0
+
+            if not p:
+                free_value = u_bal.free
+                used_value = u_bal.used
+                total_value = u_bal.total
+
+            u_bal.free_value = free_value
+            u_bal.used_value = used_value
+            u_bal.total_value = total_value
+
+            u_bal.save()
