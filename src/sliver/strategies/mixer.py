@@ -5,6 +5,7 @@ import pandas
 import peewee
 
 import sliver.database as db
+from sliver.exceptions import DisablingError
 from sliver.indicator import Indicator
 from sliver.strategies.signals import StrategySignals
 from sliver.strategy import BaseStrategy, IStrategy
@@ -52,7 +53,11 @@ class MixerStrategy(IStrategy):
 
         for mixin in self.strategy.mixins:
             strategy = StrategyFactory.from_base(mixin.strategy)
+
             mixind = pandas.DataFrame(strategy.get_indicators().dicts())
+            if mixind.empty:
+                raise DisablingError("no mixin indicator data")
+
             mixind = mixind.set_index("time")
 
             if self.strategy.timeframe != strategy.timeframe:
