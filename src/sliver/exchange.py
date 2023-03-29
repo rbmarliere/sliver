@@ -204,6 +204,9 @@ class Exchange(db.BaseModel):
 
             order = self.get_synced_order(position, oid)
 
+            if order.status != "open":
+                position.add_order(order)
+
             return order.exchange_order_id
 
     def create_limit_buy_orders(
