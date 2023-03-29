@@ -56,7 +56,6 @@ class BaseStrategy(db.BaseModel):
     def get_pending(cls):
         return (
             cls.get_active()
-            .where(cls.active)
             .where(cls.next_refresh < datetime.datetime.utcnow())
             .order_by(cls.next_refresh)
             .order_by(cls.type == StrategyTypes.MIXER)
