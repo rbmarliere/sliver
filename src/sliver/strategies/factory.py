@@ -29,11 +29,7 @@ class StrategyFactory:
             return Manual.get_or_create(strategy=strategy)[0]
 
         elif strategy.type == StrategyTypes.MIXER:
-            st = Mixer.get_or_create(strategy=strategy)[0]
-            st.strategies = [m.strategy_id for m in strategy.mixins]
-            st.buy_weights = [m.buy_weight for m in strategy.mixins]
-            st.sell_weights = [m.sell_weight for m in strategy.mixins]
-            return st
+            return Mixer.get_or_create(strategy=strategy)[0]
 
         elif strategy.type == StrategyTypes.RANDOM:
             return Random.get_or_create(strategy=strategy)[0]
