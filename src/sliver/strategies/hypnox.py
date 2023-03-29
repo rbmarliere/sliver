@@ -120,18 +120,12 @@ class HypnoxStrategy(IStrategy):
     operator = peewee.TextField(default="gt")
 
     def get_indicators(self):
-        return (
-            super()
-            .get_indicators()
-            .select(*[*self.select_fields, HypnoxIndicator])
-            .join(HypnoxIndicator, peewee.JOIN.LEFT_OUTER)
-        )
+        return self.strategy.get_indicators(model=HypnoxIndicator)
 
     def get_indicators_df(self):
-        return super().get_indicators_df(self.get_indicators())
+        return self.strategy.get_indicators_df(self.get_indicators())
 
-    def refresh(self):
-        # update tweet scores
+    def refresh_indicators(self):
         if self.model:
             query = HypnoxTweet.get_tweets_by_model(self.model).where(
                 HypnoxScore.model.is_null()
@@ -144,9 +138,6 @@ class HypnoxStrategy(IStrategy):
                 model = sliver.models.load_model(self.model)
                 replay(query, model)
 
-        self.refresh_indicators()
-
-    def refresh_indicators(self):
         BUY = StrategySignals.BUY
         NEUTRAL = StrategySignals.NEUTRAL
         SELL = StrategySignals.SELL
