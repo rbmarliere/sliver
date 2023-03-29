@@ -4,10 +4,13 @@ import peewee
 
 import sliver.database as db
 from sliver.exceptions import MarketAlreadySubscribed
+from sliver.exchange import Exchange
+from sliver.exchange_asset import ExchangeAsset
+from sliver.market import Market
 from sliver.print import print
 from sliver.strategies.signals import StrategySignals
-from sliver.user import User
 from sliver.strategy import BaseStrategy
+from sliver.user import User
 
 
 class UserStrategy(db.BaseModel):
@@ -29,6 +32,17 @@ class UserStrategy(db.BaseModel):
     @classmethod
     def get_active_user(cls, user):
         return cls.get_active().where(cls.user == user)
+
+    @classmethod
+    def get_by_exchange(cls, user, exchange):
+        return (
+            cls.get_active_user(user)
+            .join(BaseStrategy)
+            .join(Market)
+            .join(ExchangeAsset, on=(Market.base_id == ExchangeAsset.id))
+            .join(Exchange)
+            .where(BaseStrategy.market.base.exchange == exchange)
+        )
 
     @classmethod
     def subscribe(cls, user, strategy, subscribed=None):
@@ -91,7 +105,7 @@ class UserStrategy(db.BaseModel):
                             print("cooled down, can't create position")
                             return
 
-                t_cost = self.user.get_target_cost(self.strategy)
+                t_cost = self.get_target_cost()
 
                 jls_extract_var = t_cost
                 if t_cost == 0 or jls_extract_var < strategy.market.cost_min:
@@ -103,3 +117,47 @@ class UserStrategy(db.BaseModel):
         elif position.is_open() and strategy.get_signal() == SELL:
             position.next_refresh = datetime.datetime.utcnow()
             position.save()
+
+    def get_target_cost(self):
+        from sliver.position import Position
+
+        user = self.user
+        exchange = self.strategy.market.base.exchange
+        m_print = self.strategy.market.quote.print
+        transform = self.strategy.market.quote.transform
+
+        inventory = user.get_inventory()
+
+        # TODO currently, quote can only be USDT
+        available_in_exch = user.get_exchange_balance(self.strategy.market.quote)
+        if not available_in_exch:
+            available_in_exch = 0
+        else:
+            cash_in_exch = available_in_exch.total
+        print(
+            "available {a} in exchange {e} is {v}".format(
+                a=self.strategy.market.quote.asset.ticker,
+                e=exchange.name,
+                v=m_print(cash_in_exch),
+            )
+        )
+
+        available = cash_in_exch * (1 - user.cash_reserve)
+        print("available minus reserve is {v}".format(v=m_print(available)))
+
+        active_strat_in_exch = BaseStrategy.get_by_exchange(exchange).count()
+        pos_curr_cost = [
+            p.entry_cost
+            for p in Position.get_open_user_positions(user)
+            .join(Exchange)
+            .where(Exchange.id == exchange.id)
+        ]
+        available = (available + sum(pos_curr_cost)) / active_strat_in_exch
+        print("available for strategy is {v}".format(v=m_print(available)))
+
+        max_risk = transform(inventory["max_risk"])
+        target_cost = min(max_risk, available)
+        print("max risk is {v}".format(v=m_print(max_risk)))
+        print("target cost is {v}".format(v=m_print(target_cost)))
+
+        return int(target_cost)
