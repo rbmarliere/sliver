@@ -6,7 +6,7 @@ dev = [
 
 [project]
 name = "sliver"
-version = "0.6.0"
+version = "0.6.1"
 description = "Sliver is a multi-purpose trading bot for crypto and stocks."
 authors = [
     {name = "Ricardo Marliere", email = "rbmarliere@gmail.com"},
