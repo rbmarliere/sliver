@@ -56,6 +56,11 @@ class StrategyIsActive(HTTPException):
     description = "Strategy has active users."
 
 
+class StrategyMixedIn(HTTPException):
+    code = 400
+    description = "Strategy is mixed in."
+
+
 class ExchangeDoesNotExist(HTTPException):
     code = 404
     description = "Exchange does not exist."
