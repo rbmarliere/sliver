@@ -47,9 +47,6 @@ def telethon_call(entity_type):
 
                 return res
 
-            except AssertionError:
-                pass
-
             except AttributeError:
                 print("no telethon method {m}".format(m=call.__name__))
 
@@ -59,8 +56,8 @@ def telethon_call(entity_type):
             except telethon.errors.FloodWaitError as e:
                 time.sleep(e.seconds)
 
-            except Exception as e:
-                raise DisablingError("{err} {e}".format(err=e.__class__.__name__, e=e))
+            except (AssertionError, Exception):
+                pass
 
             finally:
                 client.disconnect()
