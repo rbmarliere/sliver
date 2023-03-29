@@ -61,11 +61,11 @@ class User(db.BaseModel):
         for cred in self.credential_set.where(Credential.active):
             exchange = ExchangeFactory.from_credential(cred)
             exchange.sync_user_balance(self)
-            active_exchanges.append(exchange)
+            active_exchanges.append(exchange.id)
 
         # delete inactive balances
         for bal in self.balance_set:
-            if bal.asset.exchange not in active_exchanges:
+            if bal.asset.exchange_id not in active_exchanges:
                 bal.delete_instance()
 
     def get_inventory(self):
@@ -109,10 +109,11 @@ class User(db.BaseModel):
 
         return inventory
 
-    def get_exchange_balance(self, exchange_asset):
-        cred = self.get_active_credential(exchange_asset.exchange).get()
-        exchange = ExchangeFactory.from_credential(cred)
-        exchange.sync_user_balance(self)
+    def get_exchange_balance(self, exchange_asset, sync=None):
+        if sync:
+            cred = self.get_active_credential(exchange_asset.exchange).get()
+            exchange = ExchangeFactory.from_credential(cred)
+            exchange.sync_user_balance(self)
         return Balance.get(user_id=self.id, asset_id=exchange_asset.id)
 
     def get_balance(self, asset):

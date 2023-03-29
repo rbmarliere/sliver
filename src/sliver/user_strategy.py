@@ -41,7 +41,7 @@ class UserStrategy(db.BaseModel):
             .join(Market)
             .join(ExchangeAsset, on=(Market.base_id == ExchangeAsset.id))
             .join(Exchange)
-            .where(BaseStrategy.market.base.exchange == exchange)
+            .where(Exchange.id == exchange.id)
         )
 
     @classmethod
@@ -107,8 +107,7 @@ class UserStrategy(db.BaseModel):
 
                 t_cost = self.get_target_cost()
 
-                jls_extract_var = t_cost
-                if t_cost == 0 or jls_extract_var < strategy.market.cost_min:
+                if t_cost == 0 or t_cost < strategy.market.cost_min:
                     print("invalid target_cost, can't create position")
                     return
 
@@ -145,12 +144,10 @@ class UserStrategy(db.BaseModel):
         available = cash_in_exch * (1 - user.cash_reserve)
         print("available minus reserve is {v}".format(v=m_print(available)))
 
-        active_strat_in_exch = BaseStrategy.get_by_exchange(exchange).count()
+        active_strat_in_exch = self.get_by_exchange(user, exchange).count()
         pos_curr_cost = [
             p.entry_cost
-            for p in Position.get_open_user_positions(user)
-            .join(Exchange)
-            .where(Exchange.id == exchange.id)
+            for p in Position.get_open_user_positions_by_exchange(user, exchange)
         ]
         available = (available + sum(pos_curr_cost)) / active_strat_in_exch
         print("available for strategy is {v}".format(v=m_print(available)))
