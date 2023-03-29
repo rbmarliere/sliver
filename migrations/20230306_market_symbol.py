@@ -15,5 +15,5 @@ migrate(
 
 for m in core.db.Market.select():
     m.symbol = m.get_symbol()
-    print("{i} - {s}".format(i=m.id, s=m.symbol))
+    print(f"{m.id} - {m.symbol}")
     m.save()

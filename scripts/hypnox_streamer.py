@@ -75,7 +75,7 @@ def get_uids():
         t_user = client.get_user(username=user.username)
 
         if not t_user.data:
-            print("user {u} not found".format(u=user.username))
+            print(f"user {user.username} not found")
             continue
 
         user.twitter_user_id = t_user.data.id
@@ -93,7 +93,7 @@ def get_rules(uids):
     curr_rule = []
 
     for uid in uids:
-        new_rule_str = "from:{u}".format(u=uid)
+        new_rule_str = f"from:{uid}"
         curr_rule_str = " OR ".join(curr_rule + [new_rule_str])
 
         if len(curr_rule_str) > 512:

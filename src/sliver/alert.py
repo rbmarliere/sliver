@@ -48,7 +48,7 @@ def telethon_call(entity_type):
                 return res
 
             except AttributeError:
-                print("no telethon method {m}".format(m=call.__name__))
+                print(f"no telethon method {call.__name__}")
 
             except telethon.errors.AuthKeyUnregisteredError:
                 raise DisablingError("no telethon authentication")
@@ -70,11 +70,7 @@ def telethon_call(entity_type):
 @telethon_call("user")
 def get_messages(*, entity, limit=1):
     if limit is None or limit > 0:
-        print(
-            "downloading {l} messages from {u}".format(
-                u=entity, l="all" if limit is None else limit
-            )
-        )
+        print(f"downloading {'all' if limit is None else limit} messages from {entity}")
 
     return "get_messages"
 
