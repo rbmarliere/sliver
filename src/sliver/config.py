@@ -55,14 +55,12 @@ class Config(metaclass=ConfigMeta):
         config = dict(zip(config, [os.environ[var] for var in config]))
 
         if not os.path.exists(config["LOGS_DIR"]):
-            raise BaseError("LOGS_DIR={d} not found".format(d=config["LOGS_DIR"]))
+            raise BaseError(f"LOGS_DIR={config['LOGS_DIR']} not found")
         if not os.path.exists(config["MODELS_DIR"]):
-            raise BaseError("MODELS_DIR={d} not found".format(d=config["MODELS_DIR"]))
+            raise BaseError(f"MODELS_DIR={config['MODELS_DIR']} not found")
         if config["ENV_NAME"] not in ["development", "production"]:
             raise BaseError(
-                "ENV_NAME={d} must be 'development' or 'production'".format(
-                    d=config["ENV_NAME"]
-                )
+                f"ENV_NAME={config['ENV_NAME']} must be 'development' or 'production'"
             )
 
         self.config = config

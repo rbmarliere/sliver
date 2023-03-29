@@ -51,11 +51,9 @@ class Watchdog(metaclass=WatchdogMeta):
         stderr = self.logger[1]
 
         if exception:
-            exception_msg = "{e} {err}".format(
-                e=exception.__class__.__name__, err=exception
-            )
+            exception_msg = f"{exception.__class__.__name__} {exception}"
             if message:
-                message = "{m} {e}".format(m=message, e=exception_msg)
+                message = f"{message} {exception_msg}"
             else:
                 message = exception_msg
 

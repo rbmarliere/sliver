@@ -107,7 +107,7 @@ def fetch_markets(exchange: core.db.Exchange):
         core.exchange.save_market(ex_market, exchange)
         count += 1
 
-    print("saved {c} new markets".format(c=count))
+    print(f"saved {count} new markets")
 
 
 if __name__ == "__main__":

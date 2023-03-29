@@ -45,7 +45,7 @@ class CCXT(Exchange):
                 sleep_time = 60
                 if self.rate_limit:
                     sleep_time = self.rate_limit
-                print("rate limited, sleeping for {s} seconds".format(s=sleep_time))
+                print(f"rate limited, sleeping for {sleep_time} seconds")
                 time.sleep(sleep_time)
                 return inner(self, *args, **kwargs)
 
@@ -222,17 +222,14 @@ class CCXT(Exchange):
         order.cost = market.quote.transform(cost)
         order.filled = market.base.transform(filled)
 
-        if order.id:
-            print("syncing {s} order {i}".format(s=order.side, i=oid))
-            print("filled: {f}".format(f=market.base.print(filled)))
+        if order.id or order.type == "market":
+            print(f"syncing {order.side} order {oid}")
+            print(f"filled: {market.base.print(filled)}")
             implicit_cost = market.base.format(amount) * order.price
             if implicit_cost > 0:
                 print(
-                    "{a} @ {p} ({c})".format(
-                        a=market.base.print(amount),
-                        p=market.quote.print(price),
-                        c=market.quote.print(implicit_cost),
-                    )
+                    f"{market.base.print(amount)} @ {market.quote.print(price)}"
+                    f"({market.quote.print(implicit_cost)})"
                 )
 
         # check for fees
@@ -259,12 +256,12 @@ class CCXT(Exchange):
         return order
 
     def sync_user_balance(self, user):
-        print("syncing user balance in exchange {e}".format(e=self.name))
+        print(f"syncing user balance in exchange {self.name}")
 
         value_ticker = "USDT"
         value_asset, new = Asset.get_or_create(ticker=value_ticker)
         if new:
-            print("saved asset {a}".format(a=value_asset.ticker))
+            print(f"saved asset {value_asset.ticker}")
 
         ex_bal = self.api_fetch_balance()
 
@@ -272,7 +269,7 @@ class CCXT(Exchange):
             exchange=self, asset=value_asset
         )
         if new:
-            print("saved asset {a} to exchange".format(a=ex_val_asset.asset.ticker))
+            print(f"saved asset {ex_val_asset.asset.ticker} to exchange")
 
         # for each exchange asset, update internal user balance
         for ticker in ex_bal["free"]:
@@ -285,17 +282,17 @@ class CCXT(Exchange):
 
             asset, new = Asset.get_or_create(ticker=ticker.upper())
             if new:
-                print("saved new asset {a}".format(a=asset.ticker))
+                print(f"saved new asset {asset.ticker}")
 
             ex_asset, new = ExchangeAsset.get_or_create(exchange=self, asset=asset)
             if new:
-                print("saved asset {a}".format(a=ex_asset.asset.ticker))
+                print(f"saved asset {ex_asset.asset.ticker}")
 
             u_bal, new = Balance.get_or_create(
                 user=user, asset=ex_asset, value_asset=ex_val_asset
             )
             if new:
-                print("saved new balance {b}".format(b=u_bal.id))
+                print(f"saved new balance {u_bal.id}")
 
             u_bal.free = ex_asset.transform(free) if free else 0
             u_bal.used = ex_asset.transform(used) if used else 0

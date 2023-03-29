@@ -42,7 +42,7 @@ def predict(model, tweets, verbose=0):
 
 
 def replay(query, model, verbose=0):
-    print("{m}: replaying {c} tweets".format(c=query.count(), m=model.config["name"]))
+    print(f"{model.config['name']}: replaying {query.count()} tweets")
 
     with db.connection.atomic():
         # page = 0
@@ -133,7 +133,7 @@ class HypnoxStrategy(IStrategy):
 
             count = query.count()
             if count == 0:
-                print("{m}: no tweets to replay".format(m=self.model))
+                print(f"{self.model}: no tweets to replay")
             else:
                 model = sliver.models.load_model(self.model)
                 replay(query, model)

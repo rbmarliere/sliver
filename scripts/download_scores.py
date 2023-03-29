@@ -38,15 +38,12 @@ if __name__ == "__main__":
 
     with db.atomic():
         c = core.db.Score.delete().where(f).execute()
-        print("deleted all {c} downstream scores...".format(c=c))
+        print(f"deleted all {c} downstream scores")
 
-        print(
-            "inserting {c} scores...\n"
-            "{first} -- {last}".format(
-                c=len(scores), first=scores[0].id, last=scores[-1].id
-            )
-        )
+        print(f"inserting {len(scores)} scores...")
+        print(f"{scores[0].id} -- {scores[-1].id}")
+
         core.db.Score.insert_many(scores).execute()
 
         c = core.db.Indicator.delete().execute()
-        print("deleted all {c} indicators".format(c=c))
+        print(f"deleted all {c} indicators")

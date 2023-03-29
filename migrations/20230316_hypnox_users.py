@@ -243,7 +243,7 @@ with core.db.connection.atomic():
         if not user.data:
             continue
 
-        print("{id} {username}".format(id=id, username=user.data.username))
+        print(f"{id} {user.data.username}")
 
         core.strategies.hypnox.HypnoxUser.get_or_create(
             twitter_user_id=id, username=user.data.username

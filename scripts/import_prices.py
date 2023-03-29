@@ -59,9 +59,9 @@ def main(args):
             .execute()
         )
 
-    print("Imported {n} prices".format(n=ins_count.cursor.rowcount))
-    print("From {s} to {e}".format(s=input_df.time.min(), e=input_df.time.max()))
-    print("Removed {n} indicators".format(n=rm_count))
+    print(f"imported {ins_count.cursor.rowcount} prices")
+    print(f"from {input_df.time.min()} to {input_df.time.max()}")
+    print(f"removed {rm_count} indicators")
 
 
 if __name__ == "__main__":

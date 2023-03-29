@@ -65,8 +65,8 @@ class UserStrategy(db.BaseModel):
         return u_st
 
     def disable(self):
-        print("disabling user's strategy {s}...".format(s=self))
-        self.user.send_message("disabled strategy {s}".format(s=self.strategy.id))
+        print(f"disabling user's strategy {self}...")
+        self.user.send_message(f"disabled strategy {self.strategy.id}")
         self.active = False
         self.save()
 
@@ -78,7 +78,7 @@ class UserStrategy(db.BaseModel):
         SELL = StrategySignals.SELL
 
         print("...........................................")
-        print("refreshing user {u} strategy {s}".format(u=self.user, s=self))
+        print(f"refreshing user {self.user} strategy {self}")
 
         # sync orders of active position
         position = (
@@ -133,16 +133,13 @@ class UserStrategy(db.BaseModel):
             available_in_exch = 0
         else:
             cash_in_exch = available_in_exch.total
+        quote = self.strategy.market.quote.asset.ticker
         print(
-            "available {a} in exchange {e} is {v}".format(
-                a=self.strategy.market.quote.asset.ticker,
-                e=exchange.name,
-                v=m_print(cash_in_exch),
-            )
+            f"available {quote} in exchange {exchange.name} is {m_print(cash_in_exch)}"
         )
 
         available = cash_in_exch * (1 - user.cash_reserve)
-        print("available minus reserve is {v}".format(v=m_print(available)))
+        print(f"available minus reserve is {m_print(available)}")
 
         active_strat_in_exch = self.get_by_exchange(user, exchange).count()
         pos_curr_cost = [
@@ -150,11 +147,11 @@ class UserStrategy(db.BaseModel):
             for p in Position.get_open_user_positions_by_exchange(user, exchange)
         ]
         available = (available + sum(pos_curr_cost)) / active_strat_in_exch
-        print("available for strategy is {v}".format(v=m_print(available)))
+        print(f"available for strategy is {m_print(available)}")
 
         max_risk = transform(inventory["max_risk"])
         target_cost = min(max_risk, available)
-        print("max risk is {v}".format(v=m_print(max_risk)))
-        print("target cost is {v}".format(v=m_print(target_cost)))
+        print(f"max risk is {m_print(max_risk)}")
+        print(f"target cost is {m_print(target_cost)}")
 
         return int(target_cost)

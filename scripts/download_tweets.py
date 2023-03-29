@@ -43,7 +43,7 @@ if __name__ == "__main__":
     print("fetching tweets upstream...")
     query = tweet_table.select().order_by(tweet_table.id)
     upstream_tweets = [t for t in query]
-    print("found {c} tweets".format(c=len(upstream_tweets)))
+    print(f"found {len(upstream_tweets)} tweets")
 
     db.close()
     core.db.connection.bind([tweet_table])
@@ -52,7 +52,7 @@ if __name__ == "__main__":
     print("fetching tweets downstream...")
     query = tweet_table.select().order_by(tweet_table.id)
     tweets = [t for t in query]
-    print("found {c} tweets".format(c=len(tweets)))
+    print(f"found {len(tweets)} tweets")
 
     if args.update_only:
         new_tweets = list(set(upstream_tweets) - set(tweets))
@@ -66,5 +66,5 @@ if __name__ == "__main__":
 
     df = pandas.DataFrame(new_rows).sort_values("id")
 
-    print("inserting {c} new tweets".format(c=len(df)))
+    print(f"inserting {len(df)} new tweets")
     tweet_table.insert_many(df.to_dict("records")).execute()

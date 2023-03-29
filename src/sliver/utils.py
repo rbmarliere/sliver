@@ -98,7 +98,7 @@ def get_timeframe_delta(timeframe):
 
 def get_next_refresh(interval_in_minutes):
     now = datetime.datetime.utcnow()
-    freq = "{i}T".format(i=interval_in_minutes)
+    freq = f"{interval_in_minutes}T"
     last = now.replace(minute=0, second=0, microsecond=0)
     range = pandas.date_range(last, periods=61, freq=freq)
     series = range.to_series().asfreq(freq)
@@ -157,7 +157,7 @@ def quantize(row, col, prec_col):
 
 
 def get_logger(log, suppress_output=False):
-    log_file = "{dir}/{log}.log".format(dir=Config().LOGS_DIR, log=log)
+    log_file = f"{Config().LOGS_DIR}/{log}.log"
 
     formatter = logging.Formatter("%(asctime)s -- %(message)s")
     formatter.converter = time.gmtime

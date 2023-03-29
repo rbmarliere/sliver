@@ -128,16 +128,9 @@ class Position(db.BaseModel):
         p = self.exchange.api_fetch_last_price(market.get_symbol())
 
         return (
-            "{p}position {pid} of strategy {s} in market {m} ({e}) {su}, "
-            "last price is {lp}".format(
-                p=prefix,
-                pid=self.id,
-                s=self.user_strategy.strategy,
-                m=market.get_symbol(),
-                e=market.quote.exchange.name,
-                su=suffix,
-                lp=p,
-            )
+            f"{prefix}position {self} of strategy {self.user_strategy.strategy}"
+            f"in market {market.get_symbol()} ({market.quote.exchange.name})"
+            f"{suffix}, last price is {p}"
         )
 
     def get_timedelta(self):
@@ -215,11 +208,9 @@ class Position(db.BaseModel):
         balance = user.get_exchange_balance(market.quote, sync=True)
         remaining = min(remaining, balance.total)
 
-        print("bucket cost is {a}".format(a=market.quote.print(self.bucket)))
-        print(
-            "remaining to fill in bucket is {r}".format(r=market.quote.print(remaining))
-        )
-        print("balance is {r}".format(r=market.quote.print(balance.total)))
+        print(f"bucket cost is {market.quote.print(self.bucket)}")
+        print(f"remaining to fill in bucket is {market.quote.print(remaining)}")
+        print(f"balance is {market.quote.print(balance.total)}")
 
         return remaining
 
@@ -235,18 +226,10 @@ class Position(db.BaseModel):
         balance = user.get_exchange_balance(market.base, sync=True)
         remaining = min(remaining, balance.total)
 
-        print("bucket amount is {a}".format(a=market.base.print(self.bucket)))
-        print(
-            "remaining to fill in bucket is {r}".format(
-                r=market.base.print(remaining_to_fill)
-            )
-        )
-        print(
-            "remaining to exit position is {r}".format(
-                r=market.base.print(remaining_to_exit)
-            )
-        )
-        print("balance is {r}".format(r=market.base.print(balance.total)))
+        print(f"bucket amount is {market.base.print(self.bucket)}")
+        print(f"remaining to fill in bucket is {market.base.print(remaining_to_fill)}")
+        print(f"remaining to exit position is {market.base.print(remaining_to_exit)}")
+        print(f"balance is {market.base.print(balance.total)}")
 
         # avoid position rounding errors by exiting early
         r = remaining_to_exit - remaining_to_fill
@@ -255,7 +238,7 @@ class Position(db.BaseModel):
             position_remainder > 0
             and position_remainder * last_price <= market.cost_min
         ):
-            print("position remainder is {r}".format(r=market.base.print(r)))
+            print(f"position remainder is {market.base.print(r)}")
             remaining = remaining_to_exit
 
         return remaining
@@ -286,7 +269,7 @@ class Position(db.BaseModel):
         )
         position.save()
 
-        print("opening position {i}".format(i=position.id))
+        print(f"opening position {position.id}")
         user.send_message(position.get_notice(prefix="opening "))
 
         return position
@@ -311,7 +294,7 @@ class Position(db.BaseModel):
         self.bucket = 0
         self.status = "closing"
 
-        print("closing position {i}".format(i=self.id))
+        print(f"closing position {self}")
         user.send_message(self.get_notice(prefix="closing "))
 
         self.save()
@@ -326,11 +309,7 @@ class Position(db.BaseModel):
                 n = 99999
             interval_in_minutes = n
         self.next_refresh = get_next_refresh(interval_in_minutes)
-        print(
-            "postponed position {i} next refresh at {n}".format(
-                i=self.id, n=self.next_refresh
-            )
-        )
+        print(f"postponed position {self} next refresh at {self.next_refresh}")
         self.save()
 
     def stop(self, last_price=None):
@@ -339,23 +318,11 @@ class Position(db.BaseModel):
         market = strategy.market
         user = self.user_strategy.user
 
-        print(
-            "last price is {p}, high was {h} and low was {l}".format(
-                p=market.quote.print(last_price),
-                h=market.quote.print(self.last_high),
-                l=market.quote.print(self.last_low),
-            )
-        )
-        print(
-            "stop gain is {g}, trailing is {gt}".format(
-                g=engine.stop_gain, gt=engine.trailing_gain
-            )
-        )
-        print(
-            "stop loss is {l}, trailing is {lt}".format(
-                l=engine.stop_loss, lt=engine.trailing_loss
-            )
-        )
+        print(f"last price is {market.quote.print(last_price)}")
+        print(f"high was {market.quote.print(self.last_high)}")
+        print(f"low was {market.quote.print(self.last_low)}")
+        print(f"stop gain is {engine.stop_gain}, trailing is {engine.trailing_gain}")
+        print(f"stop loss is {engine.stop_loss}, trailing is {engine.trailing_loss}")
         user.send_message(self.get_notice(prefix="stopped "))
         self.stopped = True
         self.close(engine=engine)
@@ -478,12 +445,12 @@ class Position(db.BaseModel):
         last_p = market.quote.transform(p)
 
         print("___________________________________________")
-        print("refreshing {s} position {i}".format(s=self.status, i=self.id))
-        print("strategy is {s}".format(s=self.user_strategy.strategy.id))
-        print("last price: {p}".format(p=strategy.market.quote.print(last_p)))
-        print("target cost is {t}".format(t=market.quote.print(self.target_cost)))
-        print("entry cost is {t}".format(t=market.quote.print(self.entry_cost)))
-        print("exit cost is {t}".format(t=market.quote.print(self.exit_cost)))
+        print(f"refreshing {self.status} position {self}")
+        print(f"strategy is {self.user_strategy.strategy}")
+        print(f"last price: {strategy.market.quote.print(last_p)}")
+        print(f"target cost is {market.quote.print(self.target_cost)}")
+        print(f"entry cost is {market.quote.print(self.entry_cost)}")
+        print(f"exit cost is {market.quote.print(self.exit_cost)}")
 
         self.sync_limit_orders()
 
@@ -514,16 +481,16 @@ class Position(db.BaseModel):
         else:
             engine = strategy.sell_engine
 
-        print("next bucket at {t}".format(t=self.next_bucket))
+        print(f"next bucket at {self.next_bucket}")
 
         # check if current bucket needs to be reset
         if now > self.next_bucket:
             next_bucket = get_next_refresh(engine.bucket_interval)
             self.next_bucket = next_bucket
-            print("moving on to next bucket at {b}".format(b=self.next_bucket))
+            print(f"moving on to next bucket at {self.next_bucket}")
             self.bucket = 0
 
-        print("limit to market ratio is {r}".format(r=engine.lm_ratio))
+        print(f"limit to market ratio is {engine.lm_ratio}")
 
         if self.status == "opening":
             remaining_cost = self.get_remaining_cost()
@@ -610,15 +577,9 @@ class Position(db.BaseModel):
             self.pnl = self.exit_cost - self.entry_cost - self.fee
             self.roi = get_roi(self.entry_cost, self.pnl)
             self.exit_time = datetime.datetime.utcnow()
-            print(
-                "position is now closed, pnl: {r}".format(
-                    r=market.quote.print(self.pnl)
-                )
-            )
+            print(f"position is now closed, pnl: {market.quote.print(self.pnl)}")
             user.send_message(
-                self.get_notice(
-                    prefix="closed ", suffix=" ROI: {r}%".format(r=self.roi)
-                )
+                self.get_notice(prefix="closed ", suffix=f" ROI: {self.roi}%")
             )
 
         # position finishes opening when it reaches target
