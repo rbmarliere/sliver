@@ -97,6 +97,15 @@ class Position(db.BaseModel):
     def get_open_user_positions(self, user):
         return self.get_open().where(UserStrategy.user == user)
 
+    @classmethod
+    def get_open_user_positions_by_exchange(self, user, exchange):
+        return (
+            self.get_open_user_positions(user)
+            .join(Market)
+            .join(ExchangeAsset, on=(Market.base_id == ExchangeAsset.id))
+            .where(ExchangeAsset.exchange == exchange)
+        )
+
     @property
     def exchange(self):
         if hasattr(self, "_exchange"):
@@ -203,7 +212,7 @@ class Position(db.BaseModel):
         remaining = 0 if remaining_to_fill < 0 else remaining
 
         user = self.user_strategy.user
-        balance = user.get_exchange_balance(market.quote)
+        balance = user.get_exchange_balance(market.quote, sync=True)
         remaining = min(remaining, balance.total)
 
         print("bucket cost is {a}".format(a=market.quote.print(self.bucket)))
@@ -223,7 +232,7 @@ class Position(db.BaseModel):
         remaining = 0 if remaining_to_fill < 0 else remaining
 
         user = self.user_strategy.user
-        balance = user.get_exchange_balance(market.base)
+        balance = user.get_exchange_balance(market.base, sync=True)
         remaining = min(remaining, balance.total)
 
         print("bucket amount is {a}".format(a=market.base.print(self.bucket)))
@@ -526,6 +535,9 @@ class Position(db.BaseModel):
             m_total_amount = market.base.div(
                 m_total_cost, last_p, prec=market.amount_precision
             )
+
+            # slippage
+            m_total_amount *= 0.99
 
         elif self.status == "closing":
             remaining_amount = self.get_remaining_amount(last_p)
