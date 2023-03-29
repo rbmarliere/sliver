@@ -9,6 +9,7 @@ from sliver.api.exceptions import (
     MarketAlreadySubscribed,
     StrategyDoesNotExist,
     StrategyIsActive,
+    StrategyMixedIn,
     StrategyNotEditable,
 )
 from sliver.api.resources.fields import (
@@ -58,6 +59,9 @@ class Strategy(Resource):
                 raise StrategyNotEditable
             if UserStrategy.get_active_strategy(strategy).count() > 0:
                 raise StrategyIsActive
+            if strategy.mixedstrategies_set.count() > 0:
+                raise StrategyMixedIn
+
             strategy.delete()
         except StrategyModel.DoesNotExist:
             raise StrategyDoesNotExist
