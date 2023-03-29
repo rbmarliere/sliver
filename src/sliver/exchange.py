@@ -1,3 +1,4 @@
+import time
 import datetime
 from abc import ABCMeta, abstractmethod
 
@@ -100,13 +101,12 @@ class Exchange(db.BaseModel):
         ...
 
     def check_latency(self):
-        started = datetime.datetime.utcnow()
+        started = time.perf_counter()
         self.api_fetch_time()
-        elapsed = datetime.datetime.utcnow() - started
-        elapsed_in_ms = int(elapsed.total_seconds() * 1000)
+        elapsed = time.perf_counter() - started
+        elapsed_in_ms = int(elapsed * 1000)
         if elapsed_in_ms > 5000:
-            msg = "latency above threshold: {l} > 5000".format(l=elapsed_in_ms)
-            raise PostponingError(msg)
+            raise PostponingError(f"latency above threshold: {elapsed_in_ms} > 5000")
 
     def fetch_ohlcv(self, strategy):
         market = strategy.market
@@ -141,7 +141,7 @@ class Exchange(db.BaseModel):
                 print("price data is up to date")
                 break
 
-            print("downloading from {s}".format(s=page_start))
+            print(f"downloading from {page_start}")
             page = self.api_fetch_ohlcv(
                 market.get_symbol(), strategy.timeframe, since=page_start
             )
@@ -154,7 +154,7 @@ class Exchange(db.BaseModel):
 
             page_first = page.iloc[0].time
             page_last = page.iloc[-1].time
-            print("received range {f} - {l}".format(f=page_first, l=page_last))
+            print(f"received range {page_first} - {page_last}")
 
             page_start = page_last + tf_delta
 
@@ -179,12 +179,7 @@ class Exchange(db.BaseModel):
         market = position.user_strategy.strategy.market
 
         print(
-            "inserting {t} {s} order :: {a} @ {p}".format(
-                t=type,
-                s=side,
-                a=market.base.print(amount),
-                p=market.quote.print(price),
-            )
+            f"inserting {type} {side} order :: {market.base.print(amount)} @ {market.quote.print(price)}"
         )
 
         try:
@@ -200,7 +195,7 @@ class Exchange(db.BaseModel):
 
         oid = self.api_create_order(market.get_symbol(), type, side, amount, price)
         if oid:
-            print("inserted {t} {s} order {i}".format(t=type, s=side, i=oid))
+            print(f"inserted {type} {side} order {oid}")
 
             order = self.get_synced_order(position, oid)
 
@@ -239,11 +234,11 @@ class Exchange(db.BaseModel):
         spreads = [init_price] + [unit_spread] * num_orders
         prices = [sum(spreads[:i]) for i in range(1, len(spreads))]
 
-        print("unit cost is {c}".format(c=market.quote.print(unit_cost)))
+        print(f"unit cost is {market.quote.print(unit_cost)}")
 
         # send a single order if cost of each order is lower than market min.
         if unit_cost < market.cost_min:
-            print("unitary cost is less than exchange minimum," "creating single order")
+            print("unitary cost is less than exchange minimum, creating single order")
 
             # get average price for single order
             avg_price = market.quote.div(
@@ -262,7 +257,7 @@ class Exchange(db.BaseModel):
         # avoid rounding errors
         cost_remainder = total_cost - sum([unit_cost] * num_orders)
         if cost_remainder != 0:
-            print("bucket remainder: {r}".format(r=market.quote.print(cost_remainder)))
+            print(f"bucket remainder: {market.quote.print(cost_remainder)}")
 
         # creates bucket orders if reached here, which normally it will
         for price in prices:
@@ -319,18 +314,18 @@ class Exchange(db.BaseModel):
             prec=market.price_precision,
         )
 
-        print("unit amount is {a}".format(a=market.base.print(unit_amount)))
+        print(f"unit amount is {market.base.print(unit_amount)}")
 
         # send a single order if any of the costs is lower than market minimum
         if any(cost < market.cost_min for cost in costs):
-            print("unitary cost is less than exchange minimum," "creating single order")
+            print("unitary cost is less than exchange minimum, creating single order")
             self.create_order(position, "limit", "sell", total_amount, avg_price)
             return True
 
         # avoid bucket rounding errors
         bucket_remainder = total_amount - sum([unit_amount] * num_orders)
         if bucket_remainder != 0:
-            print("bucket remainder {r}".format(r=market.base.print(bucket_remainder)))
+            print(f"bucket remainder {market.base.print(bucket_remainder)}")
 
         # creates bucket orders if reached here, which normally it will
         for price in prices:

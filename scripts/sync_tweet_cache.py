@@ -19,7 +19,7 @@ try:
     with core.db.connection.atomic():
         strategies.hypnox.HypnoxTweet.insert_many(cache.to_dict("records")).execute()
 
-    print("inserted {c} records".format(c=len(cache)))
+    print(f"inserted {len(cache)} records")
 
     # delete cache_file
     os.remove(cache_file)

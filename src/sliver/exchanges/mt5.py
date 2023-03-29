@@ -36,17 +36,13 @@ class MT5(Exchange):
         )
 
         if not term:
-            raise DisablingError(
-                "mt5 terminal not initialized: {e}".format(e=self._api.last_error())
-            )
+            raise DisablingError(f"mt5 init failed: {self._api.last_error()}")
 
         if self._api.terminal_info() is None:
             raise DisablingError("mt5 terminal not running")
 
         if not self._api.symbol_select("PETR4", True):
-            raise DisablingError(
-                "mt5 failed to select: {e}".format(e=self._api.last_error())
-            )
+            raise DisablingError(f"mt5 failed to select: {self._api.last_error()}")
 
         self.check_latency()
 
@@ -55,8 +51,7 @@ class MT5(Exchange):
             ret = call(self, *args, **kwargs)
 
             if not ret:
-                e = self._api.last_error()[1]
-                raise DisablingError("mt5 error: {e}".format(e=e))
+                raise DisablingError(f"mt5 error: {self._api.last_error()}")
 
             return ret
 

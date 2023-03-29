@@ -74,9 +74,7 @@ if __name__ == "__main__":
     for output in output_chunks:
         output_df = pandas.DataFrame({"intensity": 0, "polarity": 0, "tweet": output})
         output_df.to_csv(
-            "{path}/training_{date}_{i}.tsv".format(
-                path=core.cfg("LOGS_DIR"), date=date, i=i
-            ),
+            f"{Config().LOGS_DIR}/training_{date}_{i}.tsv",
             sep="\t",
             lineterminator="\n",
             encoding="utf-8",

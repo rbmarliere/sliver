@@ -158,7 +158,7 @@ class BaseStrategy(db.BaseModel):
         self.save()
 
     def disable(self):
-        print("disabling strategy {s}...".format(s=self))
+        print(f"disabling strategy {self}")
         for dep in self.mixedstrategies_set:
             dep.mixer.disable()
         self.active = False
@@ -173,11 +173,7 @@ class BaseStrategy(db.BaseModel):
         if interval_in_minutes is None:
             interval_in_minutes = get_timeframe_in_seconds(self.timeframe) / 60
         self.next_refresh = get_next_refresh(interval_in_minutes)
-        print(
-            "postponed strategy {i} next refresh at {n}".format(
-                i=self.id, n=self.next_refresh
-            )
-        )
+        print(f"postponed strategy {self} next refresh at {self.next_refresh}")
         self.save()
 
 
@@ -194,20 +190,20 @@ class IStrategy(db.BaseModel):
 
     def refresh(self):
         print("===========================================")
-        print("refreshing strategy {s}".format(s=self))
-        print("market is {m} {i}".format(m=self.market.get_symbol(), i=self.market.id))
-        print("timeframe is {T}".format(T=self.timeframe))
-        print("exchange is {e}".format(e=self.market.base.exchange.name))
-        print("type is {m}".format(m=StrategyTypes(self.type).name))
-        print("buy engine is {e}".format(e=self.buy_engine_id))
-        print("sell engine is {e}".format(e=self.sell_engine_id))
-        print("stop engine is {e}".format(e=self.stop_engine_id))
+        print(f"refreshing strategy {self}")
+        print(f"market is {self.market.get_symbol()} {self.market}")
+        print(f"timeframe is {self.timeframe}")
+        print(f"exchange is {self.market.base.exchange.name}")
+        print(f"type is {StrategyTypes(self.type).name}")
+        print(f"buy engine is {self.buy_engine_id}")
+        print(f"sell engine is {self.sell_engine_id}")
+        print(f"stop engine is {self.stop_engine_id}")
 
         ExchangeFactory.from_base(self.market.base.exchange).fetch_ohlcv(self)
 
         self.refresh_indicators()
 
-        print("signal is {s}".format(s=self.get_signal().name))
+        print(f"signal is {self.get_signal().name}")
 
         self.postpone()
 
