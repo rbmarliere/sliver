@@ -12,4 +12,6 @@ def BB(ohlc, ma_period=20, num_std=2, use_ema=False):
     df["bolu"] = df.ma + num_std * std
     df["bold"] = df.ma - num_std * std
 
+    df.drop(["tp"], axis=1, inplace=True)
+
     return df

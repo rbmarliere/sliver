@@ -145,16 +145,14 @@ class HypnoxStrategy(IStrategy):
         # grab indicators
         indicators_q = self.get_indicators()
         indicators = pandas.DataFrame(indicators_q.dicts())
+        existing = indicators.dropna()
+        indicators = indicators[indicators.isnull().any(axis=1)]
 
         # filter relevant data
         self_regex = self.filter.encode("unicode_escape") if self.filter else b""
         f = HypnoxTweet.text.iregexp(self_regex)
         f = f & (HypnoxScore.model.is_null(False))
-        existing = indicators.dropna()
-        indicators = indicators[indicators.isnull().any(axis=1)]
-        if indicators.empty:
-            print("indicator data is up to date")
-            return 0
+
         f = f & (HypnoxTweet.time > indicators.iloc[0].time)
 
         # grab scores
@@ -219,29 +217,15 @@ class HypnoxStrategy(IStrategy):
         indicators.loc[rule, "signal"] = signal
 
         indicators = indicators.reset_index()
-        indicators = indicators.rename(
-            columns={
-                "id": "price_id",
-                "strategy": "strategy_id",
-            }
-        )
 
-        with db.connection.atomic():
-            vanilla_indicators = indicators[
-                [
-                    "strategy_id",
-                    "price_id",
-                    "signal",
-                ]
-            ]
-            Indicator.insert_many(vanilla_indicators.to_dict("records")).execute()
+        Indicator.insert_many(
+            indicators[["strategy", "price", "signal"]].to_dict("records")
+        ).execute()
 
-            hypnox_indicators = indicators[
-                ["z_score", "mean", "variance", "n_samples"]
-            ].copy()
+        first = indicators[["strategy", "price", "signal"]].iloc[0]
+        first_id = Indicator.get(**first.to_dict()).id
+        indicators.indicator = range(first_id, first_id + len(indicators))
 
-            first_id = Indicator.get(**vanilla_indicators.iloc[0].to_dict()).id
-            hypnox_indicators.insert(
-                0, "indicator_id", range(first_id, first_id + len(indicators))
-            )
-            HypnoxIndicator.insert_many(hypnox_indicators.to_dict("records")).execute()
+        HypnoxIndicator.insert_many(
+            indicators[["z_score", "mean", "variance", "n_samples"]].to_dict("records")
+        ).execute()

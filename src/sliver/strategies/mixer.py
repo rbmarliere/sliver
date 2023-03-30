@@ -38,14 +38,13 @@ class MixerStrategy(IStrategy):
     def get_indicators_df(self):
         return self.strategy.get_indicators_df(self.get_indicators())
 
-    def refresh_indicators(self):
+    def refresh_indicators(self, indicators):
         from sliver.strategies.factory import StrategyFactory
 
         BUY = StrategySignals.BUY
         NEUTRAL = StrategySignals.NEUTRAL
         SELL = StrategySignals.SELL
 
-        indicators = pandas.DataFrame(self.get_indicators().dicts())
         indicators = indicators.set_index("time")
         indicators.drop("signal", axis=1, inplace=True)
         indicators["buy_w_signal"] = D(NEUTRAL)
@@ -92,26 +91,18 @@ class MixerStrategy(IStrategy):
             else NEUTRAL
         )
 
-        # insert only new indicators
-        indicators = indicators.loc[indicators.indicator.isnull()]
-        if indicators.empty:
-            return
-
-        indicators["strategy"] = self.strategy.id
-        indicators["price"] = indicators.id
         indicators = indicators.reset_index()
 
-        with db.connection.atomic():
-            Indicator.insert_many(
-                indicators[["strategy", "price", "signal"]].to_dict("records")
-            ).execute()
+        Indicator.insert_many(
+            indicators[["strategy", "price", "signal"]].to_dict("records")
+        ).execute()
 
-            first = indicators[["strategy", "price", "signal"]].iloc[0]
-            first_id = Indicator.get(**first.to_dict()).id
-            indicators.indicator = range(first_id, first_id + len(indicators))
+        first = indicators[["strategy", "price", "signal"]].iloc[0]
+        first_id = Indicator.get(**first.to_dict()).id
+        indicators.indicator = range(first_id, first_id + len(indicators))
 
-            MixerIndicator.insert_many(
-                indicators[["indicator", "buy_w_signal", "sell_w_signal"]].to_dict(
-                    "records"
-                )
-            ).execute()
+        MixerIndicator.insert_many(
+            indicators[["indicator", "buy_w_signal", "sell_w_signal"]].to_dict(
+                "records"
+            )
+        ).execute()
