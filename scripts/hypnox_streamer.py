@@ -19,7 +19,7 @@ from sliver.watchdog import Watchdog
 
 class Stream(tweepy.StreamingClient):
     def on_disconnect(self):
-        print("stream disconnect", exception="stream disconnect")
+        print(exception="stream disconnect")
         super().on_disconnect()
 
     def on_exception(self, exception):
