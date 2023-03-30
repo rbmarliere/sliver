@@ -1,6 +1,5 @@
 import decimal
 
-import pandas
 import peewee
 
 import sliver.database as db
@@ -48,12 +47,10 @@ class BBStrategy(IStrategy):
 
         return df
 
-    def refresh_indicators(self):
+    def refresh_indicators(self, indicators):
         BUY = StrategySignals.BUY
         NEUTRAL = StrategySignals.NEUTRAL
         SELL = StrategySignals.SELL
-
-        indicators = pandas.DataFrame(self.get_indicators().dicts())
 
         indicators = BB(
             indicators,
@@ -69,24 +66,16 @@ class BBStrategy(IStrategy):
         indicators.loc[buy_rule, "signal"] = BUY
         indicators.loc[sell_rule, "signal"] = SELL
 
-        indicators = indicators.loc[indicators.indicator.isnull()]
-        if indicators.empty:
-            return
-
         indicators.fillna(method="bfill", inplace=True)
 
-        with db.connection.atomic():
-            indicators["strategy"] = self.strategy.id
-            indicators["price"] = indicators.id
+        Indicator.insert_many(
+            indicators[["strategy", "price", "signal"]].to_dict("records")
+        ).execute()
 
-            Indicator.insert_many(
-                indicators[["strategy", "price", "signal"]].to_dict("records")
-            ).execute()
+        first = indicators[["strategy", "price", "signal"]].iloc[0]
+        first_id = Indicator.get(**first.to_dict()).id
+        indicators.indicator = range(first_id, first_id + len(indicators))
 
-            first = indicators[["strategy", "price", "signal"]].iloc[0]
-            first_id = Indicator.get(**first.to_dict()).id
-            indicators.indicator = range(first_id, first_id + len(indicators))
-
-            BBIndicator.insert_many(
-                indicators[["indicator", "ma", "bolu", "bold", "tp"]].to_dict("records")
-            ).execute()
+        BBIndicator.insert_many(
+            indicators[["indicator", "ma", "bolu", "bold", "tp"]].to_dict("records")
+        ).execute()

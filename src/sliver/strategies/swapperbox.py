@@ -73,59 +73,49 @@ class SwapperBoxStrategy(IStrategy):
 
         return messages
 
-    def refresh_indicators(self):
+    def refresh_indicators(self, indicators):
         SELL = StrategySignals.SELL
         NEUTRAL = StrategySignals.NEUTRAL
         BUY = StrategySignals.BUY
 
-        indicators = pandas.DataFrame(self.get_indicators().dicts())
-        indicators = indicators.set_index("time")
-        existing = indicators.dropna()
+        all_indicators = pandas.DataFrame(self.get_indicators().dicts())
 
-        if existing.empty:
+        if len(all_indicators) == len(indicators):
             indicators = self.init_indicators(indicators)
 
-        missing = indicators.loc[indicators.signal.isnull()].copy()
-        if not missing.empty:
-            missing = missing.assign(signal=NEUTRAL)
+        indicators = indicators.assign(signal=NEUTRAL)
 
-            messages = self.refresh_messages()
+        messages = self.refresh_messages()
 
-            messages = messages[["telegram_message_id", "date", "text"]]
-            messages = messages.dropna()
-            messages = messages.drop_duplicates()
-            messages.date = pandas.to_datetime(messages.date, utc=True)
-            messages.date = messages.date.dt.tz_localize(None)
-            messages = messages.set_index("date")
+        messages = messages[["telegram_message_id", "date", "text"]]
+        messages = messages.dropna()
+        messages = messages.drop_duplicates()
+        messages.date = pandas.to_datetime(messages.date, utc=True)
+        messages.date = messages.date.dt.tz_localize(None)
+        messages = messages.set_index("date")
 
-            new_row = pandas.DataFrame(index=[datetime.datetime.utcnow()])
-            messages_plus = pandas.concat([messages, new_row])
+        new_row = pandas.DataFrame(index=[datetime.datetime.utcnow()])
+        messages_plus = pandas.concat([messages, new_row])
 
-            freq = get_timeframe_freq(self.strategy.timeframe)
-            try:
-                messages = messages_plus.resample(freq).bfill()
-            except ValueError:
-                messages = messages.resample(freq).last().bfill()
+        freq = get_timeframe_freq(self.strategy.timeframe)
+        try:
+            messages = messages_plus.resample(freq).bfill()
+        except ValueError:
+            messages = messages.resample(freq).last().bfill()
 
-            shorts = messages.loc[
-                messages.text.str.contains("position: SHORT", na=False)
-            ].index
-            longs = messages.loc[
-                messages.text.str.contains("position: LONG", na=False)
-            ].index
-            missing.loc[missing.index.isin(longs), "signal"] = BUY
-            missing.loc[missing.index.isin(shorts), "signal"] = SELL
+        shorts = messages.loc[
+            messages.text.str.contains("position: SHORT", na=False)
+        ].index
+        longs = messages.loc[
+            messages.text.str.contains("position: LONG", na=False)
+        ].index
+        indicators.loc[indicators.index.isin(longs), "signal"] = BUY
+        indicators.loc[indicators.index.isin(shorts), "signal"] = SELL
 
-            indicators.loc[
-                indicators.index.isin(missing.index), "signal"
-            ] = missing.signal
+        indicators.loc[
+            indicators.index.isin(indicators.index), "signal"
+        ] = indicators.signal
 
-        indicators = indicators.loc[indicators.indicator_id.isnull()].copy()
-
-        with db.connection.atomic():
-            indicators["strategy"] = self.strategy.id
-            indicators["price"] = indicators.id
-
-            Indicator.insert_many(
-                indicators[["strategy", "price", "signal"]].to_dict("records")
-            ).execute()
+        Indicator.insert_many(
+            indicators[["strategy", "price", "signal"]].to_dict("records")
+        ).execute()
