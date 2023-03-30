@@ -6,7 +6,7 @@ import pandas
 import sklearn.model_selection
 import tensorflow
 
-import core
+from sliver.utils import standardize
 
 
 def preprocess(model, filepath):
@@ -25,7 +25,7 @@ def preprocess(model, filepath):
     raw_df = raw_df.dropna()
 
     # preprocess training data
-    raw_df["tweet"] = raw_df["tweet"].apply(core.utils.standardize)
+    raw_df["tweet"] = raw_df["tweet"].apply(standardize)
     raw_df["tweet"] = raw_df["tweet"].str.slice(0, model.config["max_length"])
 
     if model.config["class"] == "polarity":

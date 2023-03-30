@@ -1,6 +1,5 @@
 import importlib
 import pathlib
-import sys
 
 import tensorflow
 import transformers
@@ -54,18 +53,5 @@ def load_model(model_name):
     model.tokenizer = model_module.load_tokenizer(modelpath=modelpath)
 
     models.append(model)
-
-    return model
-
-
-def import_model(model_name):
-    try:
-        return getattr(sys.modules[__name__], model_name)
-    except AttributeError:
-        pass
-
-    model = load_model(model_name)
-
-    setattr(sys.modules[__name__], model_name, model)
 
     return model

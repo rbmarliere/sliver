@@ -4,9 +4,9 @@ import argparse
 
 import tensorflow
 
-import core
-import models
-from preprocess import preprocess, tokenize
+from sliver.models.preprocess import preprocess, tokenize
+from sliver.models import get_model
+from sliver.config import Config
 
 
 if __name__ == "__main__":
@@ -19,9 +19,9 @@ if __name__ == "__main__":
     )
     args = argp.parse_args()
 
-    model = models.get_model(args.model_name)
+    model = get_model(args.model_name)
 
-    modelpath = core.cfg("MODELS_DIR") + "/" + args.model_name
+    modelpath = f"{Config().MODELS_DIR}/{args.model_name}"
 
     train_df, val_df, test_df = preprocess(model, args.input_file)
 
@@ -59,7 +59,7 @@ if __name__ == "__main__":
     )
 
     tensorboard = tensorflow.keras.callbacks.TensorBoard(
-        log_dir=modelpath + "/logs", histogram_freq=1
+        log_dir=f"{modelpath}/logs", histogram_freq=1
     )
 
     model.fit(
