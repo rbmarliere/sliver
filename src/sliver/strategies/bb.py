@@ -5,6 +5,7 @@ import peewee
 
 import sliver.database as db
 from sliver.indicator import Indicator
+from sliver.indicators.bb import BB
 from sliver.strategies.signals import StrategySignals
 from sliver.strategy import IStrategy
 from sliver.utils import quantize
@@ -54,16 +55,12 @@ class BBStrategy(IStrategy):
 
         indicators = pandas.DataFrame(self.get_indicators().dicts())
 
-        indicators.tp = (indicators.high + indicators.low + indicators.close) / 3
-
-        if self.use_ema:
-            indicators.ma = indicators.tp.ewm(span=self.ma_period).mean()
-        else:
-            indicators.ma = indicators.tp.rolling(self.ma_period).mean()
-
-        std = indicators.tp.rolling(self.ma_period).std(ddof=0)
-        indicators.bolu = indicators.ma + self.num_std * std
-        indicators.bold = indicators.ma - self.num_std * std
+        indicators = BB(
+            indicators,
+            ma_period=self.ma_period,
+            num_std=self.num_std,
+            use_ema=self.use_ema,
+        )
 
         buy_rule = indicators.close > indicators.bold
         sell_rule = indicators.close < indicators.bolu
