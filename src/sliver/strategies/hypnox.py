@@ -5,10 +5,11 @@ import peewee
 import sliver.database as db
 import sliver.models
 from sliver.indicator import Indicator
+from sliver.indicators.hypnox import HYPNOX
 from sliver.print import print
 from sliver.strategies.signals import StrategySignals
 from sliver.strategy import IStrategy
-from sliver.utils import get_mean_var, get_timeframe_freq, standardize
+from sliver.utils import standardize
 
 
 def predict(model, tweets, verbose=0):
@@ -45,13 +46,6 @@ def replay(query, model, verbose=0):
     print(f"{model.config['name']}: replaying {query.count()} tweets")
 
     with db.connection.atomic():
-        # page = 0
-        # while True:
-        # page_q = query.paginate(page, 1024)
-        # page += 1
-        # if page_q.count() == 0:
-        #     break
-
         tweets = pandas.DataFrame(query.dicts())
         tweets.text = tweets.text.apply(standardize)
         tweets.text = tweets.text.str.slice(0, model.config["max_length"])
@@ -65,7 +59,6 @@ def replay(query, model, verbose=0):
             HypnoxScore.insert_many(scores.to_dict("records")).execute()
 
         except Exception:
-            # drop to a python interpreter shell
             import code
 
             code.interact(local=locals())
@@ -125,81 +118,43 @@ class HypnoxStrategy(IStrategy):
     def get_indicators_df(self):
         return self.strategy.get_indicators_df(self.get_indicators())
 
-    def refresh_indicators(self):
-        if self.model:
-            query = HypnoxTweet.get_tweets_by_model(self.model).where(
-                HypnoxScore.model.is_null()
-            )
-
-            count = query.count()
-            if count == 0:
-                print(f"{self.model}: no tweets to replay")
-            else:
-                model = sliver.models.load_model(self.model)
-                replay(query, model)
-
+    def refresh_indicators(self, indicators):
         BUY = StrategySignals.BUY
         NEUTRAL = StrategySignals.NEUTRAL
         SELL = StrategySignals.SELL
 
-        # grab indicators
-        indicators_q = self.get_indicators()
-        indicators = pandas.DataFrame(indicators_q.dicts())
-        existing = indicators.dropna()
-        indicators = indicators[indicators.isnull().any(axis=1)]
+        if self.model:
+            filter = self.filter.encode("unicode_escape") if self.filter else b""
 
-        # filter relevant data
-        self_regex = self.filter.encode("unicode_escape") if self.filter else b""
-        f = HypnoxTweet.text.iregexp(self_regex)
-        f = f & (HypnoxScore.model.is_null(False))
+            base_q = (
+                HypnoxTweet.get_tweets_by_model(self.model)
+                .where(HypnoxTweet.text.iregexp(filter))
+                .where(HypnoxTweet.time > indicators.iloc[0].time)
+            )
 
-        f = f & (HypnoxTweet.time > indicators.iloc[0].time)
+            replay_q = base_q.where(HypnoxScore.model.is_null())
+            if replay_q.count() == 0:
+                print(f"{self.model}: no tweets to replay")
+            else:
+                model = sliver.models.load_model(self.model)
+                replay(replay_q, model)
 
-        # grab scores
-        tweets_q = HypnoxTweet.get_tweets_by_model(self.model).where(f)
-        if tweets_q.count() == 0:
-            print("no tweets found for given regex")
-            return 0
-
-        tweets = pandas.DataFrame(tweets_q.dicts())
-        tweets = tweets.set_index("time")
-
-        # grab last computed metrics
-        if existing.empty:
+        all_indicators = pandas.DataFrame(self.get_indicators().dicts())
+        if len(all_indicators) == len(indicators):
             n_samples = 0
             mean = 0
             variance = 0
         else:
-            n_samples = existing.iloc[-1]["n_samples"]
-            mean = existing.iloc[-1]["mean"]
-            variance = existing.iloc[-1]["variance"]
+            n_samples = all_indicators.iloc[-1]["n_samples"]
+            mean = all_indicators.iloc[-1]["mean"]
+            variance = all_indicators.iloc[-1]["variance"]
 
-        # compute new metrics
-        mean, variance = get_mean_var(tweets.score, n_samples, mean, variance)
+        tweets = pandas.DataFrame(base_q.dicts())
 
-        # apply normalization
-        tweets["z_score"] = (tweets.score - mean) / variance.sqrt()
+        indicators = HYPNOX(
+            indicators, tweets, self.strategy.timeframe, n_samples, mean, variance
+        )
 
-        # resample tweets by strat timeframe freq median
-        freq = get_timeframe_freq(self.strategy.timeframe)
-        tweets = tweets[["z_score"]].resample(freq).median().ffill()
-
-        # join both dataframes
-        indicators = indicators.set_index("time")
-        indicators = indicators.drop("z_score", axis=1)
-        indicators = pandas.concat([indicators, tweets], join="inner", axis=1)
-        if indicators.empty:
-            print("indicator data is up to date")
-            return 0
-
-        # fill out remaining columns
-        indicators = indicators.drop("price", axis=1)
-        indicators["strategy"] = self.strategy.id
-        indicators["n_samples"] = n_samples + len(tweets)
-        indicators["mean"] = mean
-        indicators["variance"] = variance
-
-        # compute signals
         indicators["signal"] = NEUTRAL
 
         signal = NEUTRAL
@@ -216,8 +171,6 @@ class HypnoxStrategy(IStrategy):
 
         indicators.loc[rule, "signal"] = signal
 
-        indicators = indicators.reset_index()
-
         Indicator.insert_many(
             indicators[["strategy", "price", "signal"]].to_dict("records")
         ).execute()
@@ -227,5 +180,7 @@ class HypnoxStrategy(IStrategy):
         indicators.indicator = range(first_id, first_id + len(indicators))
 
         HypnoxIndicator.insert_many(
-            indicators[["z_score", "mean", "variance", "n_samples"]].to_dict("records")
+            indicators[
+                ["indicator", "z_score", "mean", "variance", "n_samples"]
+            ].to_dict("records")
         ).execute()
