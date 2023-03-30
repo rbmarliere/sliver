@@ -218,5 +218,5 @@ class IStrategy(db.BaseModel):
         return df.loc[df.indicator_id.isnull()].copy()
 
     @abstractmethod
-    def refresh_indicators(self):
+    def refresh_indicators(self, indicators):
         ...

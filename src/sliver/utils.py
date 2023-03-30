@@ -1,5 +1,4 @@
 import datetime
-import decimal
 import logging.handlers
 import re
 import time
@@ -105,35 +104,6 @@ def get_next_refresh(interval_in_minutes):
     next_refresh = series.loc[series > now].iloc[0]
 
     return next_refresh
-
-
-def get_mean_var(
-    series: pandas.DataFrame,
-    n: int,
-    old_mean: decimal.Decimal,
-    old_var: decimal.Decimal,
-):
-    # https://math.stackexchange.com/questions/102978/incremental-computation-of-standard-deviation
-    n = decimal.Decimal(str(n))
-    for i, x in series.items():
-        x = decimal.Decimal(str(x))
-        n += 1
-
-        new_mean = (old_mean * (n - 1) + x) / n
-
-        if n == 1:
-            new_var = 0
-        else:
-            new_var = (
-                (n - 2) * old_var
-                + (n - 1) * (old_mean - new_mean) ** 2
-                + (x - new_mean) ** 2
-            ) / (n - 1)
-
-        old_var = new_var
-        old_mean = new_mean
-
-    return new_mean, new_var
 
 
 def get_return(entry_price, exit_price):
