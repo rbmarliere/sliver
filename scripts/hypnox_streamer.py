@@ -23,8 +23,16 @@ class Stream(tweepy.StreamingClient):
         super().on_disconnect()
 
     def on_exception(self, exception):
-        print("stream error", exception=exception)
+        print("stream exception", exception=exception)
         super().on_exception(exception)
+
+    def on_connection_error(self):
+        print(exception="stream connection error")
+        super().on_connection_error()
+
+    def on_request_error(self):
+        print(exception="stream request error")
+        super().on_request_error()
 
     def on_tweet(self, status):
         # ignore replies
