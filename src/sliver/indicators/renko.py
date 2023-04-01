@@ -3,7 +3,7 @@ import math
 
 
 def RENKO(ohlc, size=10, use_atr=True):
-    first = math.floor(ohlc.iloc[0].close / size) * size
+    first = math.floor(ohlc.iloc[0].open / size) * size
     if first == 0:
         first = size
 
@@ -13,21 +13,34 @@ def RENKO(ohlc, size=10, use_atr=True):
         price = row.close
         time = row.time
 
+        # first bricks
         if len(bricks) == 0:
-            if price > first + size:
-                curr = {
-                    "time": time,
-                    "open": first,
-                    "close": first + size,
-                }
-                bricks.append(curr)
-            elif price < first - size:
-                curr = {
-                    "time": time,
-                    "open": first,
-                    "close": first - size,
-                }
-                bricks.append(curr)
+            if price > first + 2 * size:
+                # green
+                size_mult = math.floor((price - first) / size)
+                next_bricks = [
+                    {
+                        "time": time,
+                        "open": first + (mult * size),
+                        "close": first + ((mult + 1) * size),
+                    }
+                    for mult in range(0, size_mult)
+                ]
+                bricks += next_bricks
+                curr = next_bricks[-1]
+            elif price < first - 2 * size:
+                # red
+                size_mult = math.floor((first - price) / size)
+                next_bricks = [
+                    {
+                        "time": time,
+                        "open": first - (mult * size),
+                        "close": first - ((mult + 1) * size),
+                    }
+                    for mult in range(0, size_mult)
+                ]
+                bricks += next_bricks
+                curr = next_bricks[-1]
             continue
 
         if curr["close"] > curr["open"]:
