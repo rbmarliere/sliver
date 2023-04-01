@@ -22,6 +22,10 @@ def RENKO(ohlc, size=10, use_atr=True):
                     {
                         "time": time,
                         "open": first + (mult * size),
+                        "high": first + ((mult + 1) * size),
+                        "low": ohlc.loc[ohlc.index <= idx].close.min()
+                        if mult == 0
+                        else first + (mult * size),
                         "close": first + ((mult + 1) * size),
                     }
                     for mult in range(0, size_mult)
@@ -35,6 +39,10 @@ def RENKO(ohlc, size=10, use_atr=True):
                     {
                         "time": time,
                         "open": first - (mult * size),
+                        "high": ohlc.loc[ohlc.index <= idx].close.max()
+                        if mult == 0
+                        else first - (mult * size),
+                        "low": first - ((mult + 1) * size),
                         "close": first - ((mult + 1) * size),
                     }
                     for mult in range(0, size_mult)
@@ -42,6 +50,9 @@ def RENKO(ohlc, size=10, use_atr=True):
                 bricks += next_bricks
                 curr = next_bricks[-1]
             continue
+
+        in_between = ohlc.loc[(ohlc.time > bricks[-1]["time"]) & (ohlc.index <= idx)]
+        # in_between.high.max()
 
         if curr["close"] > curr["open"]:
             # uptrend
@@ -52,6 +63,10 @@ def RENKO(ohlc, size=10, use_atr=True):
                     {
                         "time": time,
                         "open": curr["close"] + (mult * size),
+                        "high": curr["close"] + ((mult + 1) * size),
+                        "low": in_between.close.min()
+                        if mult == 0 and in_between.close.min() < curr["close"] - size
+                        else curr["close"] + (mult * size),
                         "close": curr["close"] + ((mult + 1) * size),
                     }
                     for mult in range(0, size_mult)
@@ -65,6 +80,10 @@ def RENKO(ohlc, size=10, use_atr=True):
                     {
                         "time": time,
                         "open": curr["open"] - (mult * size),
+                        "high": in_between.close.max()
+                        if mult == 0 and in_between.close.max() > curr["open"] + size
+                        else curr["open"] - (mult * size),
+                        "low": curr["open"] - ((mult + 1) * size),
                         "close": curr["open"] - ((mult + 1) * size),
                     }
                     for mult in range(0, size_mult)
@@ -81,6 +100,10 @@ def RENKO(ohlc, size=10, use_atr=True):
                     {
                         "time": time,
                         "open": curr["open"] + (mult * size),
+                        "high": curr["open"] + ((mult + 1) * size),
+                        "low": in_between.close.min()
+                        if mult == 0 and in_between.close.min() < curr["open"] - size
+                        else curr["open"] + (mult * size),
                         "close": curr["open"] + ((mult + 1) * size),
                     }
                     for mult in range(0, size_mult)
@@ -94,6 +117,10 @@ def RENKO(ohlc, size=10, use_atr=True):
                     {
                         "time": time,
                         "open": curr["close"] - (mult * size),
+                        "high": in_between.close.max()
+                        if mult == 0 and in_between.close.max() > curr["close"] + size
+                        else curr["close"] - (mult * size),
+                        "low": curr["close"] - ((mult + 1) * size),
                         "close": curr["close"] - ((mult + 1) * size),
                     }
                     for mult in range(0, size_mult)
