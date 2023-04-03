@@ -2,7 +2,12 @@ import pandas
 import math
 
 
-def RENKO(ohlc, size=10, use_atr=True):
+def RENKO(ohlc, size=10, use_atr=False):
+    if use_atr:
+        assert "atr" in ohlc.columns
+        size = ohlc.loc[ohlc.atr > 0].iloc[0].atr
+        # size = ohlc.iloc[-1].atr  # tradingview
+
     first = math.floor(ohlc.iloc[0].open / size) * size
     if first == 0:
         first = size
@@ -12,12 +17,17 @@ def RENKO(ohlc, size=10, use_atr=True):
     for idx, row in ohlc.iterrows():
         price = row.close
         time = row.time
+        if use_atr:
+            size = row.atr
+
+        if not size:
+            continue
 
         # first bricks
         if len(bricks) == 0:
             if price > first + 2 * size:
                 # green
-                size_mult = math.floor((price - first) / size)
+                steps = math.floor((price - first) / size)
                 next_bricks = [
                     {
                         "time": time,
@@ -28,13 +38,13 @@ def RENKO(ohlc, size=10, use_atr=True):
                         else first + (mult * size),
                         "close": first + ((mult + 1) * size),
                     }
-                    for mult in range(0, size_mult)
+                    for mult in range(0, steps)
                 ]
                 bricks += next_bricks
                 curr = next_bricks[-1]
             elif price < first - 2 * size:
                 # red
-                size_mult = math.floor((first - price) / size)
+                steps = math.floor((first - price) / size)
                 next_bricks = [
                     {
                         "time": time,
@@ -45,7 +55,7 @@ def RENKO(ohlc, size=10, use_atr=True):
                         "low": first - ((mult + 1) * size),
                         "close": first - ((mult + 1) * size),
                     }
-                    for mult in range(0, size_mult)
+                    for mult in range(0, steps)
                 ]
                 bricks += next_bricks
                 curr = next_bricks[-1]
@@ -58,7 +68,7 @@ def RENKO(ohlc, size=10, use_atr=True):
             # uptrend
             if price > curr["close"] + size:
                 # green
-                size_mult = math.floor((price - curr["close"]) / size)
+                steps = math.floor((price - curr["close"]) / size)
                 next_bricks = [
                     {
                         "time": time,
@@ -69,13 +79,13 @@ def RENKO(ohlc, size=10, use_atr=True):
                         else curr["close"] + (mult * size),
                         "close": curr["close"] + ((mult + 1) * size),
                     }
-                    for mult in range(0, size_mult)
+                    for mult in range(0, steps)
                 ]
                 bricks += next_bricks
                 curr = next_bricks[-1]
             elif price < curr["open"] - size:
                 # red
-                size_mult = math.floor((curr["open"] - price) / size)
+                steps = math.floor((curr["open"] - price) / size)
                 next_bricks = [
                     {
                         "time": time,
@@ -86,7 +96,7 @@ def RENKO(ohlc, size=10, use_atr=True):
                         "low": curr["open"] - ((mult + 1) * size),
                         "close": curr["open"] - ((mult + 1) * size),
                     }
-                    for mult in range(0, size_mult)
+                    for mult in range(0, steps)
                 ]
                 bricks += next_bricks
                 curr = next_bricks[-1]
@@ -95,7 +105,7 @@ def RENKO(ohlc, size=10, use_atr=True):
             # downtrend
             if price > curr["open"] + size:
                 # green
-                size_mult = math.floor((price - curr["open"]) / size)
+                steps = math.floor((price - curr["open"]) / size)
                 next_bricks = [
                     {
                         "time": time,
@@ -106,13 +116,13 @@ def RENKO(ohlc, size=10, use_atr=True):
                         else curr["open"] + (mult * size),
                         "close": curr["open"] + ((mult + 1) * size),
                     }
-                    for mult in range(0, size_mult)
+                    for mult in range(0, steps)
                 ]
                 bricks += next_bricks
                 curr = next_bricks[-1]
             elif price < curr["close"] - size:
                 # red
-                size_mult = math.floor((curr["close"] - price) / size)
+                steps = math.floor((curr["close"] - price) / size)
                 next_bricks = [
                     {
                         "time": time,
@@ -123,7 +133,7 @@ def RENKO(ohlc, size=10, use_atr=True):
                         "low": curr["close"] - ((mult + 1) * size),
                         "close": curr["close"] - ((mult + 1) * size),
                     }
-                    for mult in range(0, size_mult)
+                    for mult in range(0, steps)
                 ]
                 bricks += next_bricks
                 curr = next_bricks[-1]
