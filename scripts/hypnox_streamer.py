@@ -30,8 +30,8 @@ class Stream(tweepy.StreamingClient):
         print(exception="stream connection error")
         super().on_connection_error()
 
-    def on_request_error(self):
-        print(exception="stream request error")
+    def on_request_error(self, status_code):
+        print(exception=f"stream request error {status_code}")
         super().on_request_error()
 
     def on_tweet(self, status):
