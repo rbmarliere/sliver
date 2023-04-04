@@ -17,6 +17,7 @@ def RENKO(ohlc, size=10, use_atr=False):
     for idx, row in ohlc.iterrows():
         price = row.close
         time = row.time
+
         if use_atr:
             size = row.atr
 
@@ -61,13 +62,13 @@ def RENKO(ohlc, size=10, use_atr=False):
                 curr = next_bricks[-1]
             continue
 
-        in_between = ohlc.loc[(ohlc.time > bricks[-1]["time"]) & (ohlc.index <= idx)]
-        # in_between.high.max()
-
         if curr["close"] > curr["open"]:
             # uptrend
             if price > curr["close"] + size:
                 # green
+                in_between = ohlc.loc[
+                    (ohlc.time > bricks[-1]["time"]) & (ohlc.index <= idx)
+                ]
                 steps = math.floor((price - curr["close"]) / size)
                 next_bricks = [
                     {
@@ -85,6 +86,9 @@ def RENKO(ohlc, size=10, use_atr=False):
                 curr = next_bricks[-1]
             elif price < curr["open"] - size:
                 # red
+                in_between = ohlc.loc[
+                    (ohlc.time > bricks[-1]["time"]) & (ohlc.index <= idx)
+                ]
                 steps = math.floor((curr["open"] - price) / size)
                 next_bricks = [
                     {
@@ -105,6 +109,9 @@ def RENKO(ohlc, size=10, use_atr=False):
             # downtrend
             if price > curr["open"] + size:
                 # green
+                in_between = ohlc.loc[
+                    (ohlc.time > bricks[-1]["time"]) & (ohlc.index <= idx)
+                ]
                 steps = math.floor((price - curr["open"]) / size)
                 next_bricks = [
                     {
@@ -122,6 +129,9 @@ def RENKO(ohlc, size=10, use_atr=False):
                 curr = next_bricks[-1]
             elif price < curr["close"] - size:
                 # red
+                in_between = ohlc.loc[
+                    (ohlc.time > bricks[-1]["time"]) & (ohlc.index <= idx)
+                ]
                 steps = math.floor((curr["close"] - price) / size)
                 next_bricks = [
                     {
