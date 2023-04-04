@@ -32,14 +32,9 @@ class MACrossStrategy(IStrategy):
 
         df.fast = df.fast.apply(lambda x: decimal.Decimal(x) if x else 0)
         df.slow = df.slow.apply(lambda x: decimal.Decimal(x) if x else 0)
-
         df.fast = df.fast * df.quote_precision
         df.slow = df.slow * df.quote_precision
-
-        df.replace({float("nan"): None}, inplace=True)
-
         df.fast = df.apply(lambda x: quantize(x, "fast", "price_precision"), axis=1)
-
         df.slow = df.apply(lambda x: quantize(x, "slow", "price_precision"), axis=1)
 
         return df

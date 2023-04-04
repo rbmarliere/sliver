@@ -33,12 +33,9 @@ class DD3Strategy(IStrategy):
         df.ma1 = df.ma1.apply(lambda x: decimal.Decimal(x) if x else 0)
         df.ma2 = df.ma2.apply(lambda x: decimal.Decimal(x) if x else 0)
         df.ma3 = df.ma3.apply(lambda x: decimal.Decimal(x) if x else 0)
-
         df.ma1 = df.ma1 * df.quote_precision
         df.ma2 = df.ma2 * df.quote_precision
         df.ma3 = df.ma3 * df.quote_precision
-        df.replace({float("nan"): None}, inplace=True)
-
         df.ma1 = df.apply(lambda x: quantize(x, "ma1", "price_precision"), axis=1)
         df.ma2 = df.apply(lambda x: quantize(x, "ma2", "price_precision"), axis=1)
         df.ma3 = df.apply(lambda x: quantize(x, "ma3", "price_precision"), axis=1)
