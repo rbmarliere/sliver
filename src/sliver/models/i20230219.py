@@ -21,7 +21,10 @@ class i20230219(IModel):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.tokenizer = transformers.AutoTokenizer.from_pretrained(self.path)
+        if "load" in kwargs and kwargs["load"]:
+            self.tokenizer = transformers.AutoTokenizer.from_pretrained(self.path)
+        else:
+            self.tokenizer = transformers.AutoTokenizer.from_pretrained(self.bert)
 
     def get_bert(self):
         return transformers.TFAutoModel.from_pretrained(
