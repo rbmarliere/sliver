@@ -43,7 +43,7 @@ def predict(model, tweets, verbose=0):
 
 
 def replay(query, model, verbose=0):
-    print(f"{model.config['name']}: replaying {query.count()} tweets")
+    print(f"{model.name}: replaying {query.count()} tweets")
 
     with db.connection.atomic():
         tweets = pandas.DataFrame(query.dicts())

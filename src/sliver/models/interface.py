@@ -1,6 +1,8 @@
+import pathlib
 from abc import ABC, abstractmethod
 
 from sliver.config import Config
+from sliver.exceptions import DisablingError
 
 
 class IModel(ABC):
@@ -15,11 +17,19 @@ class IModel(ABC):
     patience = None
     monitor = None
 
-    def __init__(self):
+    def __init__(self, load=True):
         self.name = self.__class__.__name__
         self.path = f"{Config().MODELS_DIR}/{self.name}"
 
-    @property
+        if load:
+            modelpath = pathlib.Path(self.path).resolve()
+            if not modelpath.exists():
+                raise DisablingError(f"model {self.name} does not exist")
+            self.model = self.load()
+
+    def predict(self, *args, **kwargs):
+        return self.model.predict(*args, **kwargs)
+
     @abstractmethod
     def load(self):
         ...

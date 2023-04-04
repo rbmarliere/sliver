@@ -19,8 +19,8 @@ class i20230219(IModel):
     num_labels = 2
     max_length = 180
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.tokenizer = transformers.AutoTokenizer.from_pretrained(self.path)
 
     def get_bert(self):
