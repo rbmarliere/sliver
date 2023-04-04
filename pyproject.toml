@@ -32,6 +32,7 @@ dependencies = [
     "torch==1.12.1",
     "pylunar>=0.6.0",
     "emoji==0.6.0",
+    "scikit-learn>=1.2.2",
 ]
 requires-python = ">=3.9,<3.11"
 license = {text = "None"}

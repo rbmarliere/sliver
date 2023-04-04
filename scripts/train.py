@@ -1,13 +1,9 @@
-#!/usr/bin/env python3
-
 import argparse
 
 import tensorflow
 
-from sliver.models.preprocess import preprocess, tokenize
-from sliver.models import get_model
-from sliver.config import Config
-
+import sliver.models
+from sliver.models.tweet import preprocess, tokenize
 
 if __name__ == "__main__":
     argp = argparse.ArgumentParser()
@@ -19,9 +15,7 @@ if __name__ == "__main__":
     )
     args = argp.parse_args()
 
-    model = get_model(args.model_name)
-
-    modelpath = f"{Config().MODELS_DIR}/{args.model_name}"
+    model = sliver.models.get(args.model_name)(load=False)
 
     train_df, val_df, test_df = preprocess(model, args.input_file)
 
@@ -36,41 +30,41 @@ if __name__ == "__main__":
 
     model.summary()
 
-    # https://www.tensorflow.org/guide/keras/train_and_evaluate#checkpointing_models
-    checkpoint = tensorflow.keras.callbacks.ModelCheckpoint(
-        # Path where to save the model
-        # The two parameters below mean that we will overwrite
-        # the current checkpoint if and only if
-        # the `val_loss` score has improved.
-        # The saved model name will include the current epoch.
-        filepath="mymodel_{epoch}",
-        save_best_only=True,  # Only save a model if `val_loss` has improved.
-        monitor="val_loss",
-        verbose=1,
-    )
+    # # https://www.tensorflow.org/guide/keras/train_and_evaluate#checkpointing_models
+    # checkpoint = tensorflow.keras.callbacks.ModelCheckpoint(
+    #     # Path where to save the model
+    #     # The two parameters below mean that we will overwrite
+    #     # the current checkpoint if and only if
+    #     # the `val_loss` score has improved.
+    #     # The saved model name will include the current epoch.
+    #     filepath="mymodel_{epoch}",
+    #     save_best_only=True,  # Only save a model if `val_loss` has improved.
+    #     monitor="val_loss",
+    #     verbose=1,
+    # )
 
     earlystop = tensorflow.keras.callbacks.EarlyStopping(
-        monitor=model.config["monitor"],
-        patience=model.config["patience"],
-        min_delta=model.config["min_delta"],
+        monitor=model.monitor,
+        patience=model.patience,
+        min_delta=model.min_delta,
         verbose=1,
         mode="min",
         restore_best_weights=True,
     )
 
     tensorboard = tensorflow.keras.callbacks.TensorBoard(
-        log_dir=f"{modelpath}/logs", histogram_freq=1
+        log_dir=f"{model.path}/logs", histogram_freq=1
     )
 
     model.fit(
         train_ds,
         validation_data=val_ds,
-        epochs=model.config["epochs"],
+        epochs=model.epochs,
         callbacks=[earlystop, tensorboard],
-        batch_size=model.config["batch_size"],
+        batch_size=model.batch_size,
     )
-    result = model.evaluate(test_ds, batch_size=model.config["batch_size"])
+    result = model.evaluate(test_ds, batch_size=model.batch_size)
     dict(zip(model.metrics_names, result))
 
-    model.save(modelpath)
-    model.tokenizer.save_pretrained(modelpath)
+    model.save(model.path)
+    model.tokenizer.save_pretrained(model.path)

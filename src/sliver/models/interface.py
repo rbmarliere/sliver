@@ -26,9 +26,11 @@ class IModel(ABC):
             if not modelpath.exists():
                 raise DisablingError(f"model {self.name} does not exist")
             self.model = self.load()
+        else:
+            self.model = self.get()
 
-    def predict(self, *args, **kwargs):
-        return self.model.predict(*args, **kwargs)
+    def __getattr__(self, attr):
+        return getattr(self.model, attr)
 
     @abstractmethod
     def load(self):
