@@ -31,6 +31,7 @@ dependencies = [
     "python-telegram-bot==13.13",
     "torch==1.12.1",
     "pylunar>=0.6.0",
+    "emoji==0.6.0",
 ]
 requires-python = ">=3.9,<3.11"
 license = {text = "None"}
