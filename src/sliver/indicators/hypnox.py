@@ -13,7 +13,11 @@ def get_mean_var(
     # https://math.stackexchange.com/questions/102978/incremental-computation-of-standard-deviation
     n = decimal.Decimal(str(n))
     for i, x in series.items():
-        x = decimal.Decimal(str(x))
+        try:
+            x = decimal.Decimal(str(x))
+        except decimal.InvalidOperation:
+            x = 0
+
         n += 1
 
         new_mean = (old_mean * (n - 1) + x) / n
