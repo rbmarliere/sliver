@@ -3,9 +3,9 @@ import argparse
 import tensorflow
 
 import sliver.models
-from sliver.models.tweet import preprocess, tokenize
 
-if __name__ == "__main__":
+
+def train():
     argp = argparse.ArgumentParser()
     argp.add_argument(
         "-i", "--input-file", help="path to training data file", required=True
@@ -17,16 +17,7 @@ if __name__ == "__main__":
 
     model = sliver.models.get(args.model_name)(load=False)
 
-    train_df, val_df, test_df = preprocess(model, args.input_file)
-
-    print("training data")
-    print(train_df)
-    print("validation data")
-    print(val_df)
-    print("test data")
-    print(test_df)
-
-    train_ds, val_ds, test_ds = tokenize(model, train_df, val_df, test_df)
+    train_df, val_df, test_df = model.preprocess(args.input_file)
 
     model.summary()
 
@@ -57,14 +48,17 @@ if __name__ == "__main__":
     )
 
     model.fit(
-        train_ds,
-        validation_data=val_ds,
+        train_df,
+        validation_data=val_df,
         epochs=model.epochs,
         callbacks=[earlystop, tensorboard],
         batch_size=model.batch_size,
     )
-    result = model.evaluate(test_ds, batch_size=model.batch_size)
+    result = model.evaluate(test_df, batch_size=model.batch_size)
     dict(zip(model.metrics_names, result))
 
     model.save(model.path)
-    model.tokenizer.save_pretrained(model.path)
+
+
+if __name__ == "__main__":
+    train()

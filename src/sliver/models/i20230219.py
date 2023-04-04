@@ -2,6 +2,7 @@ import tensorflow
 import transformers
 
 from sliver.models.interface import IModel
+from sliver.models.preprocessors.tweet import TweetPreprocessor
 
 
 class i20230219(IModel):
@@ -21,15 +22,12 @@ class i20230219(IModel):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if "load" in kwargs and kwargs["load"]:
-            self.tokenizer = transformers.AutoTokenizer.from_pretrained(self.path)
-        else:
-            self.tokenizer = transformers.AutoTokenizer.from_pretrained(self.bert)
 
-    def get_bert(self):
-        return transformers.TFAutoModel.from_pretrained(
-            self.bert, num_labels=self.num_labels, from_pt=True
-        )
+        tok = self.bert
+        if "load" in kwargs and kwargs["load"]:
+            tok = self.path
+
+        self.tokenizer = transformers.AutoTokenizer.from_pretrained(tok)
 
     def load(self):
         return tensorflow.keras.models.load_model(
@@ -62,3 +60,16 @@ class i20230219(IModel):
         model.compile(loss=loss, optimizer=optimizer, metrics=["accuracy"])
 
         return model
+
+    def preprocess(self, filepath):
+        proc = TweetPreprocessor(self)
+        return proc.tokenize(filepath)
+
+    def save(self, *args, **kwargs):
+        self.model.save(*args, **kwargs)
+        self.tokenizer.save_pretrained(self.path)
+
+    def get_bert(self):
+        return transformers.TFAutoModel.from_pretrained(
+            self.bert, num_labels=self.num_labels, from_pt=True
+        )

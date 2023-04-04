@@ -39,3 +39,7 @@ class IModel(ABC):
     @abstractmethod
     def get(self):
         ...
+
+    @abstractmethod
+    def preprocess(self, filepath):
+        ...
