@@ -17,17 +17,17 @@ def predict(model, tweets, verbose=0):
         tweets,
         truncation=True,
         padding="max_length",
-        max_length=model.config["max_length"],
+        max_length=model.max_length,
         return_tensors="tf",
     )
 
     prob = model.predict(
         {"input_ids": inputs["input_ids"], "attention_mask": inputs["attention_mask"]},
-        batch_size=model.config["batch_size"],
+        batch_size=model.batch_size,
         verbose=verbose,
     )
 
-    if model.config["class"] == "polarity":
+    if model.type == "polarity":
         indexes = prob.argmax(axis=1)
         values = numpy.take_along_axis(
             prob, numpy.expand_dims(indexes, axis=1), axis=1
@@ -36,7 +36,7 @@ def predict(model, tweets, verbose=0):
 
         scores = labels * values
 
-    elif model.config["class"] == "intensity":
+    elif model.type == "intensity":
         scores = prob.flatten()
 
     return scores
@@ -48,9 +48,9 @@ def replay(query, model, verbose=0):
     with db.connection.atomic():
         tweets = pandas.DataFrame(query.dicts())
         tweets.text = tweets.text.apply(standardize)
-        tweets.text = tweets.text.str.slice(0, model.config["max_length"])
+        tweets.text = tweets.text.str.slice(0, model.max_length)
         tweets = tweets.rename(columns={"id": "tweet_id"})
-        tweets["model"] = model.config["name"]
+        tweets["model"] = model.name
         tweets["score"] = predict(model, tweets["text"].to_list(), verbose=verbose)
 
         scores = tweets[["tweet_id", "model", "score"]]
@@ -136,7 +136,7 @@ class HypnoxStrategy(IStrategy):
             if replay_q.count() == 0:
                 print(f"{self.model}: no tweets to replay")
             else:
-                model = sliver.models.load_model(self.model)
+                model = sliver.models.load(self.model)
                 replay(replay_q, model)
 
         all_indicators = pandas.DataFrame(self.get_indicators().dicts())
