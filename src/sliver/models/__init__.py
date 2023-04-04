@@ -9,13 +9,7 @@ from sliver.print import print
 models = []
 
 
-def load(model_name):
-    for model in models:
-        if model.name == model_name:
-            return model
-
-    print(f"loading model {model_name}")
-
+def get(model_name):
     try:
         model_module = importlib.import_module(f"sliver.models.{model_name}")
         model_class = getattr(model_module, model_name)
@@ -27,12 +21,24 @@ def load(model_name):
     if not modelpath.exists():
         raise DisablingError(f"model {model_name} does not exist")
 
+    return model_obj
+
+
+def load(model_name):
+    for model in models:
+        if model.name == model_name:
+            return model
+
+    print(f"loading model {model_name}")
+
+    model_obj = get(model_name)
+
     try:
-        model = model_class().load()
+        model = model_obj.load()
     except tensorflow.errors.ResourceExhaustedError:
         del models[0]
         try:
-            model = model_class().load()
+            model = model_obj.load()
         except tensorflow.errors.ResourceExhaustedError:
             raise DisablingError(f"model {model_name} is too large to be loaded")
     except Exception:

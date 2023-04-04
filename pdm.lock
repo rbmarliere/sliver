@@ -153,6 +153,11 @@ requires_python = ">=3.7"
 summary = "An implementation of the Debug Adapter Protocol for Python"
 
 [[package]]
+name = "emoji"
+version = "0.6.0"
+summary = "Emoji for Python"
+
+[[package]]
 name = "ephem"
 version = "4.1.4"
 summary = "Compute positions of the planets and stars"
@@ -806,7 +811,7 @@ summary = "Backport of pathlib-compatible object wrapper for zip files"
 [metadata]
 lock_version = "4.2"
 groups = ["default", "dev"]
-content_hash = "sha256:962d2bc15df3c760931b7c2af4edd7515ef0d3b6878742f6c7660c4aefd8c442"
+content_hash = "sha256:882c1761fe7d6e11331a59b056f4bad338a9cf4791fffd071efc2829a48715d0"
 
 [metadata.files]
 "absl-py 1.4.0" = [
@@ -1155,6 +1160,9 @@ content_hash = "sha256:962d2bc15df3c760931b7c2af4edd7515ef0d3b6878742f6c7660c4ae
     {url = "https://files.pythonhosted.org/packages/ec/6c/5e761f39e804afbe608c4cb62e1cddbfb2496ebca55a5cc916d8abc8bd60/debugpy-1.6.6-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a771739902b1ae22a120dbbb6bd91b2cae6696c0e318b5007c5348519a4211c6"},
     {url = "https://files.pythonhosted.org/packages/f4/99/b65528ecd9507241c0f49dad313e711d03277ce923aa2de13a93d106cc29/debugpy-1.6.6-cp37-cp37m-macosx_10_15_x86_64.whl", hash = "sha256:78739f77c58048ec006e2b3eb2e0cd5a06d5f48c915e2fc7911a337354508110"},
     {url = "https://files.pythonhosted.org/packages/f9/35/325e53d2a75b28777c28e790f84ea1ee45e1ecc00ae76550a53872a541f9/debugpy-1.6.6-py2.py3-none-any.whl", hash = "sha256:be596b44448aac14eb3614248c91586e2bc1728e020e82ef3197189aae556115"},
+]
+"emoji 0.6.0" = [
+    {url = "https://files.pythonhosted.org/packages/ff/1c/1f1457fe52d0b30cbeebfd578483cedb3e3619108d2d5a21380dfecf8ffd/emoji-0.6.0.tar.gz", hash = "sha256:e42da4f8d648f8ef10691bc246f682a1ec6b18373abfd9be10ec0b398823bd11"},
 ]
 "ephem 4.1.4" = [
     {url = "https://files.pythonhosted.org/packages/03/cf/a5c17a03a05fe83b36c9c3e7d6b643d682b8161fa27489a72569783018d3/ephem-4.1.4-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:24b7e90c731e851a56ab5e9d538915faaa54945e9b5211cfdf04e570fc27c529"},
