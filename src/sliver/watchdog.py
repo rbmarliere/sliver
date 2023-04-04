@@ -5,8 +5,6 @@ from sliver.config import Config
 from sliver.exceptions import (
     BaseError,
     DisablingError,
-    ModelDoesNotExist,
-    ModelTooLarge,
     PostponingError,
 )
 from sliver.position import Position
@@ -90,8 +88,6 @@ class Watchdog(metaclass=WatchdogMeta):
             except (
                 Exception,
                 BaseError,
-                ModelTooLarge,
-                ModelDoesNotExist,
                 DisablingError,
             ) as e:
                 self.print(exception=e)

@@ -2,55 +2,41 @@ import importlib
 import pathlib
 
 import tensorflow
-import transformers
 
-from sliver.config import Config
-from sliver.exceptions import ModelDoesNotExist, ModelTooLarge
+from sliver.exceptions import DisablingError
 from sliver.print import print
-
-transformers.logging.set_verbosity_error()
-tensorflow.get_logger().setLevel("INFO")
 
 models = []
 
 
-def get_model(model_name):
-    model_module = importlib.import_module("models." + model_name)
-    model = model_module.get_model()
-    model.config = model_module.config
-    model.tokenizer = model_module.load_tokenizer()
-    return model
-
-
-def load_model(model_name):
+def load(model_name):
     for model in models:
-        if model.config["name"] == model_name:
+        if model.name == model_name:
             return model
 
-    print("loading model {m}".format(m=model_name))
-
-    modelpath = pathlib.Path(Config().MODELS_DIR + "/" + model_name).resolve()
-    if not modelpath.exists():
-        print("model {m} does not exist".format(m=model_name))
-        raise ModelDoesNotExist
-
-    model_module = importlib.import_module("sliver.models." + model_name)
+    print(f"loading model {model_name}")
 
     try:
-        model = model_module.load_model(modelpath)
+        model_module = importlib.import_module(f"sliver.models.{model_name}")
+        model_class = getattr(model_module, model_name)
+        model_obj = model_class()
+    except (ModuleNotFoundError, AttributeError):
+        raise DisablingError(f"model {model_name} does not exist")
+
+    modelpath = pathlib.Path(model_obj.path).resolve()
+    if not modelpath.exists():
+        raise DisablingError(f"model {model_name} does not exist")
+
+    try:
+        model = model_class().load()
     except tensorflow.errors.ResourceExhaustedError:
         del models[0]
         try:
-            model = model_module.load_model(modelpath)
+            model = model_class().load()
         except tensorflow.errors.ResourceExhaustedError:
-            print("model {m} is too large to be loaded".format(m=model_name))
-            raise ModelTooLarge
-    except Exception as e:
-        print("could not load model {m}".format(m=model_name), exception=e)
-        raise ModelDoesNotExist
-
-    model.config = model_module.config
-    model.tokenizer = model_module.load_tokenizer(modelpath=modelpath)
+            raise DisablingError(f"model {model_name} is too large to be loaded")
+    except Exception:
+        raise DisablingError(f"could not load model {model_name}")
 
     models.append(model)
 
