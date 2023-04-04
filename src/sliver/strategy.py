@@ -148,8 +148,6 @@ class BaseStrategy(db.BaseModel):
             lambda x: quantize(x, "volume", "amount_precision"), axis=1
         )
 
-        df.replace({float("nan"): None}, inplace=True)
-
         return df
 
     def enable(self):

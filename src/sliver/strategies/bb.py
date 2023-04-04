@@ -35,12 +35,9 @@ class BBStrategy(IStrategy):
         df.ma = df.ma.apply(lambda x: decimal.Decimal(x) if x else 0)
         df.bolu = df.bolu.apply(lambda x: decimal.Decimal(x) if x else 0)
         df.bold = df.bold.apply(lambda x: decimal.Decimal(x) if x else 0)
-
         df.ma = df.ma * df.quote_precision
         df.bolu = df.bolu * df.quote_precision
         df.bold = df.bold * df.quote_precision
-        df.replace({float("nan"): None}, inplace=True)
-
         df.ma = df.apply(lambda x: quantize(x, "ma", "price_precision"), axis=1)
         df.bolu = df.apply(lambda x: quantize(x, "bolu", "price_precision"), axis=1)
         df.bold = df.apply(lambda x: quantize(x, "bold", "price_precision"), axis=1)
