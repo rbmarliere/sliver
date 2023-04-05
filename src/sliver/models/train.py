@@ -17,7 +17,7 @@ def train():
 
     model = sliver.models.get(args.model_name)(load=False)
 
-    train_df, val_df, test_df = model.preprocess(args.input_file)
+    train_ds, val_ds, test_ds = model.preprocess(args.input_file)
 
     model.summary()
 
@@ -48,14 +48,15 @@ def train():
     )
 
     model.fit(
-        train_df,
-        validation_data=val_df,
+        train_ds,
+        validation_data=val_ds,
         epochs=model.epochs,
         callbacks=[earlystop, tensorboard],
         batch_size=model.batch_size,
     )
-    result = model.evaluate(test_df, batch_size=model.batch_size)
-    dict(zip(model.metrics_names, result))
+
+    print("evaluation:")
+    model.evaluate(test_ds, batch_size=model.batch_size)
 
     model.save(model.path)
 
