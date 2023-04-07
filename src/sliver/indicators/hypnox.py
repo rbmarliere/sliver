@@ -58,7 +58,7 @@ def HYPNOX(ohlc, tweets, timeframe="1h", n_samples=0, mean=0, variance=0):
 
     # resample tweets by strat timeframe freq median
     freq = get_timeframe_freq(timeframe)
-    tweets = tweets[["z_score"]].resample(freq).median().ffill()
+    tweets = tweets[["z_score"]].resample(freq, label="right").median().ffill()
 
     # check if z_score is already in indicators
     if "z_score" in indicators.columns:
