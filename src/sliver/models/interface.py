@@ -8,14 +8,6 @@ from sliver.exceptions import DisablingError
 class IModel(ABC):
     name = None
     path = None
-    val_size = None
-    test_size = None
-    batch_size = None
-    epochs = None
-    learning_rate = None
-    min_delta = None
-    patience = None
-    monitor = None
 
     def __init__(self, load=True):
         self.name = self.__class__.__name__
@@ -31,6 +23,14 @@ class IModel(ABC):
 
     def __getattr__(self, attr):
         return getattr(self.model, attr)
+
+    @property
+    @abstractmethod
+    def trainer(self):
+        ...
+
+    def train(self, filepath):
+        self.trainer.train(self, *self.preprocess(filepath))
 
     @abstractmethod
     def load(self):
