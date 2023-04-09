@@ -3,17 +3,13 @@ import transformers
 
 from sliver.models.interface import IModel
 from sliver.models.preprocessors.tweet import TweetPreprocessor
+from sliver.models.trainers.dl import DeepLearningTrainer
 
 
 class i20230219(IModel):
     val_size = 0.09
     test_size = 0.04
     batch_size = 128
-    epochs = 33
-    learning_rate = 0.000007
-    min_delta = 0.005
-    patience = 1
-    monitor = "loss"
 
     type = "intensity"
     bert = "vinai/bertweet-base"
@@ -28,6 +24,15 @@ class i20230219(IModel):
             tok = self.path
 
         self.tokenizer = transformers.AutoTokenizer.from_pretrained(tok)
+
+    @property
+    def trainer(self):
+        return DeepLearningTrainer(
+            epochs=33,
+            min_delta=0.005,
+            patience=1,
+            monitor="loss",
+        )
 
     def load(self):
         return tensorflow.keras.models.load_model(
@@ -55,7 +60,7 @@ class i20230219(IModel):
 
         loss = tensorflow.keras.losses.BinaryCrossentropy()
 
-        optimizer = tensorflow.keras.optimizers.Adam(learning_rate=self.learning_rate)
+        optimizer = tensorflow.keras.optimizers.Adam(learning_rate=0.000007)
 
         model.compile(loss=loss, optimizer=optimizer, metrics=["accuracy"])
 

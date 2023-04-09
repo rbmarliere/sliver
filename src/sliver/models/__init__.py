@@ -35,7 +35,8 @@ def load(model_name):
             model = model_class()
         except tensorflow.errors.ResourceExhaustedError:
             raise DisablingError(f"model {model_name} is too large to be loaded")
-    except Exception:
+    except Exception as e:
+        print(exception=e)
         raise DisablingError(f"could not load model {model_name}")
 
     models.append(model)
