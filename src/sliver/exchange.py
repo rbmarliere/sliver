@@ -109,6 +109,8 @@ class Exchange(db.BaseModel):
             raise PostponingError(f"latency above threshold: {elapsed_in_ms} > 5000")
 
     def fetch_ohlcv(self, strategy):
+        print("fetching ohlcv data")
+
         market = strategy.market
         tf_delta = get_timeframe_delta(strategy.timeframe)
 
@@ -129,7 +131,7 @@ class Exchange(db.BaseModel):
         except Price.DoesNotExist:
             page_start = None
             fetch_all = True
-            print("no db entries found, downloading everything")
+            print("no entries found, fetching everything")
 
         prices = pandas.DataFrame(
             columns=["time", "open", "high", "low", "close", "volume"]
