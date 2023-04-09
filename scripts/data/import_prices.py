@@ -30,9 +30,11 @@ def main(args):
     prices_df = pandas.DataFrame(prices_q.dicts())
 
     input_df = pandas.read_csv(args.input_file)
-    input_df.time = pandas.to_datetime(input_df.time)
+    input_df.time = pandas.to_datetime(input_df.time, utc=True).dt.tz_localize(None)
     if not prices_df.empty:
-        input_df = input_df.loc[input_df.time < prices_df.iloc[0].time].copy()
+        input_df = input_df.loc[
+            input_df.time < pandas.to_datetime(prices_df.time, utc=True).iloc[0]
+        ].copy()
 
     if input_df.empty:
         raise Exception("No new data to import")
