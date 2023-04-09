@@ -123,11 +123,12 @@ class Exchange(db.BaseModel):
             last_entry = (
                 Price.get_by_strategy(strategy).order_by(Price.time.desc()).get().time
             )
-
             page_start = last_entry + tf_delta
+            fetch_all = False
 
         except Price.DoesNotExist:
             page_start = None
+            fetch_all = True
             print("no db entries found, downloading everything")
 
         prices = pandas.DataFrame(
@@ -160,7 +161,7 @@ class Exchange(db.BaseModel):
 
             if (
                 (page_start is not None and page_start != page_first)
-                or page_start == page_first
+                or (not fetch_all and page_start == page_first)
                 or page_size != default_page_size
             ):
                 print("price data is up to date")
