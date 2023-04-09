@@ -1,10 +1,8 @@
-#!/usr/bin/env python3
-
 import argparse
 import sys
 
-import core
-
+from sliver.exchanges.factory import ExchangeFactory
+from sliver.position import Position
 
 if __name__ == "__main__":
     argp = argparse.ArgumentParser()
@@ -20,8 +18,8 @@ if __name__ == "__main__":
     args = argp.parse_args()
 
     try:
-        pos = core.db.Position.get_by_id(args.position_id)
-    except core.db.Position.DoesNotExist:
+        pos = Position.get_by_id(args.position_id)
+    except Position.DoesNotExist:
         print("position not found")
         sys.exit(1)
 
@@ -32,17 +30,16 @@ if __name__ == "__main__":
     pos.exit_amount = 0
     pos.exit_cost = 0
     pos.fee = 0
+
     market = pos.user_strategy.strategy.market
-    exchange = market.quote.exchange
-    cred = pos.user_strategy.user.get_active_credential(exchange).get()
+    base = market.quote.exchange
+    cred = pos.user_strategy.user.get_active_credential(base).get()
+    exchange = ExchangeFactory.from_credential(cred)
+
     for order in pos.get_orders():
         if args.fetch_orders:
-            core.exchange.set_api(cred=cred)
-            ex_order = core.exchange.api.fetch_order(
-                order.exchange_order_id, market.get_symbol()
-            )
-            order.sync(ex_order, pos)
-        elif order.status != "open":
+            order = exchange.get_synced_order(pos, order.exchange_order_id)
+        if order.status != "open":
             pos.add_order(order)
 
     if pos.status == "closed":

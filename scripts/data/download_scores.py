@@ -1,12 +1,11 @@
-#!/usr/bin/env python3
-
 import argparse
 import getpass
 import sys
 
 import peewee
 
-import core
+import sliver.database as db
+from sliver.strategies.hypnox import HypnoxIndicator, HypnoxScore
 
 if __name__ == "__main__":
     argp = argparse.ArgumentParser()
@@ -18,32 +17,32 @@ if __name__ == "__main__":
 
     passwd = getpass.getpass("enter db password: ")
 
-    db = peewee.PostgresqlDatabase(
+    remote = peewee.PostgresqlDatabase(
         args.name, **{"host": args.host, "user": args.user, "password": passwd}
     )
-    db.bind([core.db.Score])
-    db.connect()
+    remote.bind([HypnoxScore])
+    remote.connect()
 
     print("downloading scores...")
-    f = core.db.Score.model == args.model
-    q = core.db.Score.select().where(f).order_by(core.db.Score.id)
+    f = HypnoxScore.model == args.model
+    q = HypnoxScore.select().where(f).order_by(HypnoxScore.id)
     if q.count() == 0:
         print("no scores to download")
         sys.exit(1)
     scores = [s for s in q]
 
-    db.close()
-    core.db.connection.bind([core.db.Score])
-    core.db.connection.connect(reuse_if_open=True)
+    remote.close()
+    db.connection.bind([HypnoxScore])
+    db.connection.connect(reuse_if_open=True)
 
-    with db.atomic():
-        c = core.db.Score.delete().where(f).execute()
+    with remote.atomic():
+        c = HypnoxScore.delete().where(f).execute()
         print(f"deleted all {c} downstream scores")
 
         print(f"inserting {len(scores)} scores...")
         print(f"{scores[0].id} -- {scores[-1].id}")
 
-        core.db.Score.insert_many(scores).execute()
+        HypnoxScore.insert_many(scores).execute()
 
-        c = core.db.Indicator.delete().execute()
+        c = HypnoxIndicator.delete().execute()
         print(f"deleted all {c} indicators")

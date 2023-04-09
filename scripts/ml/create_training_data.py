@@ -6,7 +6,9 @@ import os
 
 import pandas
 
-import core
+from sliver.config import Config
+from sliver.strategies.hypnox import HypnoxScore, HypnoxTweet
+from sliver.utils import standardize
 
 if __name__ == "__main__":
     argp = argparse.ArgumentParser()
@@ -28,16 +30,16 @@ if __name__ == "__main__":
         args.input, lineterminator="\n", delimiter="\t", encoding="utf-8"
     )
 
-    last_training["clean"] = last_training["tweet"].apply(core.utils.standardize)
+    last_training["clean"] = last_training["tweet"].apply(standardize)
 
     print("retrieving highest scored tweets set")
     query = (
-        core.db.get_tweets_by_model(args.model)
-        .order_by(core.db.Score.score.desc())
+        HypnoxTweet.get_tweets_by_model(args.model)
+        .order_by(HypnoxScore.score.desc())
         .limit(args.num_lines)
     )
     tweets = pandas.DataFrame(query.dicts())
-    tweets["clean"] = tweets["text"].apply(core.utils.standardize)
+    tweets["clean"] = tweets["text"].apply(standardize)
 
     print("fetching 200 most frequent words in the set")
     words = tweets.clean.str.split(expand=True).stack().value_counts().reset_index()
