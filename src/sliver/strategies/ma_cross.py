@@ -68,6 +68,8 @@ class MACrossStrategy(IStrategy):
         indicators.loc[sell_rule, "signal"] = SELL
 
         indicators = indicators.loc[indicators.indicator_id.isnull()].copy()
+        if indicators.empty:
+            return
 
         Indicator.insert_many(
             indicators[["strategy", "price", "signal"]].to_dict("records")
