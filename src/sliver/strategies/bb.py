@@ -1,5 +1,6 @@
 import decimal
 
+import pandas
 import peewee
 
 import sliver.database as db
@@ -49,6 +50,10 @@ class BBStrategy(IStrategy):
         NEUTRAL = StrategySignals.NEUTRAL
         SELL = StrategySignals.SELL
 
+        indicators = pandas.DataFrame(self.get_indicators().dicts())
+        indicators["strategy"] = self.strategy.id
+        indicators["price"] = indicators.id
+
         indicators = BB(
             indicators,
             ma_period=self.ma_period,
@@ -64,6 +69,10 @@ class BBStrategy(IStrategy):
         indicators.loc[sell_rule, "signal"] = SELL
 
         indicators.fillna(method="bfill", inplace=True)
+
+        indicators = indicators.loc[indicators.indicator_id.isnull()].copy()
+        if indicators.empty:
+            return
 
         Indicator.insert_many(
             indicators[["strategy", "price", "signal"]].to_dict("records")

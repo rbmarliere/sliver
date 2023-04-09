@@ -46,6 +46,8 @@ class MACrossStrategy(IStrategy):
         SELL = StrategySignals.SELL
 
         indicators = pandas.DataFrame(self.get_indicators().dicts())
+        indicators["strategy"] = self.strategy.id
+        indicators["price"] = indicators.id
 
         if self.use_fast_ema:
             indicators.fast = indicators.close.ewm(self.fast_period).mean()
