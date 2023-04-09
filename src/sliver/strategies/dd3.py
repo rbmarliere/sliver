@@ -1,5 +1,6 @@
 import decimal
 
+import pandas
 import peewee
 
 import sliver.database as db
@@ -47,6 +48,10 @@ class DD3Strategy(IStrategy):
         NEUTRAL = StrategySignals.NEUTRAL
         SELL = StrategySignals.SELL
 
+        indicators = pandas.DataFrame(self.get_indicators().dicts())
+        indicators["strategy"] = self.strategy.id
+        indicators["price"] = indicators.id
+
         indicators.ma1 = indicators.close.rolling(self.ma1_period).mean()
         indicators.ma1.fillna(method="bfill", inplace=True)
         indicators.ma2 = indicators.close.rolling(self.ma2_period).mean()
@@ -70,6 +75,10 @@ class DD3Strategy(IStrategy):
         indicators.signal = NEUTRAL
         indicators.loc[buy_rule, "signal"] = BUY
         indicators.loc[sell_rule, "signal"] = SELL
+
+        indicators = indicators.loc[indicators.indicator_id.isnull()].copy()
+        if indicators.empty:
+            return
 
         Indicator.insert_many(
             indicators[["strategy", "price", "signal"]].to_dict("records")
