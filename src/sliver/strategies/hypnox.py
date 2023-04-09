@@ -123,21 +123,23 @@ class HypnoxStrategy(IStrategy):
         NEUTRAL = StrategySignals.NEUTRAL
         SELL = StrategySignals.SELL
 
-        if self.model:
-            filter = self.filter.encode("unicode_escape") if self.filter else b""
+        if not self.model:
+            return
 
-            base_q = (
-                HypnoxTweet.get_tweets_by_model(self.model)
-                .where(HypnoxTweet.text.iregexp(filter))
-                .where(HypnoxTweet.time > indicators.iloc[0].time)
-            )
+        filter = self.filter.encode("unicode_escape") if self.filter else b""
 
-            replay_q = base_q.where(HypnoxScore.model.is_null())
-            if replay_q.count() == 0:
-                print(f"{self.model}: no tweets to replay")
-            else:
-                model = sliver.models.load(self.model)
-                replay(replay_q, model)
+        base_q = (
+            HypnoxTweet.get_tweets_by_model(self.model)
+            .where(HypnoxTweet.text.iregexp(filter))
+            .where(HypnoxTweet.time > indicators.iloc[0].time)
+        )
+
+        replay_q = base_q.where(HypnoxScore.model.is_null())
+        if replay_q.count() == 0:
+            print(f"{self.model}: no tweets to replay")
+        else:
+            model = sliver.models.load(self.model)
+            replay(replay_q, model)
 
         all_indicators = pandas.DataFrame(self.get_indicators().dicts())
         if len(all_indicators) == len(indicators):
