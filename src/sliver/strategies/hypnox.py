@@ -141,7 +141,7 @@ class HypnoxStrategy(IStrategy):
             model = sliver.models.load(self.model)
             replay(replay_q, model)
 
-        all_indicators = pandas.DataFrame(self.get_indicators().dicts())
+        all_indicators = pandas.DataFrame(self.get_indicators().dicts()).dropna()
         if len(all_indicators) == len(indicators):
             n_samples = 0
             mean = 0
