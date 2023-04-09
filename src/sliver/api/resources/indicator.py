@@ -18,6 +18,8 @@ class Indicator(Resource):
             raise StrategyDoesNotExist
 
         ind = strategy.get_indicators_df()
-        ind.replace({float("nan"): None}, inplace=True)
+
+        if not ind.empty:
+            ind.replace({float("nan"): None}, inplace=True)
 
         return marshal(ind.to_dict("list"), get_fields(strategy.type, all=False))
