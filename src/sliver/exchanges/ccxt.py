@@ -87,7 +87,7 @@ class CCXT(Exchange):
         return self._api.fetch_ticker(symbol)["last"]
 
     @api_call
-    def api_fetch_ohlcv(self, symbol, timeframe, since=None, limit=500, page_size=500):
+    def api_fetch_ohlcv(self, symbol, timeframe, since=None, limit=None):
         if since:
             since = int(since.timestamp() * 1000)
 
