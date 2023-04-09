@@ -1,5 +1,6 @@
 import decimal
 
+import pandas
 import peewee
 
 import sliver.database as db
@@ -44,6 +45,8 @@ class MACrossStrategy(IStrategy):
         NEUTRAL = StrategySignals.NEUTRAL
         SELL = StrategySignals.SELL
 
+        indicators = pandas.DataFrame(self.get_indicators().dicts()).dropna()
+
         if self.use_fast_ema:
             indicators.fast = indicators.close.ewm(self.fast_period).mean()
         else:
@@ -63,6 +66,8 @@ class MACrossStrategy(IStrategy):
         indicators.signal = NEUTRAL
         indicators.loc[buy_rule, "signal"] = BUY
         indicators.loc[sell_rule, "signal"] = SELL
+
+        indicators = indicators.loc[indicators.indicator_id.isnull()].copy()
 
         Indicator.insert_many(
             indicators[["strategy", "price", "signal"]].to_dict("records")
