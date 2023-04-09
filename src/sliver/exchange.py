@@ -155,12 +155,14 @@ class Exchange(db.BaseModel):
 
             page_first = page.iloc[0].time
             page_last = page.iloc[-1].time
-            print(f"received range {page_first} - {page_last}")
+            print(f"received {page_first} - {page_last}")
             prices = pandas.concat([prices, page])
 
             if (
-                page_start is not None and page_start != page_first
-            ) or page_size != default_page_size:
+                (page_start is not None and page_start != page_first)
+                or page_start == page_first
+                or page_size != default_page_size
+            ):
                 print("price data is up to date")
                 break
 
