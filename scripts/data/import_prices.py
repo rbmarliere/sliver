@@ -30,7 +30,7 @@ def main(args):
     prices_df = pandas.DataFrame(prices_q.dicts())
 
     input_df = pandas.read_csv(args.input_file)
-    input_df.time = pandas.to_datetime(input_df.time, unit="s")
+    input_df.time = pandas.to_datetime(input_df.time)
     if not prices_df.empty:
         input_df = input_df.loc[input_df.time < prices_df.iloc[0].time].copy()
 

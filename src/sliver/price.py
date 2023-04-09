@@ -17,6 +17,15 @@ class Price(db.BaseModel):
         constraints = [peewee.SQL("UNIQUE (market_id, timeframe, time)")]
 
     @classmethod
+    def get_by_market(cls, market, timeframe):
+        return (
+            cls.select()
+            .where(cls.market == market)
+            .where(cls.timeframe == timeframe)
+            .order_by(cls.time)
+        )
+
+    @classmethod
     def get_by_strategy(cls, strategy):
         return (
             cls.select()
