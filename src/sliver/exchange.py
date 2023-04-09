@@ -127,38 +127,48 @@ class Exchange(db.BaseModel):
             page_start = last_entry + tf_delta
 
         except Price.DoesNotExist:
-            last_entry = datetime.datetime.utcfromtimestamp(0)
-            page_start = datetime.datetime(2000, 1, 1)
+            page_start = None
             print("no db entries found, downloading everything")
 
         prices = pandas.DataFrame(
             columns=["time", "open", "high", "low", "close", "volume"]
         )
-        now = datetime.datetime.utcnow()
+
+        default_page_size = None
 
         while True:
-            if (prices.empty and page_start + tf_delta > now) or page_start > now:
-                print("price data is up to date")
-                break
-
-            print(f"downloading from {page_start}")
             page = self.api_fetch_ohlcv(
-                market.get_symbol(), strategy.timeframe, since=page_start
+                market.get_symbol(),
+                strategy.timeframe,
+                since=page_start,
+                limit=default_page_size,
             )
+
+            page_size = len(page)
+            if default_page_size is None:
+                default_page_size = page_size
+                page = page[:-1].copy()  # last candle is incomplete
 
             if page.empty:
                 print("price data is up to date")
                 break
 
-            prices = pandas.concat([prices, page])
-
             page_first = page.iloc[0].time
             page_last = page.iloc[-1].time
             print(f"received range {page_first} - {page_last}")
+            prices = pandas.concat([prices, page])
 
-            page_start = page_last + tf_delta
+            if (
+                page_start is not None and page_start != page_first
+            ) or page_size != default_page_size:
+                print("price data is up to date")
+                break
 
-        prices = prices[:-1].copy()  # last candle is incomplete
+            page_start = page_first - page_size * tf_delta
+
+        prices = prices.sort_values(by="time")
+        prices = prices.drop_duplicates()
+
         prices["timeframe"] = strategy.timeframe
         prices["market_id"] = market.id
 
@@ -167,8 +177,6 @@ class Exchange(db.BaseModel):
         ].applymap(market.quote.transform)
 
         prices["volume"] = prices["volume"].apply(market.base.transform)
-
-        prices = prices.drop_duplicates()
 
         if not prices.empty:
             Price.insert_many(prices.to_dict("records")).execute()
@@ -179,7 +187,8 @@ class Exchange(db.BaseModel):
         market = position.user_strategy.strategy.market
 
         print(
-            f"inserting {type} {side} order :: {market.base.print(amount)} @ {market.quote.print(price)}"
+            f"inserting {type} {side} order "
+            f":: {market.base.print(amount)} @ {market.quote.print(price)}"
         )
 
         try:
