@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import argparse
 import getpass
 import sys
@@ -8,9 +6,8 @@ import pandas
 import peewee
 import playhouse.shortcuts
 
-import core
-import strategies
-
+import sliver.database as db
+from sliver.strategies.hypnox import HypnoxTweet
 
 if __name__ == "__main__":
     argp = argparse.ArgumentParser()
@@ -27,27 +24,27 @@ if __name__ == "__main__":
 
     passwd = getpass.getpass("enter db password: ")
 
-    tweet_table = strategies.hypnox.HypnoxTweet
+    tweet_table = HypnoxTweet
 
     if not args.update_only:
         print("resetting tweet table...")
         tweet_table.drop_table()
         tweet_table.create_table()
 
-    db = peewee.PostgresqlDatabase(
+    remote = peewee.PostgresqlDatabase(
         args.name, **{"host": args.host, "user": args.user, "password": passwd}
     )
-    db.bind([tweet_table])
-    db.connect()
+    remote.bind([tweet_table])
+    remote.connect()
 
     print("fetching tweets upstream...")
     query = tweet_table.select().order_by(tweet_table.id)
     upstream_tweets = [t for t in query]
     print(f"found {len(upstream_tweets)} tweets")
 
-    db.close()
-    core.db.connection.bind([tweet_table])
-    core.db.connection.connect(reuse_if_open=True)
+    remote.close()
+    db.connection.bind([tweet_table])
+    db.connection.connect(reuse_if_open=True)
 
     print("fetching tweets downstream...")
     query = tweet_table.select().order_by(tweet_table.id)

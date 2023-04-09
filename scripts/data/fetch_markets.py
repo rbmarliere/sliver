@@ -1,13 +1,18 @@
-#!/usr/bin/env python3
-
 import argparse
 import sys
 
-import core
+import sliver.database as db
+import decimal
+
+from sliver.asset import Asset
+from sliver.exchange_asset import ExchangeAsset
+from sliver.market import Market
+from sliver.exchange import Exchange
+from sliver.exchanges.factory import ExchangeFactory
 
 
-def save_market(ex_market, exchange: core.db.Exchange):
-    with core.db.connection.atomic():
+def save_market(ex_market, exchange):
+    with db.connection.atomic():
         if not ex_market["spot"]:
             return
 
@@ -16,6 +21,8 @@ def save_market(ex_market, exchange: core.db.Exchange):
             if amount_prec is None or amount_prec == 0:
                 print("using default amount_prec = 8")
                 amount_prec = 8
+            if amount_prec < 1:
+                amount_prec = decimal.Decimal(str(amount_prec)).as_tuple().exponent * -1
         except KeyError:
             print("using default amount_prec = 8")
             amount_prec = 8
@@ -25,6 +32,8 @@ def save_market(ex_market, exchange: core.db.Exchange):
             if price_prec is None or price_prec == 0:
                 print("using default amount_prec = 2")
                 price_prec = 2
+            if price_prec < 1:
+                price_prec = decimal.Decimal(str(price_prec)).as_tuple().exponent * -1
         except KeyError:
             print("using default amount_prec = 2")
             price_prec = 2
@@ -34,6 +43,8 @@ def save_market(ex_market, exchange: core.db.Exchange):
             if base_prec is None or base_prec == 0:
                 print("using base_prec = amount_prec")
                 base_prec = amount_prec
+            if base_prec < 1:
+                base_prec = decimal.Decimal(str(base_prec)).as_tuple().exponent * -1
         except KeyError:
             print("using base_prec = amount_prec")
             base_prec = amount_prec
@@ -43,23 +54,29 @@ def save_market(ex_market, exchange: core.db.Exchange):
             if quote_prec is None or quote_prec == 0:
                 print("using quote_prec = price_prec")
                 quote_prec = price_prec
+            if quote_prec < 1:
+                quote_prec = decimal.Decimal(str(quote_prec)).as_tuple().exponent * -1
         except KeyError:
             print("using quote_prec = price_prec")
             quote_prec = price_prec
 
-        base, new = core.db.Asset.get_or_create(ticker=ex_market["base"])
-        quote, new = core.db.Asset.get_or_create(ticker=ex_market["quote"])
+        base, new = Asset.get_or_create(ticker=ex_market["base"])
+        quote, new = Asset.get_or_create(ticker=ex_market["quote"])
 
-        ex_b, new = core.db.ExchangeAsset.get_or_create(asset=base, exchange=exchange)
+        ex_b, new = ExchangeAsset.get_or_create(asset=base, exchange=exchange)
         ex_b.precision = base_prec
         ex_b.save()
 
-        ex_q, new = core.db.ExchangeAsset.get_or_create(asset=quote, exchange=exchange)
+        ex_q, new = ExchangeAsset.get_or_create(asset=quote, exchange=exchange)
         ex_q.precision = quote_prec
         ex_q.save()
 
-        m, new = core.db.Market.get_or_create(base=ex_b, quote=ex_q)
+        try:
+            m = Market.get(base=ex_b, quote=ex_q)
+        except Market.DoesNotExist:
+            m = Market(base=ex_b, quote=ex_q)
 
+        m.exchange = exchange
         m.symbol = m.get_symbol()
         m.amount_precision = amount_prec
         m.price_precision = price_prec
@@ -98,13 +115,13 @@ def save_market(ex_market, exchange: core.db.Exchange):
         m.save()
 
 
-def fetch_markets(exchange: core.db.Exchange):
+def fetch_markets(exchange):
     print("fetching all markets from exchange api...")
-    ex_markets = core.exchange.api.fetch_markets()
+    ex_markets = exchange.api_fetch_markets()
 
     count = 0
     for ex_market in ex_markets:
-        core.exchange.save_market(ex_market, exchange)
+        save_market(ex_market, exchange)
         count += 1
 
     print(f"saved {count} new markets")
@@ -119,15 +136,16 @@ if __name__ == "__main__":
     args = argp.parse_args()
 
     try:
-        exchange = core.db.Exchange.get(name=args.exchange_name)
-    except core.db.Exchange.DoesNotExist:
+        base = Exchange.get(name=args.exchange_name)
+    except Exchange.DoesNotExist:
         print("exchange not found in database")
         sys.exit(1)
 
-    core.exchange.set_api(exchange=exchange)
+    exchange = ExchangeFactory.from_base(base)
 
     if args.symbol:
-        core.exchange.api.load_markets()
-        save_market(core.exchange.api.market(args.symbol), exchange)
+        # ccxt only
+        exchange.api.load_markets()
+        save_market(exchange.api.market(args.symbol), exchange)
     else:
         fetch_markets(exchange)

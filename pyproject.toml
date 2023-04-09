@@ -42,7 +42,7 @@ license = {text = "None"}
 
 [tool.pdm.scripts]
 serve = {call = "sliver.core:serve", env_file = ".env"}
-stream = {cmd = "python3 scripts/hypnox_streamer.py", env_file = ".env"}
+stream = {cmd = "python3 scripts/utils/hypnox_streamer.py", env_file = ".env"}
 train = {call = "sliver.models.train:train", env_file = ".env"}
 watch = {call = "sliver.core:watch", env_file = ".env"}
 

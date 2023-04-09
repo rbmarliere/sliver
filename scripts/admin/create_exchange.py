@@ -1,18 +1,18 @@
-#!/usr/bin/env python3
-
 import argparse
 import sys
 
 import ccxt
 
-import core
+from sliver.exchange import Exchange
+from sliver.exchanges.types import ExchangeTypes
+from sliver.utils import get_timeframes
 
 if __name__ == "__main__":
     argp = argparse.ArgumentParser()
     argp.add_argument(
         "-e", "--exchange-name", help="exchange name to fetch from", required=True
     )
-    argp.add_argument("-t", "--type", help="exchange type", type=int, required=True)
+    argp.add_argument("-t", "--type", help="exchange type", type=int, default=0)
     argp.add_argument("--api-endpoint", help="exchange api endpoint")
     argp.add_argument("--api-sandbox-endpoint", help="exchange api sandbox endpoint")
     args = argp.parse_args()
@@ -29,7 +29,7 @@ if __name__ == "__main__":
         "api_sandbox_endpoint": args.api_sandbox_endpoint,
     }
 
-    if args.type == core.exchanges.Types.CCXT:
+    if args.type == ExchangeTypes.CCXT:
         try:
             exchange = getattr(ccxt, args.exchange_name)({})
         except AttributeError:
@@ -37,7 +37,7 @@ if __name__ == "__main__":
             sys.exit(1)
 
         l1 = set([i for i in exchange.timeframes.keys()])
-        l2 = set(core.utils.get_timeframes())
+        l2 = set(get_timeframes())
         timeframes = str(list(l1 & l2))
         if timeframes:
             obj["timeframes"] = timeframes
@@ -45,9 +45,9 @@ if __name__ == "__main__":
         obj["precision_mode"] = exchange.precisionMode
         obj["padding_mode"] = exchange.paddingMode
 
-    exchange = core.db.Exchange(**obj)
+    exchange = Exchange(**obj)
 
-    db_exch = core.db.Exchange.get_or_none(name=args.exchange_name)
+    db_exch = Exchange.get_or_none(name=args.exchange_name)
 
     if db_exch:
         exchange.id = db_exch.id

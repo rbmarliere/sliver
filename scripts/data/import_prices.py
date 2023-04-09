@@ -1,29 +1,32 @@
-#!/usr/bin/env python3
-
 import argparse
 
 import pandas
 
-import core
+import sliver.database as db
+from sliver.exchange import Exchange
+from sliver.indicator import Indicator
+from sliver.market import Market
+from sliver.price import Price
+from sliver.utils import get_timeframes
 
 
 def main(args):
-    exchange = core.db.Exchange.get(name=args.exchange)
+    exchange = Exchange.get(name=args.exchange)
 
     if (
-        args.timeframe not in core.utils.get_timeframes()
+        args.timeframe not in get_timeframes()
         or args.timeframe not in exchange.timeframes
     ):
         raise Exception("Invalid timeframe")
 
-    market = exchange.market_set.where(core.db.Market.symbol == args.symbol).get()
+    market = exchange.market_set.where(Market.symbol == args.symbol).get()
 
     if args.force:
-        core.db.Price.delete().where(core.db.Price.market_id == market.id).where(
-            core.db.Price.timeframe == args.timeframe
+        Price.delete().where(Price.market_id == market.id).where(
+            Price.timeframe == args.timeframe
         ).execute()
 
-    prices_q = core.db.Price.get_by_market(market, args.timeframe)
+    prices_q = Price.get_by_market(market, args.timeframe)
     prices_df = pandas.DataFrame(prices_q.dicts())
 
     input_df = pandas.read_csv(args.input_file)
@@ -49,13 +52,13 @@ def main(args):
 
     ins_count = 0
     rm_count = 0
-    ins_count = core.db.Price.insert_many(input_df.to_dict("records")).execute()
+    ins_count = Price.insert_many(input_df.to_dict("records")).execute()
 
     if not prices_df.empty:
         rm_count = (
-            core.db.Indicator.delete()
-            .where(core.db.Indicator.price_id >= prices_df.iloc[0].id)
-            .where(core.db.Indicator.price_id <= prices_df.iloc[-1].id)
+            Indicator.delete()
+            .where(Indicator.price_id >= prices_df.iloc[0].id)
+            .where(Indicator.price_id <= prices_df.iloc[-1].id)
             .execute()
         )
 
@@ -79,8 +82,5 @@ if __name__ == "__main__":
     argp.add_argument("-f", "--force", help="Delete existing data", action="store_true")
     args = argp.parse_args()
 
-    try:
-        with core.db.connection.atomic():
-            main(args)
-    except Exception as e:
-        print(e)
+    with db.connection.atomic():
+        main(args)
