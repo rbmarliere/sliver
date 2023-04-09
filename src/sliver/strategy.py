@@ -211,8 +211,13 @@ class IStrategy(db.BaseModel):
 
     def get_pending_indicators(self):
         df = pandas.DataFrame(self.get_indicators().dicts())
+
+        if df.empty:
+            return df
+
         df["strategy"] = self.strategy.id
         df["price"] = df.id
+
         return df.loc[df.indicator_id.isnull()].copy()
 
     @abstractmethod
