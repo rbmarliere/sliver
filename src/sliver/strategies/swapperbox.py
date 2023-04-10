@@ -26,7 +26,7 @@ class SwapperBoxStrategy(IStrategy):
         NEUTRAL = StrategySignals.NEUTRAL
 
         # signals = pandas.read_html(self.url)[1]
-        si = pandas.read_csv("scripts/swapperbox_signals.tsv", sep="\t")
+        si = pandas.read_csv("etc/swapperbox_signals.tsv", sep="\t")
         si.time = (
             pandas.to_datetime(si.time)
             .dt.tz_localize("America/Sao_Paulo")
@@ -78,7 +78,7 @@ class SwapperBoxStrategy(IStrategy):
         NEUTRAL = StrategySignals.NEUTRAL
         BUY = StrategySignals.BUY
 
-        all_indicators = pandas.DataFrame(self.get_indicators().dicts())
+        all_indicators = pandas.DataFrame(self.get_indicators().dicts()).dropna()
 
         if len(all_indicators) == len(indicators):
             indicators = self.init_indicators(indicators)
