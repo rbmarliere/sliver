@@ -7,6 +7,7 @@ from sliver.strategies.manual import ManualStrategy as Manual
 from sliver.strategies.mixer import MixerStrategy as Mixer
 from sliver.strategies.random import RandomStrategy as Random
 from sliver.strategies.swapperbox import SwapperBoxStrategy as SwapperBox
+from sliver.strategies.windrunner import WindrunnerStrategy as Windrunner
 from sliver.strategies.types import StrategyTypes
 
 
@@ -36,6 +37,9 @@ class StrategyFactory:
 
         elif strategy.type == StrategyTypes.SWAPPERBOX:
             return SwapperBox.get_or_create(strategy=strategy)[0]
+
+        elif strategy.type == StrategyTypes.WINDRUNNER:
+            return Windrunner.get_or_create(strategy=strategy)[0]
 
         else:
             raise DisablingError("invalid strategy type")

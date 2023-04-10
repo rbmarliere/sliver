@@ -37,6 +37,10 @@ export function getStrategyTypes(): StrategyType[] {
     {
       value: 7,
       name: 'SWAPPERBOX',
+    },
+    {
+      value: 8,
+      name: 'WINDRUNNER',
     }
   ];
 }

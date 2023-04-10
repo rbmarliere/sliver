@@ -54,4 +54,24 @@ export interface Strategy extends BaseStrategy {
   // swapperbox
   url?: string;
   telegram?: string;
+
+  // windrunner
+  windrunner_model?: string,
+  windrunner_upper_threshold?: number,
+  windrunner_lower_threshold?: number,
+  hypnox_model?: string,
+  hypnox_threshold?: number,
+  hypnox_filter?: string,
+  bb_num_std?: number,
+  bb_ma_period?: number,
+  bb_use_ema?: boolean,
+  macd_fast_period?: number,
+  macd_slow_period?: number,
+  macd_signal_period?: number,
+  macd_use_ema?: boolean,
+  atr_period?: number,
+  atr_ma_mode?: string,
+  renko_step?: number,
+  renko_use_atr?: boolean,
+
 }

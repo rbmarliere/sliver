@@ -72,6 +72,26 @@ export class StrategyComponent implements OnInit {
     // swapperbox
     url: '',
     telegram: '',
+
+    // windrunner
+    windrunner_model: '',
+    windrunner_upper_threshold: 0,
+    windrunner_lower_threshold: 0,
+    hypnox_model: '',
+    hypnox_threshold: 0,
+    hypnox_filter: '',
+    bb_num_std: 2,
+    bb_ma_period: 20,
+    bb_use_ema: false,
+    macd_fast_period: 12,
+    macd_slow_period: 26,
+    macd_signal_period: 9,
+    macd_use_ema: false,
+    atr_period: 14,
+    atr_ma_mode: 'sma',
+    renko_step: 0,
+    renko_use_atr: false,
+
   };
 
   loading: Boolean = true;
