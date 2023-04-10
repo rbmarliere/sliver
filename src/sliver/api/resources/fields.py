@@ -107,6 +107,37 @@ swapperbox_fields = {
     "telegram": fields.String,
 }
 
+windrunner_indicators = {
+    **indicators_fields,
+    "z_score": fields.List(fields.Float),
+    "bolu": fields.List(fields.Float),
+    "bold": fields.List(fields.Float),
+    "macd": fields.List(fields.Float),
+    "macd_signal": fields.List(fields.Float),
+    "atr": fields.List(fields.Float),
+    "moon_phase": fields.List(fields.Float),
+}
+windrunner_fields = {
+    **base_fields,
+    "windrunner_model": fields.String,
+    "windrunner_upper_threshold": fields.Float,
+    "windrunner_lower_threshold": fields.Float,
+    "hypnox_model": fields.String,
+    "hypnox_threshold": fields.Float,
+    "hypnox_filter": fields.String,
+    "bb_num_std": fields.Integer,
+    "bb_ma_period": fields.Integer,
+    "bb_use_ema": fields.Boolean,
+    "macd_fast_period": fields.Integer,
+    "macd_slow_period": fields.Integer,
+    "macd_signal_period": fields.Integer,
+    "macd_use_ema": fields.Boolean,
+    "atr_period": fields.Integer,
+    "atr_ma_mode": fields.String,
+    "renko_step": fields.Float,
+    "renko_use_atr": fields.Boolean,
+}
+
 
 def get_fields(type=None, all=True):
     if type == StrategyTypes.MANUAL:
@@ -132,6 +163,9 @@ def get_fields(type=None, all=True):
 
     elif type == StrategyTypes.SWAPPERBOX:
         return swapperbox_fields if all else swapperbox_indicators
+
+    elif type == StrategyTypes.WINDRUNNER:
+        return windrunner_fields if all else windrunner_indicators
 
     return base_fields if all else indicators_fields
 
@@ -212,5 +246,28 @@ def get_base_parser(type=None):
     elif type == StrategyTypes.SWAPPERBOX:
         base_parser.add_argument("url", type=str, required=True)
         base_parser.add_argument("telegram", type=str, required=True)
+
+    elif type == StrategyTypes.WINDRUNNER:
+        base_parser.add_argument("windrunner_model", type=str, required=True)
+        base_parser.add_argument(
+            "windrunner_upper_threshold", type=float, required=True
+        )
+        base_parser.add_argument(
+            "windrunner_lower_threshold", type=float, required=True
+        )
+        base_parser.add_argument("hypnox_model", type=str, required=True)
+        base_parser.add_argument("hypnox_threshold", type=float, required=True)
+        base_parser.add_argument("hypnox_filter", type=str, required=True)
+        base_parser.add_argument("bb_num_std", type=int, required=True)
+        base_parser.add_argument("bb_ma_period", type=int, required=True)
+        base_parser.add_argument("bb_use_ema", type=bool, required=True)
+        base_parser.add_argument("macd_fast_period", type=int, required=True)
+        base_parser.add_argument("macd_slow_period", type=int, required=True)
+        base_parser.add_argument("macd_signal_period", type=int, required=True)
+        base_parser.add_argument("macd_use_ema", type=bool, required=True)
+        base_parser.add_argument("atr_period", type=int, required=True)
+        base_parser.add_argument("atr_ma_mode", type=str, required=True)
+        base_parser.add_argument("renko_step", type=float, required=True)
+        base_parser.add_argument("renko_use_atr", type=bool, required=True)
 
     return base_parser

@@ -10,3 +10,4 @@ class StrategyTypes(enum.IntEnum):
     BB = 5
     MA_CROSS = 6
     SWAPPERBOX = 7
+    WINDRUNNER = 8
