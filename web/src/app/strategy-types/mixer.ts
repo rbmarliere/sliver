@@ -7,35 +7,42 @@ interface Mixin {
   sell_weight: number;
 }
 
+interface MixerIndicator extends Indicator {
+  signal: number[];
+  buy_w_signal: number[];
+  sell_w_signal: number[];
+}
+
 export class MixerStrategy extends Strategy {
+  override indicators: MixerIndicator | null = null;
   buy_threshold: number = 1;
   sell_threshold: number = -1;
   mixins: Mixin[] = [];
 
-  override getPlot(indicators: Indicator): any {
-    let plot = super.getPlot(indicators);
+  override getPlot(): any {
+    let plot = super.getPlot();
 
     plot.data = plot.data.concat([
       {
         name: 'signal',
-        x: indicators.time,
-        y: indicators.signal,
+        x: this.indicators!.time,
+        y: this.indicators!.signal,
         type: 'line',
         xaxis: 'x',
         yaxis: 'y2',
       },
       {
         name: 'buy_w_signal',
-        x: indicators.time,
-        y: indicators.buy_w_signal,
+        x: this.indicators!.time,
+        y: this.indicators!.buy_w_signal,
         type: 'line',
         xaxis: 'x',
         yaxis: 'y3',
       },
       {
         name: 'sell_w_signal',
-        x: indicators.time,
-        y: indicators.sell_w_signal,
+        x: this.indicators!.time,
+        y: this.indicators!.sell_w_signal,
         type: 'line',
         xaxis: 'x',
         yaxis: 'y4',

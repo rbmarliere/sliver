@@ -6,7 +6,6 @@ import { EngineService } from '../engine.service';
 import { EnginesService } from '../engines.service';
 import { Exchange } from '../exchange';
 import { ExchangeService } from '../exchange.service';
-import { Indicator } from '../indicator';
 import { IndicatorService } from '../indicator.service';
 import { Market } from '../market';
 import { StrategiesService } from '../strategies.service';
@@ -26,7 +25,6 @@ export class StrategyComponent implements OnInit {
   timeframes: String[] = [];
   engines: Engine[] = [];
   stopEngine: Engine | null = null;
-  indicators?: Indicator;
   markets: Market[] = [];
   available_mixins: Strategy[] = [];
   private _strategy?: Strategy;
@@ -143,7 +141,7 @@ export class StrategyComponent implements OnInit {
 
           this.indicatorService.getIndicators(this.strategy).subscribe({
             next: (res) => {
-              this.indicators = res;
+              this.strategy.indicators = res;
               this.loadingInd = false;
             }
           });
@@ -181,9 +179,11 @@ export class StrategyComponent implements OnInit {
     }
 
     if (strategy.id > 0) {
-      strategy.strategies = this.mixins.controls.map((m) => m.value.strategy_id);
-      strategy.buy_weights = this.mixins.controls.map((m) => m.value.buy_weight);
-      strategy.sell_weights = this.mixins.controls.map((m) => m.value.sell_weight);
+      if (strategy.type == StrategyType.MIXER) {
+        strategy.strategies = this.mixins.controls.map((m) => m.value.strategy_id);
+        strategy.buy_weights = this.mixins.controls.map((m) => m.value.buy_weight);
+        strategy.sell_weights = this.mixins.controls.map((m) => m.value.sell_weight);
+      }
 
       this.strategyService.updateStrategy(strategy).subscribe({
         next: () => location.reload(),

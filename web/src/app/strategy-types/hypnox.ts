@@ -4,14 +4,19 @@ import { Position } from '../position';
 import { mean, median, variance } from '../utils';
 import { Strategy } from "../strategy";
 
+interface HypnoxIndicator extends Indicator {
+  z_score: number[];
+}
+
 export class HypnoxStrategy extends Strategy {
+  override indicators: HypnoxIndicator | null = null;
   threshold: number = 0;
   filter: string = '';
   model: string = '';
   mode: string = '';
   operator: string = '';
 
-  override getMetrics(positions: Position[], indicators: Indicator): Metrics[] {
+  override getMetrics(positions: Position[], indicators: HypnoxIndicator): Metrics[] {
     let metrics = super.getMetrics(positions, indicators);
 
     if (!indicators.z_score || indicators.z_score.length == 0) {
@@ -26,21 +31,20 @@ export class HypnoxStrategy extends Strategy {
 
     return metrics.concat([
       { key: 'SEP', value: '' },
-
       { key: 'Standard Deviation', value: scores_stdev.toFixed(4) },
       { key: 'Median', value: scores_median.toFixed(4) },
       { key: 'Mean', value: scores_mean.toFixed(4) },
     ]);
   }
 
-  override getPlot(indicators: Indicator): any {
-    let plot = super.getPlot(indicators);
+  override getPlot(): any {
+    let plot = super.getPlot();
 
     plot.data = plot.data.concat([
       {
         name: 'z_score',
-        x: indicators.time,
-        y: indicators.z_score,
+        x: this.indicators!.time,
+        y: this.indicators!.z_score,
         type: 'line',
         xaxis: 'x',
         yaxis: 'y2',

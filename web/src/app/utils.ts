@@ -61,7 +61,13 @@ export function getMaxSeriesDrawdown(prices: number[]): number {
   let trough = Math.min(...prices.slice(prices.indexOf(abs_peak)));
   if (trough > abs_trough) {
     // get the max value in prices before abs_trough
-    let peak = Math.max(...prices.slice(0, prices.indexOf(abs_trough)));
+    let trough_index = prices.indexOf(abs_trough)
+    let peak = 0;
+    if (trough_index == 0) {
+      peak = prices[0];
+    } else {
+      peak = Math.max(...prices.slice(0, trough_index));
+    }
     change1 = (abs_trough - peak) / peak * 100;
   }
   change2 = (trough - abs_peak) / abs_peak * 100;
