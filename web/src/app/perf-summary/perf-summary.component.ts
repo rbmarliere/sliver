@@ -1,5 +1,5 @@
 import { Component, Input } from '@angular/core';
-import { Metrics } from '../indicator/backtest';
+import { Metrics } from '../metrics';
 
 @Component({
   selector: 'app-perf-summary',

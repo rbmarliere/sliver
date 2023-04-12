@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Engine } from '../engine';
@@ -11,8 +11,8 @@ import { IndicatorService } from '../indicator.service';
 import { Market } from '../market';
 import { StrategiesService } from '../strategies.service';
 import { Strategy } from '../strategy';
+import { StrategyFactory, StrategyType } from '../strategy-types/factory';
 import { StrategyService } from '../strategy.service';
-import { getStrategyTypeName, getStrategyTypes, StrategyType } from './strategy-types';
 
 @Component({
   selector: 'app-strategy',
@@ -20,102 +20,30 @@ import { getStrategyTypeName, getStrategyTypes, StrategyType } from './strategy-
   styleUrls: ['./strategy.component.less'],
 })
 export class StrategyComponent implements OnInit {
-  private empty_strat = {
-    id: 0,
-    symbol: '',
-    exchange: '',
-    // creator_id: 0,
-    description: '',
-    type: null,
-    active: false,
-    // deleted: false,
-    signal: 0,
-    market_id: null,
-    timeframe: '',
-    // next_refresh: new Date().toISOString().slice(0, 16),
-    subscribed: false,
-    buy_engine_id: null,
-    sell_engine_id: null,
-    stop_engine_id: null,
-
-    // hypnox
-    threshold: 0,
-    filter: '',
-    model: '',
-    mode: '',
-    operator: '',
-
-    // dd3
-    ma1_period: 3,
-    ma2_period: 8,
-    ma3_period: 20,
-
-    // mixer
-    buy_threshold: 1,
-    sell_threshold: -1,
-    strategies: [],
-    buy_weights: [],
-    sell_weights: [],
-    mixins: this.formBuilder.array([]),
-
-    // bb
-    use_ema: false,
-    ma_period: 20,
-    num_std: 2,
-
-    // ma_cross
-    use_fast_ema: false,
-    fast_period: 50,
-    use_slow_ema: false,
-    slow_period: 200,
-
-    // swapperbox
-    url: '',
-    telegram: '',
-
-    // windrunner
-    windrunner_model: '',
-    windrunner_upper_threshold: 0,
-    windrunner_lower_threshold: 0,
-    hypnox_model: '',
-    hypnox_threshold: 0,
-    hypnox_filter: '',
-    bb_num_std: 2,
-    bb_ma_period: 20,
-    bb_use_ema: false,
-    macd_fast_period: 12,
-    macd_slow_period: 26,
-    macd_signal_period: 9,
-    macd_use_ema: false,
-    atr_period: 14,
-    atr_ma_mode: 'sma',
-    renko_step: 0,
-    renko_use_atr: false,
-
-  };
-
   loading: Boolean = true;
   loadingInd: Boolean = true;
-
-  form = this.createForm(this.empty_strat);
-
+  form: FormGroup = this.formBuilder.group(this.strategy);
   timeframes: String[] = [];
-
   engines: Engine[] = [];
-
   stopEngine: Engine | null = null;
-
   indicators?: Indicator;
-
   markets: Market[] = [];
+  available_mixins: Strategy[] = [];
+  private _strategy?: Strategy;
+  readonly StrategyType = StrategyType;
+
+  // https://stackoverflow.com/questions/73119114/how-to-iterate-through-enums-with-integer-as-value-in-typescript
+  readonly StrategyTypes = Object.values(StrategyType).reduce(
+    (acc, curr): { keys: string[]; values: StrategyType } =>
+      isNaN(+curr)
+        ? { ...acc, keys: [...acc.keys, curr as string] }
+        : { ...acc, values: [...acc.values, curr as StrategyType] },
+    <any>{ keys: [], values: [] }
+  );
 
   get mixins() {
     return this.form.controls["mixins"] as FormArray;
   }
-
-  available_mixins: Strategy[] = [];
-
-  strategyTypes: StrategyType[] = getStrategyTypes();
 
   set exchanges(exchanges: Exchange[]) {
     for (let exchange of exchanges) {
@@ -133,13 +61,17 @@ export class StrategyComponent implements OnInit {
     this.timeframes.sort();
   }
 
-  @Input() strategy_id: number = 0;
-
   get strategy(): Strategy {
-    return this._strategy;
+    if (this._strategy) {
+      return this._strategy;
+    }
+    return new Strategy();
   }
-  set strategy(strategy: Strategy) {
+
+  set strategy(strategy: any) {
     this._strategy = strategy;
+
+    this.form = this.formBuilder.group(strategy);
 
     this.form.get('id')?.disable();
     this.form.get('timeframe')?.disable();
@@ -147,33 +79,33 @@ export class StrategyComponent implements OnInit {
     this.form.get('market_id')?.disable();
     this.form.get('type')?.disable();
 
+    if (strategy.type == StrategyType.MANUAL) {
+      this.form.get('signal')?.enable();
+
+    } else if (strategy.type == StrategyType.MIXER) {
+      this.form.removeControl("mixins");
+      this.form.addControl("mixins", this.formBuilder.array([]));
+
+      this.strategiesService.getStrategiesByMarketId(strategy.market_id!).subscribe({
+        next: (strategies) => this.available_mixins = strategies
+      });
+    }
+
     if (strategy.id > 0) {
-      if (strategy.strategies && strategy.buy_weights && strategy.sell_weights) {
-        for (let i = 0; i < strategy.strategies.length; i++) {
-          this.addMixin(strategy.strategies[i], strategy.buy_weights[i], strategy.sell_weights[i]);
-        }
-      }
       this.form.patchValue(strategy);
 
-      if (getStrategyTypeName(strategy.type) === 'MANUAL') {
-        this.form.get('signal')?.enable();
-      } else if (getStrategyTypeName(strategy.type) === 'MIXER') {
-        if (strategy.market_id) {
-          this.strategiesService.getStrategiesByMarketId(strategy.market_id).subscribe({
-            next: (strategies) => this.available_mixins = strategies
-          });
+      if (strategy.type == StrategyType.MIXER) {
+        for (let mixin of strategy.mixins!) {
+          this.mixins.push(this.formBuilder.group(mixin));
         }
       }
 
     } else {
       this.form.get('timeframe')?.enable();
       this.form.get('market_id')?.enable();
-      this.form.get('signal')?.enable();
       this.form.get('type')?.enable();
     }
   }
-
-  private _strategy: Strategy = this.empty_strat;
 
   constructor(
     private strategyService: StrategyService,
@@ -185,23 +117,21 @@ export class StrategyComponent implements OnInit {
     private formBuilder: FormBuilder,
     private route: ActivatedRoute,
     private router: Router
-  ) { }
-
-  ngOnInit(): void {
-    this.getEngines();
-    this.getExchanges();
-
+  ) {
     const strategy_id = Number(this.route.snapshot.paramMap.get('strategy_id'));
 
-    if (!strategy_id) {
+    if (strategy_id == 0) {
+
       this.loading = false;
       this.loadingInd = false;
-      this.strategy = this.empty_strat;
+      this.strategy = new Strategy();
+
     } else {
+
       this.strategyService.getStrategy(strategy_id).subscribe({
         next: (res) => {
-
-          this.strategy = res;
+          this.loading = false;
+          this.strategy = StrategyFactory(res);
 
           if (res.stop_engine_id) {
             this.engineService.getEngine(res.stop_engine_id).subscribe({
@@ -217,11 +147,15 @@ export class StrategyComponent implements OnInit {
               this.loadingInd = false;
             }
           });
-
-          this.loading = false;
         }
       });
+
     }
+  }
+
+  ngOnInit(): void {
+    this.getEngines();
+    this.getExchanges();
   }
 
   getEngines(): void {
@@ -234,10 +168,6 @@ export class StrategyComponent implements OnInit {
     this.exchangeService.getExchanges().subscribe({
       next: (res) => this.exchanges = res,
     });
-  }
-
-  createForm(model: Strategy): FormGroup {
-    return this.formBuilder.group(model);
   }
 
   formatLabel(value: number) {
@@ -285,8 +215,8 @@ export class StrategyComponent implements OnInit {
     this.mixins.removeAt(index);
   }
 
-  getStrategyTypeName(type: number | null): string {
-    return getStrategyTypeName(type);
+  typeof(value: any) {
+    return typeof value;
   }
 
 }

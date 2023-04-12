@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { BaseStrategy, Strategy } from './strategy';
+import { Strategy } from './strategy';
 
 @Injectable({
   providedIn: 'root',
@@ -11,15 +11,15 @@ export class StrategiesService {
 
   constructor(private http: HttpClient) { }
 
-  getStrategies(): Observable<BaseStrategy[]> {
-    return this.http.get<BaseStrategy[]>(this.url);
+  getStrategies(): Observable<Strategy[]> {
+    return this.http.get<Strategy[]>(this.url);
   }
 
-  createStrategy(strategy: BaseStrategy): Observable<BaseStrategy> {
-    return this.http.post<BaseStrategy>(this.url, strategy);
+  createStrategy(strategy: Strategy): Observable<Strategy> {
+    return this.http.post<Strategy>(this.url, strategy);
   }
 
   getStrategiesByMarketId(market_id: number): Observable<Strategy[]> {
-    return this.http.get<BaseStrategy[]>(`${this.url}/market/${market_id}`);
+    return this.http.get<Strategy[]>(`${this.url}/market/${market_id}`);
   }
 }

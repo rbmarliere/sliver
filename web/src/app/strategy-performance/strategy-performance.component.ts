@@ -1,6 +1,6 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { Indicator } from '../indicator';
-import { getMetrics, Metrics } from '../indicator/backtest';
+import { Metrics } from '../metrics';
 import { Position } from '../position';
 import { PositionService } from '../position.service';
 import { Strategy } from '../strategy';
@@ -27,7 +27,7 @@ export class StrategyPerformanceComponent implements OnInit {
       next: (res) => {
         this.positions = res;
         if (this.positions.length > 0) {
-          this.perfLog = getMetrics(this.positions, this.indicators);
+          this.perfLog = this.strategy.getMetrics(this.positions, this.indicators);
         }
       }
     });
