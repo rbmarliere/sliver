@@ -6,8 +6,7 @@ import sliver.database as db
 from sliver.api.exceptions import InvalidArgument
 from sliver.api.resources.fields import base_fields, get_base_parser
 from sliver.market import Market
-from sliver.strategies.factory import StrategyFactory
-from sliver.strategies.types import StrategyTypes
+from sliver.strategies.factory import StrategyFactory, StrategyTypes
 from sliver.strategy import BaseStrategy as Strategy
 from sliver.user import User
 

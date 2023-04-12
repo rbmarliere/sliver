@@ -12,7 +12,6 @@ from sliver.market import Market
 from sliver.price import Price
 from sliver.print import print
 from sliver.strategies.signals import StrategySignals
-from sliver.strategies.types import StrategyTypes
 from sliver.trade_engine import TradeEngine
 from sliver.user import User
 from sliver.utils import get_next_refresh, get_timeframe_in_seconds, quantize
@@ -58,7 +57,7 @@ class BaseStrategy(db.BaseModel):
             cls.get_active()
             .where(cls.next_refresh < datetime.datetime.utcnow())
             .order_by(cls.next_refresh)
-            .order_by(cls.type == StrategyTypes.MIXER)
+            .order_by(cls.type == 4)  # MIXER
         )
 
     def get_signal(self):
@@ -192,7 +191,7 @@ class IStrategy(db.BaseModel):
         print(f"market is {self.market.get_symbol()} {self.market}")
         print(f"timeframe is {self.timeframe}")
         print(f"exchange is {self.market.base.exchange.name}")
-        print(f"type is {StrategyTypes(self.type).name}")
+        print(f"type is {self.type}")
         print(f"buy engine is {self.buy_engine_id}")
         print(f"sell engine is {self.sell_engine_id}")
         print(f"stop engine is {self.stop_engine_id}")
