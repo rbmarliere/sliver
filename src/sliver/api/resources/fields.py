@@ -11,7 +11,7 @@ base_fields = {
     "type": fields.Integer,
     "active": fields.Boolean,
     # "deleted": fields.Boolean,
-    "signal": fields.Float,
+    "signal": fields.Integer,
     "market_id": fields.Integer,
     "timeframe": fields.String,
     # "next_refresh": fields.DateTime(dt_format="iso8601"),
@@ -58,6 +58,11 @@ dd3_fields = {
     "ma3_period": fields.Integer,
 }
 
+weights = {
+    "strategy_id": fields.Integer,
+    "buy_weight": fields.Float,
+    "sell_weight": fields.Float,
+}
 mixer_indicators = {
     **indicators_fields,
     "buy_w_signal": fields.List(fields.Float),
@@ -67,9 +72,10 @@ mixer_fields = {
     **base_fields,
     "buy_threshold": fields.Float,
     "sell_threshold": fields.Float,
-    "strategies": fields.List(fields.Integer),
-    "buy_weights": fields.List(fields.Float),
-    "sell_weights": fields.List(fields.Float),
+    "mixins": fields.List(fields.Nested(weights)),
+    # "strategies": fields.List(fields.Integer),
+    # "buy_weights": fields.List(fields.Float),
+    # "sell_weights": fields.List(fields.Float),
 }
 
 bb_indicators = {

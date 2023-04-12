@@ -22,6 +22,7 @@ class Strategies(Resource):
         strat_list = []
         for s in Strategy.get_existing():
             s.subscribed = user.is_subscribed(s.id)
+            s.signal = s.get_signal()
             strat_list.append(s)
 
         return strat_list
