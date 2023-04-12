@@ -5,6 +5,7 @@ import { StrategyType } from './strategy-types/factory';
 import { getMaxSeriesDrawdown, msToString, variance } from './utils';
 
 export class Strategy {
+  indicators: Indicator | null = null;
   id: number = 0;
   symbol: string = '';
   exchange: string = '';
@@ -139,16 +140,16 @@ export class Strategy {
     let bh_max_equity_runup = Math.max(...indicators.close) * bh_entry_amount;
     let bh_exit_cost = indicators.close[indicators.close.length - 1] * bh_entry_amount;
     let bh_roi = ((bh_exit_cost / bh_entry_cost) - 1) * 100;
-    let bh_apr = (bh_roi / total_days) * 365
+    let bh_apr = Math.max((bh_roi / total_days) * 365, -99.99);
     let bh_sharpe = bh_roi / vol;
     let bh_sortino = bh_roi / downside_vol;
-    let bh_calmar = bh_roi / max_series_drawdown;
+    let bh_calmar = bh_roi / (max_series_drawdown * -1);
 
     let roi = ((net_asset_value / init_nav) - 1) * 100;
-    let apr = (roi / trading_days) * 365
+    let apr = Math.max((roi / trading_days) * 365, -99.99);
     let sharpe = roi / vol;
     let sortino = roi / downside_vol;
-    let calmar = bh_roi / max_pos_drawdown;
+    let calmar = roi / (max_pos_drawdown * -1);
 
     let percent_profitable = (winning_trades / positions.length) * 100;
 
@@ -237,7 +238,7 @@ export class Strategy {
 
   }
 
-  public getPlot(indicators: Indicator): any {
+  public getPlot(): any {
     let height = 1100;
     if (window.innerWidth < 768) {
       height = 800;
@@ -267,8 +268,8 @@ export class Strategy {
       data: [
         {
           name: 'closing price',
-          x: indicators.time,
-          y: indicators.close,
+          x: this.indicators!.time,
+          y: this.indicators!.close,
           // high: data.high,
           // low: data.low,
           // close: data.close,
@@ -278,8 +279,8 @@ export class Strategy {
         },
         {
           name: 'buy signal',
-          x: indicators.time,
-          y: indicators.buys,
+          x: this.indicators!.time,
+          y: this.indicators!.buys,
           type: 'scatter',
           mode: 'markers',
           marker: { color: 'green', size: 8 },
@@ -288,8 +289,8 @@ export class Strategy {
         },
         {
           name: 'sell signal',
-          x: indicators.time,
-          y: indicators.sells,
+          x: this.indicators!.time,
+          y: this.indicators!.sells,
           type: 'scatter',
           mode: 'markers',
           marker: { color: 'red', size: 8 },

@@ -326,13 +326,11 @@
 
     <p></p>
 
-    <app-strategy-performance *ngIf="indicators" [strategy]="strategy"
-      [indicators]="indicators"></app-strategy-performance>
+    <app-strategy-performance *ngIf="strategy.indicators" [strategy]="strategy"></app-strategy-performance>
 
     <p></p>
 
-    <app-indicator *ngIf="indicators" [strategy]="strategy" [stopEngine]="stopEngine"
-      [indicators]="indicators"></app-indicator>
+    <app-indicator *ngIf="strategy.indicators" [strategy]="strategy" [stopEngine]="stopEngine"></app-indicator>
   </div>
 
 </div>
