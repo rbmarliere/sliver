@@ -1,6 +1,6 @@
 from flask_restful import fields, reqparse
 
-from sliver.strategies.types import StrategyTypes
+from sliver.strategies.factory import StrategyTypes
 
 base_fields = {
     "id": fields.Integer,

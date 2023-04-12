@@ -1,3 +1,5 @@
+import enum
+
 from sliver.exceptions import DisablingError
 from sliver.strategies.bb import BBStrategy as BB
 from sliver.strategies.dd3 import DD3Strategy as DD3
@@ -8,7 +10,18 @@ from sliver.strategies.mixer import MixerStrategy as Mixer
 from sliver.strategies.random import RandomStrategy as Random
 from sliver.strategies.swapperbox import SwapperBoxStrategy as SwapperBox
 from sliver.strategies.windrunner import WindrunnerStrategy as Windrunner
-from sliver.strategies.types import StrategyTypes
+
+
+class StrategyTypes(enum.IntEnum):
+    MANUAL = 0
+    RANDOM = 1
+    HYPNOX = 2
+    DD3 = 3
+    MIXER = 4
+    BB = 5
+    MA_CROSS = 6
+    SWAPPERBOX = 7
+    WINDRUNNER = 8
 
 
 class StrategyFactory:

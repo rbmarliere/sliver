@@ -20,9 +20,8 @@ from sliver.api.resources.fields import (
 )
 from sliver.exceptions import MarketAlreadySubscribed as BaseMarketAlreadySubscribed
 from sliver.indicator import Indicator
-from sliver.strategies.factory import StrategyFactory
+from sliver.strategies.factory import StrategyFactory, StrategyTypes
 from sliver.strategies.mixer import MixedStrategies
-from sliver.strategies.types import StrategyTypes
 from sliver.strategy import BaseStrategy as StrategyModel
 from sliver.user import User
 from sliver.user_strategy import UserStrategy
