@@ -1,9 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { DialogService } from '../dialog.service';
 import { StrategiesService } from '../strategies.service';
-import { BaseStrategy, Strategy } from '../strategy';
+import { Strategy } from '../strategy';
+import { StrategyType } from '../strategy-types/factory';
 import { StrategyService } from '../strategy.service';
-import { getStrategyTypes } from '../strategy/strategy-types';
 
 @Component({
   selector: 'app-strategies',
@@ -12,10 +12,9 @@ import { getStrategyTypes } from '../strategy/strategy-types';
 })
 export class StrategiesComponent implements OnInit {
   displayedColumns: string[] = this.getDisplayedColumns();
-
   loading: Boolean = true;
-
-  strategies: BaseStrategy[] = [];
+  strategies: Strategy[] = [];
+  readonly StrategyType = StrategyType;
 
   constructor(
     private strategyService: StrategyService,
@@ -73,17 +72,6 @@ export class StrategiesComponent implements OnInit {
         });
       }
     });
-  }
-
-  getTypeName(type: number): string {
-    let name = '';
-    getStrategyTypes().forEach((strategy_type) => {
-      if (strategy_type.value === type) {
-        name = strategy_type.name;
-      }
-    });
-
-    return name;
   }
 
   updateSubscription(strategy: Strategy): void {

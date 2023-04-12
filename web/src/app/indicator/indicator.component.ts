@@ -1,10 +1,9 @@
 import { Component, Input } from '@angular/core';
 import { Engine } from '../engine';
 import { Indicator, sliceIndicators } from '../indicator';
+import { Metrics } from '../metrics';
 import { getPositions, Position } from '../position';
 import { Strategy } from '../strategy';
-import { backtest, Metrics } from './backtest';
-import { getPlot } from './plot';
 
 @Component({
   selector: 'app-indicator',
@@ -29,7 +28,7 @@ export class IndicatorComponent {
       return;
     }
 
-    this.plot = getPlot(this.strategy, this.indicators);
+    this.plot = this.strategy.getPlot(this.indicators);
     this.zoom(0);
   }
 
@@ -52,7 +51,7 @@ export class IndicatorComponent {
     let indicators = sliceIndicators(this.indicators, startIdx, endIdx);
 
     this.positions = getPositions(indicators, this.stopEngine);
-    this.backtestLog = backtest(this.strategy, indicators, this.positions);
+    this.backtestLog = this.strategy.getMetrics(this.positions, indicators);
   }
 
 }

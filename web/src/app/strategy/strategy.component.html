@@ -32,8 +32,8 @@
           <mat-form-field appearance="fill">
             <mat-label>Type</mat-label>
             <mat-select formControlName="type" required>
-              <mat-option *ngFor="let type of strategyTypes" [value]="type.value">
-                {{ type.name }}
+              <mat-option *ngFor="let type of StrategyTypes.values" [value]="type">
+                {{ StrategyTypes.keys[type] }}
               </mat-option>
             </mat-select>
           </mat-form-field>
@@ -85,7 +85,7 @@
           </mat-form-field>
         </div>
 
-        <div class="fields" *ngIf="getStrategyTypeName(strategy.type) === 'HYPNOX'">
+        <div class="fields" *ngIf="strategy.type == StrategyType.HYPNOX">
           <mat-form-field>
             <mat-label>Threshold</mat-label>
             <input matInput type="number" formControlName="threshold" autocomplete="off" />
@@ -117,10 +117,9 @@
               <mat-option value="lt">&lt;</mat-option>
             </mat-select>
           </mat-form-field>
-
         </div>
 
-        <div class="fields" *ngIf="getStrategyTypeName(strategy.type) === 'DD3'">
+        <div class="fields" *ngIf="strategy.type == StrategyType.DD3">
           <mat-form-field>
             <mat-label>MA1 Period</mat-label>
             <input matInput type="number" formControlName="ma1_period" autocomplete="off" />
@@ -135,7 +134,7 @@
           </mat-form-field>
         </div>
 
-        <div class="fields" *ngIf="getStrategyTypeName(strategy.type) === 'MIXER'">
+        <div class="fields" *ngIf="strategy.type == StrategyType.MIXER">
           <mat-form-field>
             <mat-label>Mixed Buy Signal Threshold</mat-label>
             <input matInput type="number" formControlName="buy_threshold" autocomplete="off" />
@@ -146,7 +145,7 @@
           </mat-form-field>
         </div>
 
-        <div *ngIf="getStrategyTypeName(strategy.type) === 'MIXER'">
+        <div *ngIf="strategy.type == StrategyType.MIXER">
           <p>Mixins</p>
           <hr />
           <ng-container formArrayName="mixins">
@@ -182,7 +181,7 @@
           </button>
         </div>
 
-        <div class="fields" *ngIf="getStrategyTypeName(strategy.type) === 'BB'">
+        <div class="fields" *ngIf="strategy.type == StrategyType.BB">
           <mat-form-field>
             <mat-label>Number of Standard Deviations</mat-label>
             <input matInput type="number" formControlName="num_std" autocomplete="off" />
@@ -198,7 +197,7 @@
           </p>
         </div>
 
-        <div class="fields" *ngIf="getStrategyTypeName(strategy.type) === 'MA_CROSS'">
+        <div class="fields" *ngIf="strategy.type == StrategyType.MA_CROSS">
           <mat-form-field>
             <mat-label>Fast MA Period</mat-label>
             <input matInput type="number" formControlName="fast_period" autocomplete="off" />
@@ -219,7 +218,7 @@
           </p>
         </div>
 
-        <div class="fields" *ngIf="getStrategyTypeName(strategy.type) === 'SWAPPERBOX'">
+        <div class="fields" *ngIf="strategy.type == StrategyType.SWAPPERBOX">
           <mat-form-field>
             <mat-label>Signals Table URL</mat-label>
             <input matInput type="text" formControlName="url" autocomplete="off" />
@@ -230,7 +229,7 @@
           </mat-form-field>
         </div>
 
-        <div class="fields" *ngIf="getStrategyTypeName(strategy.type) === 'WINDRUNNER'">
+        <div class="fields" *ngIf="strategy.type == StrategyType.WINDRUNNER">
           <mat-form-field>
             <mat-label>Model</mat-label>
             <input matInput type="text" formControlName="windrunner_model" autocomplete="off" />
