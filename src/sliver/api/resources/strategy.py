@@ -43,11 +43,17 @@ class Strategy(Resource):
 
         strategy = StrategyFactory.from_base(strategy)
         strategy.subscribed = user.is_subscribed(strategy.id)
+        strategy.signal = strategy.get_signal()
 
         if strategy.type == StrategyTypes.MIXER:
-            strategy.strategies = [m.strategy_id for m in strategy.mixins]
-            strategy.buy_weights = [m.buy_weight for m in strategy.mixins]
-            strategy.sell_weights = [m.sell_weight for m in strategy.mixins]
+            strategy.mixins = [
+                {
+                    "strategy_id": m.strategy_id,
+                    "buy_weight": m.buy_weight,
+                    "sell_weight": m.sell_weight,
+                }
+                for m in strategy.mixins
+            ]
 
         return marshal(strategy, get_fields(strategy.type))
 
@@ -191,5 +197,6 @@ class Strategy(Resource):
 
         strategy = StrategyFactory.from_base(strategy)
         strategy.subscribed = user.is_subscribed(strategy.id)
+        strategy.signal = strategy.get_signal()
 
         return marshal(strategy, get_fields(strategy.type))
