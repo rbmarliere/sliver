@@ -5,6 +5,7 @@ import time
 from decimal import Decimal as D
 
 import pandas
+from flask_restful import fields
 
 from sliver.config import Config
 
@@ -144,3 +145,18 @@ def get_logger(log, suppress_output=False):
     log.addHandler(stream_handler)
 
     return log
+
+
+def parse_field_type(field_type):
+    if field_type == bool:
+        return fields.Boolean
+    elif field_type == datetime.datetime:
+        return fields.DateTime(dt_format="iso8601")
+    elif field_type == float or field_type == D:
+        return fields.Float
+    elif field_type == int:
+        return fields.Integer
+    elif field_type == str:
+        return fields.String
+    else:
+        return fields.Raw

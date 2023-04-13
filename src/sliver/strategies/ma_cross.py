@@ -22,11 +22,12 @@ class MACrossStrategy(IStrategy):
     use_slow_ema = peewee.BooleanField(default=False)
     slow_period = peewee.IntegerField(default=200)
 
-    def get_indicators(self):
-        return self.strategy.get_indicators(model=MACrossIndicator)
+    @staticmethod
+    def get_indicator_class():
+        return MACrossIndicator
 
     def get_indicators_df(self):
-        df = self.strategy.get_indicators_df(self.get_indicators())
+        df = super().get_indicators_df()
 
         if df.empty:
             return df

@@ -54,11 +54,12 @@ class WindrunnerStrategy(IStrategy):
     renko_step = peewee.DecimalField(null=True)
     renko_use_atr = peewee.BooleanField(null=True)
 
-    def get_indicators(self):
-        return self.strategy.get_indicators(model=WindrunnerIndicator)
+    @staticmethod
+    def get_indicator_class():
+        return WindrunnerIndicator
 
     def get_indicators_df(self):
-        df = self.strategy.get_indicators_df(self.get_indicators())
+        df = super().get_indicators_df()
 
         if df.empty:
             return df

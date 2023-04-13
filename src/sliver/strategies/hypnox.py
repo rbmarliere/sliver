@@ -112,11 +112,9 @@ class HypnoxStrategy(IStrategy):
     mode = peewee.TextField(default="buy")
     operator = peewee.TextField(default="gt")
 
-    def get_indicators(self):
-        return self.strategy.get_indicators(model=HypnoxIndicator)
-
-    def get_indicators_df(self):
-        return self.strategy.get_indicators_df(self.get_indicators())
+    @staticmethod
+    def get_indicator_class():
+        return HypnoxIndicator
 
     def refresh_indicators(self, indicators):
         BUY = StrategySignals.BUY
