@@ -32,11 +32,9 @@ class MixerStrategy(IStrategy):
     buy_threshold = peewee.DecimalField(default=1)
     sell_threshold = peewee.DecimalField(default=-1)
 
-    def get_indicators(self):
-        return self.strategy.get_indicators(model=MixerIndicator)
-
-    def get_indicators_df(self):
-        return self.strategy.get_indicators_df(self.get_indicators())
+    @staticmethod
+    def get_indicator_class():
+        return MixerIndicator
 
     def refresh_indicators(self, indicators):
         from sliver.strategies.factory import StrategyFactory
@@ -106,3 +104,18 @@ class MixerStrategy(IStrategy):
                 "records"
             )
         ).execute()
+
+    def get_fields(self):
+        from flask_restful import fields
+
+        all_fields = super().get_fields()
+        all_fields["mixins"] = fields.List(
+            fields.Nested(
+                {
+                    "strategy_id": fields.Integer,
+                    "buy_weight": fields.Float,
+                    "sell_weight": fields.Float,
+                }
+            )
+        )
+        return all_fields

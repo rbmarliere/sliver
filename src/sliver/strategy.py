@@ -1,4 +1,6 @@
 import datetime
+from flask_restful import reqparse, fields
+
 from abc import ABCMeta, abstractmethod
 from decimal import Decimal as D
 
@@ -14,7 +16,12 @@ from sliver.print import print
 from sliver.strategies.signals import StrategySignals
 from sliver.trade_engine import TradeEngine
 from sliver.user import User
-from sliver.utils import get_next_refresh, get_timeframe_in_seconds, quantize
+from sliver.utils import (
+    get_next_refresh,
+    get_timeframe_in_seconds,
+    quantize,
+    parse_field_type,
+)
 
 
 class BaseStrategy(db.BaseModel):
@@ -59,6 +66,51 @@ class BaseStrategy(db.BaseModel):
             .order_by(cls.next_refresh)
             .order_by(cls.type == 4)  # MIXER
         )
+
+    @staticmethod
+    def get_parser():
+        argp = reqparse.RequestParser()
+        argp.add_argument("description", type=str, required=True)
+        argp.add_argument("type", type=int, required=True)
+        argp.add_argument("market_id", type=int, required=True)
+        argp.add_argument("timeframe", type=str, required=True)
+        argp.add_argument("buy_engine_id", type=int, required=True)
+        argp.add_argument("sell_engine_id", type=int, required=True)
+        argp.add_argument("stop_engine_id", type=int, required=True)
+
+        return argp
+
+    @staticmethod
+    def get_fields():
+        return {
+            "id": fields.Integer,
+            "symbol": fields.String,
+            "exchange": fields.String,
+            "description": fields.String,
+            "type": fields.Integer,
+            "active": fields.Boolean,
+            "signal": fields.Integer,
+            "market_id": fields.Integer,
+            "timeframe": fields.String,
+            "subscribed": fields.Boolean,
+            "buy_engine_id": fields.Integer,
+            "sell_engine_id": fields.Integer,
+            "stop_engine_id": fields.Integer,
+        }
+
+    @staticmethod
+    def get_indicator_fields():
+        return {
+            "time": fields.List(fields.DateTime(dt_format="iso8601")),
+            "open": fields.List(fields.Float),
+            "high": fields.List(fields.Float),
+            "low": fields.List(fields.Float),
+            "close": fields.List(fields.Float),
+            "volume": fields.List(fields.Float),
+            "buys": fields.List(fields.Float),
+            "sells": fields.List(fields.Float),
+            "signal": fields.List(fields.Float),
+        }
 
     def get_signal(self):
         try:
@@ -185,6 +237,20 @@ class IStrategy(db.BaseModel):
     def __getattr__(self, attr):
         return getattr(self.strategy, attr)
 
+    @staticmethod
+    def get_indicator_class():
+        return None
+
+    @abstractmethod
+    def refresh_indicators(self, indicators):
+        ...
+
+    def get_indicators(self):
+        return self.strategy.get_indicators(model=self.get_indicator_class())
+
+    def get_indicators_df(self):
+        return self.strategy.get_indicators_df(self.get_indicators())
+
     def refresh(self):
         print("===========================================")
         print(f"refreshing strategy {self}")
@@ -219,6 +285,44 @@ class IStrategy(db.BaseModel):
 
         return df.loc[df.indicator_id.isnull()].copy()
 
-    @abstractmethod
-    def refresh_indicators(self, indicators):
-        ...
+    def get_parser(self):
+        argp = BaseStrategy.get_parser()
+
+        for field in self.__data__:
+            if field == "strategy":
+                continue
+            argp.add_argument(
+                f"{field}", type=type(self.__data__[field]), required=True
+            )
+
+        return argp
+
+    def get_fields(self):
+        all_fields = BaseStrategy.get_fields()
+
+        for field in self.__data__:
+            if field == "strategy":
+                continue
+            field_type = type(self.__data__[field])
+            all_fields[field] = parse_field_type(field_type)
+
+        return all_fields
+
+    def get_indicator_fields(self):
+        all_fields = BaseStrategy.get_indicator_fields()
+
+        if self.get_indicator_class() is None:
+            return all_fields
+
+        try:
+            i = self.get_indicator_class().get()
+        except self.get_indicator_class().DoesNotExist:
+            return all_fields
+
+        for field in i.__data__:
+            if field == "indicator":
+                continue
+            field_type = type(i.__data__[field])
+            all_fields[field] = fields.List(parse_field_type(field_type))
+
+        return all_fields
