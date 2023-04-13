@@ -28,6 +28,10 @@ class BBStrategy(IStrategy):
     def get_indicator_class():
         return BBIndicator
 
+    @staticmethod
+    def setup():
+        db.connection.create_tables([BBStrategy, BBIndicator])
+
     def get_indicators_df(self):
         df = super().get_indicators_df()
 

@@ -116,6 +116,12 @@ class HypnoxStrategy(IStrategy):
     def get_indicator_class():
         return HypnoxIndicator
 
+    @staticmethod
+    def setup():
+        db.connection.create_tables(
+            [HypnoxStrategy, HypnoxUser, HypnoxTweet, HypnoxScore, HypnoxIndicator]
+        )
+
     def refresh_indicators(self, indicators):
         BUY = StrategySignals.BUY
         NEUTRAL = StrategySignals.NEUTRAL

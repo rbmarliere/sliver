@@ -27,32 +27,30 @@ class StrategyTypes(enum.IntEnum):
 class StrategyFactory:
     @classmethod
     def from_base(cls, strategy):
+        model = None
+
         if strategy.type == StrategyTypes.BB:
-            return BB.get_or_create(strategy=strategy)[0]
-
+            model = BB
         elif strategy.type == StrategyTypes.DD3:
-            return DD3.get_or_create(strategy=strategy)[0]
-
+            model = DD3
         elif strategy.type == StrategyTypes.HYPNOX:
-            return Hypnox.get_or_create(strategy=strategy)[0]
-
+            model = Hypnox
         elif strategy.type == StrategyTypes.MA_CROSS:
-            return MACross.get_or_create(strategy=strategy)[0]
-
+            model = MACross
         elif strategy.type == StrategyTypes.MANUAL:
-            return Manual.get_or_create(strategy=strategy)[0]
-
+            model = Manual
         elif strategy.type == StrategyTypes.MIXER:
-            return Mixer.get_or_create(strategy=strategy)[0]
-
+            model = Mixer
         elif strategy.type == StrategyTypes.RANDOM:
-            return Random.get_or_create(strategy=strategy)[0]
-
+            model = Random
         elif strategy.type == StrategyTypes.SWAPPERBOX:
-            return SwapperBox.get_or_create(strategy=strategy)[0]
-
+            model = SwapperBox
         elif strategy.type == StrategyTypes.WINDRUNNER:
-            return Windrunner.get_or_create(strategy=strategy)[0]
+            model = Windrunner
 
-        else:
+        if model is None:
             raise DisablingError("invalid strategy type")
+
+        model.setup()
+
+        return model.get_or_create(strategy=strategy)[0]
