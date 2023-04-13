@@ -36,6 +36,10 @@ class MixerStrategy(IStrategy):
     def get_indicator_class():
         return MixerIndicator
 
+    @staticmethod
+    def setup():
+        db.connection.create_tables([MixerStrategy, MixerIndicator, MixedStrategies])
+
     def refresh_indicators(self, indicators):
         from sliver.strategies.factory import StrategyFactory
 

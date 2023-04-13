@@ -22,6 +22,10 @@ class SwapperBoxStrategy(IStrategy):
     url = peewee.TextField(null=True)
     telegram = peewee.TextField(null=True)
 
+    @staticmethod
+    def setup():
+        db.connection.create_tables([SwapperBoxStrategy, SwapperBoxMessage])
+
     def init_indicators(self, indicators):
         NEUTRAL = StrategySignals.NEUTRAL
 

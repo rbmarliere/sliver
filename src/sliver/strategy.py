@@ -241,6 +241,11 @@ class IStrategy(db.BaseModel):
     def get_indicator_class():
         return None
 
+    @staticmethod
+    @abstractmethod
+    def setup():
+        ...
+
     @abstractmethod
     def refresh_indicators(self, indicators):
         ...

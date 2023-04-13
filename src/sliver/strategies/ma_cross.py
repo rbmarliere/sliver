@@ -26,6 +26,10 @@ class MACrossStrategy(IStrategy):
     def get_indicator_class():
         return MACrossIndicator
 
+    @staticmethod
+    def setup():
+        db.connection.create_tables([MACrossStrategy, MACrossIndicator])
+
     def get_indicators_df(self):
         df = super().get_indicators_df()
 
