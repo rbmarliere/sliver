@@ -137,7 +137,8 @@ export class Strategy {
     let vol = Math.sqrt(variance(positions.map(p => p.roi)));
     let downside_vol = Math.sqrt(variance(positions.filter(p => p.roi < 0).map(p => p.roi)));
 
-    let bh_max_equity_runup = Math.max(...indicators.close) * bh_entry_amount;
+    let bh_max_equity = Math.max(...indicators.close) * bh_entry_amount;
+    let bh_max_equity_runup = ((bh_max_equity / bh_entry_cost) - 1) * 100;
     let bh_exit_cost = indicators.close[indicators.close.length - 1] * bh_entry_amount;
     let bh_roi = ((bh_exit_cost / bh_entry_cost) - 1) * 100;
     let bh_apr = Math.max((bh_roi / total_days) * 365, -99.99);
