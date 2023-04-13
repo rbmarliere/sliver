@@ -1,7 +1,7 @@
 import datetime
 
 from flask_jwt_extended import get_jwt_identity, jwt_required
-from flask_restful import Resource, marshal
+from flask_restful import Resource, marshal, reqparse
 
 import sliver.database as db
 from sliver.api.exceptions import (
@@ -12,12 +12,6 @@ from sliver.api.exceptions import (
     StrategyMixedIn,
     StrategyNotEditable,
 )
-from sliver.api.resources.fields import (
-    get_activation_parser,
-    get_base_parser,
-    get_fields,
-    get_subscription_parser,
-)
 from sliver.exceptions import MarketAlreadySubscribed as BaseMarketAlreadySubscribed
 from sliver.indicator import Indicator
 from sliver.strategies.factory import StrategyFactory, StrategyTypes
@@ -25,6 +19,20 @@ from sliver.strategies.mixer import MixedStrategies
 from sliver.strategy import BaseStrategy as StrategyModel
 from sliver.user import User
 from sliver.user_strategy import UserStrategy
+
+
+def get_subscription_parser():
+    parser = reqparse.RequestParser()
+    parser.add_argument("subscribe", type=bool, required=False)
+    parser.add_argument("subscribed", type=bool, required=False)
+    return parser
+
+
+def get_activation_parser():
+    parser = reqparse.RequestParser()
+    parser.add_argument("activate", type=bool, required=False)
+    parser.add_argument("active", type=bool, required=False)
+    return parser
 
 
 class Strategy(Resource):
@@ -54,7 +62,7 @@ class Strategy(Resource):
                 for m in strategy.mixins
             ]
 
-        return marshal(strategy, get_fields(strategy.type))
+        return marshal(strategy, strategy.get_fields())
 
     @jwt_required()
     def delete(self, strategy_id):
@@ -100,8 +108,9 @@ class Strategy(Resource):
 
                 strategy = StrategyFactory.from_base(old_strategy)
                 strategy.subscribed = user.is_subscribed(strategy.id)
+                strategy.signal = strategy.get_signal()
 
-                return marshal(strategy, get_fields(strategy.type))
+                return marshal(strategy, strategy.get_fields())
         except BaseMarketAlreadySubscribed:
             raise MarketAlreadySubscribed
         except KeyError:
@@ -117,17 +126,20 @@ class Strategy(Resource):
 
                 strategy = StrategyFactory.from_base(old_strategy)
                 strategy.subscribed = user.is_subscribed(strategy.id)
+                strategy.signal = strategy.get_signal()
 
-                return marshal(strategy, get_fields(strategy.type))
+                return marshal(strategy, strategy.get_fields())
         except BaseMarketAlreadySubscribed:
             raise MarketAlreadySubscribed
         except KeyError:
             pass
 
-        args = get_base_parser(old_strategy.type).parse_args()
-
         if old_strategy.creator != user:
             raise StrategyNotEditable
+
+        strategy = StrategyFactory.from_base(old_strategy)
+
+        args = strategy.get_parser().parse_args()
 
         with db.connection.atomic():
             args["id"] = int(strategy_id)
@@ -137,8 +149,8 @@ class Strategy(Resource):
             args["active"] = old_strategy.active
             args["next_refresh"] = datetime.datetime.utcnow()
 
-            strategy = StrategyModel(**args)
-            strategy.save()
+            new_strategy = StrategyModel(**args)
+            new_strategy.save()
 
             if strategy.type == StrategyTypes.MIXER:
                 mixin = MixedStrategies
@@ -181,7 +193,7 @@ class Strategy(Resource):
                             sell_weight=s_w,
                         )
 
-            strategy = StrategyFactory.from_base(strategy)
+            strategy = StrategyFactory.from_base(new_strategy)
 
             for field in strategy._meta.sorted_field_names:
                 try:
@@ -194,8 +206,7 @@ class Strategy(Resource):
 
             Indicator.delete().where(Indicator.strategy_id == strategy_id).execute()
 
-        strategy = StrategyFactory.from_base(strategy)
         strategy.subscribed = user.is_subscribed(strategy.id)
         strategy.signal = strategy.get_signal()
 
-        return marshal(strategy, get_fields(strategy.type))
+        return marshal(strategy, strategy.get_fields())
