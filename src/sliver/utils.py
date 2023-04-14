@@ -2,12 +2,38 @@ import datetime
 import logging.handlers
 import re
 import time
+import unicodedata
 from decimal import Decimal as D
 
+import nltk
 import pandas
 from flask_restful import fields
 
 from sliver.config import Config
+
+nltk.download("wordnet")
+
+
+def clean_text(text):
+    text = standardize(text)
+
+    wnl = nltk.stem.WordNetLemmatizer()
+
+    text = (
+        unicodedata.normalize("NFKD", text)
+        .encode("ascii", "ignore")
+        .decode("utf-8", "ignore")
+        .lower()
+    )
+
+    words = re.sub(r"[^\w\s]", "", text).split()
+
+    # from nltk.corpus import stopwords
+    # nltk.download("stopwords")
+    # stopwords = nltk.corpus.stopwords.words("english") + ADDITIONAL_STOPWORDS
+    # return [wnl.lemmatize(word) for word in words if word not in stopwords]
+
+    return [wnl.lemmatize(word) for word in words]
 
 
 def standardize(text):
@@ -20,6 +46,8 @@ def standardize(text):
     text = re.sub(r"http\S+", "", text)
     # remove hashtags, usernames and html entities
     text = re.sub(r"(#|@|&|\$)\S+", "", text)
+    # remove html entities
+    text = re.sub(r"&\S+;", "", text)
 
     return text
 
