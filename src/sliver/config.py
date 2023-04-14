@@ -34,6 +34,7 @@ class Config(metaclass=ConfigMeta):
             "DB_USER",
             "ENV_NAME",
             "JWT_SECRET_KEY",
+            "ETC_DIR",
             "LOGS_DIR",
             "MODELS_DIR",
             "TELEGRAM_API_HASH",
@@ -54,6 +55,8 @@ class Config(metaclass=ConfigMeta):
 
         config = dict(zip(config, [os.environ[var] for var in config]))
 
+        if not os.path.exists(config["ETC_DIR"]):
+            raise BaseError(f"ETC_DIR={config['ETC_DIR']} not found")
         if not os.path.exists(config["LOGS_DIR"]):
             raise BaseError(f"LOGS_DIR={config['LOGS_DIR']} not found")
         if not os.path.exists(config["MODELS_DIR"]):
