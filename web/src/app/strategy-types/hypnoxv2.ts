@@ -10,6 +10,7 @@ interface Hypnoxv2Indicator extends Indicator {
 
 export class Hypnoxv2Strategy extends Strategy {
   override indicators: Hypnoxv2Indicator | null = null;
+  hypnoxv2_tweet_filter: string = '';
   hypnoxv2_upper_threshold: number = 0;
   hypnoxv2_lower_threshold: number = 0;
 

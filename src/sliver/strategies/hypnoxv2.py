@@ -37,6 +37,7 @@ class Hypnoxv2Indicator(db.BaseModel):
 
 
 class Hypnoxv2Strategy(IStrategy):
+    hypnoxv2_tweet_filter = peewee.TextField(null=True)
     hypnoxv2_upper_threshold = peewee.DecimalField(default=0)
     hypnoxv2_lower_threshold = peewee.DecimalField(default=0)
 
@@ -53,13 +54,23 @@ class Hypnoxv2Strategy(IStrategy):
         NEUTRAL = StrategySignals.NEUTRAL
         SELL = StrategySignals.SELL
 
+        filter = b""
+        if self.hypnoxv2_tweet_filter:
+            filter = self.hypnoxv2_tweet_filter.encode("unicode_escape")
+
         tweets = pandas.DataFrame(
             HypnoxTweet.select()
             .where(HypnoxTweet.time >= indicators.iloc[0].time)
+            .where(HypnoxTweet.text.iregexp(filter))
             .dicts()
         )
 
         if tweets.empty:
+            return
+
+        indicators = indicators.loc[indicators.time >= tweets.time.min()].copy()
+
+        if indicators.empty:
             return
 
         tweets.text = tweets.text.apply(standardize)
@@ -89,6 +100,9 @@ class Hypnoxv2Strategy(IStrategy):
         indicators["score"] = tweets
 
         indicators = indicators.dropna(subset="score")
+
+        if indicators.empty:
+            return
 
         indicators.loc[
             indicators["score"] > self.hypnoxv2_upper_threshold, "signal"
