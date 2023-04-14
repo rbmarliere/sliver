@@ -1,5 +1,8 @@
-import pandas
 import math
+
+import pandas
+
+from sliver.exceptions import DisablingError
 
 
 def RENKO(ohlc, size=10, use_atr=False):
@@ -7,6 +10,9 @@ def RENKO(ohlc, size=10, use_atr=False):
         assert "atr" in ohlc.columns
         size = ohlc.loc[ohlc.atr > 0].iloc[0].atr
         # size = ohlc.iloc[-1].atr  # tradingview
+
+    if size == 0:
+        raise DisablingError("renko size cant be 0")
 
     first = math.floor(ohlc.iloc[0].open / size) * size
     if first == 0:
