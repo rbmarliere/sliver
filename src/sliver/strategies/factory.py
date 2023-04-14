@@ -10,6 +10,7 @@ from sliver.strategies.mixer import MixerStrategy as Mixer
 from sliver.strategies.random import RandomStrategy as Random
 from sliver.strategies.swapperbox import SwapperBoxStrategy as SwapperBox
 from sliver.strategies.windrunner import WindrunnerStrategy as Windrunner
+from sliver.strategies.hypnoxv2 import Hypnoxv2Strategy as Hypnoxv2
 
 
 class StrategyTypes(enum.IntEnum):
@@ -22,6 +23,7 @@ class StrategyTypes(enum.IntEnum):
     MA_CROSS = 6
     SWAPPERBOX = 7
     WINDRUNNER = 8
+    HYPNOXV2 = 9
 
 
 class StrategyFactory:
@@ -47,6 +49,8 @@ class StrategyFactory:
             model = SwapperBox
         elif strategy.type == StrategyTypes.WINDRUNNER:
             model = Windrunner
+        elif strategy.type == StrategyTypes.HYPNOXV2:
+            model = Hypnoxv2
 
         if model is None:
             raise DisablingError("invalid strategy type")
