@@ -305,6 +305,17 @@
           </p>
         </div>
 
+        <div class="fields" *ngIf="strategy.type == StrategyType.HYPNOXV2">
+          <mat-form-field>
+            <mat-label>Upper Threshold</mat-label>
+            <input matInput type="number" formControlName="hypnoxv2_upper_threshold" autocomplete="off" />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Lower Threshold</mat-label>
+            <input matInput type="number" formControlName="hypnoxv2_lower_threshold" autocomplete="off" />
+          </mat-form-field>
+        </div>
+
         <div class="button">
           <button mat-raised-button color="primary" style="margin-right: 1vh;">Save</button>
 
