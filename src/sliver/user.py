@@ -5,6 +5,7 @@ from sliver.alert import get_updates, send_user_message
 from sliver.asset import Asset
 from sliver.balance import Balance
 from sliver.credential import Credential
+from sliver.exceptions import DisablingError
 from sliver.exchange_asset import ExchangeAsset
 from sliver.exchanges.factory import ExchangeFactory
 
@@ -114,7 +115,13 @@ class User(db.BaseModel):
             cred = self.get_active_credential(exchange_asset.exchange).get()
             exchange = ExchangeFactory.from_credential(cred)
             exchange.sync_user_balance(self)
-        return Balance.get(user_id=self.id, asset_id=exchange_asset.id)
+        try:
+            return Balance.get(user_id=self.id, asset_id=exchange_asset.id)
+        except Balance.DoesNotExist:
+            raise DisablingError(
+                f"(User {self.email}) no balance for "
+                f"{exchange_asset.asset.ticker} on {exchange_asset.exchange.name}"
+            )
 
     def get_balance(self, asset):
         balance = {
