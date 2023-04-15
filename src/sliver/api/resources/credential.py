@@ -58,6 +58,7 @@ class Credential(Resource):
         argp.add_argument("exchange_id", type=int, required=True)
         argp.add_argument("api_key", type=str, required=True)
         argp.add_argument("api_secret", type=str, required=True)
+        argp.add_argument("api_password", type=str)
         argp.add_argument("active", type=bool, required=True)
         args = argp.parse_args()
 
@@ -81,6 +82,7 @@ class Credential(Resource):
             exchange=args.exchange_id,
             api_key=args.api_key,
             api_secret=args.api_secret,
+            api_password=args.api_password,
             active=args.active,
         )
 

@@ -10,6 +10,7 @@ class Credential(db.BaseModel):
     exchange = peewee.ForeignKeyField(Exchange)
     api_key = peewee.TextField()
     api_secret = peewee.TextField()
+    api_password = peewee.TextField(null=True)
     active = peewee.BooleanField(default=True)
 
     def disable(self):

@@ -20,7 +20,11 @@ class CCXT(Exchange):
         api_key = {}
 
         if credential:
-            api_key = {"apiKey": credential.api_key, "secret": credential.api_secret}
+            api_key = {
+                "apiKey": credential.api_key,
+                "secret": credential.api_secret,
+                "password": credential.api_password,
+            }
 
         ccxt_class = getattr(ccxt, self.name)
         self._api = ccxt_class(api_key)
