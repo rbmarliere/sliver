@@ -16,6 +16,7 @@ export class CredentialComponent implements OnInit {
     exchange_id: 0,
     api_key: '',
     api_secret: '',
+    api_password: '',
     active: false
   });
 
@@ -32,11 +33,13 @@ export class CredentialComponent implements OnInit {
     if (this.credential?.api_key) {
       this.form.get('api_key')?.disable();
       this.form.get('api_secret')?.disable();
+      this.form.get('api_password')?.disable();
       this.form.setValue({
         exchange: this.credential?.exchange,
         exchange_id: this.credential?.exchange_id,
-        api_key: this.credential?.api_key,
+        api_key: this.credential?.api_key.substring(0, 4) + '**************',
         api_secret: '*******************',
+        api_password: '*******************',
         active: this.credential?.active
       });
     } else {
@@ -45,6 +48,7 @@ export class CredentialComponent implements OnInit {
         exchange_id: this.credential?.exchange_id,
         api_key: '',
         api_secret: '',
+        api_password: '',
         active: true
       });
     }
