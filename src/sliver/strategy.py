@@ -209,7 +209,7 @@ class BaseStrategy(db.BaseModel):
     def disable(self):
         print(
             f"disabled strategy {self.id} - {self.description} "
-            f"for {self.get_symbol} @ {self.market.quote.exchange.name}",
+            f"for {self.market.get_symbol()} @ {self.market.quote.exchange.name}",
             notice=True,
         )
         for dep in self.mixedstrategies_set:
