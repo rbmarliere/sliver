@@ -31,6 +31,14 @@ def aggregate_tweets(tweets, pos_bigrams, neg_bigrams, unigrams):
     return pos.sum() - neg.sum()
 
 
+class Hypnoxv2Bigram(db.BaseModel):
+    ...
+
+
+class Hypnoxv2Unigram(db.BaseModel):
+    ...
+
+
 class Hypnoxv2Indicator(db.BaseModel):
     indicator = peewee.ForeignKeyField(Indicator, primary_key=True, on_delete="CASCADE")
     score = peewee.DecimalField()
@@ -79,11 +87,11 @@ class Hypnoxv2Strategy(IStrategy):
         tweets = tweets.drop("id", axis=1)
         tweets = tweets.set_index("time")
 
-        with open(f"{Config().ETC_DIR}/20230412_labeled_unigrams_+35.tsv") as f:
-            unigrams = f.read().splitlines()
+        unigrams = pandas.read_csv(f"{Config().ETC_DIR}/unigrams.tsv", sep="\t")
+        unigrams = unigrams.loc[unigrams.label == 1].unigram.tolist()
 
         bigrams = pandas.read_csv(
-            f"{Config().ETC_DIR}/20230412_labeled_bigrams_+35.tsv", sep="\t"
+            f"{Config().ETC_DIR}/bigrams.tsv", sep="\t"
         ).set_index("bigram")
 
         pos_bigrams = bigrams[bigrams.label == 1]
