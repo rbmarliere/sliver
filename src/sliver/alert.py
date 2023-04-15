@@ -60,7 +60,8 @@ def telethon_call(entity_type):
                 pass
 
             finally:
-                client.disconnect()
+                if "client" in locals():
+                    client.disconnect()
 
         return inner
 
