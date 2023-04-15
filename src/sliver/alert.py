@@ -31,7 +31,9 @@ def telethon_call(entity_type):
                 if "entity" not in kwargs:
                     assert Config().TELEGRAM_CHANNEL
                     channel = Config().TELEGRAM_CHANNEL
-                    kwargs["entity"] = int(channel)
+                    kwargs["entity"] = channel
+
+                kwargs["entity"] = int(kwargs["entity"])
 
                 if entity_type == "bot":
                     assert Config().TELEGRAM_BOT_TOKEN
