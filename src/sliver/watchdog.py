@@ -44,7 +44,7 @@ class Watchdog(metaclass=WatchdogMeta):
 
         self._logger = (stdout, stderr)
 
-    def print(self, message=None, exception=None):
+    def print(self, message=None, exception=None, notice=False):
         stdout = self.logger[0]
         stderr = self.logger[1]
 
@@ -54,8 +54,9 @@ class Watchdog(metaclass=WatchdogMeta):
                 message = f"{message} {exception_msg}"
             else:
                 message = exception_msg
-
             stderr.exception(exception, exc_info=True)
+
+        if exception or notice:
             send_message(message=message)
 
         stdout.info(message)
