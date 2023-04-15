@@ -65,7 +65,10 @@ class UserStrategy(db.BaseModel):
         return u_st
 
     def disable(self):
-        print(f"disabling user's strategy {self}...")
+        print(
+            f"disabled user {self.user.email} strategy {self.strategy.description}",
+            notice=True,
+        )
         self.user.send_message(f"disabled strategy {self.strategy.id}")
         self.active = False
         self.save()

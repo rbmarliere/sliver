@@ -13,7 +13,11 @@ class Credential(db.BaseModel):
     active = peewee.BooleanField(default=True)
 
     def disable(self):
-        print(f"disabling credential {self}...")
+        print(
+            f"disabled credential {self} for exchange {self.exchange.name} "
+            f"of user {self.user.email}",
+            notice=True,
+        )
         self.user.send_message(f"disabled credential for exchange {self.exchange.name}")
         self.active = False
         self.save()

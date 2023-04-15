@@ -207,7 +207,11 @@ class BaseStrategy(db.BaseModel):
         self.save()
 
     def disable(self):
-        print(f"disabling strategy {self}")
+        print(
+            f"disabled strategy {self.id} - {self.description} "
+            f"for {self.get_symbol} @ {self.market.quote.exchange.name}",
+            notice=True,
+        )
         for dep in self.mixedstrategies_set:
             dep.mixer.disable()
         self.active = False
