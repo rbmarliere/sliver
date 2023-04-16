@@ -1,6 +1,7 @@
 import { Strategy } from "../strategy";
 import { BBStrategy } from "./bb";
 import { DD3Strategy } from "./dd3";
+import { ElNinoStrategy } from "./elnino";
 import { HypnoxStrategy } from "./hypnox";
 import { Hypnoxv2Strategy } from "./hypnoxv2";
 import { ManualStrategy } from "./manual";
@@ -21,6 +22,7 @@ export enum StrategyType {
   SWAPPERBOX = 7,
   WINDRUNNER = 8,
   HYPNOXV2 = 9,
+  ELNINO = 10,
 }
 
 export function StrategyFactory(base: Strategy): Strategy {
@@ -45,6 +47,8 @@ export function StrategyFactory(base: Strategy): Strategy {
       return WindrunnerStrategy.fromData(base);
     case StrategyType.HYPNOXV2:
       return Hypnoxv2Strategy.fromData(base);
+    case StrategyType.ELNINO:
+      return ElNinoStrategy.fromData(base);
     default:
       return base;
   }
