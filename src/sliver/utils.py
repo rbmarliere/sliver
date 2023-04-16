@@ -180,10 +180,10 @@ def parse_field_type(field_type):
         return fields.Boolean
     elif field_type == datetime.datetime:
         return fields.DateTime(dt_format="iso8601")
-    elif field_type == float or field_type == D:
+    elif field_type == float or field_type == D or field_type == int:
         return fields.Float
-    elif field_type == int:
-        return fields.Integer
+    # elif field_type == int:
+    #     return fields.Integer
     elif field_type == str:
         return fields.String
     else:
