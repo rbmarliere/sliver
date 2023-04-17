@@ -10,11 +10,10 @@ from sliver.market import Market
 from sliver.print import print
 from sliver.strategies.signals import StrategySignals
 from sliver.strategy import BaseStrategy
-from sliver.user import User
 
 
 class UserStrategy(db.BaseModel):
-    user = peewee.ForeignKeyField(User)
+    user = peewee.DeferredForeignKey("User", null=True)
     strategy = peewee.ForeignKeyField(BaseStrategy)
     active = peewee.BooleanField(default=False)
 
