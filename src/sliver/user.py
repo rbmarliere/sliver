@@ -8,6 +8,7 @@ from sliver.credential import Credential
 from sliver.exceptions import DisablingError
 from sliver.exchange_asset import ExchangeAsset
 from sliver.exchanges.factory import ExchangeFactory
+from sliver.position import Position
 
 
 class User(db.BaseModel):
@@ -70,8 +71,6 @@ class User(db.BaseModel):
                 bal.delete_instance()
 
     def get_inventory(self):
-        from sliver.position import Position
-
         self.sync_balances()
 
         balances = []

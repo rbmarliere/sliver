@@ -15,7 +15,6 @@ from sliver.price import Price
 from sliver.print import print
 from sliver.strategies.signals import StrategySignals
 from sliver.trade_engine import TradeEngine
-from sliver.user import User
 from sliver.utils import (
     get_next_refresh,
     get_timeframe_in_seconds,
@@ -30,7 +29,7 @@ class BaseStrategy(db.BaseModel):
     class Meta:
         table_name = "strategy"
 
-    creator = peewee.ForeignKeyField(User)
+    creator = peewee.DeferredForeignKey("User", null=True)
     description = peewee.TextField()
     type = peewee.IntegerField(default=0)
     active = peewee.BooleanField(default=False)
