@@ -8,11 +8,13 @@ interface ElNinoIndicator extends Indicator {
 
 export class ElNinoStrategy extends Strategy {
   override indicators: ElNinoIndicator | null = null;
-  elnino_ma_offset: number = 0;
   elnino_ma_period: number = 9;
   elnino_use_ema: boolean = false;
-  elnino_rsi_upper_threshold: number = 70;
-  elnino_rsi_lower_threshold: number = 30;
+  elnino_buy_ma_offset: number = 0;
+  elnino_buy_rsi_min_threshold: number = 30;
+  elnino_buy_rsi_max_threshold: number = 70;
+  elnino_sell_ma_offset: number = 0;
+  elnino_sell_rsi_min_threshold: number = 70;
   elnino_rsi_period: number = 14;
   elnino_rsi_scalar: number = 14;
 

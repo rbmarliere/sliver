@@ -18,11 +18,13 @@ class ElNinoIndicator(db.BaseModel):
 
 
 class ElNinoStrategy(IStrategy):
-    elnino_ma_offset = peewee.DecimalField(default=0)
     elnino_ma_period = peewee.IntegerField(default=9)
     elnino_use_ema = peewee.BooleanField(default=False)
-    elnino_rsi_upper_threshold = peewee.DecimalField(default=70)
-    elnino_rsi_lower_threshold = peewee.DecimalField(default=30)
+    elnino_buy_ma_offset = peewee.DecimalField(default=0)
+    elnino_buy_rsi_min_threshold = peewee.DecimalField(default=30)
+    elnino_buy_rsi_max_threshold = peewee.DecimalField(default=70)
+    elnino_sell_ma_offset = peewee.DecimalField(default=0)
+    elnino_sell_rsi_min_threshold = peewee.DecimalField(default=30)
     elnino_rsi_period = peewee.IntegerField(default=14)
     elnino_rsi_scalar = peewee.IntegerField(default=100)
 
@@ -64,7 +66,12 @@ class ElNinoStrategy(IStrategy):
 
         indicators.ma.fillna(method="bfill", inplace=True)
 
-        indicators.ma *= 1 + (float(self.elnino_ma_offset) / 100)
+        indicators["buy_ma"] = indicators.ma * (
+            1 + (float(self.elnino_buy_ma_offset) / 100)
+        )
+        indicators["sell_ma"] = indicators.ma * (
+            1 + (float(self.elnino_sell_ma_offset) / 100)
+        )
 
         indicators["rsi"] = RSI(
             indicators.close,
@@ -75,12 +82,15 @@ class ElNinoStrategy(IStrategy):
         indicators.rsi.fillna(method="bfill", inplace=True)
 
         buy_rule = (
-            (indicators.close > indicators.ma)
-            & (indicators.rsi > self.elnino_rsi_lower_threshold)
-            & (indicators.rsi < self.elnino_rsi_upper_threshold)
+            (indicators.close >= indicators.ma)
+            & (indicators.close <= indicators.buy_ma)
+            & (indicators.rsi >= self.elnino_buy_rsi_min_threshold)
+            & (indicators.rsi <= self.elnino_buy_rsi_max_threshold)
         )
-        sell_rule = (indicators.close < indicators.ma) & (
-            indicators.rsi > self.elnino_rsi_upper_threshold
+        sell_rule = (
+            (indicators.close >= indicators.ma)
+            & (indicators.close >= indicators.sell_ma)
+            & (indicators.rsi >= self.elnino_sell_rsi_min_threshold)
         )
 
         indicators["signal"] = NEUTRAL
