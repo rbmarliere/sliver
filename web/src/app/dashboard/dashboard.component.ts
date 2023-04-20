@@ -27,12 +27,7 @@ export class DashboardComponent implements OnInit {
 
   displayedColumns: string[] = [
     'ticker',
-    // 'free',
-    // 'used',
     'total',
-    // 'free_value',
-    // 'used_value',
-    'total_value',
   ];
 
   loadingInv: Boolean = false;
