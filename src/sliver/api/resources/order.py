@@ -29,7 +29,7 @@ def get_orders_df(query):
     orders = pandas.DataFrame(query.dicts())
 
     if orders.empty:
-        return orders.to_dict("records")
+        return orders
 
     orders["market"] = orders.base_ticker + "/" + orders.quote_ticker
 
