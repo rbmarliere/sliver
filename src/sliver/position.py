@@ -768,15 +768,25 @@ class Position(db.BaseModel):
             )
 
         cost_diff = self.target_cost - self.entry_cost
-        amount_diff = self.target_amount - self.entry_amount
         cost_diff_amount = market.base.div(cost_diff, last_price)
+        amount_diff = self.target_amount - self.entry_amount
         amount_diff_cost = market.base.format(amount_diff) * last_price
 
         if self.is_opening() and (
-            cost_diff <= market.cost_min
-            or cost_diff_amount <= market.amount_min
-            or amount_diff <= market.amount_min
-            or amount_diff_cost <= market.cost_min
+            (
+                strategy.side == "long"
+                and (
+                    cost_diff <= market.cost_min
+                    or cost_diff_amount <= market.amount_min
+                )
+            )
+            or (
+                strategy.side == "short"
+                and (
+                    amount_diff <= market.amount_min
+                    or amount_diff_cost <= market.cost_min
+                )
+            )
         ):
             self.status = "open"
             print("position is now open")
