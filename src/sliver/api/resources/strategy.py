@@ -6,13 +6,11 @@ from flask_restful import Resource, marshal, reqparse
 import sliver.database as db
 from sliver.api.exceptions import (
     InvalidArgument,
-    MarketAlreadySubscribed,
     StrategyDoesNotExist,
     StrategyIsActive,
     StrategyMixedIn,
     StrategyNotEditable,
 )
-from sliver.exceptions import MarketAlreadySubscribed as BaseMarketAlreadySubscribed
 from sliver.indicator import Indicator
 from sliver.strategies.factory import StrategyFactory, StrategyTypes
 from sliver.strategies.mixer import MixedStrategies
@@ -75,7 +73,7 @@ class Strategy(Resource):
                 raise StrategyDoesNotExist
             if strategy.creator != user:
                 raise StrategyNotEditable
-            if UserStrategy.get_active_strategy(strategy).count() > 0:
+            if strategy.userstrategy_set.count() > 0:
                 raise StrategyIsActive
             if strategy.mixedstrategies_set.count() > 0:
                 raise StrategyMixedIn
@@ -111,8 +109,6 @@ class Strategy(Resource):
                 strategy.signal = strategy.get_signal()
 
                 return marshal(strategy, strategy.get_fields())
-        except BaseMarketAlreadySubscribed:
-            raise MarketAlreadySubscribed
         except KeyError:
             pass
 
@@ -129,8 +125,6 @@ class Strategy(Resource):
                 strategy.signal = strategy.get_signal()
 
                 return marshal(strategy, strategy.get_fields())
-        except BaseMarketAlreadySubscribed:
-            raise MarketAlreadySubscribed
         except KeyError:
             pass
 
