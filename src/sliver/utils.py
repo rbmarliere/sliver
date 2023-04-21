@@ -11,7 +11,7 @@ from flask_restful import fields
 
 from sliver.config import Config
 
-nltk.download("wordnet")
+nltk.download("wordnet", quiet=True)
 
 
 def clean_text(text):
