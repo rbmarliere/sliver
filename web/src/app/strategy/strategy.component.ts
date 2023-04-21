@@ -74,6 +74,7 @@ export class StrategyComponent implements OnInit {
     this.form.get('id')?.disable();
     this.form.get('timeframe')?.disable();
     this.form.get('signal')?.disable();
+    this.form.get('side')?.disable();
     this.form.get('market_id')?.disable();
     this.form.get('type')?.disable();
 
@@ -102,6 +103,7 @@ export class StrategyComponent implements OnInit {
       this.form.get('timeframe')?.enable();
       this.form.get('market_id')?.enable();
       this.form.get('type')?.enable();
+      this.form.get('side')?.enable();
     }
   }
 

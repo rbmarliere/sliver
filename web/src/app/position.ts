@@ -6,6 +6,8 @@ export interface Position {
   market: string;
   strategy_id: number;
   status: string;
+  side: string;
+  target_amount: number;
   target_cost: number;
   entry_cost: number;
   entry_amount: number;
@@ -42,6 +44,8 @@ export function getPositions(indicators: Indicator, stopEngine: Engine | null): 
     market: "",
     strategy_id: 0,
     status: "closed",
+    side: "long",
+    target_amount: 0,
     target_cost: 0,
     entry_cost: 0,
     entry_amount: 0,
