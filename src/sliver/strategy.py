@@ -40,6 +40,7 @@ class BaseStrategy(db.BaseModel):
     buy_engine = peewee.ForeignKeyField(TradeEngine)
     sell_engine = peewee.ForeignKeyField(TradeEngine)
     stop_engine = peewee.ForeignKeyField(TradeEngine, null=True)
+    side = peewee.TextField(default="long")
 
     @property
     def symbol(self):
@@ -62,8 +63,8 @@ class BaseStrategy(db.BaseModel):
         return (
             cls.get_active()
             .where(cls.next_refresh < datetime.datetime.utcnow())
-            .order_by(cls.next_refresh)
             .order_by(cls.type == 4)  # MIXER
+            .order_by(cls.next_refresh)
         )
 
     @staticmethod
@@ -71,6 +72,7 @@ class BaseStrategy(db.BaseModel):
         argp = reqparse.RequestParser()
         argp.add_argument("description", type=str, required=True)
         argp.add_argument("type", type=int, required=True)
+        argp.add_argument("side", type=str, required=True)
         argp.add_argument("market_id", type=int, required=True)
         argp.add_argument("timeframe", type=str, required=True)
         argp.add_argument("buy_engine_id", type=int, required=True)
@@ -87,6 +89,7 @@ class BaseStrategy(db.BaseModel):
             "exchange": fields.String,
             "description": fields.String,
             "type": fields.Integer,
+            "side": fields.String,
             "active": fields.Boolean,
             "signal": fields.Integer,
             "market_id": fields.Integer,
@@ -208,7 +211,7 @@ class BaseStrategy(db.BaseModel):
     def disable(self):
         print(
             f"disabled strategy {self.id} - {self.description} "
-            f"for {self.market.get_symbol()} @ {self.market.quote.exchange.name}",
+            f"for {self.symbol} @ {self.market.quote.exchange.name}",
             notice=True,
         )
         for dep in self.mixedstrategies_set:
@@ -262,7 +265,8 @@ class IStrategy(db.BaseModel):
     def refresh(self):
         print("===========================================")
         print(f"refreshing strategy {self}")
-        print(f"market is {self.market.get_symbol()} {self.market}")
+        print(f"market is {self.symbol} [{self.market}]")
+        print(f"side is {self.side}")
         print(f"timeframe is {self.timeframe}")
         print(f"exchange is {self.market.base.exchange.name}")
         print(f"type is {self.type}")
@@ -278,7 +282,7 @@ class IStrategy(db.BaseModel):
             with db.connection.atomic():
                 self.refresh_indicators(pending)
 
-        print(f"signal is {self.get_signal().name}")
+        print(f"signal is {self.get_signal()}")
 
         self.postpone()
 

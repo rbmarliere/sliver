@@ -1,3 +1,5 @@
+from decimal import Decimal as D
+
 import peewee
 
 import sliver.database as db
@@ -5,10 +7,12 @@ from sliver.alert import get_updates, send_user_message
 from sliver.asset import Asset
 from sliver.balance import Balance
 from sliver.credential import Credential
-from sliver.exceptions import DisablingError
+from sliver.exceptions import AuthenticationError, DisablingError
 from sliver.exchange_asset import ExchangeAsset
 from sliver.exchanges.factory import ExchangeFactory
 from sliver.position import Position
+from sliver.print import print
+from sliver.user_strategy import UserStrategy
 
 
 class User(db.BaseModel):
@@ -38,6 +42,19 @@ class User(db.BaseModel):
             .order_by(Asset.ticker)
         )
 
+    def get_exchange_balance(self, exchange_asset, sync=False):
+        if sync:
+            cred = self.get_active_credential(exchange_asset.exchange).get()
+            exchange = ExchangeFactory.from_credential(cred)
+            exchange.sync_user_balance(self)
+        try:
+            return Balance.get(user_id=self.id, asset_id=exchange_asset.id)
+        except Balance.DoesNotExist:
+            raise DisablingError(
+                f"(User {self.email}) no balance for "
+                f"{exchange_asset.asset.ticker} on {exchange_asset.exchange.name}"
+            )
+
     def is_subscribed(self, strategy_id):
         for u_st in self.userstrategy_set:
             if u_st.strategy_id == strategy_id:
@@ -61,9 +78,12 @@ class User(db.BaseModel):
     def sync_balances(self):
         active_exchanges = []
         for cred in self.credential_set.where(Credential.active):
-            exchange = ExchangeFactory.from_credential(cred)
-            exchange.sync_user_balance(self)
-            active_exchanges.append(exchange.id)
+            try:
+                exchange = ExchangeFactory.from_credential(cred)
+                exchange.sync_user_balance(self)
+                active_exchanges.append(exchange.id)
+            except AuthenticationError:
+                cred.disable()
 
         # delete inactive balances
         for bal in self.balance_set:
@@ -74,83 +94,102 @@ class User(db.BaseModel):
         self.sync_balances()
 
         balances = []
-        inv_free_val = inv_used_val = inv_total_val = 0
-
         for asset in Asset.select():
             balance = self.get_balance(asset)
             balances.append(balance)
-            inv_free_val += balance["free_value"]
-            inv_used_val += balance["used_value"]
-            inv_total_val += balance["total_value"]
 
-        inventory = {}
-        inventory["balances"] = sorted(
-            balances, key=lambda k: k["total_value"], reverse=True
-        )
-        inventory["free_value"] = inv_free_val
-        inventory["used_value"] = inv_used_val
-        inventory["total_value"] = inv_total_val
-
-        inventory["positions_reserved"] = 0
-        inventory["positions_value"] = 0
-        for pos in Position.get_open_user_positions(self):
-            pos_asset = pos.user_strategy.strategy.market.quote
-            # TODO positions_reserved could be other than USDT
-            inventory["positions_reserved"] += pos_asset.format(pos.target_cost)
-            inventory["positions_value"] += pos_asset.format(
-                pos.entry_cost - pos.exit_cost
-            )
-
-        inventory["net_liquid"] = (
-            inventory["total_value"] - inventory["positions_reserved"]
-        )
-
-        inventory["max_risk"] = inventory["net_liquid"] * self.max_risk
-
-        return inventory
-
-    def get_exchange_balance(self, exchange_asset, sync=None):
-        if sync:
-            cred = self.get_active_credential(exchange_asset.exchange).get()
-            exchange = ExchangeFactory.from_credential(cred)
-            exchange.sync_user_balance(self)
-        try:
-            return Balance.get(user_id=self.id, asset_id=exchange_asset.id)
-        except Balance.DoesNotExist:
-            raise DisablingError(
-                f"(User {self.email}) no balance for "
-                f"{exchange_asset.asset.ticker} on {exchange_asset.exchange.name}"
-            )
+        return {"balances": balances}
 
     def get_balance(self, asset):
         balance = {
             "ticker": asset.ticker,
-            "free": 0,
-            "used": 0,
             "total": 0,
-            "free_value": 0,
-            "used_value": 0,
-            "total_value": 0,
         }
 
         for bal in self.get_balances_by_asset(asset):
-            if bal.total_value == 0:
-                continue
-
-            asset = bal.asset.asset
-
-            free = bal.asset.format(bal.free)
-            used = bal.asset.format(bal.used)
             total = bal.asset.format(bal.total)
-            balance["free"] += free
-            balance["used"] += used
             balance["total"] += total
 
-            free_val = bal.value_asset.format(bal.free_value)
-            used_val = bal.value_asset.format(bal.used_value)
-            total_val = bal.value_asset.format(bal.total_value)
-            balance["free_value"] += free_val
-            balance["used_value"] += used_val
-            balance["total_value"] += total_val
-
         return balance
+
+    def get_free_balances(self, strategy):
+        base = strategy.market.base
+        base_balance = self.get_exchange_balance(base).total
+
+        quote = strategy.market.quote
+        quote_balance = self.get_exchange_balance(quote).total
+
+        print(f"base: {base.print(base_balance)}")
+        print(f"quote: {quote.print(quote_balance)}")
+
+        b_count = 0
+        q_count = 0
+
+        for u_st in UserStrategy.get_by_exchange(self, quote.exchange):
+            strat = u_st.strategy
+            if strat == strategy:
+                continue
+
+            pos = Position.get_open_by_user_strategy(u_st).get_or_none()
+
+            if pos is None:
+                if strat.market.quote == quote:
+                    q_count += 1
+
+                if strat.market.base == base:
+                    b_count += 1
+
+            else:
+                if strategy.side == "long":
+                    if (strat.side == "long" and strat.market.quote == quote) or (
+                        strat.side == "short" and strat.market.base == quote
+                    ):
+                        if strat.side == "long":
+                            base_balance -= pos.entry_amount
+                            quote_balance -= pos.target_cost
+
+                        elif strat.side == "short":
+                            base_balance -= pos.entry_cost
+                            quote_balance -= pos.target_amount
+
+                    if (strat.side == "long" and strat.market.quote == base) or (
+                        strat.side == "short" and strat.market.base == base
+                    ):
+                        if strat.side == "long":
+                            base_balance -= pos.target_cost
+                            quote_balance -= pos.entry_amount
+
+                        elif strat.side == "short":
+                            base_balance -= pos.target_amount
+                            quote_balance -= pos.entry_cost
+
+                elif strategy.side == "short":
+                    if (strat.side == "long" and strat.market.quote == base) or (
+                        strat.side == "short" and strat.market.base == base
+                    ):
+                        if strat.side == "long":
+                            base_balance -= pos.target_cost
+                            quote_balance -= pos.entry_amount
+
+                        elif strat.side == "short":
+                            base_balance -= pos.target_amount
+                            quote_balance -= pos.entry_cost
+
+                    if (strat.side == "long" and strat.market.quote == quote) or (
+                        strat.side == "short" and strat.market.base == quote
+                    ):
+                        if strat.side == "long":
+                            base_balance -= pos.entry_amount
+                            quote_balance -= pos.target_cost
+
+                        elif strat.side == "short":
+                            base_balance -= pos.entry_cost
+                            quote_balance -= pos.target_amount
+
+        base_balance /= b_count + 1
+        quote_balance /= q_count + 1
+
+        base_balance = max(D(base_balance), D(0))
+        quote_balance = max(D(quote_balance), D(0))
+
+        return base_balance, quote_balance

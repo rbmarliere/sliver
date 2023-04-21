@@ -1,3 +1,4 @@
+import datetime
 import time
 
 from sliver.alert import send_message
@@ -9,8 +10,8 @@ from sliver.exceptions import (
 )
 from sliver.position import Position
 from sliver.strategies.factory import StrategyFactory
+from sliver.strategies.signals import StrategySignals
 from sliver.strategy import BaseStrategy
-from sliver.user_strategy import UserStrategy
 from sliver.utils import get_logger
 
 
@@ -116,7 +117,7 @@ class Watchdog(metaclass=WatchdogMeta):
             self.position = position
             self.user_strat = position.user_strategy
 
-            stopped = position.check_stops()
+            stopped = position.refresh_stops()
             if stopped:
                 position.refresh()
 
@@ -129,20 +130,39 @@ class Watchdog(metaclass=WatchdogMeta):
             strategy = StrategyFactory.from_base(strategy)
 
             self.strategy = strategy
-
             strategy.refresh()
-
+            signal = strategy.get_signal()
             self.strategy = None
 
-            self.refresh_pending_users(UserStrategy.get_active_strategy(strategy))
+            for user_strat in strategy.userstrategy_set:
+                if not user_strat.active:
+                    continue
+
+                self.user_strat = user_strat
+
+                self.print("...........................................")
+                self.print(f"refreshing user {user_strat.user}")
+
+                pos = Position.get_open_by_user_strategy(user_strat).get_or_none()
+
+                if pos:
+                    pos.next_refresh = datetime.datetime.utcnow()
+                    pos.save()
+                    self.user_strat = None
+
+                else:
+                    if (strategy.side == "long" and signal == StrategySignals.BUY) or (
+                        strategy.side == "short" and signal == StrategySignals.SELL
+                    ):
+                        Position.open(user_strat)
+
+                    self.user_strat = None
 
     @run
     def refresh_pending_users(self, users):
         for user_strat in users:
             self.user_strat = user_strat
-
             user_strat.refresh()
-
             self.user_strat = None
 
     @run
@@ -150,8 +170,6 @@ class Watchdog(metaclass=WatchdogMeta):
         for position in Position.get_pending():
             self.position = position
             self.user_strat = position.user_strategy
-
             position.refresh()
-
             self.user_strat = None
             self.position = None
