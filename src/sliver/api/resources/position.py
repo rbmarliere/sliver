@@ -16,6 +16,8 @@ pos_fields = {
     "market": fields.String,
     "strategy_id": fields.Integer,
     "status": fields.String,
+    "side": fields.String,
+    "target_amount": fields.Float,
     "target_cost": fields.Float,
     "entry_cost": fields.Float,
     "entry_amount": fields.Float,
@@ -49,6 +51,11 @@ def get_positions_df(query):
 
     base_precision = D("10") ** (D("-1") * positions.base_precision)
     quote_precision = D("10") ** (D("-1") * positions.quote_precision)
+
+    positions.target_amount = positions.target_amount * quote_precision
+    positions.target_amount = positions.apply(
+        lambda x: quantize(x, "target_amount", "amount_precision"), axis=1
+    )
 
     positions.target_cost = positions.target_cost * quote_precision
     positions.target_cost = positions.apply(
