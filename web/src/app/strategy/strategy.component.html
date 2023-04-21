@@ -10,23 +10,14 @@
 
         <div class="fields">
 
-          <mat-form-field *ngIf="strategy.id > 0">
-            <mat-label>Id</mat-label>
-            <input matInput formControlName="id" autocomplete="off" />
-          </mat-form-field>
+          <!-- <mat-form-field *ngIf="strategy.id > 0"> -->
+          <!--   <mat-label>Id</mat-label> -->
+          <!--   <input matInput formControlName="id" autocomplete="off" /> -->
+          <!-- </mat-form-field> -->
 
           <mat-form-field>
             <mat-label>Description</mat-label>
             <input matInput formControlName="description" required autocomplete="off" />
-          </mat-form-field>
-
-          <mat-form-field appearance="fill" *ngIf="strategy.id">
-            <mat-label>Signal</mat-label>
-            <mat-select formControlName="signal">
-              <mat-option [value]="-1"> Sell </mat-option>
-              <mat-option [value]="0"> Neutral </mat-option>
-              <mat-option [value]="1"> Buy </mat-option>
-            </mat-select>
           </mat-form-field>
 
           <mat-form-field appearance="fill">
@@ -45,6 +36,16 @@
                 [{{ market.id }}] {{ market.exchange_name }} - {{ market.symbol }}
               </mat-option>
             </mat-select>
+            <mat-hint>Base/Quote</mat-hint>
+          </mat-form-field>
+
+          <mat-form-field appearance="fill">
+            <mat-label>Side</mat-label>
+            <mat-select formControlName="side">
+              <mat-option value="long"> Long </mat-option>
+              <mat-option value="short"> Short </mat-option>
+            </mat-select>
+            <mat-hint>Long maximizes quote</mat-hint>
           </mat-form-field>
 
           <mat-form-field appearance="fill">
@@ -83,6 +84,16 @@
               </mat-option>
             </mat-select>
           </mat-form-field>
+
+          <mat-form-field appearance="fill" *ngIf="strategy.id">
+            <mat-label>Signal</mat-label>
+            <mat-select formControlName="signal">
+              <mat-option [value]="-1"> Sell </mat-option>
+              <mat-option [value]="0"> Neutral </mat-option>
+              <mat-option [value]="1"> Buy </mat-option>
+            </mat-select>
+          </mat-form-field>
+
         </div>
 
         <div class="fields" *ngIf="strategy.type == StrategyType.HYPNOX">

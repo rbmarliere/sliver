@@ -7,6 +7,7 @@ import { getMaxSeriesDrawdown, msToString, variance } from './utils';
 export class Strategy {
   indicators: Indicator | null = null;
   id: number = 0;
+  side: string = '';
   symbol: string = '';
   exchange: string = '';
   description: string = '';
