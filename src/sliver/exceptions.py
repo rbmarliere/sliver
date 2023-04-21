@@ -12,3 +12,7 @@ class PostponingError(BaseError):
 
 class MarketAlreadySubscribed(BaseError):
     ...
+
+
+class AuthenticationError(BaseError):
+    ...

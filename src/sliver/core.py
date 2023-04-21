@@ -11,8 +11,8 @@ from sliver.credential import Credential
 from sliver.balance import Balance
 from sliver.indicator import Indicator
 from sliver.strategy import BaseStrategy
-from sliver.user import User
 from sliver.user_strategy import UserStrategy
+from sliver.user import User
 from sliver.order import Order
 from sliver.position import Position
 

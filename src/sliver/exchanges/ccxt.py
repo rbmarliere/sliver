@@ -7,7 +7,7 @@ import pandas
 from sliver.asset import Asset
 from sliver.balance import Balance
 from sliver.config import Config
-from sliver.exceptions import DisablingError, PostponingError
+from sliver.exceptions import DisablingError, PostponingError, AuthenticationError
 from sliver.exchange import Exchange
 from sliver.exchange_asset import ExchangeAsset
 from sliver.order import Order
@@ -58,7 +58,10 @@ class CCXT(Exchange):
                 time.sleep(5)
                 return inner(self, *args, **kwargs)
 
-            except (ccxt.AuthenticationError, ccxt.ExchangeError) as e:
+            except ccxt.AuthenticationError as e:
+                raise AuthenticationError("ccxt authentication error", e)
+
+            except ccxt.ExchangeError as e:
                 raise DisablingError("ccxt error", e)
 
             except (ccxt.OnMaintenance, ccxt.NetworkError) as e:
@@ -137,9 +140,12 @@ class CCXT(Exchange):
             return False
 
     @api_call
-    def api_create_order(self, symbol, type, side, amount, price=None):
+    def api_create_order(self, symbol, type, side, amount, price):
         try:
-            new_order = self._api.create_order(symbol, type, side, amount, price)
+            if type == "market":
+                new_order = self._api.create_order(symbol, type, side, amount)
+            else:
+                new_order = self._api.create_order(symbol, type, side, amount, price)
 
             return new_order["id"]
 
@@ -228,11 +234,12 @@ class CCXT(Exchange):
 
         if order.id or order.type == "market":
             print(f"syncing {order.side} order {oid}")
-            print(f"filled: {market.base.print(filled)}")
-            implicit_cost = market.base.format(amount) * order.price
+            print(f"filled: {market.base.print(order.filled)}")
+            implicit_cost = market.base.format(order.amount) * order.price
             if implicit_cost > 0:
                 print(
-                    f"{market.base.print(amount)} @ {market.quote.print(price)}"
+                    f"{market.base.print(order.amount)} @ "
+                    f"{market.quote.print(order.price)} "
                     f"({market.quote.print(implicit_cost)})"
                 )
 
@@ -262,23 +269,9 @@ class CCXT(Exchange):
     def sync_user_balance(self, user):
         print(f"syncing user balance in exchange {self.name}")
 
-        value_ticker = "USDT"
-        value_asset, new = Asset.get_or_create(ticker=value_ticker)
-        if new:
-            print(f"saved asset {value_asset.ticker}")
-
         ex_bal = self.api_fetch_balance()
 
-        ex_val_asset, new = ExchangeAsset.get_or_create(
-            exchange=self, asset=value_asset
-        )
-        if new:
-            print(f"saved asset {ex_val_asset.asset.ticker} to exchange")
-
-        # for each exchange asset, update internal user balance
-        for ticker in ex_bal["free"]:
-            free = ex_bal["free"][ticker]
-            used = ex_bal["used"][ticker]
+        for ticker in ex_bal["total"]:
             total = ex_bal["total"][ticker]
 
             if not total:
@@ -292,39 +285,9 @@ class CCXT(Exchange):
             if new:
                 print(f"saved asset {ex_asset.asset.ticker}")
 
-            u_bal, new = Balance.get_or_create(
-                user=user, asset=ex_asset, value_asset=ex_val_asset
-            )
+            u_bal, new = Balance.get_or_create(user=user, asset=ex_asset)
             if new:
                 print(f"saved new balance {u_bal.id}")
 
-            u_bal.free = ex_asset.transform(free) if free else 0
-            u_bal.used = ex_asset.transform(used) if used else 0
-            u_bal.total = ex_asset.transform(total) if total else 0
-
-            symbol = asset.ticker + "/" + value_asset.ticker
-            p = self.api_fetch_last_price(symbol)
-            if p:
-                free_value = ex_val_asset.transform(p * free) if free else 0
-                used_value = ex_val_asset.transform(p * used) if used else 0
-                total_value = ex_val_asset.transform(p * total) if total else 0
-
-            if not p:
-                symbol = value_asset.ticker + "/" + asset.ticker
-                p = self.api_fetch_last_price(symbol)
-
-            if p:
-                free_value = ex_val_asset.transform(free / p) if free else 0
-                used_value = ex_val_asset.transform(used / p) if used else 0
-                total_value = ex_val_asset.transform(total / p) if total else 0
-
-            if not p:
-                free_value = u_bal.free
-                used_value = u_bal.used
-                total_value = u_bal.total
-
-            u_bal.free_value = free_value
-            u_bal.used_value = used_value
-            u_bal.total_value = total_value
-
+            u_bal.total = ex_asset.transform(total)
             u_bal.save()

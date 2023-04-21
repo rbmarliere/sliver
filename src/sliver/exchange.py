@@ -1,5 +1,4 @@
 import time
-import datetime
 from abc import ABCMeta, abstractmethod
 
 import pandas
@@ -67,6 +66,11 @@ class Exchange(db.BaseModel):
 
     @api_call
     @abstractmethod
+    def api_fetch_last_price(self, symbol):
+        ...
+
+    @api_call
+    @abstractmethod
     def api_fetch_ohlcv(
         self, symbol, timeframe, since=None, limit=None, page_size=None
     ):
@@ -87,7 +91,7 @@ class Exchange(db.BaseModel):
 
     @api_call
     @abstractmethod
-    def api_create_order(self, symbol, type, side, amount, price=None):
+    def api_create_order(self, symbol, type, side, amount, price):
         # returns oid if order was created, None otherwise
         ...
 
