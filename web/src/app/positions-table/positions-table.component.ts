@@ -32,14 +32,13 @@ export class PositionsTableComponent implements OnInit {
           'strategy_id',
           'market',
           'status',
+          'side',
           'entry_amount',
           'entry_price',
           'exit_price',
           'exit_amount',
           'pnl',
-          'fee',
           'roi',
-          'stopped',
         ];
       }
 
