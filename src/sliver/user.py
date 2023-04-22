@@ -128,10 +128,14 @@ class User(db.BaseModel):
             pos = Position.get_open_by_user_strategy(u_st).get_or_none()
 
             if pos is None:
-                if strat.market.quote == quote:
+                if (strat.side == "long" and strat.market.quote == quote) or (
+                    strat.side == "short" and strat.market.base == quote
+                ):
                     q_count += 1
 
-                if strat.market.base == base:
+                if (strat.side == "long" and strat.market.quote == base) or (
+                    strat.side == "short" and strat.market.base == base
+                ):
                     b_count += 1
 
             else:
