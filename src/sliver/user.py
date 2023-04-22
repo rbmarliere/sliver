@@ -47,13 +47,8 @@ class User(db.BaseModel):
             cred = self.get_active_credential(exchange_asset.exchange).get()
             exchange = ExchangeFactory.from_credential(cred)
             exchange.sync_user_balance(self)
-        try:
-            return Balance.get(user_id=self.id, asset_id=exchange_asset.id)
-        except Balance.DoesNotExist:
-            raise DisablingError(
-                f"(User {self.email}) no balance for "
-                f"{exchange_asset.asset.ticker} on {exchange_asset.exchange.name}"
-            )
+
+        return Balance.get_or_create(user_id=self.id, asset_id=exchange_asset.id)[0]
 
     def is_subscribed(self, strategy_id):
         for u_st in self.userstrategy_set:
