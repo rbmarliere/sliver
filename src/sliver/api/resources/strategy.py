@@ -12,6 +12,7 @@ from sliver.api.exceptions import (
     StrategyNotEditable,
 )
 from sliver.indicator import Indicator
+from sliver.position import Position
 from sliver.strategies.factory import StrategyFactory, StrategyTypes
 from sliver.strategies.mixer import MixedStrategies
 from sliver.strategy import BaseStrategy as StrategyModel
@@ -143,6 +144,15 @@ class Strategy(Resource):
             args["active"] = old_strategy.active
             args["next_refresh"] = datetime.datetime.utcnow()
 
+            if (
+                args["buy_engine_id"] != old_strategy.buy_engine_id
+                or args["sell_engine_id"] != old_strategy.sell_engine_id
+                or args["stop_engine_id"] != old_strategy.stop_engine_id
+            ):
+                for p in Position.get_open().where(StrategyModel.id == strategy_id):
+                    p.next_refresh = datetime.datetime.utcnow()
+                    p.save()
+
             new_strategy = StrategyModel(**args)
             new_strategy.save()
 
@@ -196,7 +206,10 @@ class Strategy(Resource):
                 except KeyError:
                     pass
 
-            strategy.save()
+            try:
+                strategy.save()
+            except ValueError:
+                pass
 
             Indicator.delete().where(Indicator.strategy_id == strategy_id).execute()
 
