@@ -2,7 +2,7 @@ import { Component, Input } from '@angular/core';
 import { Engine } from '../engine';
 import { sliceIndicators } from '../indicator';
 import { Metrics } from '../metrics';
-import { getPositions, Position } from '../position';
+import { getLongPositions, getShortPositions, Position } from '../position';
 import { Strategy } from '../strategy';
 
 @Component({
@@ -48,7 +48,12 @@ export class IndicatorComponent {
     let endIdx = this.strategy.indicators!.time.findIndex((t) => t >= end);
     let indicators = sliceIndicators(this.strategy.indicators!, startIdx, endIdx);
 
-    this.positions = getPositions(indicators, this.stopEngine);
+    if (this.strategy.side == "long") {
+      this.positions = getLongPositions(indicators, this.stopEngine);
+    } else if (this.strategy.side == "short") {
+      this.positions = getShortPositions(indicators, this.stopEngine);
+    }
+
     this.backtestLog = this.strategy.getMetrics(this.positions, indicators);
   }
 
