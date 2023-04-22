@@ -51,6 +51,7 @@ def get_positions_df(query):
 
     base_precision = D("10") ** (D("-1") * positions.base_precision)
     quote_precision = D("10") ** (D("-1") * positions.quote_precision)
+    pnl_precision = D("10") ** (D("-1") * positions.pnl_precision)
 
     positions.target_amount = positions.target_amount * quote_precision
     positions.target_amount = positions.apply(
@@ -97,9 +98,12 @@ def get_positions_df(query):
         lambda x: quantize(x, "fee", "price_precision"), axis=1
     )
 
-    positions.pnl = positions.pnl * quote_precision
+    positions.pnl = positions.pnl * pnl_precision
     positions.pnl = positions.apply(
-        lambda x: quantize(x, "pnl", "price_precision"), axis=1
+        lambda x: quantize(
+            x, "pnl", "price_precision" if x.side == "long" else "amount_precision"
+        ),
+        axis=1,
     )
 
     positions.roi = positions.roi.apply(lambda x: f"{x:.4f}")

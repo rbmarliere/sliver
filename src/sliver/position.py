@@ -79,6 +79,11 @@ class Position(db.BaseModel):
                 quote_exchange_asset.precision.alias("quote_precision"),
                 Market.amount_precision,
                 Market.price_precision,
+                peewee.Case(
+                    None,
+                    [((BaseStrategy.side == "long"), quote_exchange_asset.precision)],
+                    base_exchange_asset.precision,
+                ).alias("pnl_precision"),
             )
             .join(UserStrategy)
             .join(BaseStrategy)
