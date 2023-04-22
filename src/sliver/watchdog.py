@@ -159,13 +159,6 @@ class Watchdog(metaclass=WatchdogMeta):
                     self.user_strat = None
 
     @run
-    def refresh_pending_users(self, users):
-        for user_strat in users:
-            self.user_strat = user_strat
-            user_strat.refresh()
-            self.user_strat = None
-
-    @run
     def refresh_pending_positions(self):
         for position in Position.get_pending():
             self.position = position

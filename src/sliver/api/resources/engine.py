@@ -1,7 +1,10 @@
+import datetime
+
 from flask_jwt_extended import jwt_required
 from flask_restful import Resource, fields, marshal_with, reqparse
 
 from sliver.api.exceptions import EngineDoesNotExist, EngineInUse, InvalidArgument
+from sliver.position import Position
 from sliver.strategy import BaseStrategy as Strategy
 from sliver.trade_engine import TradeEngine
 
@@ -95,6 +98,15 @@ class Engine(Resource):
             setattr(engine, k, v)
 
         engine.save()
+
+        for p in Position.get_open().where(
+            (Strategy.buy_engine_id == engine_id)
+            | (Strategy.sell_engine_id == engine_id)
+            | (Strategy.stop_engine_id == engine_id)
+        ):
+            p.next_refresh == datetime.datetime.utcnow()
+            p.save()
+
         return engine
 
     @marshal_with(fields)
