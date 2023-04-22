@@ -624,6 +624,7 @@ class Position(db.BaseModel):
 
         print("___________________________________________")
         print(f"refreshing {self.status} {strategy.side} position {self}")
+        print(f"user is {self.user_strategy.user}")
         print(f"strategy is {self.user_strategy.strategy}")
         print(f"last price: {strategy.market.quote.print(last_price)}")
         print(f"target cost is {market.quote.print(self.target_cost)}")
