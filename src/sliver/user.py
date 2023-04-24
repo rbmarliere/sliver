@@ -68,7 +68,7 @@ class User(db.BaseModel):
                     self.save()
 
         if self.telegram_chat_id:
-            send_user_message(entity=self.telegram_chat_id, message=message)
+            send_user_message(entity=int(self.telegram_chat_id), message=message)
 
     def sync_balances(self):
         active_exchanges = []
