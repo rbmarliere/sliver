@@ -116,7 +116,9 @@ class BaseStrategy(db.BaseModel):
 
     def get_signal(self):
         try:
-            signal = self.indicator_set.order_by(Indicator.price_id.desc()).get().signal
+            signal = (
+                self.indicator_set.join(Price).order_by(Price.time.desc()).get().signal
+            )
             return StrategySignals(signal)
         except Indicator.DoesNotExist:
             return StrategySignals.NEUTRAL
