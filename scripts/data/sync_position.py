@@ -1,8 +1,9 @@
 import argparse
 import sys
 
+from sliver.core import Position
+
 from sliver.exchanges.factory import ExchangeFactory
-from sliver.position import Position
 
 if __name__ == "__main__":
     argp = argparse.ArgumentParser()
