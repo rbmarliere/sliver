@@ -98,6 +98,8 @@ class SwapperBoxStrategy(IStrategy):
         messages.date = messages.date.dt.tz_localize(None)
         messages = messages.set_index("date")
 
+        indicators = indicators.set_index("time")
+
         new_row = pandas.DataFrame(index=[datetime.datetime.utcnow()])
         messages_plus = pandas.concat([messages, new_row])
 
@@ -116,9 +118,7 @@ class SwapperBoxStrategy(IStrategy):
         indicators.loc[indicators.index.isin(longs), "signal"] = BUY
         indicators.loc[indicators.index.isin(shorts), "signal"] = SELL
 
-        indicators.loc[
-            indicators.index.isin(indicators.index), "signal"
-        ] = indicators.signal
+        indicators = indicators.reset_index()
 
         Indicator.insert_many(
             indicators[["strategy", "price", "signal"]].to_dict("records")
