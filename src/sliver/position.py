@@ -577,7 +577,8 @@ class Position(db.BaseModel):
             self.entry_amount += order.filled
             self.fee += order.fee
             if self.entry_amount > 0:
-                self.entry_price = market.quote.div(self.entry_cost, self.entry_amount)
+                am = market.base.format(self.entry_amount)
+                self.entry_price = market.quote.div(self.entry_cost, am)
 
         elif (strategy.side == "long" and order.side == "sell") or (
             strategy.side == "short" and order.side == "buy"
@@ -586,7 +587,8 @@ class Position(db.BaseModel):
             self.exit_cost += order.cost
             self.fee += order.fee
             if self.exit_amount > 0:
-                self.exit_price = market.quote.div(self.exit_cost, self.exit_amount)
+                am = market.base.format(self.exit_amount)
+                self.exit_price = market.quote.div(self.exit_cost, am)
 
         self.save()
 
