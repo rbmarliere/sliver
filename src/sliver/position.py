@@ -94,6 +94,7 @@ class Position(db.BaseModel):
             .join(quote, on=(quote_exchange_asset.asset_id == quote.id))
             .where(UserStrategy.user == user)
             .where(Position.entry_cost > 0)
+            .where(Position.status != "deleted")
             .order_by(Position.id.desc())
         )
 
@@ -501,6 +502,13 @@ class Position(db.BaseModel):
         for o in self.get_open_orders():
             self.exchange.api_cancel_orders(symbol, oid=o.exchange_order_id)
         self.status = "stalled"
+        self.save()
+
+    def drop(self):
+        symbol = self.user_strategy.strategy.symbol
+        for o in self.get_open_orders():
+            self.exchange.api_cancel_orders(symbol, oid=o.exchange_order_id)
+        self.status = "deleted"
         self.save()
 
     def refresh_stops(self, last_price=None):
