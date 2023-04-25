@@ -76,7 +76,7 @@ class UserStrategy(db.BaseModel):
         self.active = False
         self.save()
 
-    def refresh(self):
+    def refresh(self, signal):
         if not self.active:
             return
 
@@ -90,8 +90,6 @@ class UserStrategy(db.BaseModel):
             pos.save()
 
         else:
-            signal = self.strategy.get_signal()
-
             if (self.strategy.side == "long" and signal == StrategySignals.BUY) or (
                 self.strategy.side == "short" and signal == StrategySignals.SELL
             ):
