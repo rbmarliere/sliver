@@ -72,7 +72,7 @@ class Strategy(Resource):
             strategy = StrategyModel.get_by_id(strategy_id)
             if strategy.deleted:
                 raise StrategyDoesNotExist
-            if strategy.creator != user:
+            if strategy.creator != user and user.id != 1:
                 raise StrategyNotEditable
             if strategy.userstrategy_set.count() > 0:
                 raise StrategyIsActive
@@ -133,7 +133,7 @@ class Strategy(Resource):
         except KeyError:
             pass
 
-        if old_strategy.creator != user:
+        if old_strategy.creator != user and user.id != 1:
             raise StrategyNotEditable
 
         strategy = StrategyFactory.from_base(old_strategy)
