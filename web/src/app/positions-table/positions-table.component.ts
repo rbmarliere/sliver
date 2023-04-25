@@ -1,5 +1,7 @@
 import { Component, Input, OnInit } from '@angular/core';
+import { DialogService } from '../dialog.service';
 import { Position } from '../position';
+import { PositionService } from '../position.service';
 
 @Component({
   selector: 'app-positions-table',
@@ -11,6 +13,11 @@ export class PositionsTableComponent implements OnInit {
   @Input() displayMode: string = '';
 
   displayedColumns: string[] = [];
+
+  constructor(
+    private positionService: PositionService,
+    private dialogService: DialogService,
+  ) { }
 
   ngOnInit(): void {
     this.displayedColumns = this.getDisplayedColumns(this.displayMode);
@@ -25,6 +32,7 @@ export class PositionsTableComponent implements OnInit {
           'strategy_id',
           'market',
           'status',
+          'actions',
         ];
       } else {
         return [
@@ -37,8 +45,8 @@ export class PositionsTableComponent implements OnInit {
           'entry_price',
           'exit_price',
           'exit_amount',
-          'pnl',
           'roi',
+          'actions',
         ];
       }
 
@@ -84,6 +92,16 @@ export class PositionsTableComponent implements OnInit {
       }
     }
 
+  }
+
+  deletePosition(position_id: number) {
+    this.dialogService.confirm('Are you sure you want to delete this position? All of its orders will also be erased.').subscribe((res) => {
+      if (res) {
+        this.positionService.deletePosition(position_id).subscribe({
+          next: () => location.reload(),
+        });
+      }
+    });
   }
 
 }

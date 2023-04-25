@@ -53,4 +53,9 @@ export class PositionService {
         map(this.transformDate)
       );
   }
+
+  deletePosition(position_id: number): Observable<any> {
+    return this.http.delete<any>(`v1/position/${position_id}`);
+  }
+
 }
