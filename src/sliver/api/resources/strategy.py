@@ -105,9 +105,11 @@ class Strategy(Resource):
                     user, old_strategy, subscribed=args["subscribed"]
                 )
 
+                if args["subscribed"]:
+                    old_strategy.next_refresh = datetime.datetime.utcnow()
+                    old_strategy.save()
+
                 strategy = StrategyFactory.from_base(old_strategy)
-                strategy.next_refresh = datetime.datetime.utcnow()
-                strategy.save()
                 strategy.subscribed = user.is_subscribed(strategy.id)
                 strategy.signal = strategy.get_signal()
 
