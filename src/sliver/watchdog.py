@@ -129,11 +129,12 @@ class Watchdog(metaclass=WatchdogMeta):
 
             self.strategy = strategy
             strategy.refresh()
+            signal = self.strategy.get_signal()
             self.strategy = None
 
             for user_strat in strategy.userstrategy_set:
                 self.user_strat = user_strat
-                user_strat.refresh()
+                user_strat.refresh(signal)
                 self.user_strat = None
 
     @run
