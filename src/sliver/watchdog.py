@@ -148,7 +148,6 @@ class Watchdog(metaclass=WatchdogMeta):
                 if pos:
                     pos.next_refresh = datetime.datetime.utcnow()
                     pos.save()
-                    self.user_strat = None
 
                 else:
                     if (strategy.side == "long" and signal == StrategySignals.BUY) or (
@@ -156,7 +155,7 @@ class Watchdog(metaclass=WatchdogMeta):
                     ):
                         Position.open(user_strat)
 
-                    self.user_strat = None
+                self.user_strat = None
 
     @run
     def refresh_pending_positions(self):

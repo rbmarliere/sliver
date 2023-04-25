@@ -39,7 +39,6 @@ class Position(db.BaseModel):
     roi = peewee.DecimalField(default=0)
     last_high = peewee.BigIntegerField(default=0)
     last_low = peewee.BigIntegerField(default=0)
-    stopped = peewee.BooleanField(default=False)  # TODO stopping, stopped status
 
     @classmethod
     def get_all(cls):
@@ -230,10 +229,16 @@ class Position(db.BaseModel):
         return self.status == "opening"
 
     def is_closing(self):
-        return self.status == "closing"
+        return self.status == "closing" or self.status == "stopping"
 
     def is_closed(self):
-        return self.status == "closed"
+        return self.status == "closed" or self.status == "stopped"
+
+    def is_stopping(self):
+        return self.status == "stopping"
+
+    def is_stopped(self):
+        return self.status == "stopped"
 
     def is_buying(self):
         strategy = self.user_strategy.strategy
@@ -340,7 +345,7 @@ class Position(db.BaseModel):
                 .order_by(Position.id.desc())
                 .get_or_none()
             )
-            if last_pos and last_pos.stopped:
+            if last_pos and last_pos.is_stopped():
                 c = datetime.datetime.utcnow() - last_pos.exit_time
                 if c < datetime.timedelta(minutes=cooldown):
                     print("cooled down, can't create position")
@@ -482,7 +487,7 @@ class Position(db.BaseModel):
 
         user.send_message(self.get_notice(prefix="stopped "))
 
-        self.stopped = True
+        self.status = "stopping"
         self.close(engine=engine)
 
         self.save()
@@ -662,7 +667,7 @@ class Position(db.BaseModel):
         market = strategy.market
         now = datetime.datetime.utcnow()
 
-        if self.stopped:
+        if self.is_stopping():
             engine = strategy.stop_engine
         elif self.is_buying():
             engine = strategy.buy_engine
