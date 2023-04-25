@@ -232,7 +232,11 @@ class Position(db.BaseModel):
         return self.status == "closing" or self.status == "stopping"
 
     def is_closed(self):
-        return self.status == "closed" or self.status == "stopped"
+        return (
+            self.status == "closed"
+            or self.status == "stopped"
+            or self.status == "stalled"
+        )
 
     def is_stopping(self):
         return self.status == "stopping"
@@ -490,6 +494,13 @@ class Position(db.BaseModel):
         self.status = "stopping"
         self.close(engine=engine)
 
+        self.save()
+
+    def stall(self):
+        symbol = self.user_strategy.strategy.symbol
+        for o in self.get_open_orders():
+            self.exchange.api_cancel_orders(symbol, oid=o.exchange_order_id)
+        self.status = "stalled"
         self.save()
 
     def refresh_stops(self, last_price=None):

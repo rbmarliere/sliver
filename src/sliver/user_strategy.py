@@ -41,10 +41,10 @@ class UserStrategy(db.BaseModel):
         u_st.active = subscribed
         u_st.save()
 
-        # if not u_st.active:
-        #     p = u_st.position
-        #     if p is not None:
-        #         p.stall()
+        if not u_st.active:
+            p = u_st.position
+            if p is not None:
+                p.stall()
 
         return u_st
 
