@@ -1,3 +1,5 @@
+import datetime
+
 import peewee
 
 import sliver.database as db
@@ -5,6 +7,7 @@ from sliver.exchange import Exchange
 from sliver.exchange_asset import ExchangeAsset
 from sliver.market import Market
 from sliver.print import print
+from sliver.strategies.signals import StrategySignals
 from sliver.strategy import BaseStrategy
 
 
@@ -34,22 +37,35 @@ class UserStrategy(db.BaseModel):
         if subscribed is None:
             subscribed = False
 
-        # if subscribed:
-        #     if (
-        #         cls.select()
-        #         .where(cls.active)
-        #         .where(cls.user == user)
-        #         .join(BaseStrategy)
-        #         .where(BaseStrategy.market == strategy.market)
-        #         .exists()
-        #     ):
-        #         raise MarketAlreadySubscribed
-
         u_st = cls.get_or_create(user=user, strategy=strategy)[0]
         u_st.active = subscribed
         u_st.save()
 
+        # if not u_st.active:
+        #     p = u_st.position
+        #     if p is not None:
+        #         p.stall()
+
         return u_st
+
+    @property
+    def position(self):
+        from sliver.position import Position
+
+        return Position.get_open_by_user_strategy(self).get_or_none()
+
+    def open_position(self):
+        from sliver.position import Position
+
+        if not self.active:
+            print("can't open position, user_strategy is not active")
+            return
+
+        if self.position:
+            print("can't open position, position already open")
+            return
+
+        Position.open(self)
 
     def disable(self):
         print(
@@ -59,3 +75,24 @@ class UserStrategy(db.BaseModel):
         self.user.send_message(f"disabled strategy {self.strategy.id}")
         self.active = False
         self.save()
+
+    def refresh(self):
+        if not self.active:
+            return
+
+        print("...........................................")
+        print(f"refreshing user {self.user}")
+
+        pos = self.position
+
+        if pos:
+            pos.next_refresh = datetime.datetime.utcnow()
+            pos.save()
+
+        else:
+            signal = self.strategy.get_signal()
+
+            if (self.strategy.side == "long" and signal == StrategySignals.BUY) or (
+                self.strategy.side == "short" and signal == StrategySignals.SELL
+            ):
+                self.open_position()
