@@ -42,8 +42,8 @@
           <mat-form-field appearance="fill">
             <mat-label>Side</mat-label>
             <mat-select formControlName="side">
-              <mat-option value="long"> Long </mat-option>
-              <mat-option value="short"> Short </mat-option>
+              <mat-option value="long"> LONG </mat-option>
+              <mat-option value="short"> SHORT </mat-option>
             </mat-select>
             <mat-hint>Long maximizes quote</mat-hint>
           </mat-form-field>
@@ -88,9 +88,9 @@
           <mat-form-field appearance="fill" *ngIf="strategy.id">
             <mat-label>Signal</mat-label>
             <mat-select formControlName="signal">
-              <mat-option [value]="-1"> Sell </mat-option>
-              <mat-option [value]="0"> Neutral </mat-option>
-              <mat-option [value]="1"> Buy </mat-option>
+              <mat-option [value]="-1"> SELL </mat-option>
+              <mat-option [value]="0"> NEUTRAL </mat-option>
+              <mat-option [value]="1"> BUY </mat-option>
             </mat-select>
           </mat-form-field>
 

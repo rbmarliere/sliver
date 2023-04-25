@@ -20,7 +20,6 @@ export interface Position {
   fee: number;
   pnl: number;
   roi: number;
-  stopped: boolean;
 
   last_high?: number;
   last_low?: number;
@@ -58,7 +57,6 @@ export function getLongPositions(indicators: Indicator, stopEngine: Engine | nul
     fee: 0,
     pnl: 0,
     roi: 0,
-    stopped: false,
 
     last_high: 0,
     last_low: 0,
@@ -104,6 +102,7 @@ export function getLongPositions(indicators: Indicator, stopEngine: Engine | nul
         pos.exit_price = indicators.close[i];
         if (stopped) {
           pos.exit_price = stopPrice;
+          pos.status = "stopped";
         }
 
         pos.exit_time = new Date(indicators.time[i]);
@@ -118,8 +117,6 @@ export function getLongPositions(indicators: Indicator, stopEngine: Engine | nul
         pos.balance = balance;
 
         pos.drawdown = maxDrawdown;
-
-        pos.stopped = stopped;
 
         positions.push({ ...pos });
       }
@@ -176,7 +173,6 @@ export function getShortPositions(indicators: Indicator, stopEngine: Engine | nu
     fee: 0,
     pnl: 0,
     roi: 0,
-    stopped: false,
 
     last_high: 0,
     last_low: 0,
@@ -222,6 +218,7 @@ export function getShortPositions(indicators: Indicator, stopEngine: Engine | nu
         pos.exit_price = indicators.close[i];
         if (stopped) {
           pos.exit_price = stopPrice;
+          pos.status = "stopped";
         }
 
         pos.exit_time = new Date(indicators.time[i]);
@@ -236,8 +233,6 @@ export function getShortPositions(indicators: Indicator, stopEngine: Engine | nu
         pos.balance = balance;
 
         pos.drawdown = maxDrawdown;
-
-        pos.stopped = stopped;
 
         positions.push({ ...pos });
       }
@@ -289,43 +284,67 @@ function checkStop(pos: Position, engine: Engine | null, high: number, low: numb
   }
 
   if (engine.stop_gain > 0) {
-    let currGain = 0;
+    let ret_p = (high - pos.entry_price) / pos.entry_price * 100;
+    let ret_h = ((pos.last_high! - low) / low * 100);
+    let ret_l = ((pos.last_low! - low) / low * 100);
 
-    if (engine.trailing_gain) {
+    if (pos.side == "long") {
 
-      if (low > pos.entry_price) {
-        currGain = ((pos.last_high! - low) / low * 100) * -1;
-        if (currGain > engine.stop_gain) {
+      if (engine.trailing_gain) {
+        if (ret_h * -1 > engine.stop_gain) {
           return pos.last_high! * (1 - engine.stop_gain / 100);
+        }
+      } else {
+        if (ret_p > engine.stop_gain) {
+          return pos.entry_price * (1 + engine.stop_gain / 100);
         }
       }
 
-    } else {
-      currGain = (high - pos.entry_price) / pos.entry_price * 100;
-      if (currGain > engine.stop_gain) {
-        return pos.entry_price * (1 + engine.stop_gain / 100);
+    } else if (pos.side == "short") {
+
+      if (engine.trailing_gain) {
+        if (ret_l > engine.stop_gain) {
+          return pos.last_low! * (1 + engine.stop_gain / 100);
+        }
+      } else {
+        if (ret_p * -1 > engine.stop_gain) {
+          return pos.entry_price * (1 - engine.stop_gain / 100);
+        }
       }
+
     }
 
   }
 
   if (engine.stop_loss > 0) {
-    let currLoss = 0;
+    let ret_p = ((low - pos.entry_price) / pos.entry_price * 100);
+    let ret_h = (pos.last_high! - high) / high * 100;
+    let ret_l = (pos.last_low! - high) / high * 100;
 
-    if (engine.trailing_loss) {
+    if (pos.side == "long") {
 
-      if (high < pos.entry_price) {
-        currLoss = (pos.last_low! - high) / high * 100;
-        if (currLoss > engine.stop_loss) {
+      if (engine.trailing_loss) {
+        if (ret_l > engine.stop_loss) {
           return pos.last_low! * (1 + engine.stop_loss / 100);
+        }
+      } else {
+        if (ret_p * -1 > engine.stop_loss) {
+          return pos.entry_price * (1 - engine.stop_loss / 100);
         }
       }
 
-    } else {
-      currLoss = ((low - pos.entry_price) / pos.entry_price * 100) * -1;
-      if (currLoss > engine.stop_loss) {
-        return pos.entry_price * (1 - engine.stop_loss / 100);
+    } else if (pos.side == "short") {
+
+      if (engine.trailing_loss) {
+        if (ret_h * -1 > engine.stop_loss) {
+          return pos.last_high! * (1 - engine.stop_loss / 100);
+        }
+      } else {
+        if (ret_p > engine.stop_loss) {
+          return pos.entry_price * (1 + engine.stop_loss / 100);
+        }
       }
+
     }
 
   }
@@ -336,7 +355,7 @@ function checkStop(pos: Position, engine: Engine | null, high: number, low: numb
 function checkStopCooldown(pos: Position, engine: Engine | null, time: Date): boolean {
   let cooldown_in_min = engine?.stop_cooldown || 0;
 
-  if (cooldown_in_min <= 0 || !pos.stopped) {
+  if (cooldown_in_min <= 0 || pos.status != "stopped") {
     return false;
   }
 
