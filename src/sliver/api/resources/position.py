@@ -127,6 +127,20 @@ class Position(Resource):
 
         return get_positions_df(pos_q).to_dict(orient="records")[0]
 
+    @jwt_required()
+    def delete(self, position_id):
+        uid = int(get_jwt_identity())
+        user = User.get_by_id(uid)
+
+        pos = PositionModel.get_or_none(id=position_id)
+
+        if pos is None or pos.user_strategy.user != user:
+            raise PositionDoesNotExist
+
+        pos.drop()
+
+        return "", 204
+
 
 class Positions(Resource):
     @marshal_with(pos_fields)
