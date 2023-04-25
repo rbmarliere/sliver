@@ -125,7 +125,7 @@ class User(db.BaseModel):
             if strat == strategy:
                 continue
 
-            pos = Position.get_open_by_user_strategy(u_st).get_or_none()
+            pos = u_st.position
 
             if pos is None:
                 if (strat.side == "long" and strat.market.quote == quote) or (

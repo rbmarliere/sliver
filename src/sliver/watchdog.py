@@ -1,4 +1,3 @@
-import datetime
 import time
 
 from sliver.alert import send_message
@@ -10,7 +9,6 @@ from sliver.exceptions import (
 )
 from sliver.position import Position
 from sliver.strategies.factory import StrategyFactory
-from sliver.strategies.signals import StrategySignals
 from sliver.strategy import BaseStrategy
 from sliver.utils import get_logger
 
@@ -131,30 +129,11 @@ class Watchdog(metaclass=WatchdogMeta):
 
             self.strategy = strategy
             strategy.refresh()
-            signal = strategy.get_signal()
             self.strategy = None
 
             for user_strat in strategy.userstrategy_set:
-                if not user_strat.active:
-                    continue
-
                 self.user_strat = user_strat
-
-                self.print("...........................................")
-                self.print(f"refreshing user {user_strat.user}")
-
-                pos = Position.get_open_by_user_strategy(user_strat).get_or_none()
-
-                if pos:
-                    pos.next_refresh = datetime.datetime.utcnow()
-                    pos.save()
-
-                else:
-                    if (strategy.side == "long" and signal == StrategySignals.BUY) or (
-                        strategy.side == "short" and signal == StrategySignals.SELL
-                    ):
-                        Position.open(user_strat)
-
+                user_strat.refresh()
                 self.user_strat = None
 
     @run
