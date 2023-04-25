@@ -1,3 +1,4 @@
+import datetime
 import time
 from abc import ABCMeta, abstractmethod
 
@@ -151,7 +152,9 @@ class Exchange(db.BaseModel):
             page_size = len(page)
             if default_page_size is None:
                 default_page_size = page_size
-                page = page[:-1].copy()  # last candle is incomplete
+                last_candle = page.iloc[-1]
+                if datetime.datetime.utcnow() <= last_candle.time + tf_delta:
+                    page = page[:-1].copy()  # last candle is incomplete
 
             if page.empty:
                 print("price data is up to date")
