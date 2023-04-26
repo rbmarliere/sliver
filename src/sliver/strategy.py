@@ -141,7 +141,7 @@ class BaseStrategy(db.BaseModel):
 
         return query.select(*select_fields)
 
-    def get_indicators_df(self, query=None, join_type=None):
+    def get_indicators_df(self, query=None, join_type=None, since=None, until=None):
         BUY = StrategySignals.BUY
         SELL = StrategySignals.SELL
 
@@ -149,6 +149,14 @@ class BaseStrategy(db.BaseModel):
             query = self.get_indicators(join_type=join_type)
 
         df = pandas.DataFrame(query.dicts())
+
+        if since is not None:
+            since = datetime.datetime.utcfromtimestamp(since)
+            df = df.loc[df.time >= since].copy()
+
+        if until is not None:
+            until = datetime.datetime.utcfromtimestamp(until)
+            df = df.loc[df.time <= until].copy()
 
         if df.empty:
             return df
@@ -260,11 +268,11 @@ class IStrategy(db.BaseModel):
     def refresh_indicators(self, indicators):
         ...
 
-    def get_indicators(self):
-        return self.strategy.get_indicators(model=self.get_indicator_class())
+    def get_indicators(self, **kwargs):
+        return self.strategy.get_indicators(model=self.get_indicator_class(), **kwargs)
 
-    def get_indicators_df(self):
-        return self.strategy.get_indicators_df(self.get_indicators())
+    def get_indicators_df(self, **kwargs):
+        return self.strategy.get_indicators_df(self.get_indicators(), **kwargs)
 
     def refresh(self):
         print("===========================================")
