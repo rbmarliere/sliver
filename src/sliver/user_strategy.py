@@ -65,7 +65,7 @@ class UserStrategy(db.BaseModel):
             print("can't open position, position already open")
             return
 
-        Position.open(self)
+        return Position.open(self)
 
     def disable(self):
         print(
@@ -94,3 +94,10 @@ class UserStrategy(db.BaseModel):
                 self.strategy.side == "short" and signal == StrategySignals.SELL
             ):
                 self.open_position()
+
+            if (self.strategy.side == "long" and signal == StrategySignals.SELL) or (
+                self.strategy.side == "short" and signal == StrategySignals.BUY
+            ):
+                p = self.open_position()
+                if p is not None:
+                    p.close()
