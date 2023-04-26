@@ -123,27 +123,30 @@ class BaseStrategy(db.BaseModel):
         except Indicator.DoesNotExist:
             return StrategySignals.NEUTRAL
 
-    def get_indicators(self, model=None):
+    def get_indicators(self, model=None, join_type=None):
+        if join_type is None:
+            join_type = peewee.JOIN.LEFT_OUTER
+
         select_fields = [Price, Indicator.id.alias("indicator_id"), Indicator]
 
         query = Price.get_by_strategy(self).join(
             Indicator,
-            peewee.JOIN.LEFT_OUTER,
+            join_type,
             on=((Indicator.price_id == Price.id) & (Indicator.strategy == self)),
         )
 
         if model:
             select_fields.append(model)
-            query = query.join(model, peewee.JOIN.LEFT_OUTER)
+            query = query.join(model, join_type)
 
         return query.select(*select_fields)
 
-    def get_indicators_df(self, query=None):
+    def get_indicators_df(self, query=None, join_type=None):
         BUY = StrategySignals.BUY
         SELL = StrategySignals.SELL
 
         if query is None:
-            query = self.get_indicators()
+            query = self.get_indicators(join_type=join_type)
 
         df = pandas.DataFrame(query.dicts())
 

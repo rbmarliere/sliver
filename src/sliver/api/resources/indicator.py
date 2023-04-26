@@ -1,3 +1,4 @@
+import peewee
 from flask_jwt_extended import jwt_required
 from flask_restful import Resource, marshal
 
@@ -16,7 +17,7 @@ class Indicator(Resource):
         except BaseStrategy.DoesNotExist:
             raise StrategyDoesNotExist
 
-        ind = strategy.get_indicators_df()
+        ind = strategy.get_indicators_df(join_type=peewee.JOIN.INNER)
 
         if not ind.empty:
             ind.replace({float("nan"): None}, inplace=True)
