@@ -274,9 +274,6 @@ class CCXT(Exchange):
         for ticker in ex_bal["total"]:
             total = ex_bal["total"][ticker]
 
-            if not total:
-                continue
-
             asset, new = Asset.get_or_create(ticker=ticker.upper())
             if new:
                 print(f"saved new asset {asset.ticker}")
