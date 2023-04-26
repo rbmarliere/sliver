@@ -56,7 +56,7 @@ vim.ui.input({ prompt = "Run debugger sessions? [Y|n]  > " }, function(input)
   if input == "n" then
     return
   end
-  vim.fn.jobstart("ng serve -c development --host 0.0.0.0", { cwd = "web" })
+  -- vim.fn.jobstart("ng serve -c development --host 0.0.0.0", { cwd = "web" })
   dap.run(typescript)
   -- dap.run(watchdog)
   dap.run(api)
