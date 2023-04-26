@@ -1,6 +1,6 @@
 local dap = require("dap")
 
-dap.defaults.fallback.force_external_terminal = true
+-- dap.defaults.fallback.force_external_terminal = true
 dap.defaults.fallback.external_terminal = {
   command = "/usr/local/bin/alacritty",
   args = { "--hold", "-e" },
@@ -56,9 +56,9 @@ vim.ui.input({ prompt = "Run debugger sessions? [Y|n]  > " }, function(input)
   if input == "n" then
     return
   end
-  -- vim.fn.jobstart("ng serve -c development --host 0.0.0.0", { cwd = "web" })
+  vim.fn.jobstart("ng serve -c development --host 0.0.0.0", { cwd = "web" })
   dap.run(typescript)
-  dap.run(watchdog)
+  -- dap.run(watchdog)
   dap.run(api)
 end)
 
