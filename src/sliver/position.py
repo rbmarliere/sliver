@@ -325,7 +325,7 @@ class Position(db.BaseModel):
 
         return remaining
 
-    def open(u_st):
+    def open(u_st, status="opening"):
         user = u_st.user
         strategy = u_st.strategy
         market = strategy.market
@@ -337,7 +337,7 @@ class Position(db.BaseModel):
 
         position = Position(
             user_strategy=u_st,
-            status="opening",
+            status=status,
             next_bucket=get_next_refresh(engine.bucket_interval),
             entry_time=datetime.datetime.utcnow(),
         )
@@ -378,6 +378,10 @@ class Position(db.BaseModel):
             print(f"target_cost is {market.quote.print(target_cost)}")
             print(f"entry_amount is {market.base.print(entry_amount)}")
 
+            if status == "closing" and entry_amount <= strategy.market.amount_min:
+                print("invalid entry_amount, can't create position")
+                return
+
             if target_cost == 0 or target_cost <= strategy.market.cost_min:
                 print("invalid target_cost, can't create position")
                 return
@@ -401,6 +405,10 @@ class Position(db.BaseModel):
 
             print(f"target_amount is {market.base.print(target_amount)}")
             print(f"entry_cost is {market.quote.print(entry_cost)}")
+
+            if status == "closing" and entry_cost <= strategy.market.cost_min:
+                print("invalid entry_cost, can't create position")
+                return
 
             if target_amount == 0 or target_amount <= strategy.market.amount_min:
                 print("invalid target_amount, can't create position")
