@@ -5,7 +5,7 @@ import peewee
 
 import sliver.database as db
 from sliver.indicator import Indicator
-from sliver.indicators.rsi import RSI
+from pandas_ta.momentum.rsi import rsi
 from sliver.strategies.signals import StrategySignals
 from sliver.strategy import IStrategy
 from sliver.utils import quantize
@@ -73,9 +73,9 @@ class ElNinoStrategy(IStrategy):
             1 + (float(self.elnino_sell_ma_offset) / 100)
         )
 
-        indicators["rsi"] = RSI(
+        indicators["rsi"] = rsi(
             indicators.close,
-            period=self.elnino_rsi_period,
+            length=self.elnino_rsi_period,
             scalar=self.elnino_rsi_scalar,
         )
 

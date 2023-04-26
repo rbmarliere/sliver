@@ -37,6 +37,7 @@ dependencies = [
     "nltk>=3.8.1",
     "tensorflow-addons>=0.20.0",
     "tqdm>=4.65.0",
+    "pandas-ta>=0.3.14b0",
 ]
 requires-python = ">=3.9,<3.11"
 license = {text = "None"}
