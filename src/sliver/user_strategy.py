@@ -54,7 +54,7 @@ class UserStrategy(db.BaseModel):
 
         return Position.get_open_by_user_strategy(self).get_or_none()
 
-    def open_position(self):
+    def open_position(self, status="opening"):
         from sliver.position import Position
 
         if not self.active:
@@ -65,7 +65,7 @@ class UserStrategy(db.BaseModel):
             print("can't open position, position already open")
             return
 
-        return Position.open(self)
+        return Position.open(self, status)
 
     def disable(self):
         print(
@@ -98,6 +98,6 @@ class UserStrategy(db.BaseModel):
             if (self.strategy.side == "long" and signal == StrategySignals.SELL) or (
                 self.strategy.side == "short" and signal == StrategySignals.BUY
             ):
-                p = self.open_position()
+                p = self.open_position(status="closing")
                 if p is not None:
                     p.close()
