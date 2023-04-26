@@ -378,8 +378,8 @@ class Position(db.BaseModel):
             print(f"target_cost is {market.quote.print(target_cost)}")
             print(f"entry_amount is {market.base.print(entry_amount)}")
 
-            if status == "closing" and entry_amount <= strategy.market.amount_min:
-                print("invalid entry_amount, can't create position")
+            if status == "closing" and entry_cost <= strategy.market.cost_min:
+                print("invalid entry_cost, can't create position")
                 return
 
             if target_cost == 0 or target_cost <= strategy.market.cost_min:
