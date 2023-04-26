@@ -42,6 +42,7 @@ import { StrategyComponent } from './strategy/strategy.component';
 import { OrderComponent } from './order/order.component';
 import { PerfSummaryComponent } from './perf-summary/perf-summary.component';
 import { PositionsTableComponent } from './positions-table/positions-table.component';
+import { BacktestComponent } from './backtest/backtest.component';
 
 @NgModule({
   declarations: [
@@ -63,6 +64,7 @@ import { PositionsTableComponent } from './positions-table/positions-table.compo
     OrderComponent,
     PerfSummaryComponent,
     PositionsTableComponent,
+    BacktestComponent,
   ],
   imports: [
     AppRoutingModule,

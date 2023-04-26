@@ -2,7 +2,6 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { Indicator } from './indicator';
-import { Strategy } from './strategy';
 
 @Injectable({
   providedIn: 'root'
@@ -25,8 +24,22 @@ export class IndicatorService {
     return indicators;
   }
 
-  getIndicators(strategy: Strategy): Observable<Indicator> {
-    return this.http.get<Indicator>(`${this.url}/${strategy.id}`)
+  getIndicators(strategy_id: number, since?: string, until?: string): Observable<Indicator> {
+    let route = `${this.url}/${strategy_id}?`;
+
+    if (since) {
+      const since_date = new Date(since);
+      const since_time = Math.floor(since_date.getTime() / 1000);
+      route += `since=${since_time}&`;
+    }
+
+    if (until) {
+      const until_date = new Date(until);
+      const until_time = Math.floor(until_date.getTime() / 1000);
+      route += `until=${until_time}&`;
+    }
+
+    return this.http.get<Indicator>(route)
       .pipe(
         map(this.transformDates)
       );
