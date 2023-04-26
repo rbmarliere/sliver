@@ -1,0 +1,35 @@
+<div *ngIf="loading" class="spinner">
+  <mat-spinner></mat-spinner>
+</div>
+
+<div *ngIf="!loading" class="main container">
+  <mat-card appearance="outlined">
+    <mat-card-content>
+      <form [formGroup]="form" (ngSubmit)="loadIndicators()">
+        <div class="fields">
+          <mat-form-field>
+            <mat-label>Since</mat-label>
+            <input matInput type="datetime-local" formControlName="since" required />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Until</mat-label>
+            <input matInput type="datetime-local" formControlName="until" required />
+          </mat-form-field>
+          <div class="button">
+            <button mat-raised-button color="primary" style="margin-right: 1vh;">Load Data</button>
+          </div>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <p></p>
+
+  <div *ngIf="loadingInd" class="spinner">
+    <mat-spinner></mat-spinner>
+  </div>
+
+  <div *ngIf="!loadingInd">
+    <app-indicator *ngIf="strategy.indicators" [strategy]="strategy" [stopEngine]="stopEngine"></app-indicator>
+  </div>
+</div>

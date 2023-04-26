@@ -141,7 +141,7 @@ export class StrategyComponent implements OnInit {
             });
           }
 
-          this.indicatorService.getIndicators(this.strategy).subscribe({
+          this.indicatorService.getIndicators(this.strategy.id).subscribe({
             next: (res) => {
               this.strategy.indicators = res;
               this.loadingInd = false;

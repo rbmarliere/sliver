@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { AuthGuard } from './auth.guard';
+import { BacktestComponent } from './backtest/backtest.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { EngineComponent } from './engine/engine.component';
 import { EnginesComponent } from './engines/engines.component';
@@ -22,6 +23,11 @@ const routes: Routes = [
     path: '',
     redirectTo: '/positions',
     pathMatch: 'full'
+  },
+  {
+    path: 'backtest/:strategy_id',
+    component: BacktestComponent,
+    canActivate: [AuthGuard]
   },
   {
     path: 'order/:order_id',
