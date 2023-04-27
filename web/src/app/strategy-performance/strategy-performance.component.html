@@ -1,8 +1,16 @@
+<div *ngIf="loading" class="spinner">
+  <mat-spinner></mat-spinner>
+</div>
+
 <div class="main container" *ngIf="positions && perfLog">
   <mat-card appearance="outlined">
     <mat-card-content class="container">
 
-      <app-perf-summary title="Performance Summary" [summary]="perfLog"></app-perf-summary>
+      <div *ngIf="positions.length===0">
+        <p class="text-center">no positions found for strategy {{strategy.id}}</p>
+      </div>
+
+      <app-perf-summary title="Performance Summary ({{strategy.id}})" [summary]="perfLog"></app-perf-summary>
 
       <app-positions-table *ngIf="positions.length > 0" [positions]="positions"
         displayMode="compact"></app-positions-table>

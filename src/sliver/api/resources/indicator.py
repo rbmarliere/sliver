@@ -16,6 +16,11 @@ class Indicator(Resource):
         parser.add_argument("until", type=int, default=None, location="args")
         args = parser.parse_args()
 
+        join_type = None
+
+        if args.since and args.until:
+            join_type = peewee.JOIN.INNER
+
         try:
             strategy = StrategyFactory.from_base(BaseStrategy.get_by_id(strategy_id))
             if strategy.deleted:
@@ -23,11 +28,11 @@ class Indicator(Resource):
         except BaseStrategy.DoesNotExist:
             raise StrategyDoesNotExist
 
-        if strategy.get_indicators(join_type=peewee.JOIN.INNER).count() == 0:
+        if join_type and strategy.get_indicators(join_type=join_type).count() == 0:
             raise StrategyRefreshing
 
         ind = strategy.get_indicators_df(
-            join_type=peewee.JOIN.INNER, since=args.since, until=args.until
+            join_type=join_type, since=args.since, until=args.until
         )
 
         if not ind.empty:

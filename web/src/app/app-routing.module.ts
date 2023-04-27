@@ -10,6 +10,7 @@ import { OrderComponent } from './order/order.component';
 import { PositionComponent } from './position/position.component';
 import { PositionsComponent } from './positions/positions.component';
 import { StrategiesComponent } from './strategies/strategies.component';
+import { StrategyPerformanceComponent } from './strategy-performance/strategy-performance.component';
 import { StrategyComponent } from './strategy/strategy.component';
 
 const routes: Routes = [
@@ -47,6 +48,11 @@ const routes: Routes = [
     path: 'strategy/:strategy_id',
     component: StrategyComponent,
     canActivate: [AuthGuard],
+  },
+  {
+    path: 'strategy/:strategy_id/performance',
+    component: StrategyPerformanceComponent,
+    canActivate: [AuthGuard]
   },
   {
     path: 'engines',
