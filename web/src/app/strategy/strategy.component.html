@@ -387,16 +387,18 @@
     </mat-card-content>
   </mat-card>
 
-  <div *ngIf="loadingInd" class="spinner">
-    <mat-spinner></mat-spinner>
-  </div>
+  <!-- <div *ngIf="loadingInd" class="spinner"> -->
+  <!--   <mat-spinner></mat-spinner> -->
+  <!-- </div> -->
 
-  <div *ngIf="!loadingInd">
+  <!-- <div *ngIf="!loadingInd"> -->
 
-    <p></p>
+  <!--   <p></p> -->
 
-    <app-strategy-performance *ngIf="strategy.indicators" [strategy]="strategy"></app-strategy-performance>
+  <!-- <app-strategy-performance *ngIf="strategy.indicators" [strategy]="strategy"></app-strategy-performance> -->
 
-  </div>
+  <!-- </div> -->
 
 </div>
+
+<app-backtest *ngIf="strategy.id > 0" [strategy]="strategy" [stopEngine]="stopEngine"></app-backtest>

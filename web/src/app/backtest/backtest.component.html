@@ -1,8 +1,4 @@
-<div *ngIf="loading" class="spinner">
-  <mat-spinner></mat-spinner>
-</div>
-
-<div *ngIf="!loading" class="main container">
+<div class="main container">
   <mat-card appearance="outlined">
     <mat-card-content>
       <form [formGroup]="form" (ngSubmit)="loadIndicators()">
@@ -16,7 +12,7 @@
             <input matInput type="datetime-local" formControlName="until" required />
           </mat-form-field>
           <div class="button">
-            <button mat-raised-button color="primary" style="margin-right: 1vh;">Load Data</button>
+            <button mat-raised-button color="primary" style="margin-right: 1vh;">Backtest</button>
           </div>
         </div>
       </form>
