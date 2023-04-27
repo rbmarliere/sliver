@@ -46,11 +46,6 @@
 
         <div class="actions">
 
-          <button mat-icon-button class="icon-display" type="button" color="primary" title="Backtest"
-            routerLink="/backtest/{{ element.id }}">
-            <mat-icon>history</mat-icon>
-          </button>
-
           <button mat-icon-button class="icon-display" type="button" color="primary"
             (click)="updateSubscription(element)" title="Unsubscribe" *ngIf="element.subscribed">
             <mat-icon>heart_broken</mat-icon>
