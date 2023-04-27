@@ -84,3 +84,8 @@ class EngineInUse(HTTPException):
 class OrderDoesNotExist(HTTPException):
     code = 404
     description = "Order does not exist."
+
+
+class StrategyRefreshing(HTTPException):
+    code = 500
+    description = "Strategy is still refreshing."
