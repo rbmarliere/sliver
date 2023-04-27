@@ -200,11 +200,7 @@ class Exchange(db.BaseModel):
             f":: {market.base.print(amount)} @ {market.quote.print(price)}"
         )
 
-        try:
-            assert amount >= market.amount_min
-            assert price >= market.price_min
-            assert amount * price >= market.cost_min
-        except AssertionError:
+        if not market.is_valid_amount(amount, price):
             print("order values are smaller than minimum")
             return False
 
