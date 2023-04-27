@@ -1,3 +1,4 @@
+import time
 import peewee
 from flask_jwt_extended import jwt_required
 from flask_restful import Resource, marshal
@@ -28,8 +29,15 @@ class Indicator(Resource):
         except BaseStrategy.DoesNotExist:
             raise StrategyDoesNotExist
 
-        if join_type and strategy.get_indicators(join_type=join_type).count() == 0:
-            raise StrategyRefreshing
+        if join_type:
+            timeout = 240
+            start = time.time()
+            while True:
+                if time.time() - start > timeout:
+                    raise StrategyRefreshing
+                if strategy.get_indicators(join_type=join_type).count() > 0:
+                    break
+                time.sleep(5)
 
         ind = strategy.get_indicators_df(
             join_type=join_type, since=args.since, until=args.until
