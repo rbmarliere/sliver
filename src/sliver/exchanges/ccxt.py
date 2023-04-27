@@ -71,11 +71,10 @@ class CCXT(Exchange):
 
     @api_call
     def api_fetch_time(self):
-        try:
-            getattr(self._api, "fetch_time")
+        if self._api.has["fetchTime"]:
             return self._api.fetch_time()
-        except AttributeError:
-            return self._api.fetch_ticker("BTC/USDT")
+
+        return self._api.fetch_ticker("BTC/USDT")
 
     @api_call
     def api_fetch_balance(self):
