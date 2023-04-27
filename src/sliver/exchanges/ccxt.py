@@ -74,7 +74,7 @@ class CCXT(Exchange):
         if self._api.has["fetchTime"]:
             return self._api.fetch_time()
 
-        return self._api.fetch_ticker("BTC/USDT")
+        return 0
 
     @api_call
     def api_fetch_balance(self):
