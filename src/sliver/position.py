@@ -257,6 +257,72 @@ class Position(db.BaseModel):
             strategy.side == "short" and self.is_opening()
         )
 
+    def get_bucket_max(self):
+        strategy = self.user_strategy.strategy
+        market = strategy.market
+
+        if self.is_opening():
+            if strategy.side == "long":
+                if self.is_stopping():
+                    engine = strategy.stop_engine
+                else:
+                    engine = strategy.buy_engine
+
+                if engine.min_buckets <= 1:
+                    return self.target_cost - self.entry_cost
+
+                return market.quote.div(
+                    self.target_cost - self.entry_cost,
+                    market.quote.transform(engine.min_buckets),
+                    prec=strategy.market.price_precision,
+                )
+
+            elif strategy.side == "short":
+                if self.is_stopping():
+                    engine = strategy.stop_engine
+                else:
+                    engine = strategy.sell_engine
+
+                if engine.min_buckets <= 1:
+                    return self.target_amount - self.entry_amount
+
+                return market.base.div(
+                    self.target_amount - self.entry_amount,
+                    market.base.transform(engine.min_buckets),
+                    prec=strategy.market.amount_precision,
+                )
+
+        elif self.is_closing():
+            if strategy.side == "long":
+                if self.is_stopping():
+                    engine = strategy.stop_engine
+                else:
+                    engine = strategy.sell_engine
+
+                if engine.min_buckets <= 1:
+                    return self.entry_amount
+
+                return market.base.div(
+                    self.entry_amount,
+                    market.base.transform(engine.min_buckets),
+                    prec=strategy.market.amount_precision,
+                )
+
+            elif strategy.side == "short":
+                if self.is_stopping():
+                    engine = strategy.stop_engine
+                else:
+                    engine = strategy.buy_engine
+
+                if engine.min_buckets <= 1:
+                    return self.entry_amount
+
+                return market.quote.div(
+                    self.entry_cost,
+                    market.quote.transform(engine.min_buckets),
+                    prec=strategy.market.price_precision,
+                )
+
     def get_remaining_cost(self, last_price):
         market = self.user_strategy.strategy.market
 
@@ -335,7 +401,7 @@ class Position(db.BaseModel):
         elif strategy.side == "short":
             engine = strategy.sell_engine
 
-        position = Position(
+        pos = Position(
             user_strategy=u_st,
             status=status,
             next_bucket=get_next_refresh(engine.bucket_interval),
@@ -356,119 +422,78 @@ class Position(db.BaseModel):
                     print("cooled down, can't create position")
                     return
 
-        p = position.exchange.api_fetch_last_price(strategy.symbol)
+        p = pos.exchange.api_fetch_last_price(strategy.symbol)
         last_price = market.quote.transform(p)
 
-        target_cost = 0
-        entry_cost = 0
-        target_amount = 0
-        entry_amount = 0
-        entry_price = 0
-
-        position.exchange.sync_user_balance(user)
+        pos.exchange.sync_user_balance(user)
 
         if strategy.side == "long":
-            entry_amount, target_cost = user.get_free_balances(strategy)
+            pos.entry_amount, pos.target_cost = user.get_free_balances(strategy)
 
-            if entry_amount > 0:
-                entry_price = last_price
-                entry_cost = market.base.format(entry_amount) * last_price
-                target_cost += entry_cost
+            if pos.entry_amount > 0:
+                pos.entry_price = last_price
+                pos.entry_cost = market.base.format(pos.entry_amount) * last_price
+                pos.target_cost += pos.entry_cost
 
-            print(f"target_cost is {market.quote.print(target_cost)}")
-            print(f"entry_amount is {market.base.print(entry_amount)}")
+            print(f"target_cost is {market.quote.print(pos.target_cost)}")
+            print(f"entry_amount is {market.base.print(pos.entry_amount)}")
 
-            if status == "closing" and entry_cost <= strategy.market.cost_min:
-                print("invalid entry_cost, can't create position")
+            if status == "closing" and not market.is_valid_amount(
+                pos.entry_amount, last_price
+            ):
+                print("invalid entry_amount, can't create 'closing' position")
                 return
 
-            if target_cost == 0 or target_cost <= strategy.market.cost_min:
+            if pos.target_cost == 0 or pos.target_cost <= strategy.market.cost_min:
                 print("invalid target_cost, can't create position")
                 return
 
-            if engine.min_buckets > 0:
-                bucket_max = market.quote.div(
-                    target_cost - entry_cost,
-                    market.quote.transform(engine.min_buckets),
-                    prec=strategy.market.price_precision,
-                )
-            else:
-                bucket_max = target_cost
-
         elif strategy.side == "short":
-            target_amount, entry_cost = user.get_free_balances(strategy)
+            pos.target_amount, pos.entry_cost = user.get_free_balances(strategy)
 
-            if entry_cost > 0:
-                entry_price = last_price
-                entry_amount = market.base.div(entry_cost, last_price)
-                target_amount += entry_amount
+            if pos.entry_cost > 0:
+                pos.entry_price = last_price
+                pos.entry_amount = market.base.div(pos.entry_cost, last_price)
+                pos.target_amount += pos.entry_amount
 
-            print(f"target_amount is {market.base.print(target_amount)}")
-            print(f"entry_cost is {market.quote.print(entry_cost)}")
+            print(f"target_amount is {market.base.print(pos.target_amount)}")
+            print(f"entry_cost is {market.quote.print(pos.entry_cost)}")
 
-            if status == "closing" and entry_cost <= strategy.market.cost_min:
-                print("invalid entry_cost, can't create position")
+            if status == "closing" and pos.entry_cost <= strategy.market.cost_min:
+                print("invalid entry_cost, can't create 'closing' position")
                 return
 
-            if target_amount == 0 or target_amount <= strategy.market.amount_min:
+            if not market.is_valid_amount(pos.target_amount, last_price):
                 print("invalid target_amount, can't create position")
                 return
 
-            if engine.min_buckets > 0:
-                bucket_max = market.base.div(
-                    target_amount - entry_amount,
-                    market.base.transform(engine.min_buckets),
-                    prec=strategy.market.amount_precision,
-                )
-            else:
-                bucket_max = target_amount
+        pos.bucket_max = pos.get_bucket_max()
+        pos.save()
 
-        position.bucket_max = bucket_max
-        position.target_cost = target_cost
-        position.entry_cost = entry_cost
-        position.target_amount = target_amount
-        position.entry_amount = entry_amount
-        position.entry_price = entry_price
-        position.save()
+        print(f"opening position {pos.id}")
+        user.send_message(pos.get_notice(prefix="opening "))
 
-        print(f"opening position {position.id}")
-        user.send_message(position.get_notice(prefix="opening "))
+        return pos
 
-        return position
-
-    def close(self, engine=None):
-        strategy = self.user_strategy.strategy
-        market = strategy.market
+    def close(self):
+        print(f"closing position {self}")
         user = self.user_strategy.user
-
-        if engine is None:
-            engine = strategy.sell_engine
-
-        if self.user_strategy.strategy.side == "long":
-            if engine.min_buckets > 0:
-                self.bucket_max = market.base.div(
-                    self.entry_amount,
-                    market.base.transform(engine.min_buckets),
-                    prec=strategy.market.amount_precision,
-                )
-            else:
-                self.bucket_max = self.entry_amount
-
-        elif self.user_strategy.strategy.side == "short":
-            if engine.min_buckets > 0:
-                self.bucket_max = market.quote.div(
-                    self.entry_cost,
-                    market.quote.transform(engine.min_buckets),
-                    prec=strategy.market.price_precision,
-                )
-            else:
-                self.bucket_max = self.entry_cost
+        user.send_message(self.get_notice(prefix="closing "))
 
         self.bucket = 0
         self.status = "closing"
+        self.bucket_max = self.get_bucket_max()
 
-        print(f"closing position {self}")
-        user.send_message(self.get_notice(prefix="closing "))
+        self.save()
+
+    def resume(self):
+        print(f"reopening position {self}")
+        user = self.user_strategy.user
+        user.send_message(self.get_notice(prefix="reopening "))
+
+        self.bucket = 0
+        self.status = "opening"
+        self.bucket_max = self.get_bucket_max()
 
         self.save()
 
@@ -501,7 +526,7 @@ class Position(db.BaseModel):
         user.send_message(self.get_notice(prefix="stopped "))
 
         self.status = "stopping"
-        self.close(engine=engine)
+        self.close()
 
         self.save()
 
@@ -679,6 +704,16 @@ class Position(db.BaseModel):
             )
         ):
             self.close()
+
+        if (
+            self.entry_cost > 0
+            and self.is_closing()
+            and (
+                (strategy.side == "long" and signal == BUY)
+                or (strategy.side == "short" and signal == SELL)
+            )
+        ):
+            self.resume()
 
         if self.is_opening() or self.is_closing():
             self.refresh_bucket(last_price)
