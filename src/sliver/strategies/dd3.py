@@ -30,8 +30,8 @@ class DD3Strategy(IStrategy):
     def setup():
         db.connection.create_tables([DD3Strategy, DD3Indicator])
 
-    def get_indicators_df(self):
-        df = super().get_indicators_df()
+    def get_indicators_df(self, **kwargs):
+        df = super().get_indicators_df(**kwargs)
 
         if df.empty:
             return df
