@@ -1,13 +1,9 @@
 import { formatDate } from '@angular/common';
-import { Component } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { Component, Input } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Engine } from '../engine';
-import { EngineService } from '../engine.service';
 import { IndicatorService } from '../indicator.service';
 import { Strategy } from '../strategy';
-import { StrategyFactory } from '../strategy-types/factory';
-import { StrategyService } from '../strategy.service';
 
 @Component({
   selector: 'app-backtest',
@@ -15,15 +11,14 @@ import { StrategyService } from '../strategy.service';
   styleUrls: ['./backtest.component.less']
 })
 export class BacktestComponent {
-  loading: Boolean = true;
   loadingInd: Boolean = false;
-  strategy!: Strategy;
-  stopEngine: Engine | null = null;
+  @Input() strategy!: Strategy;
+  @Input() stopEngine!: Engine | null;
   form: FormGroup = this.createForm();
 
   createForm(): FormGroup {
     const now = new Date();
-    const since = new Date(now.getFullYear() - 5, 0, 1);
+    const since = new Date(now.getFullYear(), 0, 1);
 
     return this.formBuilder.group({
       since: [formatDate(since, 'yyyy-MM-ddTHH:mm', 'en'), Validators.required],
@@ -33,30 +28,8 @@ export class BacktestComponent {
 
   constructor(
     private formBuilder: FormBuilder,
-    private strategyService: StrategyService,
-    private engineService: EngineService,
     private indicatorService: IndicatorService,
-    private route: ActivatedRoute,
-  ) {
-    const strategy_id = Number(this.route.snapshot.paramMap.get('strategy_id'));
-
-    this.loading = true;
-
-    this.strategyService.getStrategy(strategy_id).subscribe({
-      next: (res) => {
-        this.loading = false;
-        this.strategy = StrategyFactory(res);
-
-        if (res.stop_engine_id) {
-          this.engineService.getEngine(res.stop_engine_id).subscribe({
-            next: (res) => {
-              this.stopEngine = res;
-            }
-          });
-        }
-      }
-    });
-  }
+  ) { }
 
   loadIndicators(): void {
     this.loadingInd = true;
@@ -67,6 +40,9 @@ export class BacktestComponent {
     this.indicatorService.getIndicators(this.strategy.id, since, until).subscribe({
       next: (res) => {
         this.strategy.indicators = res;
+        this.loadingInd = false;
+      },
+      error: () => {
         this.loadingInd = false;
       }
     });

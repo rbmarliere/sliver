@@ -6,7 +6,6 @@ import { EngineService } from '../engine.service';
 import { EnginesService } from '../engines.service';
 import { Exchange } from '../exchange';
 import { ExchangeService } from '../exchange.service';
-import { IndicatorService } from '../indicator.service';
 import { Market } from '../market';
 import { StrategiesService } from '../strategies.service';
 import { Strategy } from '../strategy';
@@ -113,7 +112,6 @@ export class StrategyComponent implements OnInit {
     private enginesService: EnginesService,
     private engineService: EngineService,
     private exchangeService: ExchangeService,
-    private indicatorService: IndicatorService,
     private formBuilder: FormBuilder,
     private route: ActivatedRoute,
     private router: Router
@@ -140,13 +138,6 @@ export class StrategyComponent implements OnInit {
               }
             });
           }
-
-          this.indicatorService.getIndicators(this.strategy.id).subscribe({
-            next: (res) => {
-              this.strategy.indicators = res;
-              this.loadingInd = false;
-            }
-          });
         }
       });
 
@@ -188,7 +179,7 @@ export class StrategyComponent implements OnInit {
       }
 
       this.strategyService.updateStrategy(strategy).subscribe({
-        next: () => location.reload(),
+        // next: () => location.reload(),
       });
     } else {
       this.strategiesService.createStrategy(strategy).subscribe({
