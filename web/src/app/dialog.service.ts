@@ -13,6 +13,15 @@ export class DialogService {
 
   handleError(error: HttpErrorResponse) {
     let message: string;
+    message = error.error.message;
+    if (message === undefined) {
+      message = error.error.error.message;
+    }
+    if (typeof message === 'object') {
+      message = JSON.stringify(message);
+    }
+
+    let title: string = "error";
 
     switch (error.status) {
       case 403:
@@ -20,7 +29,7 @@ export class DialogService {
         break;
 
       case 500:
-        message = 'Internal Server Error.';
+        title = 'Internal Server Error.';
         break;
 
       case 504:
@@ -28,22 +37,13 @@ export class DialogService {
         break;
 
       default:
-        message = error.error.message;
-
-        if (message === undefined) {
-          message = error.error.error.message;
-        }
-
-        if (typeof message === 'object') {
-          message = JSON.stringify(message);
-        }
         break;
-
     }
 
     const dialogConfig = new MatDialogConfig;
     dialogConfig.data = {
       error: true,
+      title: title,
       msg: message
     };
 

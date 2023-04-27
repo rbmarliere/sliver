@@ -1,9 +1,12 @@
 <div *ngIf="error">
-  <div class="header" matDialogTitle>
-    <mat-icon style="transform: scale(2.2);">cancel</mat-icon>
+  <div matDialogTitle>
+    <div class="header">
+      <mat-icon style="transform: scale(2.2);">cancel</mat-icon>
+    </div>
+    {{title}}
   </div>
 
-  <p matDialogContent><em>{{msg}}</em></p>
+  <div matDialogContent><em>{{msg}}</em></div>
 
   <mat-dialog-actions align="center">
     <button mat-button mat-dialog-close>OK</button>
