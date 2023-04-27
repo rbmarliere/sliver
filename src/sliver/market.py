@@ -21,3 +21,13 @@ class Market(db.BaseModel):
 
     def get_symbol(self):
         return self.base.asset.ticker + "/" + self.quote.asset.ticker
+
+    def is_valid_amount(self, amount, price):
+        try:
+            assert amount >= self.amount_min
+            assert price >= self.price_min
+            assert self.base.format(amount) * price >= self.cost_min
+        except AssertionError:
+            return False
+
+        return True
