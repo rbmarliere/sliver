@@ -11,6 +11,10 @@ export function msToString(ms: number): string {
 export function median(_values: number[]): number {
   let values = [..._values]; // copy first, since sort() is in-place
 
+  values = values.filter(function(value: number) {
+    return value != null;
+  });
+
   if (values.length === 0)
     return 0;
 
@@ -30,6 +34,10 @@ export function mean(values: number[]): number {
   if (values.length === 0)
     return 0;
 
+  values = values.filter(function(value: number) {
+    return value != null;
+  });
+
   const sum = values.reduce((a: number, b: number) => a + b, 0);
   const avg = sum / values.length || 0;
   return avg;
@@ -38,6 +46,10 @@ export function mean(values: number[]): number {
 export function variance(values: number[]): number {
   if (values.length === 0)
     return 0;
+
+  values = values.filter(function(value: number) {
+    return value != null;
+  });
 
   const avg = mean(values);
   const squareDiffs = values.map(function(value: number) {
