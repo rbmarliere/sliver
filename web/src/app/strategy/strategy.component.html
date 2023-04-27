@@ -375,7 +375,7 @@
         </div>
 
         <div class="button">
-          <button mat-raised-button color="primary" style="margin-right: 1vh;">Save</button>
+          <button mat-raised-button color="primary">Save</button>
 
           <button mat-raised-button *ngIf="strategy.id > 0" type="button" color="primary"
             (click)="updateSubscription(strategy)">
@@ -383,8 +383,8 @@
             <span *ngIf="strategy.subscribed">Unsubscribe</span>
           </button>
 
-          <button mat-raised-button color="primary" style="margin-right: 1vh;"
-            routerLink="/strategy/{{strategy.id}}/performance">Show Performance</button>
+          <button mat-raised-button color="primary" routerLink="/strategy/{{strategy.id}}/performance">Show
+            Performance</button>
         </div>
       </form>
     </mat-card-content>
