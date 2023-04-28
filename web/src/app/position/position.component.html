@@ -33,6 +33,11 @@
         </mat-form-field>
 
         <mat-form-field>
+          <mat-label>Entry Time</mat-label>
+          <input matInput type="datetime-local" value="{{position.entry_time | date: 'yyyy-MM-ddTHH:mm'}}" readonly />
+        </mat-form-field>
+
+        <mat-form-field>
           <mat-label>Target Amount</mat-label>
           <input matInput value="{{position.target_amount}}" readonly />
         </mat-form-field>
@@ -43,23 +48,13 @@
         </mat-form-field>
 
         <mat-form-field>
-          <mat-label>Entry Cost</mat-label>
-          <input matInput value="{{position.entry_cost}}" readonly />
-        </mat-form-field>
-
-        <mat-form-field>
-          <mat-label>Exit Cost</mat-label>
-          <input matInput value="{{position.exit_cost}}" readonly />
-        </mat-form-field>
-
-        <mat-form-field>
           <mat-label>Entry Amount</mat-label>
           <input matInput value="{{position.entry_amount}}" readonly />
         </mat-form-field>
 
         <mat-form-field>
-          <mat-label>Exit Amount</mat-label>
-          <input matInput value="{{position.exit_amount}}" readonly />
+          <mat-label>Entry Cost</mat-label>
+          <input matInput value="{{position.entry_cost}}" readonly />
         </mat-form-field>
 
         <mat-form-field>
@@ -68,13 +63,18 @@
         </mat-form-field>
 
         <mat-form-field>
-          <mat-label>Exit Price</mat-label>
-          <input matInput value="{{position.exit_price}}" readonly />
+          <mat-label>Exit Amount</mat-label>
+          <input matInput value="{{position.exit_amount}}" readonly />
         </mat-form-field>
 
         <mat-form-field>
-          <mat-label>Entry Time</mat-label>
-          <input matInput type="datetime-local" value="{{position.entry_time | date: 'yyyy-MM-ddTHH:mm'}}" readonly />
+          <mat-label>Exit Cost</mat-label>
+          <input matInput value="{{position.exit_cost}}" readonly />
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Exit Price</mat-label>
+          <input matInput value="{{position.exit_price}}" readonly />
         </mat-form-field>
 
         <mat-form-field>
