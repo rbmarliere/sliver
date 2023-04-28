@@ -7,10 +7,9 @@ from sliver.alert import get_updates, send_user_message
 from sliver.asset import Asset
 from sliver.balance import Balance
 from sliver.credential import Credential
-from sliver.exceptions import AuthenticationError, DisablingError
+from sliver.exceptions import AuthenticationError
 from sliver.exchange_asset import ExchangeAsset
 from sliver.exchanges.factory import ExchangeFactory
-from sliver.position import Position
 from sliver.print import print
 from sliver.user_strategy import UserStrategy
 

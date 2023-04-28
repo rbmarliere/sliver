@@ -89,3 +89,8 @@ class OrderDoesNotExist(HTTPException):
 class StrategyRefreshing(HTTPException):
     code = 500
     description = "Strategy is still refreshing."
+
+
+class EngineNotEditable(HTTPException):
+    code = 400
+    description = "Unable to edit an engine created by another user."
