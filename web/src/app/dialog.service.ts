@@ -21,7 +21,7 @@ export class DialogService {
       message = JSON.stringify(message);
     }
 
-    let title: string = "error";
+    let title: string = "Error";
 
     switch (error.status) {
       case 403:
