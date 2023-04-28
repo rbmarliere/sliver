@@ -61,6 +61,7 @@ def create_tables():
         safe=True,
     )
     try:
+        TradeEngine._schema.create_foreign_key(TradeEngine.creator)
         Price._schema.create_foreign_key(Price.market)
         Credential._schema.create_foreign_key(Credential.user)
         Balance._schema.create_foreign_key(Balance.user)

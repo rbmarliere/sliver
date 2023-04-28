@@ -1,9 +1,14 @@
 import datetime
 
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import get_jwt_identity, jwt_required
 from flask_restful import Resource, fields, marshal_with, reqparse
 
-from sliver.api.exceptions import EngineDoesNotExist, EngineInUse, InvalidArgument
+from sliver.api.exceptions import (
+    EngineDoesNotExist,
+    EngineInUse,
+    EngineNotEditable,
+    InvalidArgument,
+)
 from sliver.position import Position
 from sliver.strategy import BaseStrategy as Strategy
 from sliver.trade_engine import TradeEngine
@@ -52,6 +57,9 @@ class Engines(Resource):
     def post(self):
         args = argp.parse_args()
 
+        uid = int(get_jwt_identity())
+        args["creator"] = uid
+
         if not args["description"]:
             raise InvalidArgument("Missing description")
         if args["stop_loss"]:
@@ -78,12 +86,17 @@ class Engine(Resource):
     @marshal_with(fields)
     @jwt_required()
     def put(self, engine_id):
+        uid = int(get_jwt_identity())
+
         try:
             engine = TradeEngine.get_by_id(engine_id)
             if engine.deleted:
                 raise EngineDoesNotExist
         except TradeEngine.DoesNotExist:
             raise EngineDoesNotExist
+
+        if engine.creator_id is not None and engine.creator_id != uid and uid != 1:
+            raise EngineNotEditable
 
         args = argp.parse_args()
 
@@ -112,12 +125,17 @@ class Engine(Resource):
     @marshal_with(fields)
     @jwt_required()
     def delete(self, engine_id):
+        uid = int(get_jwt_identity())
+
         try:
             engine = TradeEngine.get_by_id(engine_id)
             if engine.deleted:
                 raise EngineDoesNotExist
         except TradeEngine.DoesNotExist:
             raise EngineDoesNotExist
+
+        if engine.creator_id is not None and engine.creator_id != uid and uid != 1:
+            raise EngineNotEditable
 
         if engine.basestrategy_set.where(~Strategy.deleted).count() > 0:
             raise EngineInUse

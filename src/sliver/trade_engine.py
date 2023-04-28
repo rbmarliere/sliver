@@ -4,6 +4,7 @@ import sliver.database as db
 
 
 class TradeEngine(db.BaseModel):
+    creator = peewee.DeferredForeignKey("User", null=True, on_delete="SET NULL")
     description = peewee.TextField()
     deleted = peewee.BooleanField(default=False)
     refresh_interval = peewee.IntegerField(default=1)
