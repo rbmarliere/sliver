@@ -32,12 +32,16 @@ class Indicator(Resource):
         if join_type:
             timeout = 240
             start = time.time()
+            timedout = False
             while True:
                 if time.time() - start > timeout:
-                    raise StrategyRefreshing
+                    timedout = True
+                    break
                 if strategy.get_indicators(join_type=join_type).count() > 0:
                     break
                 time.sleep(5)
+            if timedout:
+                raise StrategyRefreshing
 
         ind = strategy.get_indicators_df(
             join_type=join_type, since=args.since, until=args.until
