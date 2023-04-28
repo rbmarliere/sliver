@@ -30,7 +30,7 @@ class Indicator(Resource):
             raise StrategyDoesNotExist
 
         if join_type:
-            timeout = 240
+            timeout = 120
             start = time.time()
             timedout = False
             while True:
