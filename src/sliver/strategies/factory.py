@@ -12,6 +12,7 @@ from sliver.strategies.swapperbox import SwapperBoxStrategy as SwapperBox
 from sliver.strategies.windrunner import WindrunnerStrategy as Windrunner
 from sliver.strategies.hypnoxv2 import Hypnoxv2Strategy as Hypnoxv2
 from sliver.strategies.elnino import ElNinoStrategy as ElNino
+from sliver.strategies.lanina import LaNinaStrategy as LaNina
 
 
 class StrategyTypes(enum.IntEnum):
@@ -26,6 +27,7 @@ class StrategyTypes(enum.IntEnum):
     WINDRUNNER = 8
     HYPNOXV2 = 9
     ELNINO = 10
+    LANINA = 11
 
 
 class StrategyFactory:
@@ -55,6 +57,8 @@ class StrategyFactory:
             model = Hypnoxv2
         elif strategy.type == StrategyTypes.ELNINO:
             model = ElNino
+        elif strategy.type == StrategyTypes.LANINA:
+            model = LaNina
 
         if model is None:
             raise DisablingError("invalid strategy type")

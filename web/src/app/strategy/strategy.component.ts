@@ -77,6 +77,9 @@ export class StrategyComponent implements OnInit {
     this.form.get('market_id')?.disable();
     this.form.get('type')?.disable();
 
+    this.form.get('lanina_cross_buyback_offset')?.disable();
+    this.form.get('lanina_cross_reversed_below')?.disable();
+
     if (strategy.type == StrategyType.MANUAL) {
       this.form.get('signal')?.enable();
 
