@@ -5,7 +5,6 @@ import peewee
 
 import sliver.database as db
 from sliver.alert import get_messages
-from sliver.indicator import Indicator
 from sliver.print import print
 from sliver.strategies.signals import StrategySignals
 from sliver.strategy import IStrategy
@@ -120,6 +119,4 @@ class SwapperBoxStrategy(IStrategy):
 
         indicators = indicators.reset_index()
 
-        Indicator.insert_many(
-            indicators[["strategy", "price", "signal"]].to_dict("records")
-        ).execute()
+        return indicators

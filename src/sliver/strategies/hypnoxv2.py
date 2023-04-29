@@ -66,6 +66,8 @@ class Hypnoxv2Strategy(IStrategy):
         if self.hypnoxv2_tweet_filter:
             filter = self.hypnoxv2_tweet_filter.encode("unicode_escape")
 
+        indicators = indicators.loc[indicators.indicator_id.isnull()].copy()
+
         tweets = pandas.DataFrame(
             HypnoxTweet.select()
             .where(HypnoxTweet.time >= indicators.iloc[0].time)
@@ -120,14 +122,4 @@ class Hypnoxv2Strategy(IStrategy):
             indicators["score"] < self.hypnoxv2_lower_threshold, "signal"
         ] = SELL
 
-        Indicator.insert_many(
-            indicators[["strategy", "price", "signal"]].to_dict("records")
-        ).execute()
-
-        first = indicators[["strategy", "price", "signal"]].iloc[0]
-        first_id = Indicator.get(**first.to_dict()).id
-        indicators.indicator = range(first_id, first_id + len(indicators))
-
-        Hypnoxv2Indicator.insert_many(
-            indicators[["indicator", "score"]].to_dict("records")
-        ).execute()
+        return indicators

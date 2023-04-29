@@ -130,6 +130,8 @@ class HypnoxStrategy(IStrategy):
         if not self.model:
             return
 
+        indicators = indicators.loc[indicators.indicator_id.isnull()].copy()
+
         filter = self.filter.encode("unicode_escape") if self.filter else b""
 
         base_q = (
@@ -177,16 +179,4 @@ class HypnoxStrategy(IStrategy):
 
         indicators.loc[rule, "signal"] = signal
 
-        Indicator.insert_many(
-            indicators[["strategy", "price", "signal"]].to_dict("records")
-        ).execute()
-
-        first = indicators[["strategy", "price", "signal"]].iloc[0]
-        first_id = Indicator.get(**first.to_dict()).id
-        indicators.indicator = range(first_id, first_id + len(indicators))
-
-        HypnoxIndicator.insert_many(
-            indicators[
-                ["indicator", "z_score", "mean", "variance", "n_samples"]
-            ].to_dict("records")
-        ).execute()
+        return indicators

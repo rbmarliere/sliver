@@ -288,26 +288,21 @@ class IStrategy(db.BaseModel):
 
         ExchangeFactory.from_base(self.market.base.exchange).fetch_ohlcv(self)
 
-        pending = self.get_pending_indicators()
+        indicators = pandas.DataFrame(self.get_indicators().dicts())
+        indicators.strategy = self.strategy.id
+        indicators.price = indicators.id
+
+        pending = indicators.loc[indicators.indicator_id.isnull()].copy()
         if not pending.empty:
             print("refreshing indicators")
+
             with db.connection.atomic():
-                self.refresh_indicators(pending)
+                indicators = self.refresh_indicators(indicators)
+                self.update_indicators(indicators)
 
         print(f"signal is {self.get_signal()}")
 
         self.postpone()
-
-    def get_pending_indicators(self):
-        df = pandas.DataFrame(self.get_indicators().dicts())
-
-        if df.empty:
-            return df
-
-        df["strategy"] = self.strategy.id
-        df["price"] = df.id
-
-        return df.loc[df.indicator_id.isnull()].copy()
 
     def get_parser(self):
         argp = BaseStrategy.get_parser()
@@ -350,3 +345,28 @@ class IStrategy(db.BaseModel):
             all_fields[field] = fields.List(parse_field_type(field_type))
 
         return all_fields
+
+    def update_indicators(self, indicators):
+        Indicator.insert_many(
+            indicators[["strategy", "price", "signal"]].to_dict("records")
+        ).on_conflict(
+            conflict_target=[Indicator.strategy, Indicator.price],
+            preserve=[Indicator.signal],
+        ).execute()
+
+        model = self.get_indicator_class()
+        if model is None:
+            return
+
+        updated = pandas.DataFrame(self.get_indicators().dicts())
+        indicators.indicator = updated.indicator
+
+        model_field_names = [f for f in model._meta.fields]
+        model_fields = [
+            getattr(model, f) for f in model_field_names if f != "indicator"
+        ]
+
+        model.insert_many(indicators[model_field_names].to_dict("records")).on_conflict(
+            conflict_target=[model.indicator],
+            preserve=model_fields,
+        ).execute()

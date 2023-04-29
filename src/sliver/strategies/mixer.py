@@ -95,19 +95,7 @@ class MixerStrategy(IStrategy):
 
         indicators = indicators.reset_index()
 
-        Indicator.insert_many(
-            indicators[["strategy", "price", "signal"]].to_dict("records")
-        ).execute()
-
-        first = indicators[["strategy", "price", "signal"]].iloc[0]
-        first_id = Indicator.get(**first.to_dict()).id
-        indicators.indicator = range(first_id, first_id + len(indicators))
-
-        MixerIndicator.insert_many(
-            indicators[["indicator", "buy_w_signal", "sell_w_signal"]].to_dict(
-                "records"
-            )
-        ).execute()
+        return indicators
 
     def get_fields(self):
         from flask_restful import fields

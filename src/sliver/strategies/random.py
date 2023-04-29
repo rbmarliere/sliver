@@ -1,7 +1,6 @@
 import random
 
 import sliver.database as db
-from sliver.indicator import Indicator
 from sliver.strategies.signals import StrategySignals
 from sliver.strategy import IStrategy
 
@@ -20,6 +19,4 @@ class RandomStrategy(IStrategy):
             lambda x: random.choice([BUY, NEUTRAL, SELL])
         )
 
-        Indicator.insert_many(
-            indicators[["strategy", "price", "signal"]].to_dict("records")
-        ).execute()
+        return indicators
