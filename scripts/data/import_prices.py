@@ -30,7 +30,7 @@ def main(args):
     prices_df = pandas.DataFrame(prices_q.dicts())
 
     input_df = pandas.read_csv(args.input_file)
-    input_df.time = pandas.to_datetime(input_df.time, utc=True).dt.tz_localize(None)
+    input_df.time = pandas.to_datetime(input_df.time, utc=True)  # .dt.tz_localize(None)
     if not prices_df.empty:
         input_df = input_df.loc[
             input_df.time < pandas.to_datetime(prices_df.time, utc=True).iloc[0]
@@ -53,20 +53,10 @@ def main(args):
     )
 
     ins_count = 0
-    rm_count = 0
     ins_count = Price.insert_many(input_df.to_dict("records")).execute()
-
-    if not prices_df.empty:
-        rm_count = (
-            Indicator.delete()
-            .where(Indicator.price_id >= prices_df.iloc[0].id)
-            .where(Indicator.price_id <= prices_df.iloc[-1].id)
-            .execute()
-        )
 
     print(f"imported {ins_count.cursor.rowcount} prices")
     print(f"from {input_df.time.min()} to {input_df.time.max()}")
-    print(f"removed {rm_count} indicators")
 
 
 if __name__ == "__main__":
