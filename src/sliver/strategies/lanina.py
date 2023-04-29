@@ -121,7 +121,7 @@ class LaNinaStrategy(IStrategy):
             1 + (abs(float(self.lanina_buy_ma_max_offset)) / 100)
         )
         indicators["sell_min_ma"] = indicators.root_ma * (
-            1 - (abs(float(self.lanina_sell_ma_min_offset)) / 100)
+            1 + (abs(float(self.lanina_sell_ma_min_offset)) / 100)
         )
 
         buy_rule = (
