@@ -13,12 +13,14 @@ export class DialogService {
 
   handleError(error: HttpErrorResponse) {
     let message: string;
+    console.log(error);
     message = error.error.message;
-    if (message === undefined) {
-      message = error.error.error.message;
-    }
     if (typeof message === 'object') {
       message = JSON.stringify(message);
+    }
+    if (message === undefined) {
+      // message = error.error.error.message;
+      message = error.statusText;
     }
 
     let title: string = "Error";
