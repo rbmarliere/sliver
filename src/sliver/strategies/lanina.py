@@ -142,14 +142,12 @@ class LaNinaStrategy(IStrategy):
         indicators.loc[buy_rule, "signal"] = BUY
         indicators.loc[sell_rule, "signal"] = SELL
 
-        bear_trend = (indicators.ma3 <= indicators.ma2) & (
-            indicators.ma2 <= indicators.ma1
+        bear_trend = (indicators.ma1 <= indicators.ma2) & (
+            indicators.ma2 <= indicators.ma3
         )
-
-        bull_trend = (indicators.ma3 >= indicators.ma2) & (
-            indicators.ma2 >= indicators.ma1
+        bull_trend = (indicators.ma1 >= indicators.ma2) & (
+            indicators.ma2 >= indicators.ma3
         )
-
         indicators["trend"] = NEUTRAL
         indicators.loc[bear_trend, "trend"] = SELL
         indicators.loc[bull_trend, "trend"] = BUY
