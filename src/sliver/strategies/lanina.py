@@ -20,6 +20,7 @@ class LaNinaIndicator(db.BaseModel):
     ma1 = peewee.BigIntegerField()
     ma2 = peewee.BigIntegerField()
     ma3 = peewee.BigIntegerField()
+    trend = peewee.BigIntegerField()
 
 
 class LaNinaStrategy(IStrategy):
@@ -147,19 +148,28 @@ class LaNinaStrategy(IStrategy):
         indicators.loc[buy_rule, "signal"] = BUY
         indicators.loc[sell_rule, "signal"] = SELL
 
+        bear_trend = (indicators.ma3 <= indicators.ma2) & (
+            indicators.ma2 <= indicators.ma1
+        )
+
+        bull_trend = (indicators.ma3 >= indicators.ma2) & (
+            indicators.ma2 >= indicators.ma1
+        )
+
         if self.lanina_cross_active:
             prev = indicators.shift(1)
 
-            bear_trend = (indicators.ma3 <= indicators.ma2) & (
-                indicators.ma2 <= indicators.ma1
-            )
             bear_cross = bear_trend & (prev.ma3 >= prev.ma2) & (prev.ma2 >= prev.ma1)
+            bull_cross = bull_trend & (prev.ma3 <= prev.ma2) & (prev.ma2 <= prev.ma1)
 
             indicators.loc[bear_cross, "stop"] = SELL
+            indicators.loc[bull_cross, "stop"] = SELL
+
             indicators.stop = indicators.stop.shift(
                 abs(self.lanina_cross_min_closes_below)
             )
             indicators.loc[indicators.stop.notnull() & bear_trend, "signal"] = SELL
+            indicators.loc[indicators.stop.notnull() & bull_trend, "signal"] = BUY
 
             # if self.lanina_cross_reversed_below:
             #     # TODO
