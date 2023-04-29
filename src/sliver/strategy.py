@@ -292,18 +292,15 @@ class IStrategy(db.BaseModel):
 
         ExchangeFactory.from_base(self.market.base.exchange).fetch_ohlcv(self)
 
+        print("refreshing indicators")
         indicators = pandas.DataFrame(self.get_indicators().dicts())
         indicators.strategy = self.strategy.id
         indicators.price = indicators.id
-
         pending = indicators.loc[indicators.indicator_id.isnull()].copy()
-        if not pending.empty:
-            print("refreshing indicators")
-
-            with db.connection.atomic():
-                indicators = self.refresh_indicators(indicators, pending)
-                if indicators is not None:
-                    self.update_indicators(indicators)
+        with db.connection.atomic():
+            indicators = self.refresh_indicators(indicators, pending)
+            if indicators is not None:
+                self.update_indicators(indicators)
 
         print(f"signal is {self.get_signal()}")
 
