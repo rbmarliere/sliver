@@ -11,7 +11,6 @@ from sliver.api.exceptions import (
     StrategyMixedIn,
     StrategyNotEditable,
 )
-from sliver.indicator import Indicator
 from sliver.position import Position
 from sliver.strategies.factory import StrategyFactory, StrategyTypes
 from sliver.strategies.mixer import MixedStrategies

@@ -215,4 +215,9 @@ export class StrategyComponent implements OnInit {
     return typeof value;
   }
 
+  updateActive(strategy: Strategy): void {
+    this.strategyService.updateActive(strategy).subscribe({
+      next: () => this.strategy.active = !this.strategy.active,
+    });
+  }
 }

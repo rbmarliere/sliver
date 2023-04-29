@@ -513,6 +513,12 @@
             <span *ngIf="strategy.subscribed">Unsubscribe</span>
           </button>
 
+          <button mat-raised-button *ngIf="strategy.id > 0" type="button" color="primary"
+            (click)="updateActive(strategy)">
+            <span *ngIf="!strategy.active">Activate</span>
+            <span *ngIf="strategy.active">Deactivate</span>
+          </button>
+
           <button mat-raised-button *ngIf="strategy.id > 0" color="primary"
             routerLink="/strategy/{{strategy.id}}/performance">Show
             Performance</button>
