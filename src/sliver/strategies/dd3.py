@@ -48,7 +48,7 @@ class DD3Strategy(IStrategy):
 
         return df
 
-    def refresh_indicators(self, indicators):
+    def refresh_indicators(self, indicators, pending):
         BUY = StrategySignals.BUY
         NEUTRAL = StrategySignals.NEUTRAL
         SELL = StrategySignals.SELL

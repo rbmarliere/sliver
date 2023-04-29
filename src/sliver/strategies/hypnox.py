@@ -122,7 +122,7 @@ class HypnoxStrategy(IStrategy):
             [HypnoxStrategy, HypnoxUser, HypnoxTweet, HypnoxScore, HypnoxIndicator]
         )
 
-    def refresh_indicators(self, indicators):
+    def refresh_indicators(self, indicators, pending):
         BUY = StrategySignals.BUY
         NEUTRAL = StrategySignals.NEUTRAL
         SELL = StrategySignals.SELL
@@ -130,14 +130,12 @@ class HypnoxStrategy(IStrategy):
         if not self.model:
             return
 
-        indicators = indicators.loc[indicators.indicator_id.isnull()].copy()
-
         filter = self.filter.encode("unicode_escape") if self.filter else b""
 
         base_q = (
             HypnoxTweet.get_tweets_by_model(self.model)
             .where(HypnoxTweet.text.iregexp(filter))
-            .where(HypnoxTweet.time > indicators.iloc[0].time)
+            .where(HypnoxTweet.time > pending.iloc[0].time)
         )
 
         replay_q = base_q.where(HypnoxScore.model.is_null())
@@ -147,21 +145,9 @@ class HypnoxStrategy(IStrategy):
             model = sliver.models.load(self.model)
             replay(replay_q, model)
 
-        all_indicators = pandas.DataFrame(self.get_indicators().dicts()).dropna()
-        if len(all_indicators) == len(indicators):
-            n_samples = 0
-            mean = 0
-            variance = 0
-        else:
-            n_samples = all_indicators.iloc[-1]["n_samples"]
-            mean = all_indicators.iloc[-1]["mean"]
-            variance = all_indicators.iloc[-1]["variance"]
-
         tweets = pandas.DataFrame(base_q.dicts())
 
-        indicators = HYPNOX(
-            indicators, tweets, self.strategy.timeframe, n_samples, mean, variance
-        )
+        indicators = HYPNOX(indicators, tweets, self.strategy.timeframe, 0, 0, 0)
 
         indicators["signal"] = NEUTRAL
 

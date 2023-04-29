@@ -1,6 +1,5 @@
 import decimal
 
-import pandas
 import peewee
 from pandas_ta.momentum.rsi import rsi
 
@@ -48,7 +47,7 @@ class ElNinoStrategy(IStrategy):
 
         return df
 
-    def refresh_indicators(self, indicators):
+    def refresh_indicators(self, indicators, pending):
         BUY = StrategySignals.BUY
         NEUTRAL = StrategySignals.NEUTRAL
         SELL = StrategySignals.SELL

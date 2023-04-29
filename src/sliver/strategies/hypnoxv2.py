@@ -57,7 +57,7 @@ class Hypnoxv2Strategy(IStrategy):
     def setup():
         db.connection.create_tables([Hypnoxv2Strategy, Hypnoxv2Indicator])
 
-    def refresh_indicators(self, indicators):
+    def refresh_indicators(self, indicators, pending):
         BUY = StrategySignals.BUY
         NEUTRAL = StrategySignals.NEUTRAL
         SELL = StrategySignals.SELL
@@ -65,8 +65,6 @@ class Hypnoxv2Strategy(IStrategy):
         filter = b""
         if self.hypnoxv2_tweet_filter:
             filter = self.hypnoxv2_tweet_filter.encode("unicode_escape")
-
-        indicators = indicators.loc[indicators.indicator_id.isnull()].copy()
 
         tweets = pandas.DataFrame(
             HypnoxTweet.select()
@@ -76,11 +74,6 @@ class Hypnoxv2Strategy(IStrategy):
         )
 
         if tweets.empty:
-            return
-
-        indicators = indicators.loc[indicators.time >= tweets.time.min()].copy()
-
-        if indicators.empty:
             return
 
         tweets.text = tweets.text.apply(standardize)
@@ -108,11 +101,9 @@ class Hypnoxv2Strategy(IStrategy):
 
         indicators = indicators.set_index("time")
         indicators["score"] = tweets
+        indicators.score.fillna(0, inplace=True)
 
-        indicators = indicators.dropna(subset="score")
-
-        if indicators.empty:
-            return
+        indicators = indicators.reset_index()
 
         indicators.loc[
             indicators["score"] > self.hypnoxv2_upper_threshold, "signal"
