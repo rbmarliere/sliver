@@ -302,7 +302,7 @@ class IStrategy(db.BaseModel):
 
             with db.connection.atomic():
                 indicators = self.refresh_indicators(indicators, pending)
-                if indicators:
+                if indicators is not None:
                     self.update_indicators(indicators)
 
         print(f"signal is {self.get_signal()}")
