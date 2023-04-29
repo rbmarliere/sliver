@@ -43,7 +43,7 @@ class Indicator(Resource):
                 if time.time() - start > timeout:
                     timedout = True
                     break
-                if strategy.get_indicators(join_type=join_type).count() > 0:
+                if not strategy.refreshing:
                     break
                 time.sleep(5)
             if timedout:
