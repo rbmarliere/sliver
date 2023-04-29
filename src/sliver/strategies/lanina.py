@@ -123,10 +123,10 @@ class LaNinaStrategy(IStrategy):
             1 + (abs(float(self.lanina_buy_ma_max_offset)) / 100)
         )
         indicators["sell_min_ma"] = indicators.root_ma * (
-            1 + (abs(float(self.lanina_sell_ma_min_offset)) / 100)
+            1 - (abs(float(self.lanina_sell_ma_min_offset)) / 100)
         )
         indicators["sell_max_ma"] = indicators.root_ma * (
-            1 - (abs(float(self.lanina_sell_ma_max_offset)) / 100)
+            1 + (abs(float(self.lanina_sell_ma_max_offset)) / 100)
         )
 
         buy_rule = (
@@ -139,8 +139,7 @@ class LaNinaStrategy(IStrategy):
 
         sell_rule = (
             (indicators.close >= indicators.root_ma)
-            & (indicators.close >= indicators.sell_max_ma)
-            & (indicators.close <= indicators.sell_min_ma)
+            & (indicators.close >= indicators.sell_min_ma)
             & (indicators.rsi >= self.lanina_sell_rsi_min_threshold)
         )
 
