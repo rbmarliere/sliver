@@ -215,8 +215,6 @@ class Strategy(Resource):
             except ValueError:
                 pass
 
-            Indicator.delete().where(Indicator.strategy_id == strategy_id).execute()
-
         strategy.subscribed = user.is_subscribed(strategy.id)
         strategy.signal = strategy.get_signal()
 
