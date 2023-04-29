@@ -159,7 +159,7 @@ class LaNinaStrategy(IStrategy):
             bull_cross = bull_trend & (prev.ma3 <= prev.ma2) & (prev.ma2 <= prev.ma1)
 
             indicators.loc[bear_cross, "stop"] = SELL
-            indicators.loc[bull_cross, "stop"] = SELL
+            indicators.loc[bull_cross, "stop"] = BUY
 
             indicators.stop = indicators.stop.shift(
                 abs(self.lanina_cross_min_closes_below)
