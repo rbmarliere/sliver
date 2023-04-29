@@ -33,6 +33,7 @@ class BaseStrategy(db.BaseModel):
     description = peewee.TextField()
     type = peewee.IntegerField(default=0)
     active = peewee.BooleanField(default=False)
+    refreshing = peewee.BooleanField(default=False)
     deleted = peewee.BooleanField(default=False)
     market = peewee.ForeignKeyField(Market)
     timeframe = peewee.TextField(default="1d")
@@ -275,6 +276,9 @@ class IStrategy(db.BaseModel):
         return self.strategy.get_indicators_df(self.get_indicators(), **kwargs)
 
     def refresh(self):
+        self.strategy.refreshing = True
+        self.strategy.save()
+
         print("===========================================")
         print(f"refreshing strategy {self}")
         print(f"market is {self.symbol} [{self.market}]")
@@ -303,6 +307,9 @@ class IStrategy(db.BaseModel):
         print(f"signal is {self.get_signal()}")
 
         self.postpone()
+
+        self.strategy.refreshing = False
+        self.strategy.save()
 
     def get_parser(self):
         argp = BaseStrategy.get_parser()
