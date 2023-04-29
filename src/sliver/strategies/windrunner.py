@@ -77,7 +77,7 @@ class WindrunnerStrategy(IStrategy):
 
         return df
 
-    def refresh_indicators(self, indicators):
+    def refresh_indicators(self, indicators, pending):
         BUY = StrategySignals.BUY
         NEUTRAL = StrategySignals.NEUTRAL
         SELL = StrategySignals.SELL
@@ -92,7 +92,7 @@ class WindrunnerStrategy(IStrategy):
         base_q = (
             HypnoxTweet.get_tweets_by_model(self.hypnox_model)
             .where(HypnoxTweet.text.iregexp(filter))
-            .where(HypnoxTweet.time > indicators.iloc[0].time)
+            .where(HypnoxTweet.time > pending.iloc[0].time)
         )
 
         replay_q = base_q.where(HypnoxScore.model.is_null())
@@ -102,21 +102,9 @@ class WindrunnerStrategy(IStrategy):
             model = sliver.models.load(self.hypnox_model)
             replay(replay_q, model)
 
-        all_indicators = pandas.DataFrame(self.get_indicators().dicts())
-        if len(all_indicators) == len(indicators):
-            n_samples = 0
-            mean = 0
-            variance = 0
-        else:
-            n_samples = all_indicators.iloc[-1]["n_samples"]
-            mean = all_indicators.iloc[-1]["mean"]
-            variance = all_indicators.iloc[-1]["variance"]
-
         tweets = pandas.DataFrame(base_q.dicts())
 
-        indicators = HYPNOX(
-            indicators, tweets, self.timeframe, n_samples, mean, variance
-        )
+        indicators = HYPNOX(indicators, tweets, self.timeframe, 0, 0, 0)
         indicators = BB(
             indicators,
             self.bb_ma_period,
@@ -172,11 +160,9 @@ class WindrunnerStrategy(IStrategy):
 
         buy_rule = indicators.operation > float(self.windrunner_upper_threshold)
         sell_rule = indicators.operation < float(self.windrunner_lower_threshold)
+
         indicators["signal"] = NEUTRAL
         indicators.loc[buy_rule, "signal"] = BUY
         indicators.loc[sell_rule, "signal"] = SELL
-
-        indicators = indicators.drop_duplicates(subset="id", keep="last")
-        indicators = indicators.replace({float("nan"): 0})
 
         return indicators

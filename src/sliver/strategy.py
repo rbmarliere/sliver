@@ -301,8 +301,9 @@ class IStrategy(db.BaseModel):
             print("refreshing indicators")
 
             with db.connection.atomic():
-                indicators = self.refresh_indicators(indicators)
-                self.update_indicators(indicators)
+                indicators = self.refresh_indicators(indicators, pending)
+                if indicators:
+                    self.update_indicators(indicators)
 
         print(f"signal is {self.get_signal()}")
 

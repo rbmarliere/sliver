@@ -10,7 +10,7 @@ class RandomStrategy(IStrategy):
     def setup():
         db.connection.create_tables([RandomStrategy])
 
-    def refresh_indicators(self, indicators):
+    def refresh_indicators(self, indicators, pending):
         BUY = StrategySignals.BUY
         NEUTRAL = StrategySignals.NEUTRAL
         SELL = StrategySignals.SELL

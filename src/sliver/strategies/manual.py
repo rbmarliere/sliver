@@ -14,7 +14,7 @@ class ManualStrategy(IStrategy):
     def get_signal(self):
         return self.signal
 
-    def refresh_indicators(self, indicators, signal=None):
+    def refresh_indicators(self, indicators, pending, signal=None):
         if signal:
             self.signal = signal
             self.save()
