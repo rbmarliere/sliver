@@ -1,6 +1,5 @@
 import decimal
 
-import pandas
 import peewee
 from pandas_ta.momentum.rsi import rsi
 
@@ -43,7 +42,6 @@ class LaNinaStrategy(IStrategy):
     lanina_buy_ma_min_offset = peewee.DecimalField(default=0)
     lanina_buy_ma_max_offset = peewee.DecimalField(default=0)
     lanina_sell_ma_min_offset = peewee.DecimalField(default=0)
-    lanina_sell_ma_max_offset = peewee.DecimalField(default=0)
 
     lanina_cross_active = peewee.BooleanField(default=False)
     lanina_cross_buyback_offset = peewee.IntegerField(default=0)
@@ -154,6 +152,10 @@ class LaNinaStrategy(IStrategy):
         bull_trend = (indicators.ma3 >= indicators.ma2) & (
             indicators.ma2 >= indicators.ma1
         )
+
+        indicators["trend"] = NEUTRAL
+        indicators.loc[bear_trend, "trend"] = SELL
+        indicators.loc[bull_trend, "trend"] = BUY
 
         if self.lanina_cross_active:
             prev = indicators.shift(1)

@@ -8,6 +8,7 @@ interface LaNinaIndicator extends Indicator {
   ma1: number[];
   ma2: number[];
   ma3: number[];
+  trend: number[];
 }
 
 export class LaNinaStrategy extends Strategy {
@@ -32,7 +33,6 @@ export class LaNinaStrategy extends Strategy {
   lanina_buy_ma_min_offset: number = 0;
   lanina_buy_ma_max_offset: number = 0;
   lanina_sell_ma_min_offset: number = 0;
-  lanina_sell_ma_max_offset: number = 0;
 
   lanina_cross_active: boolean = false;
   lanina_cross_buyback_offset: number = 0;
@@ -47,6 +47,14 @@ export class LaNinaStrategy extends Strategy {
         name: 'rsi',
         x: this.indicators!.time,
         y: this.indicators!.rsi,
+        type: 'line',
+        xaxis: 'x',
+        yaxis: 'y3',
+      },
+      {
+        name: 'trend',
+        x: this.indicators!.time,
+        y: this.indicators!.trend,
         type: 'line',
         xaxis: 'x',
         yaxis: 'y2',
@@ -94,7 +102,8 @@ export class LaNinaStrategy extends Strategy {
         type: 'date',
       },
       yaxis: { domain: [0.33, 1] },
-      yaxis2: { domain: [0, 0.33] }
+      yaxis2: { domain: [0.20, 0.33] },
+      yaxis3: { domain: [0, 0.20] }
     };
 
     return plot;
