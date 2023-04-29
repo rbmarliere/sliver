@@ -179,29 +179,4 @@ class WindrunnerStrategy(IStrategy):
         indicators = indicators.drop_duplicates(subset="id", keep="last")
         indicators = indicators.replace({float("nan"): 0})
 
-        Indicator.insert_many(
-            indicators[["strategy", "price", "signal"]].to_dict("records")
-        ).execute()
-
-        first = indicators[["strategy", "price", "signal"]].iloc[0]
-        first_id = Indicator.get(**first.to_dict()).id
-        indicators.indicator = range(first_id, first_id + len(indicators))
-
-        WindrunnerIndicator.insert_many(
-            indicators[
-                [
-                    "indicator",
-                    "z_score",
-                    "mean",
-                    "variance",
-                    "n_samples",
-                    "bolu",
-                    "bold",
-                    "macd",
-                    "macd_signal",
-                    "atr",
-                    "moon_phase",
-                    "operation",
-                ]
-            ].to_dict("records")
-        ).execute()
+        return indicators

@@ -2,10 +2,10 @@ import decimal
 
 import pandas
 import peewee
+from pandas_ta.momentum.rsi import rsi
 
 import sliver.database as db
 from sliver.indicator import Indicator
-from pandas_ta.momentum.rsi import rsi
 from sliver.strategies.signals import StrategySignals
 from sliver.strategy import IStrategy
 from sliver.utils import quantize
@@ -53,12 +53,6 @@ class ElNinoStrategy(IStrategy):
         NEUTRAL = StrategySignals.NEUTRAL
         SELL = StrategySignals.SELL
 
-        # compute over whole set because of averages
-        Indicator.delete().where(Indicator.strategy == self).execute()
-        indicators = pandas.DataFrame(self.get_indicators().dicts())
-        indicators.strategy = self.id
-        indicators.price = indicators.id
-
         if self.elnino_use_ema:
             indicators.ma = indicators.close.ewm(self.elnino_ma_period).mean()
         else:
@@ -97,14 +91,4 @@ class ElNinoStrategy(IStrategy):
         indicators.loc[buy_rule, "signal"] = BUY
         indicators.loc[sell_rule, "signal"] = SELL
 
-        Indicator.insert_many(
-            indicators[["strategy", "price", "signal"]].to_dict("records")
-        ).execute()
-
-        first = indicators[["strategy", "price", "signal"]].iloc[0]
-        first_id = Indicator.get(**first.to_dict()).id
-        indicators.indicator = range(first_id, first_id + len(indicators))
-
-        ElNinoIndicator.insert_many(
-            indicators[["indicator", "ma", "rsi"]].to_dict("records")
-        ).execute()
+        return indicators

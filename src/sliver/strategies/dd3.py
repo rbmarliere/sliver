@@ -53,10 +53,6 @@ class DD3Strategy(IStrategy):
         NEUTRAL = StrategySignals.NEUTRAL
         SELL = StrategySignals.SELL
 
-        indicators = pandas.DataFrame(self.get_indicators().dicts())
-        indicators["strategy"] = self.strategy.id
-        indicators["price"] = indicators.id
-
         indicators.ma1 = indicators.close.rolling(self.ma1_period).mean()
         indicators.ma1.fillna(method="bfill", inplace=True)
         indicators.ma2 = indicators.close.rolling(self.ma2_period).mean()
@@ -81,18 +77,4 @@ class DD3Strategy(IStrategy):
         indicators.loc[buy_rule, "signal"] = BUY
         indicators.loc[sell_rule, "signal"] = SELL
 
-        indicators = indicators.loc[indicators.indicator_id.isnull()].copy()
-        if indicators.empty:
-            return
-
-        Indicator.insert_many(
-            indicators[["strategy", "price", "signal"]].to_dict("records")
-        ).execute()
-
-        first = indicators[["strategy", "price", "signal"]].iloc[0]
-        first_id = Indicator.get(**first.to_dict()).id
-        indicators.indicator = range(first_id, first_id + len(indicators))
-
-        DD3Indicator.insert_many(
-            indicators[["indicator", "ma1", "ma2", "ma3"]].to_dict("records")
-        ).execute()
+        return indicators

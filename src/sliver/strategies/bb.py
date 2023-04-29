@@ -55,10 +55,6 @@ class BBStrategy(IStrategy):
         NEUTRAL = StrategySignals.NEUTRAL
         SELL = StrategySignals.SELL
 
-        indicators = pandas.DataFrame(self.get_indicators().dicts())
-        indicators["strategy"] = self.strategy.id
-        indicators["price"] = indicators.id
-
         indicators = BB(
             indicators,
             ma_period=self.ma_period,
@@ -75,18 +71,4 @@ class BBStrategy(IStrategy):
 
         indicators.fillna(method="bfill", inplace=True)
 
-        indicators = indicators.loc[indicators.indicator_id.isnull()].copy()
-        if indicators.empty:
-            return
-
-        Indicator.insert_many(
-            indicators[["strategy", "price", "signal"]].to_dict("records")
-        ).execute()
-
-        first = indicators[["strategy", "price", "signal"]].iloc[0]
-        first_id = Indicator.get(**first.to_dict()).id
-        indicators.indicator = range(first_id, first_id + len(indicators))
-
-        BBIndicator.insert_many(
-            indicators[["indicator", "ma", "bolu", "bold", "tp"]].to_dict("records")
-        ).execute()
+        return indicators

@@ -88,10 +88,6 @@ class LaNinaStrategy(IStrategy):
         NEUTRAL = StrategySignals.NEUTRAL
         SELL = StrategySignals.SELL
 
-        indicators = pandas.DataFrame(self.get_indicators().dicts())
-        indicators.strategy = self.id
-        indicators.price = indicators.id
-
         indicators["rsi"] = rsi(
             indicators.close,
             length=self.lanina_rsi_period,
@@ -187,28 +183,4 @@ class LaNinaStrategy(IStrategy):
         #   so it follows the trend down, selling close to the MA and buying further
         #   away from it, like in the screenshot we talked about
 
-        Indicator.insert_many(
-            indicators[["strategy", "price", "signal"]].to_dict("records")
-        ).on_conflict(
-            conflict_target=[Indicator.strategy, Indicator.price],
-            preserve=[Indicator.signal],
-        ).execute()
-
-        first = indicators[["strategy", "price", "signal"]].iloc[0]
-        first_id = Indicator.get(**first.to_dict()).id
-        indicators.indicator = range(first_id, first_id + len(indicators))
-
-        LaNinaIndicator.insert_many(
-            indicators[["indicator", "rsi", "root_ma", "ma1", "ma2", "ma3"]].to_dict(
-                "records"
-            )
-        ).on_conflict(
-            conflict_target=[LaNinaIndicator.indicator],
-            preserve=[
-                LaNinaIndicator.rsi,
-                LaNinaIndicator.root_ma,
-                LaNinaIndicator.ma1,
-                LaNinaIndicator.ma2,
-                LaNinaIndicator.ma3,
-            ],
-        ).execute()
+        return indicators
