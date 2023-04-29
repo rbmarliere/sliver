@@ -366,7 +366,7 @@ class IStrategy(db.BaseModel):
             return
 
         updated = pandas.DataFrame(self.get_indicators().dicts())
-        indicators.indicator = updated.indicator
+        indicators.indicator = updated.indicator_id
 
         model_field_names = [f for f in model._meta.fields]
         model_fields = [
