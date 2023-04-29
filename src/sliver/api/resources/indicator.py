@@ -1,12 +1,16 @@
 import time
+
 import peewee
 from flask_jwt_extended import jwt_required
-from flask_restful import Resource, marshal
+from flask_restful import Resource, marshal, reqparse
 
-from sliver.api.exceptions import StrategyDoesNotExist, StrategyRefreshing
+from sliver.api.exceptions import (
+    StrategyDoesNotExist,
+    StrategyIsInactive,
+    StrategyRefreshing,
+)
 from sliver.strategies.factory import StrategyFactory
 from sliver.strategy import BaseStrategy
-from flask_restful import reqparse
 
 
 class Indicator(Resource):
@@ -30,6 +34,8 @@ class Indicator(Resource):
             raise StrategyDoesNotExist
 
         if join_type:
+            if not strategy.active:
+                raise StrategyIsInactive
             timeout = 120
             start = time.time()
             timedout = False

@@ -56,6 +56,11 @@ class StrategyIsActive(HTTPException):
     description = "Strategy has active users."
 
 
+class StrategyIsInactive(HTTPException):
+    code = 400
+    description = "Strategy is inactive."
+
+
 class StrategyMixedIn(HTTPException):
     code = 400
     description = "Strategy is mixed in."
