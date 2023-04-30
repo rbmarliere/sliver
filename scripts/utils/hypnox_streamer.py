@@ -41,7 +41,7 @@ class Stream(tweepy.StreamingClient):
 
         try:
             if hasattr(status, "extended_tweet"):
-                text = +status.extended_tweet["full_text"]
+                text = status.extended_tweet["full_text"]
             else:
                 text = status.text
         except AttributeError:
