@@ -36,7 +36,7 @@ export class LaNinaStrategy extends Strategy {
 
   lanina_cross_active: boolean = false;
   lanina_cross_buyback_offset: number = 0;
-  lanina_cross_buy_min_closes_below: number = 0;
+  lanina_cross_buy_min_closes_above: number = 0;
   lanina_cross_sell_min_closes_below: number = 0;
   lanina_cross_reversed_below: boolean = false;
 
