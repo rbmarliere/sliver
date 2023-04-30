@@ -45,7 +45,8 @@ class LaNinaStrategy(IStrategy):
 
     lanina_cross_active = peewee.BooleanField(default=False)
     lanina_cross_buyback_offset = peewee.IntegerField(default=0)
-    lanina_cross_min_closes_below = peewee.IntegerField(default=1)
+    lanina_cross_buy_min_closes_below = peewee.IntegerField(default=1)
+    lanina_cross_sell_min_closes_below = peewee.IntegerField(default=1)
     lanina_cross_reversed_below = peewee.BooleanField(default=False)
 
     lanina_bull_cross_active = peewee.BooleanField(default=False)
@@ -159,13 +160,16 @@ class LaNinaStrategy(IStrategy):
             bear_cross = bear_trend & ((prev.trend == 1) | (prev.trend == 0))
             indicators.loc[bear_cross, "stop"] = SELL
             indicators.stop = indicators.stop.shift(
-                abs(self.lanina_cross_min_closes_below)
+                abs(self.lanina_cross_sell_min_closes_below)
             )
 
             if self.lanina_bull_cross_active:
                 bull_cross = bull_trend & ((prev.trend == -1) | (prev.trend == 0))
                 indicators.loc[bull_cross, "stop"] = BUY
                 indicators.loc[indicators.stop.notnull() & bull_trend, "signal"] = BUY
+                # indicators.stop = indicators.stop.shift(
+                #     abs(self.lanina_cross_buy_min_closes_below)
+                # )
 
                 # buying at a bull cross is only allowed if the last sell signal was
                 # from the bear cross, so we remove all buys that come after a normal
