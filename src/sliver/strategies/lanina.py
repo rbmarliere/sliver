@@ -166,7 +166,9 @@ class LaNinaStrategy(IStrategy):
             if self.lanina_bull_cross_active:
                 bull_cross = bull_trend & ((prev.trend == -1) | (prev.trend == 0))
                 indicators.loc[bull_cross, "stop"] = BUY
-                indicators.loc[indicators.stop.notnull() & bull_trend, "signal"] = BUY
+                indicators.loc[
+                    indicators.stop.notnull() & bull_trend & buy_rule, "signal"
+                ] = BUY
                 # indicators.stop = indicators.stop.shift(
                 #     abs(self.lanina_cross_buy_min_closes_below)
                 # )
