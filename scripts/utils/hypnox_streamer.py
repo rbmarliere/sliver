@@ -111,14 +111,12 @@ def get_rules(uids):
         new_rule_str = f"from:{uid}"
         curr_rule_str = " OR ".join(curr_rule + [new_rule_str])
 
-        if len(curr_rule_str) > 512:
+        if len(curr_rule_str) > 497:
             curr_rule_str = " OR ".join(curr_rule)
-            all_rules.append(tweepy.StreamRule(curr_rule_str))
+            all_rules.append(tweepy.StreamRule(f"{curr_rule_str} -is:retweet"))
             curr_rule = [new_rule_str]
 
         curr_rule.append(new_rule_str)
-
-    all_rules.append(tweepy.StreamRule("lang:en -is:retweet"))
 
     return all_rules
 
