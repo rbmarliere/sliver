@@ -133,7 +133,7 @@ def stream():
     if Config().TWITTER_BEARER_TOKEN == "":
         raise BaseError("missing TWITTER_BEARER_TOKEN!")
 
-    stream = Stream(Config().TWITTER_BEARER_TOKEN, tweet_mode="extended")
+    stream = Stream(Config().TWITTER_BEARER_TOKEN)
 
     if args.reset:
         print("resetting users and stream rules")
