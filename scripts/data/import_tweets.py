@@ -17,12 +17,13 @@ def main(args):
     print("converting to datetime")
     input_df.timestamp = pandas.to_datetime(input_df.timestamp, utc=True)
     input_df = input_df.rename(columns={"timestamp": "time"})
+    input_df.dropna(inplace=True)
 
     for tweet in tqdm.tqdm(input_df.to_dict("records")):
         try:
             if detect(tweet["text"]) == "en":
                 HypnoxTweet.insert(**tweet).execute()
-        except LangDetectException:
+        except (LangDetectException, TypeError):
             continue
         except Exception:
             import code
