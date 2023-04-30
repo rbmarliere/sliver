@@ -176,14 +176,18 @@ class LaNinaStrategy(IStrategy):
                 # buying at a bull cross is only allowed if the last sell signal was
                 # from the bear cross, so we remove all buys that come after a normal
                 # sell signal (that are put in the stop aux. column as '2')
+                # also, any normal buy ('3') that happens after a bear cross is removed
                 bkp = indicators.loc[indicators.signal == SELL, "buy_stop"].copy()
                 indicators.loc[indicators.signal == SELL, "buy_stop"] = 2
+                indicators.loc[indicators.signal == BUY, "buy_stop"] = 3
                 stops = indicators.loc[
                     indicators.buy_stop.notnull() & indicators.buy_stop != NEUTRAL
                 ]
                 prev_stops = stops.shift(1)
                 stops.loc[
-                    (prev_stops.buy_stop == 2) & (stops.buy_stop == BUY), "buy_stop"
+                    (prev_stops.buy_stop == 2)
+                    & ((stops.buy_stop == BUY) | (stops.buy_stop == 3)),
+                    "buy_stop",
                 ] = NEUTRAL
                 indicators.loc[indicators.signal == SELL, "buy_stop"] = bkp
                 indicators.loc[
