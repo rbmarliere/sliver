@@ -39,8 +39,15 @@ class Stream(tweepy.StreamingClient):
         if status.in_reply_to_user_id:
             return
 
+        try:
+            if hasattr(status, "extended_tweet"):
+                text = +status.extended_tweet["full_text"]
+            else:
+                text = status.text
+        except AttributeError:
+            text = status.text
+
         time = (datetime.datetime.utcnow(),)
-        text = status.text
 
         # make the tweet single-line
         text = re.sub("\n", " ", text).strip()
@@ -111,7 +118,7 @@ def get_rules(uids):
 
         curr_rule.append(new_rule_str)
 
-    all_rules.append("lang:en -is:retweet")
+    all_rules.append(tweepy.StreamRule("lang:en -is:retweet"))
 
     return all_rules
 
@@ -126,7 +133,7 @@ def stream():
     if Config().TWITTER_BEARER_TOKEN == "":
         raise BaseError("missing TWITTER_BEARER_TOKEN!")
 
-    stream = Stream(Config().TWITTER_BEARER_TOKEN)
+    stream = Stream(Config().TWITTER_BEARER_TOKEN, tweet_mode="extended")
 
     if args.reset:
         print("resetting users and stream rules")
