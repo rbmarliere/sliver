@@ -154,18 +154,18 @@ class LaNinaStrategy(IStrategy):
 
         if self.lanina_cross_active:
             prev = indicators.shift(1)
-
             bear_cross = bear_trend & (prev.ma1 >= prev.ma2) & (prev.ma2 >= prev.ma3)
-            bull_cross = bull_trend & (prev.ma1 <= prev.ma2) & (prev.ma2 <= prev.ma3)
-
             indicators.loc[bear_cross, "stop"] = SELL
-            indicators.loc[bull_cross, "stop"] = BUY
-
             indicators.stop = indicators.stop.shift(
                 abs(self.lanina_cross_min_closes_below)
             )
             indicators.loc[indicators.stop.notnull() & bear_trend, "signal"] = SELL
-            indicators.loc[indicators.stop.notnull() & bull_trend, "signal"] = BUY
+
+            # if self.lanina_bull_cross_active:
+            # THIS ONLY HAPPENS AFTER A BEAR CROSS
+            # bull_cross = bull_trend & (prev.ma1 <= prev.ma2) & (prev.ma2 <= prev.ma3)
+            # indicators.loc[bull_cross, "stop"] = BUY
+            # indicators.loc[indicators.stop.notnull() & bull_trend, "signal"] = BUY
 
             # if self.lanina_cross_reversed_below:
             #     # TODO
