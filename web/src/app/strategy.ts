@@ -269,7 +269,7 @@ export class Strategy {
       },
       data: [
         {
-          name: 'closing price',
+          name: 'close',
           x: this.indicators!.time,
           y: this.indicators!.close,
           // high: data.high,
@@ -280,7 +280,7 @@ export class Strategy {
           yaxis: 'y',
         },
         {
-          name: 'buy signal',
+          name: 'buy',
           x: this.indicators!.time,
           y: this.indicators!.buys,
           type: 'scatter',
@@ -290,7 +290,7 @@ export class Strategy {
           yaxis: 'y',
         },
         {
-          name: 'sell signal',
+          name: 'sell',
           x: this.indicators!.time,
           y: this.indicators!.sells,
           type: 'scatter',

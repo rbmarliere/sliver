@@ -388,6 +388,13 @@
             <mat-label style="padding: 1vh">Reverse trading below cross</mat-label>
           </p>
         </div>
+        <div class="fields" *ngIf="strategy.type == StrategyType.LANINA">
+          <p>
+            <mat-slide-toggle formControlName="lanina_bull_cross_active">
+            </mat-slide-toggle>
+            <mat-label style="padding: 1vh">Enable 3MA bull cross buying</mat-label>
+          </p>
+        </div>
 
         <div class="fields" *ngIf="strategy.type == StrategyType.LANINA">
           <mat-form-field>

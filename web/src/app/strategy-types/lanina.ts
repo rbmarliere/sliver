@@ -39,6 +39,8 @@ export class LaNinaStrategy extends Strategy {
   lanina_cross_min_closes_below: number = 0;
   lanina_cross_reversed_below: boolean = false;
 
+  lanina_bull_cross_active: boolean = false;
+
   override getPlot(): any {
     let plot = super.getPlot();
 
