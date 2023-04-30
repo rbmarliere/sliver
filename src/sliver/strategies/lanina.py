@@ -154,7 +154,7 @@ class LaNinaStrategy(IStrategy):
 
         if self.lanina_cross_active:
             prev = indicators.shift(1)
-            bear_cross = bear_trend & (prev.ma1 >= prev.ma2) & (prev.ma2 >= prev.ma3)
+            bear_cross = bear_trend & ((prev.ma1 >= prev.ma3) & (prev.ma2 >= prev.ma3))
             indicators.loc[bear_cross, "stop"] = SELL
             indicators.stop = indicators.stop.shift(
                 abs(self.lanina_cross_min_closes_below)
