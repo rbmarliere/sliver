@@ -158,39 +158,41 @@ class LaNinaStrategy(IStrategy):
         if self.lanina_cross_active:
             prev = indicators.shift(1)
             bear_cross = bear_trend & ((prev.trend == 1) | (prev.trend == 0))
-            indicators.loc[bear_cross, "stop"] = SELL
-            indicators.stop = indicators.stop.shift(
+            indicators.loc[bear_cross, "sell_stop"] = SELL
+            indicators.sell_stop = indicators.sell_stop.shift(
                 abs(self.lanina_cross_sell_min_closes_below)
             )
 
             if self.lanina_bull_cross_active:
                 bull_cross = bull_trend & ((prev.trend == -1) | (prev.trend == 0))
-                indicators.loc[bull_cross, "stop"] = BUY
+                indicators.loc[bull_cross, "buy_stop"] = BUY
                 indicators.loc[
-                    indicators.stop.notnull() & bull_trend & buy_rule, "signal"
+                    indicators.buy_stop.notnull() & bull_trend & buy_rule, "signal"
                 ] = BUY
-                # indicators.stop = indicators.stop.shift(
-                #     abs(self.lanina_cross_buy_min_closes_below)
-                # )
+                indicators.buy_stop = indicators.buy_stop.shift(
+                    abs(self.lanina_cross_buy_min_closes_below)
+                )
 
                 # buying at a bull cross is only allowed if the last sell signal was
                 # from the bear cross, so we remove all buys that come after a normal
                 # sell signal (that are put in the stop aux. column as '2')
-                bkp = indicators.loc[indicators.signal == SELL, "stop"].copy()
-                indicators.loc[indicators.signal == SELL, "stop"] = 2
+                bkp = indicators.loc[indicators.signal == SELL, "buy_stop"].copy()
+                indicators.loc[indicators.signal == SELL, "buy_stop"] = 2
                 stops = indicators.loc[
-                    indicators.stop.notnull() & indicators.stop != NEUTRAL
+                    indicators.buy_stop.notnull() & indicators.buy_stop != NEUTRAL
                 ]
                 prev_stops = stops.shift(1)
                 stops.loc[
-                    (prev_stops.stop == 2) & (stops.stop == BUY), "stop"
+                    (prev_stops.buy_stop == 2) & (stops.buy_stop == BUY), "buy_stop"
                 ] = NEUTRAL
-                indicators.loc[indicators.signal == SELL, "stop"] = bkp
-                indicators.loc[indicators.stop.notnull(), "stop"] = stops.stop
+                indicators.loc[indicators.signal == SELL, "buy_stop"] = bkp
+                indicators.loc[
+                    indicators.buy_stop.notnull(), "buy_stop"
+                ] = stops.buy_stop
 
-                indicators.loc[indicators.stop == BUY, "signal"] = BUY
+                indicators.loc[indicators.buy_stop == BUY, "signal"] = BUY
 
-            indicators.loc[indicators.stop.notnull() & bear_trend, "signal"] = SELL
+            indicators.loc[indicators.sell_stop.notnull() & bear_trend, "signal"] = SELL
 
             # if self.lanina_cross_reversed_below:
             #     # TODO
