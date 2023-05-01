@@ -44,6 +44,7 @@ export class BacktestComponent {
       },
       error: () => {
         this.loadingInd = false;
+        this.strategy.indicators = null;
       }
     });
   }
