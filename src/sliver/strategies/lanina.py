@@ -86,9 +86,9 @@ class LaNinaStrategy(IStrategy):
         return df
 
     def refresh_indicators(self, indicators, pending):
-        BUY = StrategySignals.BUY
-        NEUTRAL = StrategySignals.NEUTRAL
-        SELL = StrategySignals.SELL
+        BUY = StrategySignals.BUY.value
+        NEUTRAL = StrategySignals.NEUTRAL.value
+        SELL = StrategySignals.SELL.value
 
         indicators["rsi"] = rsi(
             indicators.close,
@@ -142,8 +142,9 @@ class LaNinaStrategy(IStrategy):
         )
 
         indicators["signal"] = NEUTRAL
-        indicators.loc[buy_rule, "signal"] = BUY
-        indicators.loc[sell_rule, "signal"] = SELL
+        indicators["elnino"] = NEUTRAL
+        indicators.loc[buy_rule, "elnino"] = BUY
+        indicators.loc[sell_rule, "elnino"] = SELL
 
         bear_trend = (indicators.ma1 <= indicators.ma2) & (
             indicators.ma2 <= indicators.ma3
@@ -158,66 +159,81 @@ class LaNinaStrategy(IStrategy):
         if self.lanina_cross_active:
             prev = indicators.shift(1)
             bear_cross = bear_trend & ((prev.trend == 1) | (prev.trend == 0))
-            indicators.loc[bear_cross, "sell_stop"] = SELL
+            indicators.loc[(bear_cross) & (bear_trend), "sell_stop"] = SELL
             indicators.sell_stop = indicators.sell_stop.shift(
                 abs(self.lanina_cross_sell_min_closes_below)
             )
+            indicators.loc[
+                (indicators.sell_stop.notnull()) | (indicators.elnino == SELL), "signal"
+            ] = SELL
 
             if self.lanina_bull_cross_active:
                 bull_cross = bull_trend & ((prev.trend == -1) | (prev.trend == 0))
-                indicators.loc[bull_cross, "buy_stop"] = BUY
-                indicators.loc[
-                    indicators.buy_stop.notnull() & bull_trend & buy_rule, "signal"
-                ] = BUY
+
+                # buy again whenever theres a 3ma bull cross OR there's a normal buy
+                # signal in a bull trend
+
+                indicators.loc[(bull_cross) & (bull_trend), "buy_stop"] = BUY
                 indicators.buy_stop = indicators.buy_stop.shift(
                     abs(self.lanina_cross_buy_min_closes_above)
                 )
 
-                # buying at a bull cross is only allowed if the last sell signal was
-                # from the bear cross, so we remove all buys that come after a normal
-                # sell signal (that are put in the stop aux. column as '2')
-                bkp = indicators.loc[indicators.signal == SELL, "buy_stop"].copy()
-                indicators.loc[indicators.signal == SELL, "buy_stop"] = 2
-                stops = indicators.loc[
-                    indicators.buy_stop.notnull() & indicators.buy_stop != NEUTRAL
-                ]
-                prev_stops = stops.shift(1)
-                stops.loc[
-                    (prev_stops.buy_stop == 2) & (stops.buy_stop == BUY),
-                    "buy_stop",
-                ] = NEUTRAL
-                indicators.loc[indicators.signal == SELL, "buy_stop"] = bkp
                 indicators.loc[
-                    indicators.buy_stop.notnull(), "buy_stop"
-                ] = stops.buy_stop
+                    (indicators.buy_stop.notnull())
+                    | ((indicators.elnino == BUY) & (bull_trend)),
+                    "signal",
+                ] = BUY
 
-                # merge buy_stop and sell_stop
-                indicators.loc[indicators.buy_stop == BUY, "stop"] = BUY
-                indicators.loc[indicators.sell_stop == SELL, "stop"] = SELL
+            else:
+                indicators.loc[indicators.elnino == BUY, "signal"] = BUY
+        else:
+            indicators.loc[indicators.elnino == SELL, "signal"] = SELL
 
-                # also, any normal buy ('3') that happens after a bear cross is removed
-                bkp = indicators.loc[indicators.signal == BUY, "stop"].copy()
-                indicators.loc[indicators.signal == BUY, "stop"] = 3
-                stops = indicators.loc[
-                    indicators.stop.notnull() & indicators.stop != NEUTRAL
-                ]
-                prev_stops = stops.shift(1)
-                stops.loc[
-                    (prev_stops.stop == SELL) & (stops.stop == 3),
-                    "stop",
-                ] = NEUTRAL
-                indicators.loc[indicators.signal == BUY, "stop"] = bkp
-                indicators.loc[indicators.stop.notnull(), "stop"] = stops.stop
+        indicators.signal.fillna(NEUTRAL, inplace=True)
 
-                # add eligible buys to signal col.
-                indicators.loc[indicators.stop == BUY, "signal"] = BUY
+        # buying at a bull cross is only allowed if the last sell signal was
+        # from the bear cross, so we remove all buys that come after a normal
+        # sell signal (that are put in the stop aux. column as '2')
 
-            indicators.loc[indicators.sell_stop.notnull() & bear_trend, "signal"] = SELL
+        # bkp = indicators.loc[indicators.signal == SELL, "buy_stop"].copy()
+        # indicators.loc[indicators.signal == SELL, "buy_stop"] = 2
+        # stops = indicators.loc[
+        #     indicators.buy_stop.notnull() & indicators.buy_stop != NEUTRAL
+        # ]
+        # prev_stops = stops.shift(1)
+        # stops.loc[
+        #     (prev_stops.buy_stop == 2) & (stops.buy_stop == BUY),
+        #     "buy_stop",
+        # ] = NEUTRAL
+        # indicators.loc[indicators.signal == SELL, "buy_stop"] = bkp
+        # indicators.loc[
+        #     indicators.buy_stop.notnull(), "buy_stop"
+        # ] = stops.buy_stop
 
-            # if self.lanina_cross_reversed_below:
-            #     # TODO
-            #     buy_rule = buy_rule & bull
-            #     sell_rule = sell_rule & bear
+        # also, any normal buy ('3') that happens after a bear cross and close
+        # price is below root_ma is removed
+
+        # indicators.loc[(indicators.signal == BUY), "stop"] = 3
+        # indicators.loc[(indicators.buy_stop == BUY), "stop"] = BUY
+        # indicators.loc[(indicators.sell_stop == SELL), "stop"] = SELL
+        # group = indicators.stop.lt(3).cumsum()
+        # indicators["stop_clean"] = indicators.groupby(group)["stop"].cummin()
+
+        # add eligible buys to signal col.
+
+        # indicators.loc[indicators.stop == 3, "signal"] = BUY
+        # indicators.loc[
+        #     (indicators.stop == 3)
+        #     & (indicators.stop_clean == SELL)
+        #     & (indicators.close <= indicators.root_ma),
+        #     "signal",
+        # ] = NEUTRAL
+        # indicators.loc[indicators.stop == BUY, "signal"] = BUY
+
+        # if self.lanina_cross_reversed_below:
+        #     # TODO
+        #     buy_rule = buy_rule & bull
+        #     sell_rule = sell_rule & bear
 
         # Level 0: It trades exactly like it does right now, only above the MA, in an
         #   "uptrend/bullish trend"
