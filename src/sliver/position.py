@@ -536,6 +536,7 @@ class Position(db.BaseModel):
             self.exchange.api_cancel_orders(symbol, oid=o.exchange_order_id)
         self.status = "stalled"
         self.save()
+        self.user_strategy.user.send_message(self.get_notice(prefix="stalled "))
 
     def drop(self):
         symbol = self.user_strategy.strategy.symbol
