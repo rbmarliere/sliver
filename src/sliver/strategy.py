@@ -306,6 +306,8 @@ class IStrategy(db.BaseModel):
 
         self.postpone()
 
+        self.save()
+
     def get_parser(self):
         argp = BaseStrategy.get_parser()
 
