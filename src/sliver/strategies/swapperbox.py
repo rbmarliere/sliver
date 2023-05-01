@@ -25,7 +25,7 @@ class SwapperBoxStrategy(IStrategy):
     def setup():
         db.connection.create_tables([SwapperBoxStrategy, SwapperBoxMessage])
 
-    def init_indicators(self, indicators, pending):
+    def init_indicators(self, indicators):
         NEUTRAL = StrategySignals.NEUTRAL
 
         # signals = pandas.read_html(self.url)[1]
