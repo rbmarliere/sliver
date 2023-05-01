@@ -37,8 +37,13 @@ def main(args):
     input_df = pandas.read_csv(args.input_file, sep="\t", encoding="utf-8")
     input_df = input_df[["time", "text"]]
     input_df.time = pandas.to_datetime(input_df.time, utc=True)
+    input_df = input_df.dropna()
 
-    HypnoxTweet.insert_many(input_df.to_dict("records")).execute()
+    print("inserting into database")
+    page_size = 100000
+    for i in tqdm.tqdm(range(0, len(input_df), page_size)):
+        page = input_df.iloc[i : i + page_size]
+        HypnoxTweet.insert_many(page.to_dict("records")).execute()
 
 
 if __name__ == "__main__":
