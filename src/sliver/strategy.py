@@ -151,6 +151,9 @@ class BaseStrategy(db.BaseModel):
 
         df = pandas.DataFrame(query.dicts())
 
+        if df.empty:
+            return df
+
         if since is not None:
             since = datetime.datetime.utcfromtimestamp(since)
             df = df.loc[df.time >= since].copy()
