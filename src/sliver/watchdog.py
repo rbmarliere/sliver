@@ -124,13 +124,20 @@ class Watchdog(metaclass=WatchdogMeta):
 
     @run
     def refresh_pending_strategies(self):
-        for strategy in BaseStrategy.get_pending():
-            strategy = StrategyFactory.from_base(strategy)
+        for base_st in BaseStrategy.get_pending():
+            strategy = StrategyFactory.from_base(base_st)
 
             self.strategy = strategy
+            base_st.refreshing = True
+            base_st.save()
+
             strategy.refresh()
-            signal = self.strategy.get_signal()
+
+            base_st.refreshing = False
+            base_st.save()
             self.strategy = None
+
+            signal = strategy.get_signal()
 
             for user_strat in strategy.userstrategy_set:
                 self.user_strat = user_strat
