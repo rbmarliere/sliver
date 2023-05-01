@@ -41,9 +41,11 @@ class SwapperBoxStrategy(IStrategy):
 
         si = si.resample(freq).ffill()
 
+        indicators.set_index("time", inplace=True)
         indicators.signal = si.signal
         until_last = indicators.loc[indicators.index < si.iloc[-1].name, "signal"]
         indicators.signal = until_last.fillna(NEUTRAL)
+        indicators.reset_index(inplace=True)
 
         return indicators
 
@@ -81,12 +83,10 @@ class SwapperBoxStrategy(IStrategy):
         NEUTRAL = StrategySignals.NEUTRAL
         BUY = StrategySignals.BUY
 
-        all_indicators = pandas.DataFrame(self.get_indicators().dicts()).dropna()
+        pending = pending.assign(signal=NEUTRAL)
 
-        if len(all_indicators) == len(indicators):
-            indicators = self.init_indicators(indicators)
-
-        indicators = indicators.assign(signal=NEUTRAL)
+        if len(indicators) == len(pending):
+            pending = self.init_indicators(indicators)
 
         messages = self.refresh_messages()
 
@@ -97,7 +97,7 @@ class SwapperBoxStrategy(IStrategy):
         messages.date = messages.date.dt.tz_localize(None)
         messages = messages.set_index("date")
 
-        indicators = indicators.set_index("time")
+        pending = pending.set_index("time")
 
         new_row = pandas.DataFrame(index=[datetime.datetime.utcnow()])
         messages_plus = pandas.concat([messages, new_row])
@@ -114,9 +114,9 @@ class SwapperBoxStrategy(IStrategy):
         longs = messages.loc[
             messages.text.str.contains("position: LONG", na=False)
         ].index
-        indicators.loc[indicators.index.isin(longs), "signal"] = BUY
-        indicators.loc[indicators.index.isin(shorts), "signal"] = SELL
+        pending.loc[pending.index.isin(longs), "signal"] = BUY
+        pending.loc[pending.index.isin(shorts), "signal"] = SELL
 
-        indicators = indicators.reset_index()
+        pending = pending.reset_index()
 
-        return indicators
+        return pending
