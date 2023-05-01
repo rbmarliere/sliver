@@ -12,7 +12,10 @@ import pandas
 import peewee
 
 
-debugpy.listen(5678)
+try:
+    debugpy.listen(5678)
+except:
+    pass
 
 
 def st(id):
