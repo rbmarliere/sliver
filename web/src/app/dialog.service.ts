@@ -25,24 +25,25 @@ export class DialogService {
 
     let title: string = "Error";
 
-    // check if message is empty, null or undefined
-    if (!message) {
-      switch (error.status) {
-        case 403:
-          message = 'Access Denied.';
-          break;
+    switch (error.status) {
+      case 403:
+        message = 'Access Denied.';
+        break;
 
-        case 500:
-          title = 'Internal Server Error.';
-          break;
+      case 500:
+        title = 'Internal Server Error.';
+        break;
 
-        case 504:
-          message = 'API is not responding.';
-          break;
+      case 502:
+        message = 'API is not responding.';
+        break;
 
-        default:
-          break;
-      }
+      case 504:
+        message = 'API is not responding.';
+        break;
+
+      default:
+        break;
     }
 
     const dialogConfig = new MatDialogConfig;
