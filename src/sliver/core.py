@@ -87,4 +87,4 @@ def serve():
         api.app.run(port=5000, debug=False)
 
     elif Config().ENV_NAME == "production":
-        waitress.serve(api.app, port=5000)
+        waitress.serve(api.app, port=5000, channel_timeout=360)
