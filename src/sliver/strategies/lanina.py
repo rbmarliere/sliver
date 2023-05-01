@@ -86,9 +86,9 @@ class LaNinaStrategy(IStrategy):
         return df
 
     def refresh_indicators(self, indicators, pending):
-        BUY = StrategySignals.BUY.value
-        NEUTRAL = StrategySignals.NEUTRAL.value
-        SELL = StrategySignals.SELL.value
+        BUY = StrategySignals.BUY
+        NEUTRAL = StrategySignals.NEUTRAL
+        SELL = StrategySignals.SELL
 
         indicators["rsi"] = rsi(
             indicators.close,
