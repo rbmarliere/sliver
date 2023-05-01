@@ -4,7 +4,7 @@ import peewee
 from tqdm import tqdm
 
 import sliver.database as db
-from sliver.config import Config
+from sliver.exceptions import DisablingError
 from sliver.indicator import Indicator
 from sliver.strategies.hypnox import HypnoxTweet
 from sliver.strategies.signals import StrategySignals
@@ -31,12 +31,21 @@ def aggregate_tweets(tweets, pos_bigrams, neg_bigrams, unigrams):
     return pos.sum() - neg.sum()
 
 
-class Hypnoxv2Bigram(db.BaseModel):
-    ...
+class Hypnoxv2Gram(db.BaseModel):
+    rank = peewee.IntegerField(default=1)
+    gram = peewee.TextField()
+    label = peewee.IntegerField(default=0)
 
+    @classmethod
+    def get_by_rank(cls, rank):
+        grams = pandas.DataFrame(cls.select().where(cls.rank == rank).dicts())
 
-class Hypnoxv2Unigram(db.BaseModel):
-    ...
+        if grams.empty:
+            return grams
+
+        grams = grams.set_index("gram")[["label"]]
+
+        return grams
 
 
 class Hypnoxv2Indicator(db.BaseModel):
@@ -55,12 +64,15 @@ class Hypnoxv2Strategy(IStrategy):
 
     @staticmethod
     def setup():
-        db.connection.create_tables([Hypnoxv2Strategy, Hypnoxv2Indicator])
+        db.connection.create_tables([Hypnoxv2Strategy, Hypnoxv2Indicator, Hypnoxv2Gram])
 
     def refresh_indicators(self, indicators, pending):
         BUY = StrategySignals.BUY
         NEUTRAL = StrategySignals.NEUTRAL
         SELL = StrategySignals.SELL
+
+        if pending.empty:
+            return
 
         filter = b""
         if self.hypnoxv2_tweet_filter:
@@ -68,7 +80,7 @@ class Hypnoxv2Strategy(IStrategy):
 
         tweets = pandas.DataFrame(
             HypnoxTweet.select()
-            .where(HypnoxTweet.time >= indicators.iloc[0].time)
+            .where(HypnoxTweet.time >= pending.iloc[0].time)
             .where(HypnoxTweet.text.iregexp(filter))
             .dicts()
         )
@@ -82,13 +94,15 @@ class Hypnoxv2Strategy(IStrategy):
         tweets = tweets.drop("id", axis=1)
         tweets = tweets.set_index("time")
 
-        unigrams = pandas.read_csv(f"{Config().ETC_DIR}/unigrams.tsv", sep="\t")
-        unigrams = unigrams.loc[unigrams.label == 1].unigram.tolist()
+        unigrams = Hypnoxv2Gram.get_by_rank(1)
+        if unigrams.empty:
+            raise DisablingError("no unigrams found")
+            return
+        unigrams = unigrams.loc[unigrams.label == 1].index.tolist()
 
-        bigrams = pandas.read_csv(
-            f"{Config().ETC_DIR}/bigrams.tsv", sep="\t"
-        ).set_index("bigram")
-
+        bigrams = Hypnoxv2Gram.get_by_rank(2)
+        if bigrams.empty:
+            raise DisablingError("no bigrams found")
         pos_bigrams = bigrams[bigrams.label == 1]
         neg_bigrams = bigrams[bigrams.label == -1]
 
@@ -97,20 +111,16 @@ class Hypnoxv2Strategy(IStrategy):
             lambda x: aggregate_tweets(x, pos_bigrams, neg_bigrams, unigrams)
         )
 
-        indicators["signal"] = NEUTRAL
+        pending["signal"] = NEUTRAL
 
-        indicators = indicators.set_index("time")
-        indicators["score"] = tweets
-        indicators.score.fillna(0, inplace=True)
+        pending = pending.set_index("time")
+        pending["score"] = tweets
+        pending.score.fillna(0, inplace=True)
 
-        indicators = indicators.reset_index()
+        pending = pending.reset_index()
 
-        indicators.loc[
-            indicators["score"] > self.hypnoxv2_upper_threshold, "signal"
-        ] = BUY
+        pending.loc[pending["score"] > self.hypnoxv2_upper_threshold, "signal"] = BUY
 
-        indicators.loc[
-            indicators["score"] < self.hypnoxv2_lower_threshold, "signal"
-        ] = SELL
+        pending.loc[pending["score"] < self.hypnoxv2_lower_threshold, "signal"] = SELL
 
-        return indicators
+        return pending
