@@ -27,25 +27,32 @@ class Indicator(Resource):
             join_type = peewee.JOIN.INNER
 
         try:
-            strategy = StrategyFactory.from_base(BaseStrategy.get_by_id(strategy_id))
+            strategy = StrategyFactory.from_base(BaseStrategy.get(id=strategy_id))
             if strategy.deleted:
                 raise StrategyDoesNotExist
         except BaseStrategy.DoesNotExist:
             raise StrategyDoesNotExist
 
         if join_type:
-            if not strategy.active:
-                raise StrategyIsInactive
-            timeout = 120
+            timeout = 300
             start = time.time()
             timedout = False
             while True:
-                if time.time() - start > timeout:
+                base_st = BaseStrategy.get(id=strategy_id)
+
+                if not base_st.active:
+                    raise StrategyIsInactive
+
+                if not base_st.refreshing:
+                    break
+
+                elapsed = time.time() - start
+                if elapsed > timeout:
                     timedout = True
                     break
-                if not strategy.refreshing:
-                    break
+
                 time.sleep(5)
+
             if timedout:
                 raise StrategyRefreshing
 
