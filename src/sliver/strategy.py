@@ -1,11 +1,10 @@
 import datetime
-from flask_restful import reqparse, fields
-
 from abc import ABCMeta, abstractmethod
 from decimal import Decimal as D
 
 import pandas
 import peewee
+from flask_restful import fields, reqparse
 
 import sliver.database as db
 from sliver.exchanges.factory import ExchangeFactory
@@ -14,12 +13,13 @@ from sliver.market import Market
 from sliver.price import Price
 from sliver.print import print
 from sliver.strategies.signals import StrategySignals
+from sliver.strategies.status import StrategyStatus
 from sliver.trade_engine import TradeEngine
 from sliver.utils import (
     get_next_refresh,
     get_timeframe_in_seconds,
-    quantize,
     parse_field_type,
+    quantize,
 )
 
 
@@ -32,9 +32,6 @@ class BaseStrategy(db.BaseModel):
     creator = peewee.DeferredForeignKey("User", null=True)
     description = peewee.TextField()
     type = peewee.IntegerField(default=0)
-    active = peewee.BooleanField(default=False)
-    refreshing = peewee.BooleanField(default=False)
-    deleted = peewee.BooleanField(default=False)
     market = peewee.ForeignKeyField(Market)
     timeframe = peewee.TextField(default="1d")
     next_refresh = peewee.DateTimeField(default=datetime.datetime.utcnow())
@@ -42,6 +39,7 @@ class BaseStrategy(db.BaseModel):
     sell_engine = peewee.ForeignKeyField(TradeEngine)
     stop_engine = peewee.ForeignKeyField(TradeEngine, null=True)
     side = peewee.TextField(default="long")
+    status = peewee.IntegerField(default=StrategyStatus.INACTIVE)
 
     @property
     def symbol(self):
@@ -53,11 +51,15 @@ class BaseStrategy(db.BaseModel):
 
     @classmethod
     def get_existing(cls):
-        return cls.select().where(~cls.deleted).order_by(cls.id.desc())
+        return (
+            cls.select()
+            .where(cls.status != StrategyStatus.DELETED)
+            .order_by(cls.id.desc())
+        )
 
     @classmethod
     def get_active(cls):
-        return cls.get_existing().where(cls.active)
+        return cls.get_existing().where(cls.status << StrategyStatus.active())
 
     @classmethod
     def get_pending(cls):
@@ -114,6 +116,19 @@ class BaseStrategy(db.BaseModel):
             "sells": fields.List(fields.Float),
             "signal": fields.List(fields.Float),
         }
+
+    @property
+    def active(self):
+        return self.is_active()
+
+    def is_deleted(self):
+        return self.status == StrategyStatus.DELETED
+
+    def is_active(self):
+        return self.status in StrategyStatus.active()
+
+    def is_refreshing(self):
+        return self.status in StrategyStatus.refreshing()
 
     def get_signal(self):
         try:
@@ -216,7 +231,7 @@ class BaseStrategy(db.BaseModel):
         return df
 
     def enable(self):
-        self.active = True
+        self.status = StrategyStatus.IDLE
         self.next_refresh = datetime.datetime.utcnow()
         self.save()
 
@@ -232,12 +247,12 @@ class BaseStrategy(db.BaseModel):
         for u_st in self.userstrategy_set:
             if u_st.active:
                 u_st.user.send_message(msg)
-        self.active = False
+
+        self.status = StrategyStatus.INACTIVE
         self.save()
 
     def delete(self):
-        self.deleted = True
-        self.active = False
+        self.status = StrategyStatus.DELETED
         self.save()
 
     def postpone(self, interval_in_minutes=None):
@@ -279,6 +294,9 @@ class IStrategy(db.BaseModel):
         return self.strategy.get_indicators_df(self.get_indicators(), **kwargs)
 
     def refresh(self):
+        self.strategy.status = StrategyStatus.REFRESHING
+        self.strategy.save()
+
         print("===========================================")
         print(f"refreshing strategy {self}")
         print(f"market is {self.symbol} [{self.market}]")
@@ -297,6 +315,7 @@ class IStrategy(db.BaseModel):
         indicators.strategy = self.strategy.id
         indicators.price = indicators.id
         pending = indicators.loc[indicators.indicator_id.isnull()].copy()
+
         with db.connection.atomic():
             indicators = self.refresh_indicators(indicators, pending)
             if indicators is not None:
@@ -307,6 +326,9 @@ class IStrategy(db.BaseModel):
         self.postpone()
 
         self.save()
+
+        self.strategy.status = StrategyStatus.IDLE
+        self.strategy.save()
 
     def get_parser(self):
         argp = BaseStrategy.get_parser()
