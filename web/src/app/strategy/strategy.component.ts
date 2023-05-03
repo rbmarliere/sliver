@@ -220,4 +220,10 @@ export class StrategyComponent implements OnInit {
       next: () => this.strategy.active = !this.strategy.active,
     });
   }
+
+  resetStrategy(strategy: Strategy): void {
+    this.strategyService.resetStrategy(strategy).subscribe({
+      // next: () => this.strategy.active = !this.strategy.active,
+    });
+  }
 }
