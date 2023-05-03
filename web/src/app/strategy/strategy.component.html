@@ -523,24 +523,35 @@
 
         </div>
 
-        <div class="button">
-          <button mat-raised-button color="primary">Save</button>
+        <div class="buttons">
+          <div class="button">
+            <button mat-raised-button color="primary">Save</button>
+          </div>
 
-          <button mat-raised-button *ngIf="strategy.id > 0" type="button" color="primary"
-            (click)="updateSubscription(strategy)">
-            <span *ngIf="!strategy.subscribed">Subscribe</span>
-            <span *ngIf="strategy.subscribed">Unsubscribe</span>
-          </button>
+          <div class="button">
+            <button mat-raised-button color="primary" (click)="resetStrategy(strategy)">Reset Indicators</button>
+          </div>
 
-          <button mat-raised-button *ngIf="strategy.id > 0" type="button" color="primary"
-            (click)="updateActive(strategy)">
-            <span *ngIf="!strategy.active">Activate</span>
-            <span *ngIf="strategy.active">Deactivate</span>
-          </button>
+          <div class="button">
+            <button mat-raised-button *ngIf="strategy.id > 0" type="button" color="primary"
+              (click)="updateSubscription(strategy)">
+              <span *ngIf="!strategy.subscribed">Subscribe</span>
+              <span *ngIf="strategy.subscribed">Unsubscribe</span>
+            </button>
+          </div>
 
-          <button mat-raised-button *ngIf="strategy.id > 0" color="primary"
-            routerLink="/strategy/{{strategy.id}}/performance">Show
-            Performance</button>
+          <div class="button">
+            <button mat-raised-button *ngIf="strategy.id > 0" type="button" color="primary"
+              (click)="updateActive(strategy)">
+              <span *ngIf="!strategy.active">Activate</span>
+              <span *ngIf="strategy.active">Deactivate</span>
+            </button>
+          </div>
+
+          <div class="button">
+            <button mat-raised-button *ngIf="strategy.id > 0" color="primary"
+              routerLink="/strategy/{{strategy.id}}/performance">Show Performance</button>
+          </div>
         </div>
       </form>
     </mat-card-content>
