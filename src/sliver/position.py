@@ -12,6 +12,7 @@ from sliver.market import Market
 from sliver.order import Order
 from sliver.print import print
 from sliver.strategies.factory import StrategyFactory
+from sliver.strategies.status import StrategyStatus
 from sliver.strategy import BaseStrategy, StrategySignals
 from sliver.user_strategy import UserStrategy
 from sliver.utils import get_next_refresh, get_return, get_roi
@@ -46,7 +47,11 @@ class Position(db.BaseModel):
 
     @classmethod
     def get_active(cls):
-        return cls.get_all().where(BaseStrategy.active).where(UserStrategy.active)
+        return (
+            cls.get_all()
+            .where(BaseStrategy.status << StrategyStatus.active())
+            .where(UserStrategy.active)
+        )
 
     @classmethod
     def get_opening(cls):

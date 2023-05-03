@@ -128,13 +128,7 @@ class Watchdog(metaclass=WatchdogMeta):
             strategy = StrategyFactory.from_base(base_st)
 
             self.strategy = strategy
-            base_st.refreshing = True
-            base_st.save()
-
             strategy.refresh()
-
-            base_st.refreshing = False
-            base_st.save()
             self.strategy = None
 
             signal = strategy.get_signal()
