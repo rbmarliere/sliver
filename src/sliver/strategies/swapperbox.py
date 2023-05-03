@@ -78,7 +78,7 @@ class SwapperBoxStrategy(IStrategy):
 
         return messages
 
-    def refresh_indicators(self, indicators, pending):
+    def refresh_indicators(self, indicators, pending, reset=False):
         SELL = StrategySignals.SELL
         NEUTRAL = StrategySignals.NEUTRAL
         BUY = StrategySignals.BUY

@@ -66,10 +66,13 @@ class Hypnoxv2Strategy(IStrategy):
     def setup():
         db.connection.create_tables([Hypnoxv2Strategy, Hypnoxv2Indicator, Hypnoxv2Gram])
 
-    def refresh_indicators(self, indicators, pending):
+    def refresh_indicators(self, indicators, pending, reset=False):
         BUY = StrategySignals.BUY
         NEUTRAL = StrategySignals.NEUTRAL
         SELL = StrategySignals.SELL
+
+        if reset:
+            pending = indicators
 
         if pending.empty:
             return

@@ -77,7 +77,7 @@ class WindrunnerStrategy(IStrategy):
 
         return df
 
-    def refresh_indicators(self, indicators, pending):
+    def refresh_indicators(self, indicators, pending, reset=False):
         BUY = StrategySignals.BUY
         NEUTRAL = StrategySignals.NEUTRAL
         SELL = StrategySignals.SELL
@@ -85,16 +85,24 @@ class WindrunnerStrategy(IStrategy):
         if not self.hypnox_model or not self.windrunner_model:
             return
 
+        # if reset:
+        #     pending = indicators
+        #     n_samples = 0
+        #     mean = 0
+        #     variance = 0
+        # else:
+        #     n_samples = pending.iloc[-1].n_samples
+        #     mean = pending.iloc[-1].mean
+        #     variance = pending.iloc[-1].variance
+
         filter = (
             self.hypnox_filter.encode("unicode_escape") if self.hypnox_filter else b""
         )
-
         base_q = (
             HypnoxTweet.get_tweets_by_model(self.hypnox_model)
             .where(HypnoxTweet.text.iregexp(filter))
-            .where(HypnoxTweet.time > pending.iloc[0].time)
+            .where(HypnoxTweet.time > indicators.iloc[0].time)
         )
-
         replay_q = base_q.where(HypnoxScore.model.is_null())
         if replay_q.count() == 0:
             print(f"{self.hypnox_model}: no tweets to replay")

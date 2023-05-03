@@ -47,7 +47,7 @@ class ElNinoStrategy(IStrategy):
 
         return df
 
-    def refresh_indicators(self, indicators, pending):
+    def refresh_indicators(self, indicators, pending, reset=False):
         BUY = StrategySignals.BUY
         NEUTRAL = StrategySignals.NEUTRAL
         SELL = StrategySignals.SELL

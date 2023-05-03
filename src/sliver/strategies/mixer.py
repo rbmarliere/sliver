@@ -40,7 +40,7 @@ class MixerStrategy(IStrategy):
     def setup():
         db.connection.create_tables([MixerStrategy, MixerIndicator, MixedStrategies])
 
-    def refresh_indicators(self, indicators, pending):
+    def refresh_indicators(self, indicators, pending, reset=False):
         from sliver.strategies.factory import StrategyFactory
 
         BUY = StrategySignals.BUY
