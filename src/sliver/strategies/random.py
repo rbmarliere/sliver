@@ -10,13 +10,13 @@ class RandomStrategy(IStrategy):
     def setup():
         db.connection.create_tables([RandomStrategy])
 
-    def refresh_indicators(self, indicators, pending):
+    def refresh_indicators(self, indicators, pending, reset=False):
         BUY = StrategySignals.BUY
         NEUTRAL = StrategySignals.NEUTRAL
         SELL = StrategySignals.SELL
 
-        indicators.signal = indicators.signal.apply(
+        pending.signal = pending.signal.apply(
             lambda x: random.choice([BUY, NEUTRAL, SELL])
         )
 
-        return indicators
+        return pending

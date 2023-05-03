@@ -122,7 +122,7 @@ class HypnoxStrategy(IStrategy):
             [HypnoxStrategy, HypnoxUser, HypnoxTweet, HypnoxScore, HypnoxIndicator]
         )
 
-    def refresh_indicators(self, indicators, pending):
+    def refresh_indicators(self, indicators, pending, reset=False):
         BUY = StrategySignals.BUY
         NEUTRAL = StrategySignals.NEUTRAL
         SELL = StrategySignals.SELL
@@ -130,14 +130,25 @@ class HypnoxStrategy(IStrategy):
         if not self.model:
             return
 
-        filter = self.filter.encode("unicode_escape") if self.filter else b""
+        if reset:
+            pending = indicators
+            n_samples = 0
+            mean = 0
+            variance = 0
+        else:
+            n_samples = pending.iloc[-1].n_samples
+            mean = pending.iloc[-1].mean
+            variance = pending.iloc[-1].variance
 
+        if pending.empty:
+            return
+
+        filter = self.filter.encode("unicode_escape") if self.filter else b""
         base_q = (
             HypnoxTweet.get_tweets_by_model(self.model)
             .where(HypnoxTweet.text.iregexp(filter))
             .where(HypnoxTweet.time > pending.iloc[0].time)
         )
-
         replay_q = base_q.where(HypnoxScore.model.is_null())
         if replay_q.count() == 0:
             print(f"{self.model}: no tweets to replay")
@@ -147,9 +158,11 @@ class HypnoxStrategy(IStrategy):
 
         tweets = pandas.DataFrame(base_q.dicts())
 
-        indicators = HYPNOX(indicators, tweets, self.strategy.timeframe, 0, 0, 0)
+        pending = HYPNOX(
+            pending, tweets, self.strategy.timeframe, n_samples, mean, variance
+        )
 
-        indicators["signal"] = NEUTRAL
+        pending["signal"] = NEUTRAL
 
         signal = NEUTRAL
         if self.mode == "buy":
@@ -157,12 +170,12 @@ class HypnoxStrategy(IStrategy):
         elif self.mode == "sell":
             signal = SELL
 
-        rule = indicators["z_score"] == self.threshold
+        rule = pending["z_score"] == self.threshold
         if self.operator == "gt":
-            rule = indicators["z_score"] > self.threshold
+            rule = pending["z_score"] > self.threshold
         elif self.operator == "lt":
-            rule = indicators["z_score"] < self.threshold
+            rule = pending["z_score"] < self.threshold
 
-        indicators.loc[rule, "signal"] = signal
+        pending.loc[rule, "signal"] = signal
 
-        return indicators
+        return pending

@@ -290,7 +290,7 @@ class IStrategy(db.BaseModel):
         ...
 
     @abstractmethod
-    def refresh_indicators(self, indicators):
+    def refresh_indicators(self, indicators, pending, reset=False):
         ...
 
     def get_indicators(self, **kwargs):
@@ -300,6 +300,8 @@ class IStrategy(db.BaseModel):
         return self.strategy.get_indicators_df(self.get_indicators(), **kwargs)
 
     def refresh(self):
+        reset = self.strategy.status == StrategyStatus.RESETTING
+
         self.strategy.status = StrategyStatus.REFRESHING
         self.strategy.save()
 
@@ -323,7 +325,7 @@ class IStrategy(db.BaseModel):
         pending = indicators.loc[indicators.indicator_id.isnull()].copy()
 
         with db.connection.atomic():
-            indicators = self.refresh_indicators(indicators, pending)
+            indicators = self.refresh_indicators(indicators, pending, reset=reset)
             if indicators is not None:
                 self.update_indicators(indicators)
 
