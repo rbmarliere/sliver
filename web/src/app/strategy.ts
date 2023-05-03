@@ -12,6 +12,7 @@ export class Strategy {
   exchange: string = '';
   description: string = '';
   type: StrategyType | null = null;
+  next_refresh_offset: number = 0;
   active: boolean = false;
   signal: number = 0;
   market_id: number | null = null;
