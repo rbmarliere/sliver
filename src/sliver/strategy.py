@@ -35,6 +35,7 @@ class BaseStrategy(db.BaseModel):
     market = peewee.ForeignKeyField(Market)
     timeframe = peewee.TextField(default="1d")
     next_refresh = peewee.DateTimeField(default=datetime.datetime.utcnow())
+    next_refresh_offset = peewee.IntegerField(default=0)
     buy_engine = peewee.ForeignKeyField(TradeEngine)
     sell_engine = peewee.ForeignKeyField(TradeEngine)
     stop_engine = peewee.ForeignKeyField(TradeEngine, null=True)
@@ -75,6 +76,7 @@ class BaseStrategy(db.BaseModel):
         argp = reqparse.RequestParser()
         argp.add_argument("description", type=str, required=True)
         argp.add_argument("type", type=int, required=True)
+        argp.add_argument("next_refresh_offset", type=int, required=True)
         argp.add_argument("side", type=str, required=True)
         argp.add_argument("market_id", type=int, required=True)
         argp.add_argument("timeframe", type=str, required=True)
@@ -92,6 +94,7 @@ class BaseStrategy(db.BaseModel):
             "exchange": fields.String,
             "description": fields.String,
             "type": fields.Integer,
+            "next_refresh_offset": fields.Integer,
             "side": fields.String,
             "active": fields.Boolean,
             "signal": fields.Integer,
@@ -258,7 +261,10 @@ class BaseStrategy(db.BaseModel):
     def postpone(self, interval_in_minutes=None):
         if interval_in_minutes is None:
             interval_in_minutes = get_timeframe_in_seconds(self.timeframe) / 60
-        self.next_refresh = get_next_refresh(interval_in_minutes)
+
+        offset = datetime.timedelta(minutes=self.next_refresh_offset)
+        self.next_refresh = get_next_refresh(interval_in_minutes) + offset
+
         print(f"postponed strategy {self} next refresh at {self.next_refresh}")
         self.save()
 
