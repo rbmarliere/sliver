@@ -41,7 +41,7 @@ class Strategy(Resource):
 
         try:
             strategy = StrategyModel.get_by_id(strategy_id)
-            if strategy.deleted:
+            if strategy.is_deleted():
                 raise StrategyDoesNotExist
         except StrategyModel.DoesNotExist:
             raise StrategyDoesNotExist
@@ -69,7 +69,7 @@ class Strategy(Resource):
 
         try:
             strategy = StrategyModel.get_by_id(strategy_id)
-            if strategy.deleted:
+            if strategy.is_deleted():
                 raise StrategyDoesNotExist
             if strategy.creator != user and user.id != 1:
                 raise StrategyNotEditable
@@ -94,7 +94,7 @@ class Strategy(Resource):
         except StrategyModel.DoesNotExist:
             raise StrategyDoesNotExist
 
-        if old_strategy.deleted:
+        if old_strategy.is_deleted():
             raise StrategyDoesNotExist
 
         try:
@@ -144,7 +144,6 @@ class Strategy(Resource):
             args["market"] = old_strategy.market.id
             args["timeframe"] = old_strategy.timeframe
             args["type"] = old_strategy.type
-            args["active"] = old_strategy.active
             args["next_refresh"] = datetime.datetime.utcnow()
 
             if (

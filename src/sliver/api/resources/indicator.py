@@ -28,7 +28,7 @@ class Indicator(Resource):
 
         try:
             strategy = StrategyFactory.from_base(BaseStrategy.get(id=strategy_id))
-            if strategy.deleted:
+            if strategy.is_deleted():
                 raise StrategyDoesNotExist
         except BaseStrategy.DoesNotExist:
             raise StrategyDoesNotExist
@@ -40,10 +40,10 @@ class Indicator(Resource):
             while True:
                 base_st = BaseStrategy.get(id=strategy_id)
 
-                if not base_st.active:
+                if not base_st.is_active():
                     raise StrategyIsInactive
 
-                if not base_st.refreshing:
+                if not base_st.is_refreshing():
                     break
 
                 elapsed = time.time() - start
