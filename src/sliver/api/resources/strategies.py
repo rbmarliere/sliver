@@ -38,7 +38,6 @@ class Strategies(Resource):
         with db.connection.atomic():
             try:
                 args["id"] = None
-                args["active"] = True
                 args["creator"] = user
                 strategy = Strategy.create(**args)
                 strategy.save()
