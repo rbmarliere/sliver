@@ -14,6 +14,7 @@ from sliver.api.exceptions import (
 from sliver.position import Position
 from sliver.strategies.factory import StrategyFactory, StrategyTypes
 from sliver.strategies.mixer import MixedStrategies
+from sliver.strategies.status import StrategyStatus
 from sliver.strategy import BaseStrategy as StrategyModel
 from sliver.user import User
 from sliver.user_strategy import UserStrategy
@@ -45,6 +46,38 @@ class Strategy(Resource):
                 raise StrategyDoesNotExist
         except StrategyModel.DoesNotExist:
             raise StrategyDoesNotExist
+
+        parser = reqparse.RequestParser()
+        parser.add_argument(
+            "active", type=lambda x: x.lower() == "true", default=None, location="args"
+        )
+        parser.add_argument(
+            "subscribe",
+            type=lambda x: x.lower() == "true",
+            default=None,
+            location="args",
+        )
+        parser.add_argument(
+            "reset", type=lambda x: x.lower() == "true", default=None, location="args"
+        )
+        args = parser.parse_args()
+
+        if args.active is not None:
+            if args.active:
+                strategy.enable()
+            else:
+                strategy.disable()
+
+        if args.subscribe is not None:
+            UserStrategy.subscribe(user, strategy, subscribed=args.subscribe)
+            if args.subscribe:
+                strategy.next_refresh = datetime.datetime.utcnow()
+                strategy.save()
+
+        if args.reset is not None:
+            if args.reset:
+                strategy.status = StrategyStatus.RESETTING
+                strategy.save()
 
         strategy = StrategyFactory.from_base(strategy)
         strategy.subscribed = user.is_subscribed(strategy.id)
@@ -96,41 +129,6 @@ class Strategy(Resource):
 
         if old_strategy.is_deleted():
             raise StrategyDoesNotExist
-
-        try:
-            args = get_subscription_parser().parse_args()
-            if args["subscribe"]:
-                UserStrategy.subscribe(
-                    user, old_strategy, subscribed=args["subscribed"]
-                )
-
-                if args["subscribed"]:
-                    old_strategy.next_refresh = datetime.datetime.utcnow()
-                    old_strategy.save()
-
-                strategy = StrategyFactory.from_base(old_strategy)
-                strategy.subscribed = user.is_subscribed(strategy.id)
-                strategy.signal = strategy.get_signal()
-
-                return marshal(strategy, strategy.get_fields())
-        except KeyError:
-            pass
-
-        try:
-            args = get_activation_parser().parse_args()
-            if args["activate"]:
-                if args["active"]:
-                    old_strategy.enable()
-                else:
-                    old_strategy.disable()
-
-                strategy = StrategyFactory.from_base(old_strategy)
-                strategy.subscribed = user.is_subscribed(strategy.id)
-                strategy.signal = strategy.get_signal()
-
-                return marshal(strategy, strategy.get_fields())
-        except KeyError:
-            pass
 
         if old_strategy.creator != user and user.id != 1:
             raise StrategyNotEditable
