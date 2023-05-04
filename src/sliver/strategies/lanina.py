@@ -39,6 +39,7 @@ class LaNinaStrategy(IStrategy):
     lanina_ma3_period = peewee.IntegerField(default=20)
     lanina_ma3_mode = peewee.TextField(default="sma")
 
+    lanina_stopbuy_ma_min_offset = peewee.DecimalField(default=0)
     lanina_buy_ma_min_offset = peewee.DecimalField(default=0)
     lanina_buy_ma_max_offset = peewee.DecimalField(default=0)
     lanina_sell_ma_min_offset = peewee.DecimalField(default=0)
@@ -117,6 +118,9 @@ class LaNinaStrategy(IStrategy):
         indicators.ma2.fillna(method="bfill", inplace=True)
         indicators.ma3.fillna(method="bfill", inplace=True)
 
+        indicators["buy_min_ma_stop"] = indicators.root_ma * (
+            1 - (abs(float(self.lanina_stopbuy_ma_min_offset)) / 100)
+        )
         indicators["buy_min_ma"] = indicators.root_ma * (
             1 - (abs(float(self.lanina_buy_ma_min_offset)) / 100)
         )
@@ -172,15 +176,30 @@ class LaNinaStrategy(IStrategy):
 
                 # buy again whenever theres a 3ma bull cross OR there's a normal buy
                 # signal in a bull trend
-
                 indicators.loc[(bull_cross) & (bull_trend), "buy_stop"] = BUY
                 indicators.buy_stop = indicators.buy_stop.shift(
                     abs(self.lanina_cross_buy_min_closes_above)
                 )
 
+                # the first buy signal is always a buy_asap, therefore we remove all
+                # buy_stop that come after a sell_stop until a buy_asap signal
                 indicators.loc[
                     (indicators.buy_stop.notnull())
-                    | ((indicators.elnino == BUY) & (bull_trend)),
+                    & (indicators.close >= indicators.buy_min_ma_stop)
+                    & (indicators.close <= indicators.buy_max_ma),
+                    "buy_asap",
+                ] = BUY
+
+                indicators.loc[indicators.signal == SELL, "buy_asap"] = SELL
+                indicators.buy_asap.fillna(method="ffill", inplace=True)
+
+                indicators.loc[
+                    ((indicators.buy_asap == BUY) & (indicators.buy_stop == BUY))
+                    | (
+                        (indicators.buy_asap == BUY)
+                        & (indicators.elnino == BUY)
+                        & (bull_trend)
+                    ),
                     "signal",
                 ] = BUY
 

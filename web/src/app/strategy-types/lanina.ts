@@ -30,6 +30,7 @@ export class LaNinaStrategy extends Strategy {
   lanina_ma3_period: number = 20;
   lanina_ma3_mode: string = 'sma';
 
+  lanina_stopbuy_ma_min_offset: number = 0;
   lanina_buy_ma_min_offset: number = 0;
   lanina_buy_ma_max_offset: number = 0;
   lanina_sell_ma_min_offset: number = 0;
