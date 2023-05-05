@@ -1,16 +1,18 @@
-import sliver.core
-from sliver.strategies.factory import StrategyFactory
-from sliver.exchanges.factory import ExchangeFactory
-
-import pandas
 import datetime
+import os
 
-import datetime
 import debugpy
 import numpy
 import pandas
 import peewee
 
+
+import sliver.core
+from sliver.database import db_init
+from sliver.strategies.factory import StrategyFactory
+from sliver.exchanges.factory import ExchangeFactory
+
+db_init()
 
 try:
     debugpy.listen(5678)
