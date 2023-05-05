@@ -30,8 +30,4 @@ export class StrategyService {
   updateActive(strategy: Strategy): Observable<Strategy> {
     return this.http.get<Strategy>(`${this.url}/${strategy.id}?active=${!strategy.active}`);
   }
-
-  resetStrategy(strategy: Strategy): Observable<Strategy> {
-    return this.http.get<Strategy>(`${this.url}/${strategy.id}?reset=true`);
-  }
 }
