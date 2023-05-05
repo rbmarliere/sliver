@@ -502,6 +502,9 @@ class Position(db.BaseModel):
 
         self.save()
 
+    def disable(self):
+        self.user_strategy.disable()
+
     def postpone(self, interval_in_minutes=None):
         if interval_in_minutes is None:
             if self.status == "opening":
@@ -623,6 +626,10 @@ class Position(db.BaseModel):
                         return True
 
         return False
+
+    def check_stops(self):
+        if self.refresh_stops():
+            self.refresh()
 
     def add_order(self, order):
         strategy = self.user_strategy.strategy

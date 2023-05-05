@@ -113,9 +113,13 @@ class Exchange(db.BaseModel):
         if elapsed_in_ms > 5000:
             raise PostponingError(f"latency above threshold: {elapsed_in_ms} > 5000")
 
-    def fetch_ohlcv(self, strategy):
-        market = strategy.market
-        tf_delta = get_timeframe_delta(strategy.timeframe)
+    def fetch_ohlcv(self, market, timeframe):
+        print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+        print(
+            f"fetching ohlcv data for {market.get_symbol()} {timeframe} in {self.name}"
+        )
+
+        tf_delta = get_timeframe_delta(timeframe)
 
         if self.api_fetch_ticker(market.get_symbol()) is None:
             raise DisablingError("symbol not supported by exchange")
@@ -126,7 +130,10 @@ class Exchange(db.BaseModel):
 
         try:
             last_entry = (
-                Price.get_by_strategy(strategy).order_by(Price.time.desc()).get().time
+                Price.get_by_market(market, timeframe)
+                .order_by(Price.time.desc())
+                .get()
+                .time
             )
             page_start = last_entry + tf_delta
             fetch_all = False
@@ -144,7 +151,7 @@ class Exchange(db.BaseModel):
         while True:
             page = self.api_fetch_ohlcv(
                 market.get_symbol(),
-                strategy.timeframe,
+                timeframe,
                 since=page_start,
                 limit=default_page_size,
             )
@@ -162,7 +169,7 @@ class Exchange(db.BaseModel):
 
             page_first = page.iloc[0].time
             page_last = page.iloc[-1].time
-            print(f"got prices from {page_first} to {page_last}")
+            print(f"received prices from {page_first} to {page_last}")
             prices = pandas.concat([prices, page])
 
             if (
@@ -178,7 +185,7 @@ class Exchange(db.BaseModel):
         prices = prices.sort_values(by="time")
         prices = prices.drop_duplicates()
 
-        prices["timeframe"] = strategy.timeframe
+        prices["timeframe"] = timeframe
         prices["market_id"] = market.id
 
         prices[["open", "high", "low", "close"]] = prices[
@@ -187,7 +194,10 @@ class Exchange(db.BaseModel):
 
         prices["volume"] = prices["volume"].apply(market.base.transform)
 
-        if not prices.empty:
+        if prices.empty:
+            return prices
+
+        with db.connection.atomic():
             Price.insert_many(prices.to_dict("records")).execute()
 
         return prices
