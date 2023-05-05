@@ -58,10 +58,9 @@ class Watchdog(metaclass=WatchdogMeta):
 
         stdout.info(message)
 
-    def run_loop(self):
+    def run(self):
         while True:
             try:
-                self.refresh_risk()
                 self.refresh_opening_positions()
                 self.refresh_pending_strategies()
                 self.refresh_pending_positions()
@@ -69,27 +68,14 @@ class Watchdog(metaclass=WatchdogMeta):
                 time.sleep(int(Config().WATCHDOG_INTERVAL))
 
             except (BaseError, KeyboardInterrupt):
+                BaseStrategy.stop_all()
+                Position.stop_all()
                 break
 
-    def refresh_risk(self):
-        pass
-        # TODO risk assessment:
-        # - red flag -- exit all positions
-        # - yellow flag -- new buy signals ignored & reduce curr. positions
-        # - green flag -- all signals are respected
-        # in general, account for overall market risk and volatility
-        # maybe use GARCH to model volatility, or a machine learning model
-        # maybe user.max_risk and user.max_volatility
-
     def refresh_opening_positions(self):
-        threads = []
         for position in Position.get_opening():
             t = Refresher(position, call="check_stops")
             t.start()
-            threads.append(t)
-
-        for t in threads:
-            t.join()
 
     def refresh_pending_strategies(self):
         pending = [base_st for base_st in BaseStrategy.get_pending()]
@@ -101,29 +87,28 @@ class Watchdog(metaclass=WatchdogMeta):
             t = threading.Thread(target=exchange.fetch_ohlcv, args=(market, timeframe))
             t.start()
             threads.append(t)
-
         for t in threads:
             t.join()
 
-        threads = []
-        for base_st in BaseStrategy.get_pending():
+        for base_st in pending:
             strategy = StrategyFactory.from_base(base_st)
             t = Refresher(strategy)
             t.start()
-            threads.append(t)
-
-        for t in threads:
-            t.join()
 
     def refresh_pending_positions(self):
-        threads = []
         for position in Position.get_pending():
             t = Refresher(position)
             t.start()
-            threads.append(t)
 
-        for t in threads:
-            t.join()
+    def refresh_risk(self):
+        pass
+        # TODO risk assessment:
+        # - red flag -- exit all positions
+        # - yellow flag -- new buy signals ignored & reduce curr. positions
+        # - green flag -- all signals are respected
+        # in general, account for overall market risk and volatility
+        # maybe use GARCH to model volatility, or a machine learning model
+        # maybe user.max_risk and user.max_volatility
 
 
 class Refresher(threading.Thread):
@@ -137,6 +122,10 @@ class Refresher(threading.Thread):
 
     def run(self):
         try:
+            print(
+                f"calling {self.call} @ {self.target.__class__.__name__} "
+                f"id={self.target}"
+            )
             method = getattr(self.target, self.call)
             method()
 

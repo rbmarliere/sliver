@@ -7,7 +7,6 @@ import peewee
 from flask_restful import fields, reqparse
 
 import sliver.database as db
-from sliver.exchanges.factory import ExchangeFactory
 from sliver.indicator import Indicator
 from sliver.market import Market
 from sliver.price import Price
@@ -43,12 +42,26 @@ class BaseStrategy(db.BaseModel):
     status = peewee.IntegerField(default=StrategyStatus.INACTIVE)
 
     @property
+    def active(self):
+        return self.is_active()
+
+    @property
     def symbol(self):
         return self.market.get_symbol()
 
     @property
     def exchange(self):
         return self.market.base.exchange.name
+
+    @classmethod
+    def stop_all(cls):
+        with db.connection.atomic():
+            cls.update({cls.status: StrategyStatus.IDLE}).where(
+                cls.status == StrategyStatus.REFRESHING
+            ).execute()
+            cls.update({cls.status: StrategyStatus.IDLE_RESET}).where(
+                cls.status == StrategyStatus.RESETTING
+            ).execute()
 
     @classmethod
     def get_existing(cls):
@@ -67,6 +80,7 @@ class BaseStrategy(db.BaseModel):
         return (
             cls.get_active()
             .where(cls.next_refresh < datetime.datetime.utcnow())
+            .where(~(cls.status << StrategyStatus.refreshing()))
             .order_by(cls.type == 4)  # MIXER
             .order_by(cls.next_refresh)
         )
@@ -119,10 +133,6 @@ class BaseStrategy(db.BaseModel):
             "sells": fields.List(fields.Float),
             "signal": fields.List(fields.Float),
         }
-
-    @property
-    def active(self):
-        return self.is_active()
 
     def is_deleted(self):
         return self.status == StrategyStatus.DELETED
@@ -300,9 +310,11 @@ class IStrategy(db.BaseModel):
         return self.strategy.get_indicators_df(self.get_indicators(), **kwargs)
 
     def refresh(self):
-        reset = self.strategy.status == StrategyStatus.RESETTING
+        reset = self.strategy.status == StrategyStatus.IDLE_RESET
 
-        self.strategy.status = StrategyStatus.REFRESHING
+        self.strategy.status = (
+            StrategyStatus.RESETTING if reset else StrategyStatus.REFRESHING
+        )
         self.strategy.save()
 
         print("===========================================")
