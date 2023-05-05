@@ -40,6 +40,11 @@ class Position(db.BaseModel):
     roi = peewee.DecimalField(default=0)
     last_high = peewee.BigIntegerField(default=0)
     last_low = peewee.BigIntegerField(default=0)
+    refreshing = peewee.BooleanField(default=False)
+
+    @classmethod
+    def stop_all(cls):
+        cls.update({cls.refreshing: False}).where(cls.refreshing).execute()
 
     @classmethod
     def get_all(cls):
@@ -54,8 +59,12 @@ class Position(db.BaseModel):
         )
 
     @classmethod
+    def get_idle(cls):
+        return cls.get_active().where(~cls.refreshing)
+
+    @classmethod
     def get_opening(cls):
-        return cls.get_all().where(cls.status << ["open", "opening"])
+        return cls.get_idle().where(cls.status << ["open", "opening"])
 
     @classmethod
     def get_open(cls):
@@ -63,7 +72,7 @@ class Position(db.BaseModel):
 
     @classmethod
     def get_pending(cls):
-        return cls.get_open().where(cls.next_refresh < datetime.datetime.utcnow())
+        return cls.get_idle().where(cls.next_refresh < datetime.datetime.utcnow())
 
     @classmethod
     def get_user_positions(self, user):
@@ -683,6 +692,9 @@ class Position(db.BaseModel):
         if not self.user_strategy.active:
             return
 
+        self.refreshing = True
+        self.save()
+
         strategy = StrategyFactory.from_base(self.user_strategy.strategy)
         signal = strategy.get_signal()
         market = strategy.market
@@ -735,6 +747,7 @@ class Position(db.BaseModel):
 
         self.postpone()
 
+        self.refreshing = False
         self.save()
 
     def refresh_bucket(self, last_price):

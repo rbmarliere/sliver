@@ -75,7 +75,7 @@ def create_tables():
 
 def watch():
     create_tables()
-    Watchdog().run_loop()
+    Watchdog().run()
 
 
 def serve():

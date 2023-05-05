@@ -52,16 +52,6 @@ local watchdog = {
 }
 table.insert(dap.configurations.python, watchdog)
 
-vim.ui.input({ prompt = "Run debugger sessions? [Y|n]  > " }, function(input)
-  if input == "n" then
-    return
-  end
-  -- vim.fn.jobstart("ng serve -c development --host 0.0.0.0", { cwd = "web" })
-  dap.run(typescript)
-  -- dap.run(watchdog)
-  dap.run(api)
-end)
-
 local sliver = vim.fn.stdpath("config") .. "/sessions/sliver"
 if vim.fn.filereadable(sliver) == 1 then
   vim.ui.input({ prompt = "Load session " .. sliver .. "? [Y|n]  > " }, function(input)
@@ -71,3 +61,13 @@ if vim.fn.filereadable(sliver) == 1 then
     vim.cmd("source " .. sliver)
   end)
 end
+
+vim.ui.input({ prompt = "Run debugger sessions? [Y|n]  > " }, function(input)
+  if input == "n" then
+    return
+  end
+  -- vim.fn.jobstart("ng serve -c development --host 0.0.0.0", { cwd = "web" })
+  dap.run(typescript)
+  -- dap.run(watchdog)
+  dap.run(api)
+end)
