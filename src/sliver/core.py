@@ -1,5 +1,7 @@
-import waitress
+import argparse
+
 import peewee
+import waitress
 
 from sliver.asset import Asset
 from sliver.trade_engine import TradeEngine
@@ -74,7 +76,11 @@ def create_tables(connection):
 
 
 def watch():
-    Watchdog().run()
+    argp = argparse.ArgumentParser()
+    argp.add_argument("--sync", action="store_true")
+    args = argp.parse_args()
+
+    Watchdog(sync=args.sync).run()
 
 
 def serve():

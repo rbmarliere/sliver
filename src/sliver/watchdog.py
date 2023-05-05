@@ -29,9 +29,10 @@ class WatchdogMeta(type):
 
 
 class Watchdog(metaclass=WatchdogMeta):
-    def __init__(self, log="watchdog"):
+    def __init__(self, log="watchdog", sync=False):
         self.logger = log
         self.queue = multiprocessing.SimpleQueue()
+        self.sync = sync
 
     @property
     def logger(self):
@@ -62,9 +63,10 @@ class Watchdog(metaclass=WatchdogMeta):
         stdout.info(message)
 
     def run(self):
-        for cpu in range(multiprocessing.cpu_count()):
-            p = Worker(self.queue)
-            p.start()
+        if not self.sync:
+            for cpu in range(multiprocessing.cpu_count()):
+                p = Worker(self.queue)
+                p.start()
 
         db_init()
 
@@ -83,33 +85,46 @@ class Watchdog(metaclass=WatchdogMeta):
 
     def refresh_opening_positions(self):
         for position in Position.get_opening():
-            t = Task("Position", position.id, call="check_stops")
-            self.queue.put(t)
+            if self.sync:
+                position.check_stops()
+            else:
+                t = Task("Position", position.id, call="check_stops")
+                self.queue.put(t)
 
     def refresh_pending_strategies(self):
         pending = [base_st for base_st in BaseStrategy.get_pending()]
-        print(pending)
         markets = [(p.market, p.timeframe) for p in pending]
 
         threads = []
         for market, timeframe in list(set(markets)):
             exchange = ExchangeFactory.from_base(market.base.exchange)
-            t = threading.Thread(
-                target=exchange.fetch_ohlcv, args=(market, timeframe), daemon=True
-            )
-            t.start()
-            threads.append(t)
+
+            if self.sync:
+                exchange.fetch_ohlcv(market, timeframe)
+            else:
+                t = threading.Thread(
+                    target=exchange.fetch_ohlcv, args=(market, timeframe), daemon=True
+                )
+                t.start()
+                threads.append(t)
         for t in threads:
             t.join()
 
         for base_st in pending:
-            t = Task("BaseStrategy", base_st.id)
-            self.queue.put(t)
+            if self.sync:
+                strategy = StrategyFactory.from_base(base_st)
+                strategy.refresh()
+            else:
+                t = Task("BaseStrategy", base_st.id)
+                self.queue.put(t)
 
     def refresh_pending_positions(self):
         for position in Position.get_pending():
-            t = Task("Position", position.id)
-            self.queue.put(t)
+            if self.sync:
+                position.refresh()
+            else:
+                t = Task("Position", position.id)
+                self.queue.put(t)
 
     def refresh_risk(self):
         pass
