@@ -16,7 +16,7 @@ from sliver.user import User
 from sliver.order import Order
 from sliver.position import Position
 
-from sliver.database import connection
+from sliver.database import db_init
 from sliver.watchdog import Watchdog
 from sliver.config import Config
 
@@ -40,7 +40,7 @@ __all__ = [
 ]
 
 
-def create_tables():
+def create_tables(connection):
     connection.create_tables(
         [
             Asset,
@@ -74,12 +74,11 @@ def create_tables():
 
 
 def watch():
-    create_tables()
     Watchdog().run()
 
 
 def serve():
-    create_tables()
+    db_init()
 
     Watchdog().logger = "api"
 

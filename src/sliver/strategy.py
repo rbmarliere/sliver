@@ -55,13 +55,18 @@ class BaseStrategy(db.BaseModel):
 
     @classmethod
     def stop_all(cls):
-        with db.connection.atomic():
-            cls.update({cls.status: StrategyStatus.IDLE}).where(
-                cls.status == StrategyStatus.REFRESHING
-            ).execute()
-            cls.update({cls.status: StrategyStatus.IDLE_RESET}).where(
-                cls.status == StrategyStatus.RESETTING
-            ).execute()
+        cls.update(
+            {
+                cls.status: StrategyStatus.IDLE,
+                cls.next_refresh: datetime.datetime.utcnow(),
+            }
+        ).where(cls.status == StrategyStatus.REFRESHING).execute()
+        cls.update(
+            {
+                cls.status: StrategyStatus.IDLE_RESET,
+                cls.next_refresh: datetime.datetime.utcnow(),
+            }
+        ).where(cls.status == StrategyStatus.RESETTING).execute()
 
     @classmethod
     def get_existing(cls):

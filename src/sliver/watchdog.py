@@ -1,8 +1,10 @@
+import multiprocessing
 import threading
 import time
 
 from sliver.alert import send_message
 from sliver.config import Config
+from sliver.database import db_init
 from sliver.exceptions import (
     BaseError,
     DisablingError,
@@ -29,6 +31,7 @@ class WatchdogMeta(type):
 class Watchdog(metaclass=WatchdogMeta):
     def __init__(self, log="watchdog"):
         self.logger = log
+        self.queue = multiprocessing.SimpleQueue()
 
     @property
     def logger(self):
@@ -59,6 +62,12 @@ class Watchdog(metaclass=WatchdogMeta):
         stdout.info(message)
 
     def run(self):
+        for cpu in range(multiprocessing.cpu_count()):
+            p = Worker(self.queue)
+            p.start()
+
+        db_init()
+
         while True:
             try:
                 self.refresh_opening_positions()
@@ -68,38 +77,39 @@ class Watchdog(metaclass=WatchdogMeta):
                 time.sleep(int(Config().WATCHDOG_INTERVAL))
 
             except (BaseError, KeyboardInterrupt):
-                print("stopping all")
                 BaseStrategy.stop_all()
                 Position.stop_all()
                 break
 
     def refresh_opening_positions(self):
         for position in Position.get_opening():
-            t = Refresher(position, call="check_stops")
-            t.start()
+            t = Task("Position", position.id, call="check_stops")
+            self.queue.put(t)
 
     def refresh_pending_strategies(self):
         pending = [base_st for base_st in BaseStrategy.get_pending()]
+        print(pending)
         markets = [(p.market, p.timeframe) for p in pending]
 
         threads = []
         for market, timeframe in list(set(markets)):
             exchange = ExchangeFactory.from_base(market.base.exchange)
-            t = threading.Thread(target=exchange.fetch_ohlcv, args=(market, timeframe))
+            t = threading.Thread(
+                target=exchange.fetch_ohlcv, args=(market, timeframe), daemon=True
+            )
             t.start()
             threads.append(t)
         for t in threads:
             t.join()
 
         for base_st in pending:
-            strategy = StrategyFactory.from_base(base_st)
-            t = Refresher(strategy)
-            t.start()
+            t = Task("BaseStrategy", base_st.id)
+            self.queue.put(t)
 
     def refresh_pending_positions(self):
         for position in Position.get_pending():
-            t = Refresher(position)
-            t.start()
+            t = Task("Position", position.id)
+            self.queue.put(t)
 
     def refresh_risk(self):
         pass
@@ -116,17 +126,13 @@ class Refresher(threading.Thread):
     target = None
     call = None
 
-    def __init__(self, obj, call="refresh"):
+    def __init__(self, target, call):
         super().__init__(daemon=True)
-        self.target = obj
+        self.target = target
         self.call = call
 
     def run(self):
         try:
-            print(
-                f"calling {self.call} @ {self.target.__class__.__name__} "
-                f"id={self.target}"
-            )
             method = getattr(self.target, self.call)
             method()
 
@@ -141,3 +147,33 @@ class Refresher(threading.Thread):
         ) as e:
             Watchdog().print(exception=e)
             self.target.disable()
+
+
+class Task:
+    class_name = None
+    id = None
+    call = None
+
+    def __init__(self, class_name, id, call="refresh"):
+        self.class_name = class_name
+        self.id = id
+        self.call = call
+
+
+class Worker(multiprocessing.Process):
+    def __init__(self, queue):
+        super().__init__(daemon=True)
+        self.queue = queue
+        db_init()
+
+    def run(self):
+        while True:
+            t = self.queue.get()
+
+            target = globals()[t.class_name].get(id=t.id)
+            if t.class_name == "BaseStrategy":
+                target = StrategyFactory.from_base(target)
+
+            t = Refresher(target, t.call)
+
+            t.start()

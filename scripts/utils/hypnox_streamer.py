@@ -9,7 +9,7 @@ import requests
 import tweepy
 import urllib3
 
-import sliver.database as db
+from sliver.database import connection, db_init
 from sliver.config import Config
 from sliver.exceptions import BaseError
 from sliver.print import print
@@ -64,9 +64,9 @@ class Stream(tweepy.StreamingClient):
             if isinstance(e, peewee.InterfaceError) or isinstance(
                 e, peewee.OperationalError
             ):
-                db.connection.close()
+                connection.close()
                 try:
-                    db.connection.connect(reuse_if_open=True)
+                    connection.connect(reuse_if_open=True)
                     tweet.save()
                 except peewee.OperationalError:
                     print("couldn't reestablish connection to database!")
@@ -122,6 +122,8 @@ def get_rules(uids):
 
 
 def stream():
+    db_init()
+
     Watchdog().logger = "stream"
 
     argp = argparse.ArgumentParser()
