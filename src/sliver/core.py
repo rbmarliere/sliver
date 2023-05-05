@@ -75,10 +75,13 @@ def create_tables(connection):
         pass
 
 
-def watch():
+def watch(sync=False):
     argp = argparse.ArgumentParser()
     argp.add_argument("--sync", action="store_true")
     args = argp.parse_args()
+
+    if sync:
+        args.sync = True
 
     Watchdog(sync=args.sync).run()
 
