@@ -57,9 +57,6 @@ class Strategy(Resource):
             default=None,
             location="args",
         )
-        parser.add_argument(
-            "reset", type=lambda x: x.lower() == "true", default=None, location="args"
-        )
         args = parser.parse_args()
 
         if args.active is not None:
@@ -72,11 +69,6 @@ class Strategy(Resource):
             UserStrategy.subscribe(user, strategy, subscribed=args.subscribe)
             if args.subscribe:
                 strategy.next_refresh = datetime.datetime.utcnow()
-                strategy.save()
-
-        if args.reset is not None:
-            if args.reset:
-                strategy.status = StrategyStatus.RESETTING
                 strategy.save()
 
         strategy = StrategyFactory.from_base(strategy)
@@ -142,7 +134,7 @@ class Strategy(Resource):
             args["market"] = old_strategy.market.id
             args["timeframe"] = old_strategy.timeframe
             args["type"] = old_strategy.type
-            args["status"] = old_strategy.status
+            args["status"] = StrategyStatus.IDLE_RESET
             args["next_refresh"] = datetime.datetime.utcnow()
 
             if (
