@@ -535,11 +535,6 @@
           </div>
 
           <div class="button">
-            <button mat-raised-button *ngIf="strategy.id > 0" color="primary" (click)="resetStrategy(strategy)">Reset
-              Indicators</button>
-          </div>
-
-          <div class="button">
             <button mat-raised-button *ngIf="strategy.id > 0" type="button" color="primary"
               (click)="updateSubscription(strategy)">
               <span *ngIf="!strategy.subscribed">Subscribe</span>
