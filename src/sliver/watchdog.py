@@ -68,6 +68,7 @@ class Watchdog(metaclass=WatchdogMeta):
                 time.sleep(int(Config().WATCHDOG_INTERVAL))
 
             except (BaseError, KeyboardInterrupt):
+                print("stopping all")
                 BaseStrategy.stop_all()
                 Position.stop_all()
                 break
@@ -116,7 +117,7 @@ class Refresher(threading.Thread):
     call = None
 
     def __init__(self, obj, call="refresh"):
-        super().__init__()
+        super().__init__(daemon=True)
         self.target = obj
         self.call = call
 
