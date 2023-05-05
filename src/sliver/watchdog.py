@@ -1,3 +1,4 @@
+import threading
 import time
 
 from sliver.alert import send_message
@@ -7,6 +8,7 @@ from sliver.exceptions import (
     DisablingError,
     PostponingError,
 )
+from sliver.exchanges.factory import ExchangeFactory
 from sliver.position import Position
 from sliver.strategies.factory import StrategyFactory
 from sliver.strategy import BaseStrategy
@@ -25,10 +27,6 @@ class WatchdogMeta(type):
 
 
 class Watchdog(metaclass=WatchdogMeta):
-    position = None
-    strategy = None
-    user_strat = None
-
     def __init__(self, log="watchdog"):
         self.logger = log
 
@@ -73,32 +71,6 @@ class Watchdog(metaclass=WatchdogMeta):
             except (BaseError, KeyboardInterrupt):
                 break
 
-    def run(call):
-        def inner(self, *args, **kwargs):
-            try:
-                call(self, *args, **kwargs)
-
-            except PostponingError as e:
-                self.print(exception=e)
-                if self.position:
-                    self.position.postpone(interval_in_minutes=5)
-                if self.strategy:
-                    self.strategy.postpone(interval_in_minutes=5)
-
-            except (
-                Exception,
-                BaseError,
-                DisablingError,
-            ) as e:
-                self.print(exception=e)
-                if self.user_strat:
-                    self.user_strat.disable()
-                if self.strategy:
-                    self.strategy.disable()
-
-        return inner
-
-    @run
     def refresh_risk(self):
         pass
         # TODO risk assessment:
@@ -109,40 +81,73 @@ class Watchdog(metaclass=WatchdogMeta):
         # maybe use GARCH to model volatility, or a machine learning model
         # maybe user.max_risk and user.max_volatility
 
-    @run
     def refresh_opening_positions(self):
+        threads = []
         for position in Position.get_opening():
-            self.position = position
-            self.user_strat = position.user_strategy
+            t = Refresher(position, call="check_stops")
+            t.start()
+            threads.append(t)
 
-            stopped = position.refresh_stops()
-            if stopped:
-                position.refresh()
+        for t in threads:
+            t.join()
 
-            self.user_strat = None
-            self.position = None
-
-    @run
     def refresh_pending_strategies(self):
+        pending = [base_st for base_st in BaseStrategy.get_pending()]
+        markets = [(p.market, p.timeframe) for p in pending]
+
+        threads = []
+        for market, timeframe in list(set(markets)):
+            exchange = ExchangeFactory.from_base(market.base.exchange)
+            t = threading.Thread(target=exchange.fetch_ohlcv, args=(market, timeframe))
+            t.start()
+            threads.append(t)
+
+        for t in threads:
+            t.join()
+
+        threads = []
         for base_st in BaseStrategy.get_pending():
             strategy = StrategyFactory.from_base(base_st)
+            t = Refresher(strategy)
+            t.start()
+            threads.append(t)
 
-            self.strategy = strategy
-            strategy.refresh()
-            self.strategy = None
+        for t in threads:
+            t.join()
 
-            signal = strategy.get_signal()
-
-            for user_strat in strategy.userstrategy_set:
-                self.user_strat = user_strat
-                user_strat.refresh(signal)
-                self.user_strat = None
-
-    @run
     def refresh_pending_positions(self):
+        threads = []
         for position in Position.get_pending():
-            self.position = position
-            self.user_strat = position.user_strategy
-            position.refresh()
-            self.user_strat = None
-            self.position = None
+            t = Refresher(position)
+            t.start()
+            threads.append(t)
+
+        for t in threads:
+            t.join()
+
+
+class Refresher(threading.Thread):
+    target = None
+    call = None
+
+    def __init__(self, obj, call="refresh"):
+        super().__init__()
+        self.target = obj
+        self.call = call
+
+    def run(self):
+        try:
+            method = getattr(self.target, self.call)
+            method()
+
+        except PostponingError as e:
+            Watchdog().print(exception=e)
+            self.target.postpone(interval_in_minutes=5)
+
+        except (
+            Exception,
+            BaseError,
+            DisablingError,
+        ) as e:
+            Watchdog().print(exception=e)
+            self.target.disable()

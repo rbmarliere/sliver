@@ -316,8 +316,6 @@ class IStrategy(db.BaseModel):
         print(f"sell engine is {self.sell_engine_id}")
         print(f"stop engine is {self.stop_engine_id}")
 
-        ExchangeFactory.from_base(self.market.base.exchange).fetch_ohlcv(self)
-
         print("refreshing indicators")
         indicators = pandas.DataFrame(self.get_indicators().dicts())
         indicators.strategy = self.strategy.id
@@ -329,14 +327,16 @@ class IStrategy(db.BaseModel):
             if indicators is not None:
                 self.update_indicators(indicators)
 
-        print(f"signal is {self.get_signal()}")
+        signal = self.get_signal()
+        print(f"signal is {signal}")
 
         self.postpone()
 
-        self.save()
-
         self.strategy.status = StrategyStatus.IDLE
         self.strategy.save()
+
+        for u_st in self.strategy.userstrategy_set:
+            u_st.refresh(signal)
 
     def get_parser(self):
         argp = BaseStrategy.get_parser()
