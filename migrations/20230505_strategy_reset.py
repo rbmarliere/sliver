@@ -5,13 +5,12 @@ from sliver.database import connection, db_init
 
 db_init()
 
-
 migrator = PostgresqlMigrator(connection)
 
 migrate(
     migrator.add_column(
         sliver.core.BaseStrategy._meta.table_name,
-        "refreshing",
-        sliver.core.BaseStrategy.refreshing,
+        "reset",
+        sliver.core.BaseStrategy.reset,
     ),
 )

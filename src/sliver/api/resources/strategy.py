@@ -134,7 +134,8 @@ class Strategy(Resource):
             args["market"] = old_strategy.market.id
             args["timeframe"] = old_strategy.timeframe
             args["type"] = old_strategy.type
-            args["status"] = StrategyStatus.IDLE_RESET
+            args["status"] = StrategyStatus.IDLE
+            args["reset"] = True
             args["next_refresh"] = datetime.datetime.utcnow()
 
             if (

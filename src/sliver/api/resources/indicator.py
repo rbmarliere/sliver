@@ -10,7 +10,6 @@ from sliver.api.exceptions import (
     StrategyRefreshing,
 )
 from sliver.strategies.factory import StrategyFactory
-from sliver.strategies.status import StrategyStatus
 from sliver.strategy import BaseStrategy
 
 
@@ -44,10 +43,7 @@ class Indicator(Resource):
                 if not base_st.is_active():
                     raise StrategyIsInactive
 
-                if (
-                    not base_st.is_refreshing()
-                    and not base_st.status == StrategyStatus.IDLE_RESET
-                ):
+                if not base_st.is_refreshing() and not base_st.reset:
                     break
 
                 elapsed = time.time() - start
