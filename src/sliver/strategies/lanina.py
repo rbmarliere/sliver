@@ -174,23 +174,23 @@ class LaNinaStrategy(IStrategy):
             if self.lanina_bull_cross_active:
                 bull_cross = bull_trend & ((prev.trend == -1) | (prev.trend == 0))
 
-                # buy again whenever theres a 3ma bull cross OR there's a normal buy
-                # signal in a bull trend
                 indicators.loc[(bull_cross) & (bull_trend), "buy_stop"] = BUY
                 indicators.buy_stop = indicators.buy_stop.shift(
                     abs(self.lanina_cross_buy_min_closes_above)
                 )
 
-                # the first buy signal is always a buy_asap, therefore we remove all
-                # buy_stop that come after a sell_stop until a buy_asap signal
                 indicators.loc[
                     (indicators.buy_stop.notnull())
-                    & (indicators.close >= indicators.buy_min_ma_stop)
-                    & (indicators.close <= indicators.buy_max_ma),
+                    & (
+                        (indicators.close <= indicators.buy_min_ma_stop)
+                        | (indicators.close <= indicators.buy_max_ma)
+                    ),
                     "buy_asap",
                 ] = BUY
 
-                indicators.loc[indicators.signal == SELL, "buy_asap"] = SELL
+                # the first buy signal is always a buy_asap, therefore we remove all
+                # buy_stop that come after a sell_stop until a buy_asap signal
+                indicators.loc[indicators.sell_stop == SELL, "buy_asap"] = SELL
                 indicators.buy_asap.fillna(method="ffill", inplace=True)
 
                 indicators.loc[
