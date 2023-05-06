@@ -10,10 +10,7 @@ from sliver.exceptions import (
     DisablingError,
     PostponingError,
 )
-from sliver.exchange import Exchange
-from sliver.exchanges.factory import ExchangeFactory
 from sliver.position import Position
-from sliver.strategies.factory import StrategyFactory
 from sliver.strategies.status import StrategyStatus
 from sliver.strategy import BaseStrategy
 from sliver.utils import get_logger
@@ -105,9 +102,8 @@ class Watchdog(metaclass=WatchdogMeta):
                 markets[(base_st.market, base_st.timeframe)] = [base_st]
 
         for market, timeframe in markets:
-            exchange = ExchangeFactory.from_base(market.base.exchange)
             t = Task(
-                exchange,
+                market.base.exchange,
                 call="fetch_ohlcv",
                 context=markets[(market, timeframe)],
                 market=market,
@@ -160,27 +156,31 @@ class Task:
         self.kwargs = kwargs
 
     def reset(self):
+        from sliver.exchange import Exchange
+        from sliver.exchanges.factory import ExchangeFactory
+        from sliver.position import Position
+        from sliver.strategies.factory import StrategyFactory
+        from sliver.strategy import BaseStrategy
+
         if self.target._meta.table_name == "exchange":
-            print("exchange target")
-            target = globals()["Exchange"].get(id=self.target.id)
-            self.target = globals()["ExchangeFactory"].from_base(target)
+            target = Exchange.get(id=self.target.id)
+            self.target = ExchangeFactory.from_base(target)
         if self.target._meta.table_name == "strategy":
-            print("strategy target")
-            target = globals()["BaseStrategy"].get(id=self.target.id)
-            self.target = globals()["StrategyFactory"].from_base(target)
+            target = BaseStrategy.get(id=self.target.id)
+            self.target = StrategyFactory.from_base(target)
 
         for c in self.context:
             if c._meta.table_name == "strategy":
-                new = globals()["BaseStrategy"].get(id=c.id)
+                new = BaseStrategy.get(id=c.id)
                 self.context[self.context.index(c)] = new
             if c._meta.table_name == "position":
-                new = globals()["Position"].get(id=c.id)
+                new = Position.get(id=c.id)
                 self.context[self.context.index(c)] = new
 
     def run(self):
-        self.reset()
-
         try:
+            self.reset()
+
             Watchdog().print(
                 f"calling {self.target.__class__.__name__}(id={self.target.id})"
                 f".{self.call} with args {self.kwargs}"
