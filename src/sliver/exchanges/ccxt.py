@@ -1,4 +1,5 @@
 import datetime
+import random
 import time
 
 import ccxt
@@ -40,6 +41,9 @@ class CCXT(Exchange):
     def api_call(call):
         def inner(self, *args, **kwargs):
             try:
+                # TODO proper multiprocess rate limiting
+                time.sleep(random.random() / 2)
+
                 return call(self, *args, **kwargs)
 
             except ccxt.BadSymbol:
