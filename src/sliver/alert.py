@@ -1,3 +1,4 @@
+import asyncio
 import time
 
 import telethon.sync
@@ -17,7 +18,9 @@ def get_client(entity_type):
     api_id = Config().TELEGRAM_API_ID
     api_hash = Config().TELEGRAM_API_HASH
 
-    return telethon.TelegramClient(session, api_id, api_hash)
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    return telethon.TelegramClient(session, api_id, api_hash, loop=loop)
 
 
 def telethon_call(entity_type):
@@ -56,7 +59,10 @@ def telethon_call(entity_type):
             except telethon.errors.FloodWaitError as e:
                 time.sleep(e.seconds)
 
-            except (AssertionError, Exception):
+            except Exception as e:
+                print(exception=e)
+
+            except AssertionError:
                 pass
 
             finally:
