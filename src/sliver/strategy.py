@@ -290,6 +290,7 @@ class BaseStrategy(db.BaseModel):
         self.next_refresh = get_next_refresh(interval_in_minutes) + offset
 
         print(f"postponed strategy {self} next refresh at {self.next_refresh}")
+        self.strategy.status = StrategyStatus.IDLE
         self.save()
 
 
@@ -357,7 +358,6 @@ class IStrategy(db.BaseModel):
         self.postpone()
 
         self.strategy.reset = False
-        self.strategy.status = StrategyStatus.IDLE
         self.strategy.save()
 
         for u_st in self.strategy.userstrategy_set:
