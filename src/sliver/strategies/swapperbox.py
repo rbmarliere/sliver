@@ -74,10 +74,13 @@ class SwapperBoxStrategy(IStrategy):
 
             messages = pandas.concat([messages, new])
 
-            try:
-                SwapperBoxMessage.insert_many(new.to_dict(orient="records")).execute()
-            except peewee.IntegrityError:
-                print("swapperbox: message(s) already in database")
+            with db.connection.atomic():
+                try:
+                    SwapperBoxMessage.insert_many(
+                        new.to_dict(orient="records")
+                    ).execute()
+                except peewee.IntegrityError:
+                    print("swapperbox: message(s) already in database")
 
         return messages
 

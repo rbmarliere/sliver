@@ -345,12 +345,11 @@ class IStrategy(db.BaseModel):
         indicators.price = indicators.id
         pending = indicators.loc[indicators.indicator_id.isnull()].copy()
 
-        with db.connection.atomic():
-            indicators = self.refresh_indicators(
-                indicators, pending, reset=self.strategy.reset
-            )
-            if indicators is not None:
-                self.update_indicators(indicators)
+        indicators = self.refresh_indicators(
+            indicators, pending, reset=self.strategy.reset
+        )
+        if indicators is not None:
+            self.update_indicators(indicators)
 
         signal = self.get_signal()
         print(f"signal is {signal}")
@@ -406,26 +405,29 @@ class IStrategy(db.BaseModel):
         return all_fields
 
     def update_indicators(self, indicators):
-        Indicator.insert_many(
-            indicators[["strategy", "price", "signal"]].to_dict("records")
-        ).on_conflict(
-            conflict_target=[Indicator.strategy, Indicator.price],
-            preserve=[Indicator.signal],
-        ).execute()
+        with db.connection.atomic():
+            Indicator.insert_many(
+                indicators[["strategy", "price", "signal"]].to_dict("records")
+            ).on_conflict(
+                conflict_target=[Indicator.strategy, Indicator.price],
+                preserve=[Indicator.signal],
+            ).execute()
 
-        model = self.get_indicator_class()
-        if model is None:
-            return
+            model = self.get_indicator_class()
+            if model is None:
+                return
 
-        updated = pandas.DataFrame(self.get_indicators().dicts())
-        indicators.indicator = updated.indicator_id
+            updated = pandas.DataFrame(self.get_indicators().dicts())
+            indicators.indicator = updated.indicator_id
 
-        model_field_names = [f for f in model._meta.fields]
-        model_fields = [
-            getattr(model, f) for f in model_field_names if f != "indicator"
-        ]
+            model_field_names = [f for f in model._meta.fields]
+            model_fields = [
+                getattr(model, f) for f in model_field_names if f != "indicator"
+            ]
 
-        model.insert_many(indicators[model_field_names].to_dict("records")).on_conflict(
-            conflict_target=[model.indicator],
-            preserve=model_fields,
-        ).execute()
+            model.insert_many(
+                indicators[model_field_names].to_dict("records")
+            ).on_conflict(
+                conflict_target=[model.indicator],
+                preserve=model_fields,
+            ).execute()
