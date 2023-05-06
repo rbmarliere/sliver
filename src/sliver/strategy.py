@@ -40,6 +40,7 @@ class BaseStrategy(db.BaseModel):
     stop_engine = peewee.ForeignKeyField(TradeEngine, null=True)
     side = peewee.TextField(default="long")
     status = peewee.IntegerField(default=StrategyStatus.INACTIVE)
+    reset = peewee.BooleanField(default=False)
 
     @property
     def active(self):
@@ -60,13 +61,7 @@ class BaseStrategy(db.BaseModel):
                 cls.status: StrategyStatus.IDLE,
                 cls.next_refresh: datetime.datetime.utcnow(),
             }
-        ).where(cls.status == StrategyStatus.REFRESHING).execute()
-        cls.update(
-            {
-                cls.status: StrategyStatus.IDLE_RESET,
-                cls.next_refresh: datetime.datetime.utcnow(),
-            }
-        ).where(cls.status == StrategyStatus.RESETTING).execute()
+        ).where(cls.status << StrategyStatus.refreshing()).execute()
 
     @classmethod
     def get_existing(cls):
@@ -77,18 +72,29 @@ class BaseStrategy(db.BaseModel):
         )
 
     @classmethod
-    def get_active(cls):
-        return cls.get_existing().where(cls.status << StrategyStatus.active())
-
-    @classmethod
     def get_pending(cls):
         return (
-            cls.get_active()
+            cls.get_existing()
             .where(cls.next_refresh < datetime.datetime.utcnow())
-            .where(~(cls.status << StrategyStatus.refreshing()))
             .order_by(cls.type == 4)  # MIXER
             .order_by(cls.next_refresh)
         )
+
+    @classmethod
+    def get_idle(cls):
+        return cls.get_pending().where(cls.status == StrategyStatus.IDLE)
+
+    @classmethod
+    def get_fetching(cls, market, timeframe):
+        return (
+            cls.get_pending()
+            .where(cls.status == StrategyStatus.FETCHING)
+            .where(BaseStrategy.market == market, BaseStrategy.timeframe == timeframe)
+        )
+
+    @classmethod
+    def get_waiting(cls):
+        return cls.get_pending().where(cls.status == StrategyStatus.WAITING)
 
     @staticmethod
     def get_parser():
@@ -147,6 +153,9 @@ class BaseStrategy(db.BaseModel):
 
     def is_refreshing(self):
         return self.status in StrategyStatus.refreshing()
+
+    def is_fetching(self):
+        return self.status == StrategyStatus.FETCHING
 
     def get_signal(self):
         try:
@@ -315,11 +324,7 @@ class IStrategy(db.BaseModel):
         return self.strategy.get_indicators_df(self.get_indicators(), **kwargs)
 
     def refresh(self):
-        reset = self.strategy.status == StrategyStatus.IDLE_RESET
-
-        self.strategy.status = (
-            StrategyStatus.RESETTING if reset else StrategyStatus.REFRESHING
-        )
+        self.strategy.status = StrategyStatus.REFRESHING
         self.strategy.save()
 
         print("===========================================")
@@ -340,7 +345,9 @@ class IStrategy(db.BaseModel):
         pending = indicators.loc[indicators.indicator_id.isnull()].copy()
 
         with db.connection.atomic():
-            indicators = self.refresh_indicators(indicators, pending, reset=reset)
+            indicators = self.refresh_indicators(
+                indicators, pending, reset=self.strategy.reset
+            )
             if indicators is not None:
                 self.update_indicators(indicators)
 
@@ -349,6 +356,7 @@ class IStrategy(db.BaseModel):
 
         self.postpone()
 
+        self.strategy.reset = False
         self.strategy.status = StrategyStatus.IDLE
         self.strategy.save()
 
