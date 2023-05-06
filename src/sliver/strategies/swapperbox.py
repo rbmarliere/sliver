@@ -12,7 +12,7 @@ from sliver.utils import get_timeframe_freq
 
 
 class SwapperBoxMessage(db.BaseModel):
-    telegram_message_id = peewee.TextField()
+    telegram_message_id = peewee.TextField(unique=True)
     date = peewee.DateTimeField()
     text = peewee.TextField(null=True)
 
@@ -74,7 +74,10 @@ class SwapperBoxStrategy(IStrategy):
 
             messages = pandas.concat([messages, new])
 
-            SwapperBoxMessage.insert_many(new.to_dict(orient="records")).execute()
+            try:
+                SwapperBoxMessage.insert_many(new.to_dict(orient="records")).execute()
+            except peewee.IntegrityError:
+                print("swapperbox: message(s) already in database")
 
         return messages
 
