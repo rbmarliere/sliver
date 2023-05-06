@@ -10,9 +10,11 @@ from sliver.exceptions import (
     DisablingError,
     PostponingError,
 )
+from sliver.exchange import Exchange
 from sliver.exchanges.factory import ExchangeFactory
 from sliver.position import Position
 from sliver.strategies.factory import StrategyFactory
+from sliver.strategies.status import StrategyStatus
 from sliver.strategy import BaseStrategy
 from sliver.utils import get_logger
 
@@ -69,61 +71,69 @@ class Watchdog(metaclass=WatchdogMeta):
                 p.start()
 
         db_init()
+        BaseStrategy.stop_all()
+        Position.stop_all()
 
         while True:
             try:
                 self.refresh_opening_positions()
-                self.refresh_pending_strategies()
+                self.refresh_idle_strategies()
+                self.refresh_waiting_strategies()
                 self.refresh_pending_positions()
 
                 time.sleep(int(Config().WATCHDOG_INTERVAL))
 
-            except (BaseError, KeyboardInterrupt):
-                BaseStrategy.stop_all()
-                Position.stop_all()
+            except KeyboardInterrupt:
                 break
 
     def refresh_opening_positions(self):
         for position in Position.get_opening():
+            t = Task(position, call="check_stops")
             if self.sync:
-                position.check_stops()
+                t.run()
             else:
-                t = Task("Position", position.id, call="check_stops")
                 self.queue.put(t)
 
-    def refresh_pending_strategies(self):
-        pending = [base_st for base_st in BaseStrategy.get_pending()]
-        markets = [(p.market, p.timeframe) for p in pending]
+    def refresh_idle_strategies(self):
+        markets = {}
+        for base_st in BaseStrategy.get_idle():
+            base_st.status = StrategyStatus.FETCHING
+            base_st.save()
+            try:
+                markets[(base_st.market, base_st.timeframe)].append(base_st)
+            except KeyError:
+                markets[(base_st.market, base_st.timeframe)] = [base_st]
 
-        threads = []
-        for market, timeframe in list(set(markets)):
+        for market, timeframe in markets:
             exchange = ExchangeFactory.from_base(market.base.exchange)
-
+            t = Task(
+                exchange,
+                call="fetch_ohlcv",
+                context=markets[(market, timeframe)],
+                market=market,
+                timeframe=timeframe,
+            )
             if self.sync:
-                exchange.fetch_ohlcv(market, timeframe)
+                t.run()
             else:
-                t = threading.Thread(
-                    target=exchange.fetch_ohlcv, args=(market, timeframe), daemon=True
-                )
-                t.start()
-                threads.append(t)
-        for t in threads:
-            t.join()
+                self.queue.put(t)
 
-        for base_st in pending:
+    def refresh_waiting_strategies(self):
+        waiting = [base_st for base_st in BaseStrategy.get_waiting()]
+
+        for base_st in waiting:
+            t = Task(base_st)
             if self.sync:
-                strategy = StrategyFactory.from_base(base_st)
-                strategy.refresh()
+                t.run()
             else:
-                t = Task("BaseStrategy", base_st.id)
                 self.queue.put(t)
 
     def refresh_pending_positions(self):
         for position in Position.get_pending():
+            t = Task(position)
             if self.sync:
-                position.refresh()
+                t.run()
             else:
-                t = Task("Position", position.id)
                 self.queue.put(t)
 
     def refresh_risk(self):
@@ -137,23 +147,57 @@ class Watchdog(metaclass=WatchdogMeta):
         # maybe user.max_risk and user.max_volatility
 
 
-class Refresher(threading.Thread):
+class Task:
     target = None
     call = None
+    context = None
+    kwargs = None
 
-    def __init__(self, target, call):
-        super().__init__(daemon=True)
+    def __init__(self, target, call=None, context=None, **kwargs):
         self.target = target
-        self.call = call
+        self.call = call if call is not None else "refresh"
+        self.context = context if context is not None else [target]
+        self.kwargs = kwargs
+
+    def reset(self):
+        if self.target._meta.table_name == "exchange":
+            print("exchange target")
+            target = globals()["Exchange"].get(id=self.target.id)
+            self.target = globals()["ExchangeFactory"].from_base(target)
+        if self.target._meta.table_name == "strategy":
+            print("strategy target")
+            target = globals()["BaseStrategy"].get(id=self.target.id)
+            self.target = globals()["StrategyFactory"].from_base(target)
+
+        for c in self.context:
+            if c._meta.table_name == "strategy":
+                new = globals()["BaseStrategy"].get(id=c.id)
+                self.context[self.context.index(c)] = new
+            if c._meta.table_name == "position":
+                new = globals()["Position"].get(id=c.id)
+                self.context[self.context.index(c)] = new
 
     def run(self):
+        self.reset()
+
         try:
+            Watchdog().print(
+                f"calling {self.target.__class__.__name__}(id={self.target.id})"
+                f".{self.call} with args {self.kwargs}"
+            )
+
             method = getattr(self.target, self.call)
-            method()
+            method(**self.kwargs)
 
         except PostponingError as e:
             Watchdog().print(exception=e)
-            self.target.postpone(interval_in_minutes=5)
+            for c in self.context:
+                try:
+                    c.postpone(interval_in_minutes=1)
+                except AttributeError:
+                    Watchdog().print(
+                        f"cannot postpone {c.__class__.__name__}(id={c.id})"
+                    )
 
         except (
             Exception,
@@ -161,18 +205,13 @@ class Refresher(threading.Thread):
             DisablingError,
         ) as e:
             Watchdog().print(exception=e)
-            self.target.disable()
-
-
-class Task:
-    class_name = None
-    id = None
-    call = None
-
-    def __init__(self, class_name, id, call="refresh"):
-        self.class_name = class_name
-        self.id = id
-        self.call = call
+            for c in self.context:
+                try:
+                    c.disable()
+                except AttributeError:
+                    Watchdog().print(
+                        f"cannot disable {c.__class__.__name__}(id={c.id})"
+                    )
 
 
 class Worker(multiprocessing.Process):
@@ -183,12 +222,9 @@ class Worker(multiprocessing.Process):
 
     def run(self):
         while True:
-            t = self.queue.get()
-
-            target = globals()[t.class_name].get(id=t.id)
-            if t.class_name == "BaseStrategy":
-                target = StrategyFactory.from_base(target)
-
-            t = Refresher(target, t.call)
-
-            t.start()
+            task = self.queue.get()
+            task = threading.Thread(
+                target=task.run,
+                daemon=True,
+            )
+            task.start()

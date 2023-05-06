@@ -10,6 +10,7 @@ from sliver.exceptions import DisablingError, PostponingError
 from sliver.price import Price
 from sliver.print import print
 from sliver.utils import get_timeframe_delta
+from sliver.strategies.status import StrategyStatus
 
 
 def table_function(cls):
@@ -199,6 +200,12 @@ class Exchange(db.BaseModel):
 
         with db.connection.atomic():
             Price.insert_many(prices.to_dict("records")).execute()
+
+            from sliver.strategy import BaseStrategy
+
+            for base_st in BaseStrategy.get_fetching(market, timeframe):
+                base_st.status = StrategyStatus.WAITING
+                base_st.save()
 
         return prices
 
