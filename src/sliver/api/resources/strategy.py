@@ -10,6 +10,7 @@ from sliver.api.exceptions import (
     StrategyIsActive,
     StrategyMixedIn,
     StrategyNotEditable,
+    StrategyRefreshing,
 )
 from sliver.position import Position
 from sliver.strategies.factory import StrategyFactory, StrategyTypes
@@ -124,6 +125,9 @@ class Strategy(Resource):
 
         if old_strategy.creator != user and user.id != 1:
             raise StrategyNotEditable
+
+        if old_strategy.is_refreshing():
+            raise StrategyRefreshing
 
         strategy = StrategyFactory.from_base(old_strategy)
 
