@@ -59,11 +59,11 @@ def telethon_call(entity_type):
             except telethon.errors.FloodWaitError as e:
                 time.sleep(e.seconds)
 
-            except Exception as e:
-                print(exception=e)
-
             except AssertionError:
                 pass
+
+            except Exception as e:
+                print(e)
 
             finally:
                 if "client" in locals():
