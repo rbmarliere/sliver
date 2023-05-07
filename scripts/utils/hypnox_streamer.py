@@ -12,7 +12,6 @@ import urllib3
 from sliver.database import connection, db_init
 from sliver.config import Config
 from sliver.exceptions import BaseError
-from sliver.print import print
 from sliver.strategies.hypnox import HypnoxTweet, HypnoxUser
 
 
