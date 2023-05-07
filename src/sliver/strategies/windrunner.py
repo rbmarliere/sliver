@@ -1,4 +1,5 @@
 import decimal
+from logging import info
 
 import pandas
 import peewee
@@ -13,7 +14,6 @@ from sliver.indicators.hypnox import HYPNOX
 from sliver.indicators.macd import MACD
 from sliver.indicators.moon import MOON
 from sliver.indicators.renko import RENKO
-from sliver.print import print
 from sliver.strategies.hypnox import HypnoxScore, HypnoxTweet, replay
 from sliver.strategies.signals import StrategySignals
 from sliver.strategy import IStrategy
@@ -105,7 +105,7 @@ class WindrunnerStrategy(IStrategy):
         )
         replay_q = base_q.where(HypnoxScore.model.is_null())
         if replay_q.count() == 0:
-            print(f"{self.hypnox_model}: no tweets to replay")
+            info(f"{self.hypnox_model}: no tweets to replay")
         else:
             model = sliver.models.load(self.hypnox_model)
             replay(replay_q, model)

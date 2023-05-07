@@ -1,6 +1,7 @@
 import datetime
 import random
 import time
+from logging import info
 
 import ccxt
 import pandas
@@ -8,11 +9,10 @@ import pandas
 from sliver.asset import Asset
 from sliver.balance import Balance
 from sliver.config import Config
-from sliver.exceptions import DisablingError, PostponingError, AuthenticationError
+from sliver.exceptions import AuthenticationError, DisablingError, PostponingError
 from sliver.exchange import Exchange
 from sliver.exchange_asset import ExchangeAsset
 from sliver.order import Order
-from sliver.print import print
 
 
 class CCXT(Exchange):
@@ -53,12 +53,12 @@ class CCXT(Exchange):
                 sleep_time = 60
                 if self.rate_limit:
                     sleep_time = self.rate_limit
-                print(f"rate limited, sleeping for {sleep_time} seconds")
+                info(f"rate limited, sleeping for {sleep_time} seconds")
                 time.sleep(sleep_time)
                 return inner(self, *args, **kwargs)
 
             except ccxt.RequestTimeout as e:
-                print("request timed out", exception=e)
+                info("request timed out")
                 time.sleep(5)
                 return inner(self, *args, **kwargs)
 
@@ -153,13 +153,13 @@ class CCXT(Exchange):
             return new_order["id"]
 
         except ccxt.InvalidOrder:
-            print("invalid order parameters, skipping...")
+            info("invalid order parameters, skipping...")
 
         except ccxt.InsufficientFunds:
             raise DisablingError("insufficient funds")
 
         except ccxt.RequestTimeout as e:
-            print("order creation request timeout", exception=e)
+            info("order creation request timeout")
 
             time.sleep(10)
 
@@ -179,7 +179,7 @@ class CCXT(Exchange):
                     and cost < last_cost * 1.001
                     and int(price) == int(last_order["price"])
                 ):
-                    print("order was created and is open")
+                    info("order was created and is open")
                     return last_order["id"]
 
             closed_orders = self.api_fetch_orders(symbol, status="closed")
@@ -198,7 +198,7 @@ class CCXT(Exchange):
                     and cost < last_cost * 1.001
                     and int(price) == int(last_order["price"])
                 ):
-                    print("order was created and is closed")
+                    info("order was created and is closed")
                     return last_order["id"]
 
     @api_call
@@ -236,14 +236,14 @@ class CCXT(Exchange):
         order.filled = market.base.transform(filled)
 
         if order.id or order.type == "market":
-            print(f"syncing {order.side} order {oid}")
-            print(f"filled: {market.base.print(order.filled)}")
+            info(f"syncing {order.side} order {oid}")
+            info(f"filled: {market.base.print(order.filled)}")
             implicit_cost = market.base.format(order.amount) * order.price
             if implicit_cost > 0:
-                print(
-                    f"{market.base.print(order.amount)} @ "
-                    f"{market.quote.print(order.price)} "
-                    f"({market.quote.print(implicit_cost)})"
+                info(
+                    f"{market.base.info(order.amount)} @ "
+                    f"{market.quote.info(order.price)} "
+                    f"({market.quote.info(implicit_cost)})"
                 )
 
         # check for fees
@@ -270,7 +270,7 @@ class CCXT(Exchange):
         return order
 
     def sync_user_balance(self, user):
-        print(f"syncing user balance in exchange {self.name}")
+        info(f"syncing user balance in exchange {self.name}")
 
         ex_bal = self.api_fetch_balance()
 
@@ -279,15 +279,15 @@ class CCXT(Exchange):
 
             asset, new = Asset.get_or_create(ticker=ticker.upper())
             if new:
-                print(f"saved new asset {asset.ticker}")
+                info(f"saved new asset {asset.ticker}")
 
             ex_asset, new = ExchangeAsset.get_or_create(exchange=self, asset=asset)
             if new:
-                print(f"saved asset {ex_asset.asset.ticker}")
+                info(f"saved asset {ex_asset.asset.ticker}")
 
             u_bal, new = Balance.get_or_create(user=user, asset=ex_asset)
             if new:
-                print(f"saved new balance {u_bal.id}")
+                info(f"saved new balance {u_bal.id}")
 
             u_bal.total = ex_asset.transform(total)
             u_bal.save()

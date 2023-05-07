@@ -1,15 +1,11 @@
 import datetime
-import logging.handlers
 import re
-import time
 import unicodedata
 from decimal import Decimal as D
 
 import nltk
 import pandas
 from flask_restful import fields
-
-from sliver.config import Config
 
 nltk.download("wordnet", quiet=True)
 
@@ -148,31 +144,6 @@ def quantize(row, col, prec_col):
         return row[col]
 
     return row[col].quantize(D("10") ** (D("-1") * row[prec_col]))
-
-
-def get_logger(log, suppress_output=False):
-    log_file = f"{Config().LOGS_DIR}/{log}.log"
-
-    formatter = logging.Formatter("%(asctime)s -- %(message)s")
-    formatter.converter = time.gmtime
-
-    file_handler = logging.handlers.RotatingFileHandler(
-        log_file, maxBytes=52428800, backupCount=32  # 50mb
-    )
-    file_handler.setFormatter(formatter)
-
-    log = logging.getLogger(log)
-    log.setLevel(logging.INFO)
-    log.addHandler(file_handler)
-
-    if suppress_output:
-        return log
-
-    stream_handler = logging.StreamHandler()
-    stream_handler.setFormatter(formatter)
-    log.addHandler(stream_handler)
-
-    return log
 
 
 def parse_field_type(field_type):

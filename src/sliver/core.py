@@ -89,8 +89,6 @@ def watch(sync=False):
 def serve():
     db_init()
 
-    Watchdog().logger = "api"
-
     if Config().ENV_NAME == "development":
         api.app.run(port=5000, debug=False)
 

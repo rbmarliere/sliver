@@ -1,3 +1,5 @@
+from logging import info
+
 import numpy
 import pandas
 import peewee
@@ -6,7 +8,6 @@ import sliver.database as db
 import sliver.models
 from sliver.indicator import Indicator
 from sliver.indicators.hypnox import HYPNOX
-from sliver.print import print
 from sliver.strategies.signals import StrategySignals
 from sliver.strategy import IStrategy
 from sliver.utils import standardize
@@ -43,7 +44,7 @@ def predict(model, tweets, verbose=0):
 
 
 def replay(query, model, verbose=0):
-    print(f"{model.name}: replaying {query.count()} tweets")
+    info(f"{model.name}: replaying {query.count()} tweets")
 
     with db.connection.atomic():
         tweets = pandas.DataFrame(query.dicts())
@@ -151,7 +152,7 @@ class HypnoxStrategy(IStrategy):
         )
         replay_q = base_q.where(HypnoxScore.model.is_null())
         if replay_q.count() == 0:
-            print(f"{self.model}: no tweets to replay")
+            info(f"{self.model}: no tweets to replay")
         else:
             model = sliver.models.load(self.model)
             replay(replay_q, model)

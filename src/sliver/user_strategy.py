@@ -1,4 +1,5 @@
 import datetime
+from logging import info
 
 import peewee
 
@@ -6,7 +7,6 @@ import sliver.database as db
 from sliver.exchange import Exchange
 from sliver.exchange_asset import ExchangeAsset
 from sliver.market import Market
-from sliver.print import print
 from sliver.strategies.signals import StrategySignals
 from sliver.strategy import BaseStrategy
 
@@ -58,19 +58,18 @@ class UserStrategy(db.BaseModel):
         from sliver.position import Position
 
         if not self.active:
-            print("can't open position, user_strategy is not active")
+            info("can't open position, user_strategy is not active")
             return
 
         if self.position:
-            print("can't open position, position already open")
+            info("can't open position, position already open")
             return
 
         return Position.open(self, status)
 
     def disable(self):
-        print(
+        info(
             f"disabled user {self.user.email} strategy {self.strategy.description}",
-            notice=True,
         )
         self.user.send_message(f"disabled strategy {self.strategy.id}")
         self.active = False
@@ -80,8 +79,8 @@ class UserStrategy(db.BaseModel):
         if not self.active:
             return
 
-        print("...........................................")
-        print(f"refreshing user {self.user}")
+        info("...........................................")
+        info(f"refreshing user {self.user}")
 
         pos = self.position
 

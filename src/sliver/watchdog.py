@@ -1,3 +1,5 @@
+import logging
+import logging.config
 import multiprocessing
 import threading
 import time
@@ -13,58 +15,57 @@ from sliver.exceptions import (
 from sliver.position import Position
 from sliver.strategies.status import StrategyStatus
 from sliver.strategy import BaseStrategy
-from sliver.utils import get_logger
 
 
-class WatchdogMeta(type):
-    _instances = {}
+# def get_file_handler(filename):
+#     formatter = logging.Formatter("%(asctime)s -- %(message)s")
+#     formatter.converter = time.gmtime
 
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            instance = super(WatchdogMeta, cls).__call__(*args, **kwargs)
-            cls._instances[cls] = instance
+#     log_file = f"{Config().LOGS_DIR}/{filename}.log"
+#     file_handler = logging.handlers.RotatingFileHandler(
+#         log_file, maxBytes=52428800, backupCount=32  # 50mb
+#     )
+#     file_handler.setFormatter(formatter)
 
-        return cls._instances[cls]
+#     return file_handler
 
 
-class Watchdog(metaclass=WatchdogMeta):
-    def __init__(self, log="watchdog", sync=False):
-        self.logger = log
-        self.queue = multiprocessing.SimpleQueue()
+class Watchdog:
+    def __init__(self, sync=False):
         self.sync = sync
-
-    @property
-    def logger(self):
-        return self._logger
-
-    @logger.setter
-    def logger(self, logger):
-        stdout = get_logger(logger)
-        stderr = get_logger(logger + "_err", suppress_output=True)
-
-        self._logger = (stdout, stderr)
-
-    def print(self, message=None, exception=None, notice=False):
-        stdout = self.logger[0]
-        stderr = self.logger[1]
-
-        if exception:
-            exception_msg = f"{exception.__class__.__name__} {exception}"
-            if message:
-                message = f"{message} {exception_msg}"
-            else:
-                message = exception_msg
-            stderr.exception(exception, exc_info=True)
-
-        if exception or notice:
-            send_message(message=message)
-
-        stdout.info(message)
+        self.proc_queue = multiprocessing.Queue()
+        self.log_queue = multiprocessing.Queue()
 
     def run(self):
+        logging.config.dictConfig(
+            {
+                "version": 1,
+                "disable_existing_loggers": True,
+                "formatters": {
+                    "default": {
+                        "format": "%(asctime)s -- %(message)s",
+                        "datefmt": "%Y-%m-%d %H:%M:%S",
+                        "converter": time.gmtime,
+                    }
+                },
+                "handlers": {
+                    "console": {
+                        "class": "logging.StreamHandler",
+                        "level": "INFO",
+                        "formatter": "default",
+                    }
+                },
+                # "loggers": {
+                #     "foo": {"handlers": ["console"], "level": "INFO"},
+                # },
+                "root": {"handlers": ["console"], "level": "INFO"},
+            }
+        )
+
         if not self.sync:
+            logging.handlers.QueueListener(self.log_queue).start()
             for cpu in range(multiprocessing.cpu_count()):
-                p = Worker(self.queue)
+                p = Worker(self.proc_queue, self.log_queue)
                 p.start()
 
         db_init()
@@ -89,7 +90,7 @@ class Watchdog(metaclass=WatchdogMeta):
             if self.sync:
                 t.run()
             else:
-                self.queue.put(t)
+                self.proc_queue.put(t)
 
     def refresh_idle_strategies(self):
         markets = {}
@@ -112,7 +113,7 @@ class Watchdog(metaclass=WatchdogMeta):
             if self.sync:
                 t.run()
             else:
-                self.queue.put(t)
+                self.proc_queue.put(t)
 
     def refresh_waiting_strategies(self):
         waiting = [base_st for base_st in BaseStrategy.get_waiting()]
@@ -122,7 +123,7 @@ class Watchdog(metaclass=WatchdogMeta):
             if self.sync:
                 t.run()
             else:
-                self.queue.put(t)
+                self.proc_queue.put(t)
 
     def refresh_pending_positions(self):
         for position in Position.get_pending():
@@ -130,7 +131,7 @@ class Watchdog(metaclass=WatchdogMeta):
             if self.sync:
                 t.run()
             else:
-                self.queue.put(t)
+                self.proc_queue.put(t)
 
     def refresh_risk(self):
         pass
@@ -154,6 +155,11 @@ class Task:
         self.call = call if call is not None else "refresh"
         self.context = context if context is not None else [target]
         self.kwargs = kwargs
+
+        # h = get_file_handler(f"{self.target.__class__.__name__}_{self.target.id}")
+        # h.addFilter(lambda record: record.levelno >= logging.INFO)
+        # logger = logging.getLogger()
+        # logger.addHandler(h)
 
     def reset(self):
         from sliver.exchange import Exchange
@@ -181,7 +187,7 @@ class Task:
         try:
             self.reset()
 
-            Watchdog().print(
+            logging.info(
                 f"calling {self.target.__class__.__name__}(id={self.target.id})"
                 f".{self.call} with args {self.kwargs}"
             )
@@ -190,41 +196,92 @@ class Task:
             method(**self.kwargs)
 
         except PostponingError as e:
-            Watchdog().print(exception=e)
+            message = f"{e.__class__.__name__} {e}"
+
+            logging.info(message)
+            logging.exception(e, exc_info=True)
+            send_message(message=message)
+
             for c in self.context:
                 try:
                     c.postpone(interval_in_minutes=1)
                 except AttributeError:
-                    Watchdog().print(
-                        f"cannot postpone {c.__class__.__name__}(id={c.id})"
-                    )
+                    pass
 
         except (
             Exception,
             BaseError,
             DisablingError,
         ) as e:
-            Watchdog().print(exception=e)
+            message = f"{e.__class__.__name__} {e}"
+
+            logging.info(message)
+            logging.exception(e, exc_info=True)
+            send_message(message=message)
+
             for c in self.context:
                 try:
                     c.disable()
                 except AttributeError:
-                    Watchdog().print(
-                        f"cannot disable {c.__class__.__name__}(id={c.id})"
-                    )
+                    pass
+
+        finally:
+            ...
+            # logging.removeHandler(self.handler)
 
 
 class Worker(multiprocessing.Process):
-    def __init__(self, queue):
+    def __init__(self, proc_queue, log_queue):
         super().__init__(daemon=True)
-        self.queue = queue
+        self.proc_queue = proc_queue
+
+        qh = logging.handlers.QueueHandler(log_queue)
+        root = logging.getLogger()
+        root.setLevel(logging.DEBUG)
+        root.addHandler(qh)
+
+        # logging.config.dictConfig(
+        #     {
+        #         "version": 1,
+        #         "disable_existing_loggers": True,
+        #         "handlers": {
+        #             "queue": {
+        #                 "class": "logging.handlers.QueueHandler",
+        #                 "queue": log_queue,
+        #             }
+        #         },
+        #         "root": {"handlers": ["queue"], "level": "INFO"},
+        #     }
+        # )
+
+        logging.info("hai")
+
         db_init()
 
     def run(self):
         while True:
-            task = self.queue.get()
+            task = self.proc_queue.get()
             task = threading.Thread(
                 target=task.run,
                 daemon=True,
             )
             task.start()
+
+
+class LogHandler:
+    def handle(self, record):
+        if record.name == "root":
+            logger = logging.getLogger("console")
+        else:
+            logger = logging.getLogger(record.name)
+
+        if logger.isEnabledFor(record.levelno):
+            print(logger)
+            print(record)
+            logger.handle(record)
+
+        # if logger.isEnabledFor(record.levelno):
+        #     # The process name is transformed just to show that it's the listener
+        #     # doing the logging to files and console
+        #     record.processName = "foo"
+        #     logger.handle(record)

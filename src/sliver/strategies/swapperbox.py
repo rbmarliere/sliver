@@ -1,11 +1,11 @@
 import datetime
+from logging import info
 
 import pandas
 import peewee
 
 import sliver.database as db
 from sliver.alert import get_messages
-from sliver.print import print
 from sliver.strategies.signals import StrategySignals
 from sliver.strategy import IStrategy
 from sliver.utils import get_timeframe_freq
@@ -55,7 +55,7 @@ class SwapperBoxStrategy(IStrategy):
         upstream = get_messages(entity=self.telegram, limit=0)
 
         if upstream is None or upstream.total == len(messages):
-            print("swapperbox: no new messages")
+            info("swapperbox: no new messages")
             return messages
         limit = None
         if len(messages) > 0:
@@ -80,7 +80,7 @@ class SwapperBoxStrategy(IStrategy):
                         new.to_dict(orient="records")
                     ).execute()
                 except peewee.IntegrityError:
-                    print("swapperbox: message(s) already in database")
+                    info("swapperbox: message(s) already in database")
 
         return messages
 

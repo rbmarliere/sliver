@@ -1,9 +1,9 @@
 import importlib
+from logging import exception, info
 
 import tensorflow
 
 from sliver.exceptions import DisablingError
-from sliver.print import print
 
 models = []
 
@@ -23,7 +23,7 @@ def load(model_name):
         if model.name == model_name:
             return model
 
-    print(f"loading model {model_name}")
+    info(f"loading model {model_name}")
 
     model_class = get(model_name)
 
@@ -36,7 +36,7 @@ def load(model_name):
         except tensorflow.errors.ResourceExhaustedError:
             raise DisablingError(f"model {model_name} is too large to be loaded")
     except Exception as e:
-        print(exception=e)
+        exception(e, exc_info=True)
         raise DisablingError(f"could not load model {model_name}")
 
     models.append(model)

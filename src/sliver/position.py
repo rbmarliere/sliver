@@ -1,4 +1,5 @@
 import datetime
+from logging import info
 
 import peewee
 
@@ -10,7 +11,6 @@ from sliver.exchange_asset import ExchangeAsset
 from sliver.exchanges.factory import ExchangeFactory
 from sliver.market import Market
 from sliver.order import Order
-from sliver.print import print
 from sliver.strategies.factory import StrategyFactory
 from sliver.strategies.status import StrategyStatus
 from sliver.strategy import BaseStrategy, StrategySignals
@@ -356,7 +356,7 @@ class Position(db.BaseModel):
         if remainder_c > 0 and (
             remainder_c <= market.cost_min or remainder_a <= market.amount_min
         ):
-            print(f"remainder is {market.quote.print(remainder_c)}")
+            info(f"remainder is {market.quote.print(remainder_c)}")
             remaining = remainder_c
 
         user = self.user_strategy.user
@@ -364,10 +364,10 @@ class Position(db.BaseModel):
 
         remaining = min(remaining, balance.total)
 
-        print(f"bucket cost is {market.quote.print(self.bucket)}")
-        print(f"balance is {market.quote.print(balance.total)}")
-        print(f"remaining to fill in bucket is {market.quote.print(remaining_to_fill)}")
-        print(f"remaining is {market.quote.print(remaining)}")
+        info(f"bucket cost is {market.quote.print(self.bucket)}")
+        info(f"balance is {market.quote.print(balance.total)}")
+        info(f"remaining to fill in bucket is {market.quote.print(remaining_to_fill)}")
+        info(f"remaining is {market.quote.print(remaining)}")
 
         return remaining
 
@@ -390,7 +390,7 @@ class Position(db.BaseModel):
         if remainder_a > 0 and (
             remainder_c <= market.cost_min or remainder_a <= market.amount_min
         ):
-            print(f"remainder is {market.base.print(remainder_a)}")
+            info(f"remainder is {market.base.print(remainder_a)}")
             remaining = remainder_a
 
         user = self.user_strategy.user
@@ -398,10 +398,10 @@ class Position(db.BaseModel):
 
         remaining = min(remaining, balance.total)
 
-        print(f"bucket amount is {market.base.print(self.bucket)}")
-        print(f"remaining to fill in bucket is {market.base.print(remaining_to_fill)}")
-        print(f"remaining is {market.base.print(remaining)}")
-        print(f"balance is {market.base.print(balance.total)}")
+        info(f"bucket amount is {market.base.print(self.bucket)}")
+        info(f"remaining to fill in bucket is {market.base.print(remaining_to_fill)}")
+        info(f"remaining is {market.base.print(remaining)}")
+        info(f"balance is {market.base.print(balance.total)}")
 
         return remaining
 
@@ -433,7 +433,7 @@ class Position(db.BaseModel):
             if last_pos and last_pos.is_stopped():
                 c = datetime.datetime.utcnow() - last_pos.exit_time
                 if c < datetime.timedelta(minutes=cooldown):
-                    print("cooled down, can't create position")
+                    info("cooled down, can't create position")
                     return
 
         p = pos.exchange.api_fetch_last_price(strategy.symbol)
@@ -449,17 +449,17 @@ class Position(db.BaseModel):
                 pos.entry_cost = market.base.format(pos.entry_amount) * last_price
                 pos.target_cost += pos.entry_cost
 
-            print(f"target_cost is {market.quote.print(pos.target_cost)}")
-            print(f"entry_amount is {market.base.print(pos.entry_amount)}")
+            info(f"target_cost is {market.quote.print(pos.target_cost)}")
+            info(f"entry_amount is {market.base.print(pos.entry_amount)}")
 
             if status == "closing" and not market.is_valid_amount(
                 pos.entry_amount, last_price
             ):
-                print("invalid entry_amount, can't create 'closing' position")
+                info("invalid entry_amount, can't create 'closing' position")
                 return
 
             if pos.target_cost == 0 or pos.target_cost <= strategy.market.cost_min:
-                print("invalid target_cost, can't create position")
+                info("invalid target_cost, can't create position")
                 return
 
         elif strategy.side == "short":
@@ -470,27 +470,27 @@ class Position(db.BaseModel):
                 pos.entry_amount = market.base.div(pos.entry_cost, last_price)
                 pos.target_amount += pos.entry_amount
 
-            print(f"target_amount is {market.base.print(pos.target_amount)}")
-            print(f"entry_cost is {market.quote.print(pos.entry_cost)}")
+            info(f"target_amount is {market.base.print(pos.target_amount)}")
+            info(f"entry_cost is {market.quote.print(pos.entry_cost)}")
 
             if status == "closing" and pos.entry_cost <= strategy.market.cost_min:
-                print("invalid entry_cost, can't create 'closing' position")
+                info("invalid entry_cost, can't create 'closing' position")
                 return
 
             if not market.is_valid_amount(pos.target_amount, last_price):
-                print("invalid target_amount, can't create position")
+                info("invalid target_amount, can't create position")
                 return
 
         pos.bucket_max = pos.get_bucket_max()
         pos.save()
 
-        print(f"opening position {pos.id}")
+        info(f"opening position {pos.id}")
         user.send_message(pos.get_notice(prefix="opening "))
 
         return pos
 
     def close(self):
-        print(f"closing position {self}")
+        info(f"closing position {self}")
         user = self.user_strategy.user
         user.send_message(self.get_notice(prefix="closing "))
 
@@ -501,7 +501,7 @@ class Position(db.BaseModel):
         self.save()
 
     def resume(self):
-        print(f"reopening position {self}")
+        info(f"reopening position {self}")
         user = self.user_strategy.user
         user.send_message(self.get_notice(prefix="reopening "))
 
@@ -524,7 +524,7 @@ class Position(db.BaseModel):
                 n = 99999
             interval_in_minutes = n
         self.next_refresh = get_next_refresh(interval_in_minutes)
-        print(f"postponed position {self} next refresh at {self.next_refresh}")
+        info(f"postponed position {self} next refresh at {self.next_refresh}")
         self.save()
 
     def stop(self, last_price=None):
@@ -533,12 +533,12 @@ class Position(db.BaseModel):
         market = strategy.market
         user = self.user_strategy.user
 
-        print(f"stopping position {self}")
-        print(f"last price is {market.quote.print(last_price)}")
-        print(f"high was {market.quote.print(self.last_high)}")
-        print(f"low was {market.quote.print(self.last_low)}")
-        print(f"stop gain is {engine.stop_gain}, trailing is {engine.trailing_gain}")
-        print(f"stop loss is {engine.stop_loss}, trailing is {engine.trailing_loss}")
+        info(f"stopping position {self}")
+        info(f"last price is {market.quote.print(last_price)}")
+        info(f"high was {market.quote.print(self.last_high)}")
+        info(f"low was {market.quote.print(self.last_low)}")
+        info(f"stop gain is {engine.stop_gain}, trailing is {engine.trailing_gain}")
+        info(f"stop loss is {engine.stop_loss}, trailing is {engine.trailing_loss}")
 
         user.send_message(self.get_notice(prefix="stopped "))
 
@@ -675,7 +675,7 @@ class Position(db.BaseModel):
 
         # if no orders found, exit
         if len(orders) == 0:
-            print("no open orders found")
+            info("no open orders found")
             return
 
         for order in orders:
@@ -704,17 +704,17 @@ class Position(db.BaseModel):
         p = self.exchange.api_fetch_last_price(strategy.symbol)
         last_price = market.quote.transform(p)
 
-        print("___________________________________________")
-        print(f"refreshing {self.status} {strategy.side} position {self}")
-        print(f"user is {self.user_strategy.user}")
-        print(f"strategy is {self.user_strategy.strategy}")
-        print(f"last price: {strategy.market.quote.print(last_price)}")
-        print(f"target cost is {market.quote.print(self.target_cost)}")
-        print(f"target amount is {market.base.print(self.target_amount)}")
-        print(f"entry cost is {market.quote.print(self.entry_cost)}")
-        print(f"entry amount is {market.base.print(self.entry_amount)}")
-        print(f"exit cost is {market.quote.print(self.exit_cost)}")
-        print(f"exit amount is {market.base.print(self.exit_amount)}")
+        info("___________________________________________")
+        info(f"refreshing {self.status} {strategy.side} position {self}")
+        info(f"user is {self.user_strategy.user}")
+        info(f"strategy is {self.user_strategy.strategy}")
+        info(f"last price: {strategy.market.quote.print(last_price)}")
+        info(f"target cost is {market.quote.print(self.target_cost)}")
+        info(f"target amount is {market.base.print(self.target_amount)}")
+        info(f"entry cost is {market.quote.print(self.entry_cost)}")
+        info(f"entry amount is {market.base.print(self.entry_amount)}")
+        info(f"exit cost is {market.quote.print(self.exit_cost)}")
+        info(f"exit amount is {market.base.print(self.exit_amount)}")
 
         self.sync_limit_orders()
 
@@ -762,15 +762,15 @@ class Position(db.BaseModel):
         elif self.is_selling():
             engine = strategy.sell_engine
 
-        print(f"next bucket at {self.next_bucket}")
+        info(f"next bucket at {self.next_bucket}")
 
         if now > self.next_bucket:
             next_bucket = get_next_refresh(engine.bucket_interval)
             self.next_bucket = next_bucket
             self.bucket = 0
-            print(f"moving on to next bucket at {self.next_bucket}")
+            info(f"moving on to next bucket at {self.next_bucket}")
 
-        print(f"limit to market ratio is {engine.lm_ratio}")
+        info(f"limit to market ratio is {engine.lm_ratio}")
 
         if self.is_buying():
             remaining_cost = self.get_remaining_cost(last_price)
@@ -795,7 +795,7 @@ class Position(db.BaseModel):
         if now < self.next_bucket and (
             remaining_cost <= market.cost_min or remaining_amount <= market.amount_min
         ):
-            print("bucket is full")
+            info("bucket is full")
             return
 
         inserted_orders = False
@@ -861,7 +861,7 @@ class Position(db.BaseModel):
             self.pnl = self.get_pnl()
             self.roi = self.get_roi()
             self.exit_time = datetime.datetime.utcnow()
-            print("position is now closed")
+            info("position is now closed")
             user.send_message(
                 self.get_notice(prefix="closed ", suffix=f" ROI: {self.roi}%")
             )
@@ -888,7 +888,7 @@ class Position(db.BaseModel):
             )
         ):
             self.status = "open"
-            print("position is now open")
+            info("position is now open")
             user.send_message(self.get_notice(prefix="opened "))
 
         self.save()

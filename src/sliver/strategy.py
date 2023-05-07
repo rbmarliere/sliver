@@ -1,6 +1,7 @@
 import datetime
 from abc import ABCMeta, abstractmethod
 from decimal import Decimal as D
+from logging import info
 
 import pandas
 import peewee
@@ -10,7 +11,6 @@ import sliver.database as db
 from sliver.indicator import Indicator
 from sliver.market import Market
 from sliver.price import Price
-from sliver.print import print
 from sliver.strategies.signals import StrategySignals
 from sliver.strategies.status import StrategyStatus
 from sliver.trade_engine import TradeEngine
@@ -268,7 +268,7 @@ class BaseStrategy(db.BaseModel):
             f"for {self.symbol} @ {self.market.quote.exchange.name}"
         )
 
-        print(msg, notice=True)
+        info(msg)
         for dep in self.mixedstrategies_set:
             dep.mixer.disable()
         for u_st in self.userstrategy_set:
@@ -289,7 +289,7 @@ class BaseStrategy(db.BaseModel):
         offset = datetime.timedelta(minutes=self.next_refresh_offset)
         self.next_refresh = get_next_refresh(interval_in_minutes) + offset
 
-        print(f"postponed strategy {self} next refresh at {self.next_refresh}")
+        info(f"postponed strategy {self} next refresh at {self.next_refresh}")
         self.status = StrategyStatus.IDLE
         self.save()
 
@@ -328,18 +328,18 @@ class IStrategy(db.BaseModel):
         self.strategy.status = StrategyStatus.REFRESHING
         self.strategy.save()
 
-        print("===========================================")
-        print(f"refreshing strategy {self}")
-        print(f"market is {self.symbol} [{self.market}]")
-        print(f"side is {self.side}")
-        print(f"timeframe is {self.timeframe}")
-        print(f"exchange is {self.market.base.exchange.name}")
-        print(f"type is {self.type}")
-        print(f"buy engine is {self.buy_engine_id}")
-        print(f"sell engine is {self.sell_engine_id}")
-        print(f"stop engine is {self.stop_engine_id}")
+        info("===========================================")
+        info(f"refreshing strategy {self}")
+        info(f"market is {self.symbol} [{self.market}]")
+        info(f"side is {self.side}")
+        info(f"timeframe is {self.timeframe}")
+        info(f"exchange is {self.market.base.exchange.name}")
+        info(f"type is {self.type}")
+        info(f"buy engine is {self.buy_engine_id}")
+        info(f"sell engine is {self.sell_engine_id}")
+        info(f"stop engine is {self.stop_engine_id}")
 
-        print("refreshing indicators")
+        info("refreshing indicators")
         indicators = pandas.DataFrame(self.get_indicators().dicts())
         indicators.strategy = self.strategy.id
         indicators.price = indicators.id
@@ -352,7 +352,7 @@ class IStrategy(db.BaseModel):
             self.update_indicators(indicators)
 
         signal = self.get_signal()
-        print(f"signal is {signal}")
+        info(f"signal is {signal}")
 
         self.postpone()
 

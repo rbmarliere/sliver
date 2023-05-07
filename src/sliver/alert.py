@@ -1,11 +1,11 @@
 import asyncio
 import time
+from logging import exception, info
 
-import telethon.sync
 import telegram
+import telethon.sync
 
 from sliver.config import Config
-from sliver.print import print
 from sliver.exceptions import DisablingError
 
 
@@ -51,7 +51,7 @@ def telethon_call(entity_type):
                 return res
 
             except AttributeError:
-                print(f"no telethon method {call.__name__}")
+                info(f"no telethon method {call.__name__}")
 
             except telethon.errors.AuthKeyUnregisteredError:
                 raise DisablingError("no telethon authentication")
@@ -63,7 +63,7 @@ def telethon_call(entity_type):
                 pass
 
             except Exception as e:
-                print(e)
+                exception(e, exc_info=True)
 
             finally:
                 if "client" in locals():
@@ -77,7 +77,7 @@ def telethon_call(entity_type):
 @telethon_call("user")
 def get_messages(*, entity, limit=1):
     if limit is None or limit > 0:
-        print(f"downloading {'all' if limit is None else limit} messages from {entity}")
+        info(f"downloading {'all' if limit is None else limit} messages from {entity}")
 
     return "get_messages"
 

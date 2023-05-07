@@ -1,4 +1,5 @@
 from decimal import Decimal as D
+from logging import info
 
 import peewee
 
@@ -10,7 +11,6 @@ from sliver.credential import Credential
 from sliver.exceptions import AuthenticationError
 from sliver.exchange_asset import ExchangeAsset
 from sliver.exchanges.factory import ExchangeFactory
-from sliver.print import print
 from sliver.user_strategy import UserStrategy
 
 
@@ -113,8 +113,8 @@ class User(db.BaseModel):
         quote = strategy.market.quote
         quote_balance = self.get_exchange_balance(quote).total
 
-        print(f"base: {base.print(base_balance)}")
-        print(f"quote: {quote.print(quote_balance)}")
+        info(f"base: {base.print(base_balance)}")
+        info(f"quote: {quote.print(quote_balance)}")
 
         b_count = 0
         q_count = 0

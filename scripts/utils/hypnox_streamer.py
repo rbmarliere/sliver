@@ -14,7 +14,6 @@ from sliver.config import Config
 from sliver.exceptions import BaseError
 from sliver.print import print
 from sliver.strategies.hypnox import HypnoxTweet, HypnoxUser
-from sliver.watchdog import Watchdog
 
 
 class Stream(tweepy.StreamingClient):
@@ -123,8 +122,6 @@ def get_rules(uids):
 
 def stream():
     db_init()
-
-    Watchdog().logger = "stream"
 
     argp = argparse.ArgumentParser()
     argp.add_argument("--reset", action="store_true")

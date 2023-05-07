@@ -1,8 +1,9 @@
+from logging import info
+
 import peewee
 
 import sliver.database as db
 from sliver.exchange import Exchange
-from sliver.print import print
 
 
 class Credential(db.BaseModel):
@@ -14,7 +15,7 @@ class Credential(db.BaseModel):
     active = peewee.BooleanField(default=True)
 
     def disable(self):
-        print(
+        info(
             f"disabled credential {self} for exchange {self.exchange.name} "
             f"of user {self.user.email}",
             notice=True,
