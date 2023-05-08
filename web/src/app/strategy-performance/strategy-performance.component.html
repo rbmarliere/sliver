@@ -10,6 +10,9 @@
         <p class="text-center">no positions found for strategy {{strategy.id}}</p>
       </div>
 
+      <plotly-plot [config]="plot.config" [data]="plot.data" [layout]="plot.layout" [updateOnlyWithRevision]="true"
+        (relayout)="zoom($event)"></plotly-plot>
+
       <app-perf-summary title="Performance Summary ({{strategy.id}})" [summary]="perfLog"></app-perf-summary>
 
       <app-positions-table *ngIf="positions.length > 0" [positions]="positions"

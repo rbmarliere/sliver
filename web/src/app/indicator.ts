@@ -4,8 +4,8 @@ export interface Indicator {
   high: number[];
   low: number[];
   close: number[];
-  buys: number[];
-  sells: number[];
+  buys: number[] | null[];
+  sells: number[] | null[];
 }
 
 export function sliceIndicators(indicators: Indicator, startIdx: number, endIdx: number): any {

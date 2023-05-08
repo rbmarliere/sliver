@@ -75,7 +75,7 @@ export function getLongPositions(indicators: Indicator, stopEngine: Engine | nul
 
     let cooledDown = checkStopCooldown(pos, stopEngine, indicators.time[i]);
 
-    if (indicators.buys[i] > 0 && !cooledDown) {
+    if (indicators.buys[i]! > 0 && !cooledDown) {
       if (!curr) {
         curr = true;
 
@@ -95,7 +95,7 @@ export function getLongPositions(indicators: Indicator, stopEngine: Engine | nul
         pos.last_low = pos.entry_price;
 
       }
-    } else if (indicators.sells[i] > 0 || stopped) {
+    } else if (indicators.sells[i]! > 0 || stopped) {
       if (curr) {
         curr = false;
 
@@ -191,7 +191,7 @@ export function getShortPositions(indicators: Indicator, stopEngine: Engine | nu
 
     let cooledDown = checkStopCooldown(pos, stopEngine, indicators.time[i]);
 
-    if (indicators.sells[i] > 0 && !cooledDown) {
+    if (indicators.sells[i]! > 0 && !cooledDown) {
       if (!curr) {
         curr = true;
 
@@ -211,7 +211,7 @@ export function getShortPositions(indicators: Indicator, stopEngine: Engine | nu
         pos.last_low = pos.entry_price;
 
       }
-    } else if (indicators.buys[i] > 0 || stopped) {
+    } else if (indicators.buys[i]! > 0 || stopped) {
       if (curr) {
         curr = false;
 
