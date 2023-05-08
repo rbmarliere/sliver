@@ -51,10 +51,23 @@ class Watchdog:
                         "converter": time.gmtime,
                     }
                 },
+                "filters": {
+                    "stdout": {
+                        "()": StdoutFilter,
+                        "level": "WARNING",
+                    },
+                },
                 "handlers": {
-                    "console": {
+                    "stdout": {
                         "class": "logging.StreamHandler",
                         "level": "INFO",
+                        "formatter": "default",
+                        "filters": ["stdout"],
+                    },
+                    "stderr": {
+                        "()": get_file_handler,
+                        "level": "ERROR",
+                        "filename": "errors",
                         "formatter": "default",
                     },
                     "file": {
@@ -64,7 +77,7 @@ class Watchdog:
                         "formatter": "default",
                     },
                 },
-                "root": {"handlers": ["console", "file"], "level": "INFO"},
+                "root": {"handlers": ["stdout", "stderr", "file"], "level": "INFO"},
             }
         )
 
@@ -255,7 +268,7 @@ class Worker(multiprocessing.Process):
                     },
                     "filters": {
                         "context": {
-                            "()": LogFilter,
+                            "()": TaskFilter,
                             "context": task.log_context,
                         },
                     },
@@ -297,7 +310,7 @@ class LogHandler:
             logger.handle(record)
 
 
-class LogFilter(logging.Filter):
+class TaskFilter(logging.Filter):
     def __init__(self, context, *args, **kwargs):
         logging.Filter.__init__(self, *args, **kwargs)
         self.context = context
@@ -305,3 +318,12 @@ class LogFilter(logging.Filter):
     def filter(self, record):
         record.context = self.context
         return True
+
+
+class StdoutFilter(logging.Filter):
+    def __init__(self, level, *args, **kwargs):
+        logging.Filter.__init__(self, *args, **kwargs)
+        self.level = level
+
+    def filter(self, record):
+        return record.levelno <= getattr(logging, self.level)
