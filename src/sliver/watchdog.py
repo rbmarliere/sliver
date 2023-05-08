@@ -5,6 +5,8 @@ import os
 import threading
 import time
 
+from setproctitle import setproctitle, getproctitle
+
 from sliver.alert import send_message
 from sliver.config import Config
 from sliver.database import db_init
@@ -85,7 +87,7 @@ class Watchdog:
             for handler in logging.getLogger().handlers:
                 handler.formatter = None
             logging.handlers.QueueListener(self.log_queue, LogHandler()).start()
-            for cpu in range(self.num_workers):
+            for w in range(self.num_workers):
                 p = Worker(self.proc_queue, self.log_queue)
                 p.start()
 
@@ -180,6 +182,8 @@ class Task:
         self.log_context = f"{self.target.__class__.__name__}_{self.target.id}".lower()
 
     def reset(self):
+        setproctitle(f"{getproctitle()} -- {self.log_context}")
+
         from sliver.exchange import Exchange
         from sliver.exchanges.factory import ExchangeFactory
         from sliver.position import Position
