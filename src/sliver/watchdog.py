@@ -1,6 +1,7 @@
 import logging
 import logging.config
 import multiprocessing
+import os
 import threading
 import time
 
@@ -17,17 +18,19 @@ from sliver.strategies.status import StrategyStatus
 from sliver.strategy import BaseStrategy
 
 
-# def get_file_handler(filename):
-#     formatter = logging.Formatter("%(asctime)s -- %(message)s")
-#     formatter.converter = time.gmtime
+def get_file_handler(filename, filepath=None):
+    path = (
+        f"{Config().LOGS_DIR}/{filepath}" if filepath is not None else Config().LOGS_DIR
+    )
 
-#     log_file = f"{Config().LOGS_DIR}/{filename}.log"
-#     file_handler = logging.handlers.RotatingFileHandler(
-#         log_file, maxBytes=52428800, backupCount=32  # 50mb
-#     )
-#     file_handler.setFormatter(formatter)
+    os.makedirs(path, exist_ok=True)
 
-#     return file_handler
+    log_file = f"{path}/{filename}.log"
+    file_handler = logging.handlers.RotatingFileHandler(
+        log_file, maxBytes=52428800, backupCount=32  # 50mb
+    )
+
+    return file_handler
 
 
 class Watchdog:
@@ -53,17 +56,22 @@ class Watchdog:
                         "class": "logging.StreamHandler",
                         "level": "INFO",
                         "formatter": "default",
-                    }
+                    },
+                    "file": {
+                        "()": get_file_handler,
+                        "level": "INFO",
+                        "filename": "watchdog",
+                        "formatter": "default",
+                    },
                 },
-                # "loggers": {
-                #     "foo": {"handlers": ["console"], "level": "INFO"},
-                # },
-                "root": {"handlers": ["console"], "level": "INFO"},
+                "root": {"handlers": ["console", "file"], "level": "INFO"},
             }
         )
 
         if not self.sync:
-            logging.handlers.QueueListener(self.log_queue).start()
+            for handler in logging.getLogger().handlers:
+                handler.formatter = None
+            logging.handlers.QueueListener(self.log_queue, LogHandler()).start()
             for cpu in range(multiprocessing.cpu_count()):
                 p = Worker(self.proc_queue, self.log_queue)
                 p.start()
@@ -149,17 +157,14 @@ class Task:
     call = None
     context = None
     kwargs = None
+    log_context = None
 
     def __init__(self, target, call=None, context=None, **kwargs):
         self.target = target
         self.call = call if call is not None else "refresh"
         self.context = context if context is not None else [target]
         self.kwargs = kwargs
-
-        # h = get_file_handler(f"{self.target.__class__.__name__}_{self.target.id}")
-        # h.addFilter(lambda record: record.levelno >= logging.INFO)
-        # logger = logging.getLogger()
-        # logger.addHandler(h)
+        self.log_context = f"{self.target.__class__.__name__}_{self.target.id}".lower()
 
     def reset(self):
         from sliver.exchange import Exchange
@@ -225,63 +230,78 @@ class Task:
                 except AttributeError:
                     pass
 
-        finally:
-            ...
-            # logging.removeHandler(self.handler)
-
 
 class Worker(multiprocessing.Process):
     def __init__(self, proc_queue, log_queue):
         super().__init__(daemon=True)
         self.proc_queue = proc_queue
-
-        qh = logging.handlers.QueueHandler(log_queue)
-        root = logging.getLogger()
-        root.setLevel(logging.DEBUG)
-        root.addHandler(qh)
-
-        # logging.config.dictConfig(
-        #     {
-        #         "version": 1,
-        #         "disable_existing_loggers": True,
-        #         "handlers": {
-        #             "queue": {
-        #                 "class": "logging.handlers.QueueHandler",
-        #                 "queue": log_queue,
-        #             }
-        #         },
-        #         "root": {"handlers": ["queue"], "level": "INFO"},
-        #     }
-        # )
-
-        logging.info("hai")
-
+        self.log_queue = log_queue
         db_init()
 
     def run(self):
         while True:
             task = self.proc_queue.get()
+
+            logging.config.dictConfig(
+                {
+                    "version": 1,
+                    "disable_existing_loggers": True,
+                    "formatters": {
+                        "default": {
+                            "format": "%(asctime)s -- %(message)s",
+                            "datefmt": "%Y-%m-%d %H:%M:%S",
+                            "converter": time.gmtime,
+                        }
+                    },
+                    "filters": {
+                        "context": {
+                            "()": LogFilter,
+                            "context": task.log_context,
+                        },
+                    },
+                    "handlers": {
+                        "queue": {
+                            "class": "logging.handlers.QueueHandler",
+                            "queue": self.log_queue,
+                            "filters": ["context"],
+                            "formatter": "default",
+                        }
+                    },
+                    "root": {"handlers": ["queue"], "level": "INFO"},
+                }
+            )
+
             task = threading.Thread(
                 target=task.run,
                 daemon=True,
             )
             task.start()
+            task.join()
 
 
 class LogHandler:
+    context = None
+
     def handle(self, record):
-        if record.name == "root":
-            logger = logging.getLogger("console")
-        else:
-            logger = logging.getLogger(record.name)
+        if hasattr(record, "context"):
+            logger = logging.getLogger("context")
+
+            if self.context != record.context:
+                self.context = record.context
+                logger.handlers = []
+                filepath = self.context.split("_")[0]
+                filename = self.context.split("_")[1]
+                logger.addHandler(get_file_handler(filename, filepath))
 
         if logger.isEnabledFor(record.levelno):
-            print(logger)
-            print(record)
             logger.handle(record)
 
-        # if logger.isEnabledFor(record.levelno):
-        #     # The process name is transformed just to show that it's the listener
-        #     # doing the logging to files and console
-        #     record.processName = "foo"
-        #     logger.handle(record)
+
+class LogFilter(logging.Filter):
+    def __init__(self, context, *args, **kwargs):
+        logging.Filter.__init__(self, *args, **kwargs)
+        self.context = context
+
+    def filter(self, record):
+        record.context = self.context
+        return True
