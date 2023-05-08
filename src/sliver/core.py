@@ -75,15 +75,11 @@ def create_tables(connection):
         pass
 
 
-def watch(sync=False):
+def watch(num_workers=1):
     argp = argparse.ArgumentParser()
-    argp.add_argument("--sync", action="store_true")
+    argp.add_argument("num_workers", nargs="?", type=int, default=num_workers)
     args = argp.parse_args()
-
-    if sync:
-        args.sync = True
-
-    Watchdog(sync=args.sync).run()
+    Watchdog(num_workers=args.num_workers).run()
 
 
 def serve():

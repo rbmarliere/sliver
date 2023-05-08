@@ -34,8 +34,8 @@ def get_file_handler(filename, filepath=None):
 
 
 class Watchdog:
-    def __init__(self, sync=False):
-        self.sync = sync
+    def __init__(self, num_workers=None):
+        self.num_workers = num_workers if num_workers is not None else 1
         self.proc_queue = multiprocessing.Queue()
         self.log_queue = multiprocessing.Queue()
 
@@ -68,11 +68,11 @@ class Watchdog:
             }
         )
 
-        if not self.sync:
+        if self.num_workers > 1:
             for handler in logging.getLogger().handlers:
                 handler.formatter = None
             logging.handlers.QueueListener(self.log_queue, LogHandler()).start()
-            for cpu in range(multiprocessing.cpu_count()):
+            for cpu in range(self.num_workers):
                 p = Worker(self.proc_queue, self.log_queue)
                 p.start()
 
@@ -95,7 +95,7 @@ class Watchdog:
     def refresh_opening_positions(self):
         for position in Position.get_opening():
             t = Task(position, call="check_stops")
-            if self.sync:
+            if self.num_workers == 1:
                 t.run()
             else:
                 self.proc_queue.put(t)
@@ -118,7 +118,7 @@ class Watchdog:
                 market=market,
                 timeframe=timeframe,
             )
-            if self.sync:
+            if self.num_workers == 1:
                 t.run()
             else:
                 self.proc_queue.put(t)
@@ -128,7 +128,7 @@ class Watchdog:
 
         for base_st in waiting:
             t = Task(base_st)
-            if self.sync:
+            if self.num_workers == 1:
                 t.run()
             else:
                 self.proc_queue.put(t)
@@ -136,7 +136,7 @@ class Watchdog:
     def refresh_pending_positions(self):
         for position in Position.get_pending():
             t = Task(position)
-            if self.sync:
+            if self.num_workers == 1:
                 t.run()
             else:
                 self.proc_queue.put(t)
