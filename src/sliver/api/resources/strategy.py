@@ -61,6 +61,8 @@ class Strategy(Resource):
         args = parser.parse_args()
 
         if args.active is not None:
+            if strategy.is_refreshing():
+                raise StrategyRefreshing
             if args.active:
                 strategy.enable()
             else:
