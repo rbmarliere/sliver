@@ -57,8 +57,8 @@ class CCXT(Exchange):
                 time.sleep(sleep_time)
                 return inner(self, *args, **kwargs)
 
-            except ccxt.RequestTimeout as e:
-                info("request timed out")
+            except ccxt.RequestTimeout:
+                info("ccxt request timed out")
                 time.sleep(5)
                 return inner(self, *args, **kwargs)
 
@@ -241,9 +241,9 @@ class CCXT(Exchange):
             implicit_cost = market.base.format(order.amount) * order.price
             if implicit_cost > 0:
                 info(
-                    f"{market.base.info(order.amount)} @ "
-                    f"{market.quote.info(order.price)} "
-                    f"({market.quote.info(implicit_cost)})"
+                    f"{market.base.print(order.amount)} @ "
+                    f"{market.quote.print(order.price)} "
+                    f"({market.quote.print(implicit_cost)})"
                 )
 
         # check for fees

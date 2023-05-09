@@ -196,17 +196,14 @@ class Exchange(db.BaseModel):
         prices["volume"] = prices["volume"].apply(market.base.transform)
 
         with db.connection.atomic():
+            if not prices.empty:
+                Price.insert_many(prices.to_dict("records")).execute()
+
             from sliver.strategy import BaseStrategy
 
             for base_st in BaseStrategy.get_fetching(market, timeframe):
                 base_st.status = StrategyStatus.WAITING
                 base_st.save()
-
-        if prices.empty:
-            return prices
-
-        with db.connection.atomic():
-            Price.insert_many(prices.to_dict("records")).execute()
 
         return prices
 
@@ -215,7 +212,7 @@ class Exchange(db.BaseModel):
 
         info(
             f"inserting {type} {side} order "
-            f":: {market.base.info(amount)} @ {market.quote.print(price)}"
+            f":: {market.base.print(amount)} @ {market.quote.print(price)}"
         )
 
         if not market.is_valid_amount(amount, price):
