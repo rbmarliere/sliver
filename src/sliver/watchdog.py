@@ -2,10 +2,7 @@ import logging
 import logging.config
 import multiprocessing
 import os
-import threading
 import time
-
-from setproctitle import setproctitle, getproctitle
 
 from sliver.alert import send_message
 from sliver.config import Config
@@ -158,13 +155,14 @@ class Watchdog:
 
     def refresh_risk(self):
         pass
-        # TODO risk assessment:
-        # - red flag -- exit all positions
-        # - yellow flag -- new buy signals ignored & reduce curr. positions
-        # - green flag -- all signals are respected
-        # in general, account for overall market risk and volatility
-        # maybe use GARCH to model volatility, or a machine learning model
-        # maybe user.max_risk and user.max_volatility
+
+    # TODO risk assessment:
+    # - red flag -- exit all positions
+    # - yellow flag -- new buy signals ignored & reduce curr. positions
+    # - green flag -- all signals are respected
+    # in general, account for overall market risk and volatility
+    # maybe use GARCH to model volatility, or a machine learning model
+    # maybe user.max_risk and user.max_volatility
 
 
 class Task:
@@ -182,8 +180,6 @@ class Task:
         self.log_context = f"{self.target.__class__.__name__}_{self.target.id}".lower()
 
     def reset(self):
-        setproctitle(f"{getproctitle()} -- {self.log_context}")
-
         from sliver.exchange import Exchange
         from sliver.exchanges.factory import ExchangeFactory
         from sliver.position import Position
@@ -250,7 +246,7 @@ class Task:
 
 class Worker(multiprocessing.Process):
     def __init__(self, proc_queue, log_queue):
-        super().__init__(daemon=True)
+        super().__init__()
         self.proc_queue = proc_queue
         self.log_queue = log_queue
         db_init()
@@ -258,7 +254,6 @@ class Worker(multiprocessing.Process):
     def run(self):
         while True:
             task = self.proc_queue.get()
-
             logging.config.dictConfig(
                 {
                     "version": 1,
@@ -287,13 +282,7 @@ class Worker(multiprocessing.Process):
                     "root": {"handlers": ["queue"], "level": "INFO"},
                 }
             )
-
-            task = threading.Thread(
-                target=task.run,
-                daemon=True,
-            )
-            task.start()
-            task.join()
+            task.run()
 
 
 class LogHandler:
