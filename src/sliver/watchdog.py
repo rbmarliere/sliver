@@ -205,10 +205,11 @@ class Task:
         try:
             self.reset()
 
-            logging.info(
-                f"calling {self.target.__class__.__name__}(id={self.target.id})"
-                f".{self.call} with args {self.kwargs}"
-            )
+            if self.call != "check_stops":
+                logging.info(
+                    f"calling {self.target.__class__.__name__}(id={self.target.id})"
+                    f".{self.call} with args {self.kwargs}"
+                )
 
             method = getattr(self.target, self.call)
             method(**self.kwargs)

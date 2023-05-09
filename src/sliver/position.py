@@ -689,11 +689,12 @@ class Position(db.BaseModel):
                 self.add_order(order)
 
     def refresh(self):
-        if not self.user_strategy.active:
+        if not self.user_strategy.active or self.refreshing:
             return
 
-        self.refreshing = True
-        self.save()
+        with db.connection.atomic():
+            self.refreshing = True
+            self.save()
 
         strategy = StrategyFactory.from_base(self.user_strategy.strategy)
         signal = strategy.get_signal()
