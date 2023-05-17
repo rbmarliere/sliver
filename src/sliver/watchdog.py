@@ -4,9 +4,9 @@ import multiprocessing
 import os
 import time
 
+import sliver.database as db
 from sliver.alert import send_message
 from sliver.config import Config
-from sliver.database import db_init
 from sliver.exceptions import (
     BaseError,
     DisablingError,
@@ -88,7 +88,7 @@ class Watchdog:
                 p = Worker(self.proc_queue, self.log_queue)
                 p.start()
 
-        db_init()
+        db.init()
         BaseStrategy.stop_all()
         Position.stop_all()
 
@@ -250,7 +250,7 @@ class Worker(multiprocessing.Process):
         super().__init__()
         self.proc_queue = proc_queue
         self.log_queue = log_queue
-        db_init()
+        db.init()
 
     def run(self):
         while True:

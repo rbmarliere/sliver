@@ -9,7 +9,7 @@ import requests
 import tweepy
 import urllib3
 
-from sliver.database import connection, db_init
+import sliver.database as db
 from sliver.config import Config
 from sliver.exceptions import BaseError
 from sliver.strategies.hypnox import HypnoxTweet, HypnoxUser
@@ -62,9 +62,9 @@ class Stream(tweepy.StreamingClient):
             if isinstance(e, peewee.InterfaceError) or isinstance(
                 e, peewee.OperationalError
             ):
-                connection.close()
+                db.connection.close()
                 try:
-                    connection.connect(reuse_if_open=True)
+                    db.connection.connect(reuse_if_open=True)
                     tweet.save()
                 except peewee.OperationalError:
                     print("couldn't reestablish connection to database!")
@@ -120,7 +120,7 @@ def get_rules(uids):
 
 
 def stream():
-    db_init()
+    db.init()
 
     argp = argparse.ArgumentParser()
     argp.add_argument("--reset", action="store_true")

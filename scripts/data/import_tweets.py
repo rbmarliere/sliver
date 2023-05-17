@@ -2,9 +2,9 @@ import argparse
 
 import pandas
 import tqdm
-from langdetect import detect, LangDetectException
+from langdetect import LangDetectException, detect
 
-import sliver.core
+import sliver.database as db
 from sliver.strategies.hypnox import HypnoxTweet
 
 
@@ -47,12 +47,14 @@ def main(args):
 
 
 if __name__ == "__main__":
+    db.init()
+
     argp = argparse.ArgumentParser()
     argp.add_argument("-i", "--input-file", help="CSV file to import", required=True)
     argp.add_argument("-c", "--clean", help="Clean the CSV file", action="store_true")
     args = argp.parse_args()
 
-    with sliver.core.connection.atomic():
+    with db.connection.atomic():
         if args.clean:
             clean(args)
         else:

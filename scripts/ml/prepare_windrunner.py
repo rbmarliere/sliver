@@ -1,12 +1,13 @@
 import pandas
 
-from sliver.indicators.hypnox import HYPNOX
-from sliver.strategies.hypnox import HypnoxTweet
-from sliver.indicators.bb import BB
+import sliver.database as db
 from sliver.indicators.atr import ATR
+from sliver.indicators.bb import BB
+from sliver.indicators.hypnox import HYPNOX
 from sliver.indicators.macd import MACD
-from sliver.indicators.renko import RENKO
 from sliver.indicators.moon import MOON
+from sliver.indicators.renko import RENKO
+from sliver.strategies.hypnox import HypnoxTweet
 
 
 def prepare():
@@ -81,4 +82,5 @@ def prepare():
 
 
 if __name__ == "__main__":
+    db.init()
     prepare()

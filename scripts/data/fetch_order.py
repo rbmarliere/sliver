@@ -1,10 +1,13 @@
 import argparse
 import sys
 
+import sliver.database as db
 from sliver.exchanges.factory import ExchangeFactory
 from sliver.position import Position
 
 if __name__ == "__main__":
+    db.init()
+
     argp = argparse.ArgumentParser()
     argp.add_argument(
         "-o", "--order_id", type=str, help="Exchange Order ID", required=True

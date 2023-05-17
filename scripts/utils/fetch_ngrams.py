@@ -1,6 +1,7 @@
 import nltk
 import pandas as pd
 
+import sliver.database as db
 from sliver.strategies.hypnox import HypnoxTweet
 from sliver.strategies.hypnoxv2 import Hypnoxv2Gram
 from sliver.utils import clean_text
@@ -57,4 +58,5 @@ def main():
 
 
 if __name__ == "__main__":
+    db.init()
     main()

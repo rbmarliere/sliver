@@ -1,6 +1,8 @@
 import argparse
+
 import pandas
 
+import sliver.database as db
 from sliver.utils import clean_text
 
 
@@ -22,6 +24,8 @@ def main(args):
 
 
 if __name__ == "__main__":
+    db.init()
+
     argp = argparse.ArgumentParser()
     argp.add_argument("-b", "--bigrams-file", required=True)
     argp.add_argument("-u", "--unigrams-file", required=True)

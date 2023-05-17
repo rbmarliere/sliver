@@ -18,11 +18,12 @@ from sliver.user import User
 from sliver.order import Order
 from sliver.position import Position
 
-from sliver.database import db_init
 from sliver.watchdog import Watchdog
 from sliver.config import Config
 
 from sliver.api.app import api
+
+import sliver.database as db
 
 __all__ = [
     "Asset",
@@ -42,8 +43,10 @@ __all__ = [
 ]
 
 
-def create_tables(connection):
-    connection.create_tables(
+def create_tables():
+    db.init()
+
+    db.connection.create_tables(
         [
             Asset,
             TradeEngine,
@@ -83,7 +86,7 @@ def watch(num_workers=1):
 
 
 def serve():
-    db_init()
+    db.init()
 
     if Config().ENV_NAME == "development":
         api.app.run(port=5000, debug=False)

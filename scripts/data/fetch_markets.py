@@ -1,14 +1,13 @@
 import argparse
+import decimal
 import sys
 
 import sliver.database as db
-import decimal
-
 from sliver.asset import Asset
-from sliver.exchange_asset import ExchangeAsset
-from sliver.market import Market
 from sliver.exchange import Exchange
+from sliver.exchange_asset import ExchangeAsset
 from sliver.exchanges.factory import ExchangeFactory
+from sliver.market import Market
 
 
 def save_market(ex_market, exchange):
@@ -128,6 +127,8 @@ def fetch_markets(exchange):
 
 
 if __name__ == "__main__":
+    db.init()
+
     argp = argparse.ArgumentParser()
     argp.add_argument(
         "-e", "--exchange-name", help="exchange name to fetch from", required=True

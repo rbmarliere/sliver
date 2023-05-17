@@ -1,8 +1,9 @@
 import argparse
+
 import pandas
 import sklearn.model_selection
-from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import GridSearchCV
 
 # https://bibliotecadigital.fgv.br/dspace/handle/10438/33113
 

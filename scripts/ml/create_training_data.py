@@ -6,11 +6,14 @@ import os
 
 import pandas
 
+import sliver.database as db
 from sliver.config import Config
 from sliver.strategies.hypnox import HypnoxScore, HypnoxTweet
 from sliver.utils import standardize
 
 if __name__ == "__main__":
+    db.init()
+
     argp = argparse.ArgumentParser()
     argp.add_argument("-i", "--input", help="last training data file", required=True)
     argp.add_argument(

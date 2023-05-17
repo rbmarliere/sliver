@@ -7,19 +7,22 @@ import strategies
 import sliver.database as db
 from sliver.config import Config
 
-cache_file = f"{Config().LOGS_DIR}/cache.tsv"
+if __name__ == "__main__":
+    db.init()
 
-# check if cache_file exists
-if not os.path.isfile(cache_file):
-    print("cache file does not exist")
-    sys.exit(0)
+    cache_file = f"{Config().LOGS_DIR}/cache.tsv"
 
-cache = pandas.read_csv(cache_file, sep="\t")
+    # check if cache_file exists
+    if not os.path.isfile(cache_file):
+        print("cache file does not exist")
+        sys.exit(0)
 
-with db.connection.atomic():
-    strategies.hypnox.HypnoxTweet.insert_many(cache.to_dict("records")).execute()
+    cache = pandas.read_csv(cache_file, sep="\t")
 
-print(f"inserted {len(cache)} records")
+    with db.connection.atomic():
+        strategies.hypnox.HypnoxTweet.insert_many(cache.to_dict("records")).execute()
 
-# delete cache_file
-os.remove(cache_file)
+    print(f"inserted {len(cache)} records")
+
+    # delete cache_file
+    os.remove(cache_file)

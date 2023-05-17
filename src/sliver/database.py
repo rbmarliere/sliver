@@ -4,11 +4,10 @@ import peewee
 
 from sliver.config import Config
 
-
 connection = peewee.PostgresqlDatabase(None)
 
 
-def db_init():
+def init():
     connection.init(
         Config().DB_NAME,
         host=Config().DB_HOST,

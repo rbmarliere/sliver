@@ -2,7 +2,7 @@ import argparse
 
 import pandas
 
-import sliver.core
+import sliver.database as db
 from sliver.strategies.hypnoxv2 import Hypnoxv2Gram
 
 
@@ -21,6 +21,8 @@ def main(args):
 
 
 if __name__ == "__main__":
+    db.init()
+
     argp = argparse.ArgumentParser()
     argp.add_argument("-i", "--input-file", help="CSV file to import", required=True)
     argp.add_argument("-r", "--rank", help="Rank of the n-grams", required=True)
@@ -29,6 +31,6 @@ if __name__ == "__main__":
     )
     args = argp.parse_args()
 
-    with sliver.core.connection.atomic():
+    with db.connection.atomic():
         Hypnoxv2Gram.create_table()
         main(args)

@@ -4,7 +4,6 @@ import pandas
 
 import sliver.database as db
 from sliver.exchange import Exchange
-from sliver.indicator import Indicator
 from sliver.market import Market
 from sliver.price import Price
 from sliver.utils import get_timeframes
@@ -60,6 +59,8 @@ def main(args):
 
 
 if __name__ == "__main__":
+    db.init()
+
     argp = argparse.ArgumentParser()
     argp.add_argument("-i", "--input-file", help="CSV file to import", required=True)
     argp.add_argument(

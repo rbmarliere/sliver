@@ -3,11 +3,14 @@ import sys
 
 import ccxt
 
+import sliver.database as db
 from sliver.exchange import Exchange
 from sliver.exchanges.types import ExchangeTypes
 from sliver.utils import get_timeframes
 
 if __name__ == "__main__":
+    db.init()
+
     argp = argparse.ArgumentParser()
     argp.add_argument(
         "-e", "--exchange-name", help="exchange name to fetch from", required=True

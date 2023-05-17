@@ -10,6 +10,8 @@ import sliver.database as db
 from sliver.strategies.hypnox import HypnoxTweet
 
 if __name__ == "__main__":
+    db.init()
+
     argp = argparse.ArgumentParser()
     argp.add_argument("--name", required=True)
     argp.add_argument("--host", required=True)
