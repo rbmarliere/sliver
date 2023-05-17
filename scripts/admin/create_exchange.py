@@ -24,6 +24,7 @@ if __name__ == "__main__":
 
     obj = {
         "name": args.exchange_name,
+        "type": args.type,
         "rate_limit": 1000,
         "precision_mode": 0,
         "padding_mode": 0,
