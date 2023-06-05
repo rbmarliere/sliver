@@ -21,6 +21,9 @@ class Auth(Resource):
         except User.DoesNotExist:
             raise AuthenticationFailed
 
+        if user.deleted:
+            raise AuthenticationFailed
+
         authorized = flask_bcrypt.check_password_hash(user.password, args.password)
 
         if not authorized:

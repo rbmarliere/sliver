@@ -22,6 +22,7 @@ class User(db.BaseModel):
     cash_reserve = peewee.DecimalField(default=0.25)
     telegram_username = peewee.TextField(null=True)
     telegram_chat_id = peewee.TextField(null=True)
+    deleted = peewee.BooleanField(default=False)
 
     def get_exchange_credential(self, exchange):
         return self.credential_set.where(Credential.exchange == exchange)
