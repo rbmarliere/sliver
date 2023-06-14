@@ -54,7 +54,7 @@ class Stream(tweepy.StreamingClient):
         text = re.sub("\t", " ", text).strip()
 
         # log to stdin
-        print(text)
+        print(f"{time} -- {text}")
         tweet = HypnoxTweet(time=time, text=text)
         try:
             tweet.save()

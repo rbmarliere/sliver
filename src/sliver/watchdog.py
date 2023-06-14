@@ -189,6 +189,7 @@ class Task:
         if self.target._meta.table_name == "exchange":
             target = Exchange.get(id=self.target.id)
             self.target = ExchangeFactory.from_base(target)
+            self.target.api = None
         if self.target._meta.table_name == "strategy":
             target = BaseStrategy.get(id=self.target.id)
             self.target = StrategyFactory.from_base(target)

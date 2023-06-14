@@ -76,7 +76,7 @@ class CCXT(Exchange):
     @api_call
     def api_fetch_time(self):
         if self._api.has["fetchTime"]:
-            return self._api.fetch_time()
+            return int(self._api.fetch_time() / 1000)
 
         return 0
 
@@ -85,16 +85,12 @@ class CCXT(Exchange):
         return self._api.fetch_balance()
 
     @api_call
-    def api_fetch_markets(self, symbol=None):
-        return self._api.fetch_markets()
-
-    @api_call
     def api_fetch_ticker(self, symbol):
         return self._api.fetch_ticker(symbol)
 
     @api_call
     def api_fetch_last_price(self, symbol):
-        return self._api.fetch_ticker(symbol)["last"]
+        return self.api_fetch_ticker(symbol)["last"]
 
     @api_call
     def api_fetch_ohlcv(self, symbol, timeframe, since=None, limit=None):
@@ -158,7 +154,7 @@ class CCXT(Exchange):
         except ccxt.InsufficientFunds:
             raise DisablingError("insufficient funds")
 
-        except ccxt.RequestTimeout as e:
+        except ccxt.RequestTimeout:
             info("order creation request timeout")
 
             time.sleep(10)

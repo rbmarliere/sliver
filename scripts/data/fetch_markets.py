@@ -114,16 +114,16 @@ def save_market(ex_market, exchange):
         m.save()
 
 
-def fetch_markets(exchange):
-    print("fetching all markets from exchange api...")
-    ex_markets = exchange.api_fetch_markets()
+# def fetch_markets(exchange):
+#     print("fetching all markets from exchange api...")
+#     ex_markets = exchange.api.fetch_markets()
 
-    count = 0
-    for ex_market in ex_markets:
-        save_market(ex_market, exchange)
-        count += 1
+#     count = 0
+#     for ex_market in ex_markets:
+#         save_market(ex_market, exchange)
+#         count += 1
 
-    print(f"saved {count} new markets")
+#     print(f"saved {count} new markets")
 
 
 if __name__ == "__main__":
@@ -133,7 +133,9 @@ if __name__ == "__main__":
     argp.add_argument(
         "-e", "--exchange-name", help="exchange name to fetch from", required=True
     )
-    argp.add_argument("-s", "--symbol", help="specify a single market to fetch")
+    argp.add_argument(
+        "-s", "--symbol", help="specify a single market to fetch", required=True
+    )
     args = argp.parse_args()
 
     try:
@@ -143,10 +145,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     exchange = ExchangeFactory.from_base(base)
+    exchange.api = None
 
-    if args.symbol:
-        # ccxt only
-        exchange.api.load_markets()
-        save_market(exchange.api.market(args.symbol), exchange)
-    else:
-        fetch_markets(exchange)
+    exchange.api.load_markets()  # ccxt only
+    save_market(exchange.api.market(args.symbol), exchange)

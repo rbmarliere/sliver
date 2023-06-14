@@ -16,8 +16,6 @@ class ExchangeFactory:
         else:
             raise DisablingError("invalid exchange type")
 
-        exchange.api = None
-
         return exchange
 
     @classmethod

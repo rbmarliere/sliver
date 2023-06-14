@@ -57,11 +57,6 @@ class Exchange(db.BaseModel):
 
     @api_call
     @abstractmethod
-    def api_fetch_markets(self):
-        ...
-
-    @api_call
-    @abstractmethod
     def api_fetch_ticker(self, symbol):
         # returns None if unsupported
         ...

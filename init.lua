@@ -30,7 +30,7 @@ dap.configurations.typescript = {
   typescript,
 }
 
-require("dap-python").setup(vim.fn.getcwd() .. "/.venv/bin/python", { console = "externalTerminal" })
+require("dap-python").setup(vim.fn.getcwd() .. "/.venv/bin/python", { console = "externalTerminal", justMyCode = false })
 
 local api = {
   type = "python",

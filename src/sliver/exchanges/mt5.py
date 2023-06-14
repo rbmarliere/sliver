@@ -29,10 +29,14 @@ class MT5(Exchange):
         except (AttributeError, AssertionError) as e:
             raise DisablingError("mt5 cred or api not set", e)
 
+        server = credential.exchange.api_endpoint
+        if Config().ENV_NAME == "development":
+            server = credential.exchange.api_sandbox_endpoint
+
         term = self._api.initialize(
             login=int(credential.api_key),
             password=credential.api_secret,
-            server=credential.exchange.api_endpoint,
+            server=server,
         )
 
         if not term:
@@ -59,7 +63,7 @@ class MT5(Exchange):
 
     @api_call
     def api_fetch_time(self):
-        return self._api.symbol_info_tick("PETR4")
+        return self._api.symbol_info_tick("PETR4").time
 
     @api_call
     def api_fetch_balance(self):
@@ -67,18 +71,14 @@ class MT5(Exchange):
         return self._api.account_info().equity  # in BRL
 
     @api_call
-    def api_fetch_markets(self):
-        ...
-
-    @api_call
     def api_fetch_ticker(self, symbol):
         info = self._api.symbol_info(symbol)
         if not info:
-            return
+            raise DisablingError(f"mt5 symbol not found: {symbol}")
 
         if not info.visible:
             if not self._api.symbol_select(symbol, True):
-                return
+                raise DisablingError(f"mt5 symbol not found: {symbol}")
 
         return self._api.symbol_info_tick(symbol)
 
@@ -113,6 +113,11 @@ class MT5(Exchange):
     def api_create_order(self, symbol, type, side, amount, price=None):
         last = self.api_fetch_ticker(symbol)
 
+        symbol_info = self._api.symbol_info(symbol)
+        if not symbol_info.visible:
+            if not self._api.symbol_select(symbol, True):
+                raise DisablingError("symbol_select() failed")
+
         if type == "market":
             type = self._api.TRADE_ACTION_DEAL
         else:
@@ -131,17 +136,48 @@ class MT5(Exchange):
             "action": type,
             "symbol": symbol,
             "volume": float(amount),
-            "type": type,
+            "type": side,
             "price": price,
             "sl": 0.0,
             "tp": 0.0,
-            "deviation": 0.0,
-            "magic": 0,
+            "deviation": 20,
+            "magic": 93,
             "comment": "sliver",
             "type_time": self._api.ORDER_TIME_GTC,
             "type_filling": self._api.ORDER_FILLING_RETURN,
+            # "type_filling": self._api.ORDER_FILLING_IOC,
+        }
+
+        mt5 = self._api
+        lot = 1
+        point = mt5.symbol_info(symbol).point
+        price = mt5.symbol_info_tick(symbol).ask
+        deviation = 20
+        request = {
+            "action": mt5.TRADE_ACTION_DEAL,
+            "symbol": symbol,
+            "volume": lot,
+            "type": mt5.ORDER_TYPE_BUY,
+            "price": price,
+            "sl": price - 100 * point,
+            "tp": price + 100 * point,
+            "deviation": deviation,
+            "magic": 234000,
+            "comment": "python script open",
+            "type_time": mt5.ORDER_TIME_GTC,
+            "type_filling": mt5.ORDER_FILLING_RETURN,
         }
 
         ret = self._api.order_send(request)
+        if ret is None:
+            raise DisablingError(f"mt5 order_send failed: {self._api.last_error()}")
         if ret.retcode == self._api.TRADE_RETCODE_DONE:
             return ret.order
+
+    @api_call
+    def get_synced_order(self, position, oid):
+        ...
+
+    @api_call
+    def sync_user_balance(self, user):
+        ...
