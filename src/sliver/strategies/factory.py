@@ -9,7 +9,8 @@ from sliver.strategies.manual import ManualStrategy as Manual
 from sliver.strategies.mixer import MixerStrategy as Mixer
 from sliver.strategies.random import RandomStrategy as Random
 from sliver.strategies.swapperbox import SwapperBoxStrategy as SwapperBox
-from sliver.strategies.windrunner import WindrunnerStrategy as Windrunner
+
+# from sliver.strategies.windrunner import WindrunnerStrategy as Windrunner
 from sliver.strategies.hypnoxv2 import Hypnoxv2Strategy as Hypnoxv2
 from sliver.strategies.elnino import ElNinoStrategy as ElNino
 from sliver.strategies.lanina import LaNinaStrategy as LaNina
@@ -51,8 +52,8 @@ class StrategyFactory:
             model = Random
         elif strategy.type == StrategyTypes.SWAPPERBOX:
             model = SwapperBox
-        elif strategy.type == StrategyTypes.WINDRUNNER:
-            model = Windrunner
+        # elif strategy.type == StrategyTypes.WINDRUNNER:
+        #     model = Windrunner
         elif strategy.type == StrategyTypes.HYPNOXV2:
             model = Hypnoxv2
         elif strategy.type == StrategyTypes.ELNINO:

@@ -5,7 +5,7 @@ import pandas
 import peewee
 
 import sliver.database as db
-import sliver.models
+#import sliver.models
 from sliver.indicator import Indicator
 from sliver.indicators.hypnox import HYPNOX
 from sliver.strategies.signals import StrategySignals
@@ -151,11 +151,11 @@ class HypnoxStrategy(IStrategy):
             .where(HypnoxTweet.time > pending.iloc[0].time)
         )
         replay_q = base_q.where(HypnoxScore.model.is_null())
-        if replay_q.count() == 0:
-            info(f"{self.model}: no tweets to replay")
-        else:
-            model = sliver.models.load(self.model)
-            replay(replay_q, model)
+        # if replay_q.count() == 0:
+        #     info(f"{self.model}: no tweets to replay")
+        # else:
+        #     model = sliver.models.load(self.model)
+        #     replay(replay_q, model)
 
         tweets = pandas.DataFrame(base_q.dicts())
 
