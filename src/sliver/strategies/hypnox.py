@@ -5,7 +5,8 @@ import pandas
 import peewee
 
 import sliver.database as db
-#import sliver.models
+
+# import sliver.models
 from sliver.indicator import Indicator
 from sliver.indicators.hypnox import HYPNOX
 from sliver.strategies.signals import StrategySignals
@@ -69,8 +70,17 @@ class HypnoxUser(db.BaseModel):
     twitter_user_id = peewee.TextField(null=True)
     username = peewee.TextField()
 
+    def get_last_tweet(self):
+        return (
+            HypnoxTweet.select()
+            .where(HypnoxTweet.user == self)
+            .order_by(HypnoxTweet.time.desc())
+            .first()
+        )
+
 
 class HypnoxTweet(db.BaseModel):
+    user = peewee.ForeignKeyField(HypnoxUser, null=True, on_delete="SET NULL")
     time = peewee.DateTimeField()
     text = peewee.TextField()
 

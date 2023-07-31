@@ -19,7 +19,7 @@ class ConfigMeta(type):
 
 
 class Config(metaclass=ConfigMeta):
-    config = None
+    config = {}
 
     def __init__(self):
         os.environ["TZ"] = "UTC"
@@ -41,8 +41,11 @@ class Config(metaclass=ConfigMeta):
             "TELEGRAM_API_ID",
             "TELEGRAM_BOT_TOKEN",
             "TELEGRAM_CHANNEL",
-            "TWITTER_BEARER_TOKEN",
             "WATCHDOG_INTERVAL",
+            "HYPNOX_TWITTER_ACCOUNT",
+            "HYPNOX_TWITTER_PASSWORD",
+            "HYPNOX_TWITTER_PHONE",
+            "HYPNOX_TWITTER_SCRAPER_TIMEOUT",
         ]
 
         error = False
